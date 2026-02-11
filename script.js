@@ -11014,24 +11014,17 @@ const app = {
     user: null,
     currentRate: 0,
 
-    // 1. INITIALISATION
+     // 1. INITIALISATION
     async init() {
         console.log("Démarrage de l'app...");
         this.checkUrlReferral();
         
+        // On ne fait QUE vérifier si window.ethereum existe.
+        // On essaie PLUS de se connecter automatiquement, cela plante Trust Wallet.
         if (window.ethereum) {
-            // Essayer de se reconnecter si déjà autorisé
-            try {
-                this.provider = new ethers.BrowserProvider(window.ethereum);
-                const accounts = await this.provider.listAccounts();
-                if (accounts.length > 0) {
-                    await this.connectWallet(true); // true = silencieux
-                }
-            } catch (e) {
-                console.log("Pas de connexion auto");
-            }
+            console.log("Wallet détecté. En attente du clic de l'utilisateur.");
         } else {
-            this.showToast("Veuillez installer MetaMask ou Trust Wallet", true);
+            console.log("Aucun wallet détecté.");
         }
     },
 
@@ -11052,7 +11045,7 @@ const app = {
         try {
             if (!silent) this.showLoader(true, "Connexion au wallet...");
             
-            // Demande de connexion
+            // Demande explicite de connexion (nécessaire sur mobile)
             await window.ethereum.request({ method: 'eth_requestAccounts' });
             this.provider = new ethers.BrowserProvider(window.ethereum);
             this.signer = await this.provider.getSigner();
@@ -11083,9 +11076,12 @@ const app = {
         } catch (e) {
             console.error(e);
             this.showToast("Erreur de connexion", true);
+            // IMPORTANT : S'assurer de couper le loader en cas d'erreur
+            this.showLoader(false); 
         }
         this.showLoader(false);
     },
+
 
     async switchNetwork() {
         try {
