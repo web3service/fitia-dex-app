@@ -140,3 +140,19 @@ h2 { margin-top: 0; border-left: 3px solid var(--primary); padding-left: 10px; }
 
 /* INPUTS FIX FOR MOBILE */
 input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+/* Masquer le scroll horizontal sur mobile */
+html, body { overflow-x: hidden; }
+
+/* Overlay pour message pas de wallet */
+.no-wallet-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.95); z-index: 3000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+}
+
+/* Optimisation boutons mobile */
+.btn-action, .btn-primary, .btn-small {
+    touch-action: manipulation; /* Empêche le zoom au double-tap */
+    -webkit-tap-highlight-color: transparent;
+}

@@ -151,7 +151,15 @@
             <span class="label">Inventaire</span>
         </button>
     </nav>
-
+<!-- Message si pas de wallet détecté -->
+    <div id="no-wallet-msg" class="no-wallet-overlay hidden">
+        <div class="card" style="text-align:center; padding:30px;">
+            <h3>Wallet Non Détecté</h3>
+            <p>Pour utiliser cette application sur mobile, vous devez ouvrir ce lien à l'intérieur de votre application Wallet (MetaMask, Trust Wallet, TokenPocket, etc.).</p>
+            <p style="font-size:0.8rem; color:#888; margin:10px 0;">Ne l'ouvrez pas dans Chrome ou Safari directement.</p>
+            <button class="btn-primary" onclick="document.getElementById('no-wallet-msg').classList.add('hidden')">Fermer</button>
+        </div>
+    </div>
     <script src="script.js"></script>
 </body>
 </html>
