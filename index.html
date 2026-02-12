@@ -2,164 +2,155 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FITIA MINER V2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0f172a">
+    <title>FITIA PRO MINER</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 </head>
 <body>
 
-    <!-- OVERLAY DE CHARGEMENT -->
-    <div id="loader" class="loader-overlay">
-        <div class="spinner"></div>
-        <p id="loader-msg">Connexion...</p>
-    </div>
+    <!-- BACKGROUND EFFECT -->
+    <div class="bg-gradient"></div>
 
     <!-- NOTIFICATIONS -->
     <div id="toast-container"></div>
 
-    <!-- HEADER -->
-    <header>
-        <div class="logo">FITIA <span>V2</span></div>
-        <button id="btn-connect" class="btn-connect" onclick="app.connectWallet()">Connecter</button>
-        <div id="wallet-info" class="wallet-info hidden">
-            <span id="user-addr">0x...</span>
-            <div class="balances-mini">
-                <small id="mini-usdt">0 USDT</small>
-                <small id="mini-fta">0 FTA</small>
-            </div>
-        </div>
-    </header>
-
-    <!-- CONTENU PRINCIPAL -->
-    <main id="main-content">
+    <!-- MAIN APP WRAPPER -->
+    <div class="app-container">
         
-        <!-- ONGLET: ACCUEIL -->
-        <section id="tab-home" class="tab-content active">
-            <!-- Parrainage -->
-            <div class="card referral-box">
-                <h3>Code Parrain</h3>
-                <p style="font-size:0.8rem; color:#aaa; margin-bottom:10px;">Entrez l'adresse de votre parrain pour activer les bonus.</p>
-                <div class="input-row">
-                    <input type="text" id="ref-input" placeholder="0x..." readonly>
-                    <button class="btn-small" onclick="app.copyRef()">Copier Mon Lien</button>
+        <!-- HEADER -->
+        <header>
+            <div class="brand">
+                <div class="logo-icon">⚡</div>
+                <div class="brand-text">FITIA <span class="pro-badge">PRO</span></div>
+            </div>
+            <button id="btn-connect" class="btn-wallet" onclick="App.connect()">Connecter</button>
+            <div id="wallet-status" class="wallet-status hidden">
+                <span id="addr-display">0x...</span>
+                <span class="status-dot online"></span>
+            </div>
+        </header>
+
+        <!-- CONTENT AREA -->
+        <main id="main-view">
+            
+            <!-- DASHBOARD VIEW -->
+            <div id="view-dashboard" class="view active">
+                
+                <!-- REFERRAL BOX -->
+                <div class="card glass" id="ref-box">
+                    <div class="card-header">
+                        <h3>Parrainage</h3>
+                        <span class="badge">3 Niveaux</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group" onclick="App.copyLink()">
+                            <input type="text" id="ref-link" readonly value="Connectez-vous pour voir votre lien...">
+                            <button class="icon-btn">📋</button>
+                        </div>
+                        <div id="bind-ref-area" style="display:none; margin-top:10px;">
+                            <p class="small-text">Code détecté : <span id="detected-ref" class="highlight"></span></p>
+                            <button class="btn-sm btn-full" onclick="App.bindReferrer()">LIER MON PARRAIN</button>
+                        </div>
+                    </div>
                 </div>
-                <div id="set-ref-section" style="margin-top:10px; display:none;">
-                    <input type="text" id="new-ref-input" placeholder="Adresse parrain à lier">
-                    <button class="btn-small" style="width:100%; margin-top:5px; background:var(--accent);" onclick="app.setReferrer()">LIER PARRAIN</button>
+
+                <!-- STATS OVERVIEW -->
+                <div class="stats-grid">
+                    <div class="stat-card primary">
+                        <small>PUISSANCE</small>
+                        <div class="stat-val" id="val-power">0.00</div>
+                        <small>FTA / sec</small>
+                    </div>
+                    <div class="stat-card accent">
+                        <small>EN ATTENTE</small>
+                        <div class="stat-val" id="val-pending">0.00</div>
+                        <small>FTA</small>
+                    </div>
+                </div>
+
+                <!-- MAIN ACTION -->
+                <button class="btn-mega" onclick="App.claim()">
+                    <span class="pulse-ring"></span>
+                    RÉCLAMER
+                </button>
+
+                <!-- USER BALANCES -->
+                <div class="card">
+                    <div class="row-between">
+                        <span>Portefeuille USDT</span>
+                        <span class="balance" id="bal-usdt">0.00</span>
+                    </div>
+                    <div class="row-between" style="margin-top:10px;">
+                        <span>Portefeuille FTA</span>
+                        <span class="balance" id="bal-fta">0.00</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Stats -->
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <span class="stat-label">PUISSANCE</span>
-                    <span class="stat-val" id="val-power">0.00</span>
-                    <span class="stat-unit">FTA/s</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">GAINS</span>
-                    <span class="stat-val" id="val-rewards">0.00</span>
-                    <span class="stat-unit">FTA</span>
+            <!-- SHOP VIEW -->
+            <div id="view-shop" class="view">
+                <h2 class="view-title">Marché des Rigs</h2>
+                <div id="shop-list" class="grid-list">
+                    <!-- JS Injected -->
                 </div>
             </div>
 
-            <!-- Action -->
-            <button class="btn-action" onclick="app.claimRewards()">
-                ⚡ RÉCLAMER
+            <!-- SWAP VIEW -->
+            <div id="view-swap" class="view">
+                <h2 class="view-title">Échange Interne</h2>
+                <div class="card swap-interface">
+                    <div class="swap-header">
+                        <span>Vous payez</span>
+                        <span>Balance: <span id="swap-bal-from">0</span></span>
+                    </div>
+                    <div class="input-wrap">
+                        <input type="number" id="swap-from-in" placeholder="0.0" oninput="App.calcSwap()">
+                        <div class="token-select" onclick="App.toggleSwap()" id="token-from-display">USDT</div>
+                    </div>
+                    
+                    <div class="swap-arrow" onclick="App.toggleSwap()">⇄</div>
+
+                    <div class="swap-header">
+                        <span>Vous recevez</span>
+                        <span>Balance: <span id="swap-bal-to">0</span></span>
+                    </div>
+                    <div class="input-wrap">
+                        <input type="number" id="swap-to-in" placeholder="0.0" readonly>
+                        <div class="token-select" style="background:#333; cursor:default;" id="token-to-display">FTA</div>
+                    </div>
+                    <div class="rate-info" id="swap-rate">1 USDT = 0 FTA</div>
+                    <button class="btn-primary" id="btn-execute-swap" onclick="App.executeSwap()">ÉCHANGER</button>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- BOTTOM NAV -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" onclick="App.nav('dashboard')">
+                <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                <span>Accueil</span>
             </button>
+            <button class="nav-item" onclick="App.nav('shop')">
+                <svg viewBox="0 0 24 24"><path d="M12 2l-5.5 9h11z"/></svg>
+                <span>Shop</span>
+            </button>
+            <button class="nav-item" onclick="App.nav('swap')">
+                <svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+                <span>Swap</span>
+            </button>
+        </nav>
 
-            <!-- Logs -->
-            <div class="card">
-                <h3>Activité</h3>
-                <ul id="activity-log" class="log-list">
-                    <li>En attente de connexion...</li>
-                </ul>
-            </div>
-        </section>
-
-        <!-- ONGLET: BOUTIQUE -->
-        <section id="tab-shop" class="tab-content">
-            <h2>Rigs Disponibles</h2>
-            <div id="shop-container" class="shop-grid">
-                <!-- Rempli par JS -->
-                <p>Chargement...</p>
-            </div>
-        </section>
-
-        <!-- ONGLET: SWAP -->
-        <section id="tab-swap" class="tab-content">
-            <h2>Échange</h2>
-            <div class="card swap-box">
-                <div class="swap-row">
-                    <label>Payer</label>
-                    <div class="input-group">
-                        <input type="number" id="swap-from-amount" placeholder="0.0" oninput="app.calcSwap()">
-                        <select id="swap-from-token" onchange="app.flipSwap()">
-                            <option value="USDT">USDT</option>
-                            <option value="FTA">FTA</option>
-                        </select>
-                    </div>
-                    <small class="balance-display">Solde: <span id="bal-from">0</span></small>
-                </div>
-
-                <div class="swap-icon" onclick="app.flipSwap()">⇅</div>
-
-                <div class="swap-row">
-                    <label>Recevoir</label>
-                    <div class="input-group">
-                        <input type="number" id="swap-to-amount" placeholder="0.0" readonly>
-                        <select id="swap-to-token" disabled>
-                            <option value="FTA">FTA</option>
-                            <option value="USDT">USDT</option>
-                        </select>
-                    </div>
-                    <small class="balance-display">Solde: <span id="bal-to">0</span></small>
-                </div>
-
-                <button class="btn-primary" onclick="app.executeSwap()">ÉCHANGER</button>
-                <div id="rate-display" style="text-align:center; margin-top:10px; font-size:0.8rem; color:#888;"></div>
-            </div>
-        </section>
-
-        <!-- ONGLET: INVENTAIRE -->
-        <section id="tab-inventory" class="tab-content">
-            <h2>Mes Rigs</h2>
-            <div id="inventory-container">
-                <p style="text-align:center; color:#666;">Connectez-vous pour voir vos machines.</p>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- NAVIGATION BAS -->
-    <nav class="bottom-nav">
-        <button class="nav-item active" onclick="app.switchTab('home')">
-            <span class="icon">🏠</span>
-            <span class="label">Accueil</span>
-        </button>
-        <button class="nav-item" onclick="app.switchTab('shop')">
-            <span class="icon">🛒</span>
-            <span class="label">Boutique</span>
-        </button>
-        <button class="nav-item" onclick="app.switchTab('swap')">
-            <span class="icon">🔄</span>
-            <span class="label">Swap</span>
-        </button>
-        <button class="nav-item" onclick="app.switchTab('inventory')">
-            <span class="icon">📦</span>
-            <span class="label">Inventaire</span>
-        </button>
-    </nav>
-<!-- Message si pas de wallet détecté -->
-    <div id="no-wallet-msg" class="no-wallet-overlay hidden">
-        <div class="card" style="text-align:center; padding:30px;">
-            <h3>Wallet Non Détecté</h3>
-            <p>Pour utiliser cette application sur mobile, vous devez ouvrir ce lien à l'intérieur de votre application Wallet (MetaMask, Trust Wallet, TokenPocket, etc.).</p>
-            <p style="font-size:0.8rem; color:#888; margin:10px 0;">Ne l'ouvrez pas dans Chrome ou Safari directement.</p>
-            <button class="btn-primary" onclick="document.getElementById('no-wallet-msg').classList.add('hidden')">Fermer</button>
-        </div>
     </div>
-    <script src="script.js"></script>
+
+    <!-- LOADING OVERLAY -->
+    <div id="loader" class="loader hidden">
+        <div class="spinner-ring"></div>
+        <p id="loader-text">Traitement...</p>
+    </div>
+
+    <script src="app.js"></script>
 </body>
 </html>
