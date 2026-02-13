@@ -9,7 +9,7 @@ const CONFIG = {
     CHAIN_ID: 137 
 };
 
-// --- ABI (MISE À JOUR AVEC DIFFICULTY) ---
+// ABI (V2 AVEC ÉVÉNEMENTS POUR L'HISTORIQUE)
 const MINING_ABI = [
     "function buyMachine(uint256 typeId)",
     "function claimRewards()",
@@ -20,7 +20,9 @@ const MINING_ABI = [
     "function exchangeRate() view returns (uint256)",
     "function machineTypes(uint256) view returns (uint256 price, uint256 power)",
     "function getMachineCount() view returns (uint256)",
-    "function difficultyMultiplier() view returns (uint256)" // <--- AJOUTÉ ICI
+    "function difficultyMultiplier() view returns (uint256)",
+    "event MachineBought(address indexed user, uint256 machineId, uint256 price)",
+    "event RewardsClaimed(address indexed user, uint256 amount)"
 ];
 
 const ERC20_ABI = [
@@ -32,9 +34,7 @@ const ERC20_ABI = [
     "function symbol() view returns (string)"
 ];
 
-// ==========================================
-// LOGIQUE
-// ==========================================
+// --- LOGIQUE PRINCIPALE ---
 class Application {
     constructor() {
         this.provider = null;
@@ -46,7 +46,7 @@ class Application {
     }
 
     async init() {
-        console.log("FITIA PRO Chargé");
+        console.log("FITIA V2 Mode (Compatible Historique)");
         this.checkReferral();
         
         if (window.ethereum) {
@@ -62,8 +62,7 @@ class Application {
         const params = new URLSearchParams(window.location.search);
         const ref = params.get('ref');
         if (ref && ethers.isAddress(ref)) {
-            document.getElementById('bind-ref-area').style.display = 'block';
-            document.getElementById('detected-ref').innerText = ref;
+            this.tempReferrer = ref;
         }
     }
 
@@ -90,7 +89,10 @@ class Application {
             const ws = document.getElementById('wallet-status');
             ws.classList.remove('hidden');
             document.getElementById('addr-display').innerText = this.user.slice(0,6) + "..." + this.user.slice(38);
-            document.getElementById('ref-link').value = window.location.origin + "?ref=" + this.user;
+            
+            if (this.tempReferrer) {
+                await this.bindReferrerInternal(this.tempReferrer);
+            }
 
             this.updateData();
             setInterval(() => this.updateData(), 5000);
@@ -127,18 +129,22 @@ class Application {
             const rate = await this.contracts.mining.exchangeRate();
             this.currentRate = parseFloat(ethers.formatUnits(rate, 8));
 
-            // AFFICHAGE PUISSANCE DASHBOARD (AVEC DIFFICULTÉ)
             document.getElementById('val-power').innerText = parseFloat(ethers.formatUnits(power, 8)).toFixed(4);
-            
             document.getElementById('bal-usdt').innerText = parseFloat(ethers.formatUnits(usdtBal, 6)).toFixed(2);
             document.getElementById('bal-fta').innerText = parseFloat(ethers.formatUnits(ftaBal, 8)).toFixed(2);
             
+            // Swap UI
             document.getElementById('swap-bal-from').innerText = this.swapDirection === 'USDT_TO_FTA' ? parseFloat(ethers.formatUnits(usdtBal, 6)).toFixed(2) : parseFloat(ethers.formatUnits(ftaBal, 8)).toFixed(2);
             document.getElementById('swap-bal-to').innerText = this.swapDirection === 'USDT_TO_FTA' ? parseFloat(ethers.formatUnits(ftaBal, 8)).toFixed(2) : parseFloat(ethers.formatUnits(usdtBal, 6)).toFixed(2);
             document.getElementById('swap-rate').innerText = `1 USDT = ${this.currentRate} FTA`;
 
             if (document.getElementById('shop-list').children.length === 0) {
                 await this.renderShop();
+            }
+            
+            // Chargement Historique (Si on est sur l'onglet historique)
+            if (document.getElementById('view-inventory').classList.contains('active')) {
+                await this.renderHistory();
             }
 
         } catch (e) {
@@ -149,33 +155,70 @@ class Application {
     async renderShop() {
         const container = document.getElementById('shop-list');
         const count = await this.contracts.mining.getMachineCount();
-        const icons = ["🟢", "🔵", "🟣", "🟡", "🔴"];
-        
+        const icons = ["💾", "💚", "💜", "💙", "💚"]; // 5 Machines seulement
         container.innerHTML = '';
+        
         for(let i=0; i<count; i++) {
             const data = await this.contracts.mining.machineTypes(i);
             const price = parseFloat(ethers.formatUnits(data.price, 6)).toFixed(2);
-            
-            // --- CORRECTION MATHÉMATIQUE ICI ---
-            // On récupère le multiplicateur de difficulté depuis le contrat
-            const multiplier = await this.contracts.mining.difficultyMultiplier();
-            
-            // Calcul : (Puissance de base * Multiplicateur) / 10^18
-            // On utilise des BigInt (n) pour la division pour éviter les erreurs d'arrondi
-            const rawPower = (data.power * multiplier) / 1000000000000000000n;
-            
-            // On convertit le résultat en format décimal FTA (8 décimales)
-            const power = parseFloat(ethers.formatUnits(rawPower, 8)).toFixed(4);
+            const power = parseFloat(ethers.formatUnits(data.power, 8)).toFixed(4);
             
             const div = document.createElement('div');
             div.className = 'rig-item';
             div.innerHTML = `
-                <span class="rig-name">RIG ${i+1}</span>
+                <span class="rig-name">RIG NIVEAU ${i+1}</span>
                 <span class="rig-power">${power} FTA/s</span>
                 <span class="rig-price">${price} USDT</span>
                 <button class="btn-primary" style="padding:10px; font-size:0.9rem" onclick="App.buyMachine(${i})">ACHETER</button>
             `;
             container.appendChild(div);
+        }
+    }
+
+    // --- NOUVEAU : HISTORIQUE (COMPATIBLE ANCIEN CONTRAT) ---
+    async renderHistory() {
+        const list = document.getElementById('history-list');
+        list.innerHTML = '<h4 style="margin-bottom:10px;">Historique (Ancien Contrat)</h4>';
+        
+        try {
+            // 1. Récupérer les achats
+            const buyFilter = this.contracts.mining.filters.MachineBought(this.user);
+            const buyLogs = await this.contracts.mining.queryFilter(buyFilter);
+            
+            // 2. Récupérer les réclamations
+            const claimFilter = this.contracts.mining.filters.RewardsClaimed(this.user);
+            const claimLogs = await this.contracts.mining.queryFilter(claimFilter);
+
+            // 3. Fusionner
+            const allLogs = [...buyLogs, ...claimLogs].sort((a, b) => b.blockNumber - a.blockNumber);
+
+            // 4. Afficher
+            if (allLogs.length === 0) {
+                list.innerHTML += '<p style="text-align:center; color:#666; padding:20px">Aucun historique.</p>';
+                return;
+            }
+
+            allLogs.forEach(log => {
+                let type, msg, val;
+                if (log.eventName === 'MachineBought') {
+                    type = 'type-buy';
+                    msg = `Achat Rig #${log.args[1]}`; // args[1] est l'id de la machine
+                    const price = parseFloat(ethers.formatUnits(log.args[2], 6)).toFixed(2);
+                    val = price + ' USDT';
+                } else {
+                    type = 'type-claim';
+                    msg = `Réclamation`;
+                    val = parseFloat(ethers.formatUnits(log.args[1], 8)).toFixed(4) + ' FTA';
+                }
+                const date = new Date(log.blockNumber * 1000).toLocaleString();
+                
+                const li = document.createElement('div');
+                li.className = 'history-item';
+                li.innerHTML = `<span>${date}</span> <span class="${type}">${msg}</span> <small>${val}</small>`;
+                list.appendChild(li);
+            });
+        } catch (e) {
+            console.error("Erreur historique (Le RPC public peut limiter les résultats) :", e);
         }
     }
 
@@ -192,7 +235,8 @@ class Application {
             const txBuy = await this.contracts.mining.buyMachine(id);
             await txBuy.wait();
             this.showToast("Achat réussi !");
-            document.getElementById('shop-list').innerHTML = ''; // Force re-render
+            document.getElementById('shop-list').innerHTML = ''; 
+            document.getElementById('inventory-list').innerHTML = ''; // Force re-render
             this.updateData();
         } catch (e) { this.showToast("Erreur Achat", true); }
         this.setLoader(false);
@@ -210,19 +254,15 @@ class Application {
         this.setLoader(false);
     }
 
-    async bindReferrer() {
-        const addr = document.getElementById('detected-ref').innerText;
-        if (!ethers.isAddress(addr)) return;
-        this.setLoader(true, "Liaison...");
+    async bindReferrerInternal(addr) {
         try {
             const tx = await this.contracts.mining.setReferrer(addr);
             await tx.wait();
             this.showToast("Parrain lié !");
-            document.getElementById('bind-ref-area').style.display = 'none';
-        } catch (e) { this.showToast("Déjà lié", true); }
-        this.setLoader(false);
+        } catch (e) { console.log("Déjà lié"); }
     }
 
+    // ... (Swap, Nav, Utils sont identiques) ...
     toggleSwap() {
         this.swapDirection = this.swapDirection === 'USDT_TO_FTA' ? 'FTA_TO_USDT' : 'USDT_TO_FTA';
         const fromDisplay = document.getElementById('token-from-display');
@@ -274,7 +314,7 @@ class Application {
     }
 
     copyLink() {
-        const val = document.getElementById('ref-link').value;
+        const val = window.location.origin + "?ref=" + this.user;
         navigator.clipboard.writeText(val);
         this.showToast("Lien copié");
     }
