@@ -118,31 +118,47 @@ class Application {
         }
     }
 
-    async updateData() {
-        if (!this.user) return;
-        try {
-            const usdtBal = await this.contracts.usdt.balanceOf(this.user);
-            const ftaBal = await this.contracts.fta.balanceOf(this.user);
-            const power = await this.contracts.mining.getActivePower(this.user);
-            const rate = await this.contracts.mining.exchangeRate();
-            this.currentRate = parseFloat(ethers.formatUnits(rate, 8));
-
-            // AFFICHAGE PUISSANCE DASHBOARD (AVEC DIFFICULTÉ)
-            document.getElementById('val-power').innerText = parseFloat(ethers.formatUnits(power, 8)).toFixed(4);
-           
-            document.getElementById('bal-usdt').innerText = parseFloat(ethers.formatUnits(usdtBal, 6)).toFixed(2);
-            document.getElementById('bal-fta').innerText = parseFloat(ethers.formatUnits(ftaBal, 8)).toFixed(2);
-           
-            document.getElementById('swap-bal-from').innerText = this.swapDirection === 'USDT_TO_FTA' ? parseFloat(ethers.formatUnits(usdtBal, 6)).toFixed(2) : parseFloat(ethers.formatUnits(ftaBal, 8)).toFixed(2);
-            document.getElementById('swap-bal-to').innerText = this.swapDirection === 'USDT_TO_FTA' ? parseFloat(ethers.formatUnits(ftaBal, 8)).toFixed(2) : parseFloat(ethers.formatUnits(usdtBal, 6)).toFixed(2);
-            document.getElementById('swap-rate').innerText = `1 USDT = ${this.currentRate} FTA`;
-
-            if (document.getElementById('shop-list').children.length === 0) {
-                await this.renderShop();
+    async renderShop() {
+        const container = document.getElementById('shop-list');
+        const count = await this.contracts.mining.getMachineCount();
+        const icons = ["🟢", "🔵", "🟣", "🟡", "🔴"];
+        
+        container.innerHTML = '';
+        for(let i=0; i<count; i++) {
+            const data = await this.contracts.mining.machineTypes(i);
+            const price = parseFloat(ethers.formatUnits(data.price, 6)).toFixed(2);
+            
+            // --- LECTURE FORCÉE ET CALCUL ---
+            let multiplier = 1.0;
+            try {
+                const rawDiff = await this.contracts.mining.difficultyMultiplier();
+                multiplier = parseFloat(ethers.formatEther(rawDiff));
+                console.log("Machine " + i + " - Difficulté lue sur le contrat :", multiplier);
+            } catch (e) {
+                console.warn("Impossible de lire la difficulté (ABI manquant ?). Utilisation de la valeur par défaut.");
             }
 
-        } catch (e) {
-            console.error("Erreur refresh:", e);
+            // Calcul : (Puissance de base * Multiplicateur) / 10^18
+            const rawPower = (data.power * BigInt(Math.floor(multiplier * 1e18))) / BigInt(10**18);
+            
+            // Formatage pour affichage (8 décimales pour FTA)
+            const power = parseFloat(ethers.formatUnits(rawPower, 8)).toFixed(5); // 5 décimales pour bien voir 0.0005
+            
+            // Formattage de la puissance de base pour comparaison
+            const basePower = parseFloat(ethers.formatUnits(data.power, 8)).toFixed(2);
+
+            const div = document.createElement('div');
+            div.className = 'rig-item';
+            div.innerHTML = `
+                <span class="rig-name">RIG ${i+1}</span>
+                <div class="rig-stats">
+                    <span class="stat-base">Base: ${basePower}</span>
+                    <span class="stat-real">Réelle: ${power}</span>
+                </div>
+                <span class="rig-price">${price} USDT</span>
+                <button class="btn-primary" style="padding:10px; font-size:0.9rem" onclick="App.buyMachine(${i})">ACHETER</button>
+            `;
+            container.appendChild(div);
         }
     }
 
@@ -150,28 +166,39 @@ class Application {
         const container = document.getElementById('shop-list');
         const count = await this.contracts.mining.getMachineCount();
         const icons = ["🟢", "🔵", "🟣", "🟡", "🔴"];
-       
+        
         container.innerHTML = '';
         for(let i=0; i<count; i++) {
             const data = await this.contracts.mining.machineTypes(i);
             const price = parseFloat(ethers.formatUnits(data.price, 6)).toFixed(2);
-           
-            // --- CORRECTION MATHÉMATIQUE ICI ---
-            // On récupère le multiplicateur de difficulté depuis le contrat
-            const multiplier = await this.contracts.mining.difficultyMultiplier();
-           
+            
+            // --- LECTURE FORCÉE ET CALCUL ---
+            let multiplier = 1.0;
+            try {
+                const rawDiff = await this.contracts.mining.difficultyMultiplier();
+                multiplier = parseFloat(ethers.formatEther(rawDiff));
+                console.log("Machine " + i + " - Difficulté lue sur le contrat :", multiplier);
+            } catch (e) {
+                console.warn("Impossible de lire la difficulté (ABI manquant ?). Utilisation de la valeur par défaut.");
+            }
+
             // Calcul : (Puissance de base * Multiplicateur) / 10^18
-            // On utilise des BigInt (n) pour la division pour éviter les erreurs d'arrondi
-            const rawPower = (data.power * multiplier) / 1000000000000000000n;
-           
-            // On convertit le résultat en format décimal FTA (8 décimales)
-            const power = parseFloat(ethers.formatUnits(rawPower, 8)).toFixed(4);
-           
+            const rawPower = (data.power * BigInt(Math.floor(multiplier * 1e18))) / BigInt(10**18);
+            
+            // Formatage pour affichage (8 décimales pour FTA)
+            const power = parseFloat(ethers.formatUnits(rawPower, 8)).toFixed(5); // 5 décimales pour bien voir 0.0005
+            
+            // Formattage de la puissance de base pour comparaison
+            const basePower = parseFloat(ethers.formatUnits(data.power, 8)).toFixed(2);
+
             const div = document.createElement('div');
             div.className = 'rig-item';
             div.innerHTML = `
                 <span class="rig-name">RIG ${i+1}</span>
-                <span class="rig-power">${power} FTA/s</span>
+                <div class="rig-stats">
+                    <span class="stat-base">Base: ${basePower}</span>
+                    <span class="stat-real">Réelle: ${power}</span>
+                </div>
                 <span class="rig-price">${price} USDT</span>
                 <button class="btn-primary" style="padding:10px; font-size:0.9rem" onclick="App.buyMachine(${i})">ACHETER</button>
             `;
