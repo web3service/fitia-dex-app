@@ -9,7 +9,7 @@ const CONFIG = {
     CHAIN_ID: 137 
 };
 
-// --- ABI (MISE À JOUR AVEC DIFFICULTY) ---
+// --- ABI (COMPLET AVEC USERS) ---
 const MINING_ABI = [
     "function buyMachine(uint256 typeId)",
     "function claimRewards()",
@@ -20,7 +20,19 @@ const MINING_ABI = [
     "function exchangeRate() view returns (uint256)",
     "function machineTypes(uint256) view returns (uint256 price, uint256 power)",
     "function getMachineCount() view returns (uint256)",
-    "function difficultyMultiplier() view returns (uint256)" 
+    "function difficultyMultiplier() view returns (uint256)",
+    // Définition de la structure users pour lire lastClaimTime
+    {
+        "inputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "name": "users",
+        "outputs": [
+            {"internalType": "uint256", "name": "totalPower", "type": "uint256"},
+            {"internalType": "uint256", "name": "lastClaimTime", "type": "uint256"},
+            {"components": [{"internalType": "uint256", "name": "typeId", "type": "uint256"}, {"internalType": "uint256", "name": "boughtAt", "type": "uint256"}], "internalType": "struct MachineInstance[]", "name": "machines", "type": "tuple[]"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
 ];
 
 const ERC20_ABI = [
@@ -44,14 +56,10 @@ class Application {
         this.currentRate = 0;
         this.swapDirection = 'USDT_TO_FTA';
         
-        // --- NOUVEAUX VARIABLES POUR LE COMPTEUR ---
-        this.currentRealPower = 0; // Puissance calculée (ex: 0.0005)
-        this.pendingBalance = 0;     // Solde en attente local
-        this.miningTimer = null;      // Gestion du minuteur
-        
-        // --- VARIABLES VISUALISEUR ---
+        // Variables pour le visualiseur
         this.vizContext = null;
         this.vizBars = [];
+        this.vizAnimationId = null;
     }
 
     async init() {
@@ -103,11 +111,8 @@ class Application {
 
             this.updateData();
             
-            // Lancement du refresh auto
-            setInterval(() => this.updateData(), 5000);
-
-            // Initialisation du visualiseur
-            this.initVisualizer();
+            // Lancer le rafraîchissement automatique
+            setInterval(() => this.updateData(), 3000); // Rafraîchit toutes les 3 secondes
 
         } catch (e) {
             console.error(e);
@@ -132,49 +137,68 @@ class Application {
         }
     }
 
+    // C'EST ICI QUE LA MAGIE OPÈRE : CALCUL HORS LIGNE
     async updateData() {
         if (!this.user) return;
         try {
             const usdtBal = await this.contracts.usdt.balanceOf(this.user);
             const ftaBal = await this.contracts.fta.balanceOf(this.user);
             
-            // Récupérer la puissance brute et le multiplicateur de difficulté
+            // 1. Récupérer les données brutes du contrat
             const rawPower = await this.contracts.mining.getActivePower(this.user);
             const multiplier = await this.contracts.mining.difficultyMultiplier();
             
-            // --- CALCUL DE LA PUISSANCE RÉELLE (APPLICANT LA DIFFICULTÉ) ---
-            // Formule : (Puissance brute * Multiplicateur) / 10^18
-            const realPowerBN = (rawPower * multiplier) / 1000000000000000000n;
-            this.currentRealPower = parseFloat(ethers.formatUnits(realPowerBN, 8));
+            // 2. Lire l'heure du dernier retrait pour calculer ce qui s'est passé pendant l'absence
+            const userInfo = await this.contracts.mining.users(this.user);
+            const lastClaimTime = userInfo.lastClaimTime; // C'est le timer qui continue même si l'app est fermée
 
-            const rate = await this.contracts.mining.exchangeRate();
-            this.currentRate = parseFloat(ethers.formatUnits(rate, 8));
+            // 3. Calculer la puissance RÉELLE (avec la difficulté de 0.001)
+            const realPower = (rawPower * multiplier) / 1000000000000000000n;
+            const powerFloat = parseFloat(ethers.formatUnits(realPower, 8));
 
-            // --- AFFICHAGE TABLEAU DE BORD ---
-            document.getElementById('val-power').innerText = this.currentRealPower.toFixed(5);
-            // Note : 'val-pending' est mis à jour par le minuteur, pas ici
+            // 4. Calculer les gains en attente (Offline Mining)
+            // Si lastClaimTime est 0, c'est la première fois, donc pas de gains passés
+            let pending = 0;
+            const currentTime = Math.floor(Date.now() / 1000); // Temps actuel en secondes
             
-            // --- LOGIQUE DU MINUTEUR ---
-            if (this.currentRealPower > 0 && !this.miningTimer) {
-                this.startMiningCounter();
-            } else if (this.currentRealPower === 0 && this.miningTimer) {
-                this.stopMiningCounter();
-                document.getElementById('viz-status').innerText = "AUCUNE MACHINE";
-                document.getElementById('viz-status').style.color = "#666";
-            } else if (this.currentRealPower > 0 && this.miningTimer) {
-                document.getElementById('viz-status').innerText = "MINAGE ACTIF";
-                document.getElementById('viz-status').style.color = "var(--primary)";
-                this.updateVisualizerIntensity(this.currentRealPower);
+            if (lastClaimTime > 0 && powerFloat > 0) {
+                let timePassed = currentTime - Number(lastClaimTime); // Temps écoulé en secondes
+                pending = powerFloat * timePassed; // Puissance x Temps = Gains
+            }
+
+            // --- MISE À JOUR DE L'INTERFACE ---
+            
+            // Afficher la puissance réelle (0.0005)
+            document.getElementById('val-power').innerText = powerFloat.toFixed(5);
+            
+            // Afficher les gains accumulés (ce qui s'est passé pendant que l'app était fermée)
+            document.getElementById('val-pending').innerText = pending.toFixed(4);
+
+            // Mise à jour du statut visuel
+            const statusEl = document.getElementById('viz-status');
+            if(powerFloat > 0) {
+                statusEl.innerText = "MINAGE ACTIF";
+                statusEl.style.color = "var(--primary)";
+                this.updateVisualizerIntensity(powerFloat);
+            } else {
+                statusEl.innerText = "AUCUNE MACHINE";
+                statusEl.style.color = "#666";
+                this.updateVisualizerIntensity(0);
             }
             
-            // --- AUTRES AFFICHAGES ---
+            // Mise à jour des soldes
             document.getElementById('bal-usdt').innerText = parseFloat(ethers.formatUnits(usdtBal, 6)).toFixed(2);
             document.getElementById('bal-fta').innerText = parseFloat(ethers.formatUnits(ftaBal, 8)).toFixed(2);
             
+            // Swap UI
             document.getElementById('swap-bal-from').innerText = this.swapDirection === 'USDT_TO_FTA' ? parseFloat(ethers.formatUnits(usdtBal, 6)).toFixed(2) : parseFloat(ethers.formatUnits(ftaBal, 8)).toFixed(2);
             document.getElementById('swap-bal-to').innerText = this.swapDirection === 'USDT_TO_FTA' ? parseFloat(ethers.formatUnits(ftaBal, 8)).toFixed(2) : parseFloat(ethers.formatUnits(usdtBal, 6)).toFixed(2);
+            
+            const rate = await this.contracts.mining.exchangeRate();
+            this.currentRate = parseFloat(ethers.formatUnits(rate, 8));
             document.getElementById('swap-rate').innerText = `1 USDT = ${this.currentRate} FTA`;
 
+            // Afficher la boutique si vide
             if (document.getElementById('shop-list').children.length === 0) {
                 await this.renderShop();
             }
@@ -194,10 +218,10 @@ class Application {
             const data = await this.contracts.mining.machineTypes(i);
             const price = parseFloat(ethers.formatUnits(data.price, 6)).toFixed(2);
             
-            // Calcul avec difficulté pour l'affichage boutique
+            // Appliquer la difficulté sur l'affichage boutique aussi
             const multiplier = await this.contracts.mining.difficultyMultiplier();
-            const rawPower = (data.power * multiplier) / 1000000000000000000n;
-            const power = parseFloat(ethers.formatUnits(rawPower, 8)).toFixed(5);
+            const rawShopPower = (data.power * multiplier) / 1000000000000000000n;
+            const power = parseFloat(ethers.formatUnits(rawShopPower, 8)).toFixed(4);
             
             const div = document.createElement('div');
             div.className = 'rig-item';
@@ -208,32 +232,6 @@ class Application {
                 <button class="btn-primary" style="padding:10px; font-size:0.9rem" onclick="App.buyMachine(${i})">ACHETER</button>
             `;
             container.appendChild(div);
-        }
-    }
-
-    // --- FONCTION DU MINUTEUR ---
-    startMiningCounter() {
-        if (this.miningTimer) return;
-
-        this.miningTimer = setInterval(() => {
-            // Incrémenter le solde en attente
-            this.pendingBalance += this.currentRealPower;
-
-            // Mise à jour de l'affichage (5 décimales)
-            document.getElementById('val-pending').innerText = this.pendingBalance.toFixed(5);
-            
-            // Effet visuel
-            const el = document.getElementById('val-pending');
-            el.style.color = 'var(--primary)';
-            setTimeout(() => el.style.color = 'var(--text)', 500);
-
-        }, 1000); // Toutes les secondes
-    }
-
-    stopMiningCounter() {
-        if (this.miningTimer) {
-            clearInterval(this.miningTimer);
-            this.miningTimer = null;
         }
     }
 
@@ -250,8 +248,8 @@ class Application {
             const txBuy = await this.contracts.mining.buyMachine(id);
             await txBuy.wait();
             this.showToast("Achat réussi !");
-            document.getElementById('shop-list').innerHTML = '';
-            this.updateData();
+            document.getElementById('shop-list').innerHTML = ''; 
+            this.updateData(); // Le compteur "En Attente" se mettra à jour
         } catch (e) { this.showToast("Erreur Achat", true); }
         this.setLoader(false);
     }
@@ -262,15 +260,16 @@ class Application {
         try {
             const tx = await this.contracts.mining.claimRewards();
             await tx.wait();
+            
+            // IMPORTANT : Remettre le compteur à 0 visuellement pour montrer que c'est pris
+            document.getElementById('val-pending').innerText = "0.0000";
+            
             this.showToast("Gains réceptionnés !");
-            
-            // --- RESET DU COMPTEUR ---
-            this.pendingBalance = 0;
-            document.getElementById('val-pending').innerText = "0.00000";
-            // -------------------------
-            
             this.updateData();
-        } catch (e) { this.showToast("Erreur Réclamation", true); }
+        } catch (e) { 
+            console.error(e);
+            this.showToast("Erreur Réclamation", true); 
+        }
         this.setLoader(false);
     }
 
@@ -330,69 +329,7 @@ class Application {
         this.setLoader(false);
     }
 
-    // --- VISUALISATION GRAPHIQUE ---
-    initVisualizer() {
-        const canvas = document.getElementById('mining-canvas');
-        if (!canvas) return;
-        
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-        
-        this.vizContext = canvas.getContext('2d');
-        this.vizBars = [];
-        
-        for(let i=0; i<10; i++) {
-            this.vizBars.push({
-                x: i * (canvas.width / 10) + 2,
-                width: (canvas.width / 10) - 4,
-                height: 0,
-                targetHeight: 0,
-                speed: Math.random() * 0.5 + 0.5
-            });
-        }
-        
-        this.animateVisualizer();
-    }
-
-    updateVisualizerIntensity(power) {
-        let intensity = 0;
-        if(power > 0) {
-            // Adapter l'intensité visuelle selon la puissance (0.0005 est petit, donc on booste un peu pour qu'on voie quelque chose)
-            intensity = Math.min((power * 1000) + 20, 100); 
-        }
-        
-        this.vizBars.forEach(bar => {
-            bar.targetHeight = (this.vizContext.canvas.height * intensity / 100) * Math.random();
-        });
-    }
-
-    animateVisualizer() {
-        const ctx = this.vizContext;
-        if(!ctx) return;
-        
-        const canvas = ctx.canvas;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--primary');
-        
-        this.vizBars.forEach(bar => {
-            // Animation fluide
-            bar.height += (bar.targetHeight - bar.height) * 0.1;
-            
-            const y = canvas.height - bar.height;
-            ctx.fillRect(bar.x, y, bar.width, bar.height);
-            
-            // Mouvement aléatoire
-            bar.targetHeight += (Math.random() - 0.5) * 5;
-            
-            // Limites
-            if(bar.targetHeight < 0) bar.targetHeight = 0;
-            if(bar.targetHeight > canvas.height) bar.targetHeight = canvas.height;
-        });
-        
-        requestAnimationFrame(() => this.animateVisualizer());
-    }
-
+    // --- NAVIGATION & UTILS ---
     nav(viewId) {
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
         document.getElementById('view-' + viewId).classList.add('active');
@@ -420,7 +357,79 @@ class Application {
         document.getElementById('toast-container').appendChild(div);
         setTimeout(() => div.remove(), 3000);
     }
+
+    // --- VISUALISATEUR GRAPHIQUE ---
+    initVisualizer() {
+        const canvas = document.getElementById('mining-canvas');
+        if (!canvas) return;
+        
+        // Ajuster taille
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        
+        this.vizContext = canvas.getContext('2d');
+        
+        // Créer 10 barres
+        this.vizBars = [];
+        for(let i=0; i<10; i++) {
+            this.vizBars.push({
+                x: i * (canvas.width / 10) + 2,
+                width: (canvas.width / 10) - 4,
+                height: 0,
+                targetHeight: 0,
+                speed: Math.random() * 0.5 + 0.5
+            });
+        }
+        
+        this.animateVisualizer();
+    }
+
+    updateVisualizerIntensity(power) {
+        // Calculer l'intensité (0 à 100%)
+        let intensity = 0;
+        if(power > 0) {
+            // Echelle: 0.0005 FTA/s = 20% de visuel, 10 FTA/s = 100%
+            intensity = Math.min((power * 100) + 20, 100);
+        }
+        
+        this.vizBars.forEach(bar => {
+            bar.targetHeight = (this.vizContext.canvas.height * intensity / 100) * Math.random();
+        });
+    }
+
+    animateVisualizer() {
+        const ctx = this.vizContext;
+        if(!ctx) return;
+        
+        const canvas = ctx.canvas;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--primary');
+        
+        this.vizBars.forEach(bar => {
+            // Animation fluide
+            bar.height += (bar.targetHeight - bar.height) * 0.1;
+            
+            // Dessin
+            const y = canvas.height - bar.height;
+            ctx.fillRect(bar.x, y, bar.width, bar.height);
+            
+            // Variation aléatoire pour effet "travail"
+            bar.targetHeight += (Math.random() - 0.5) * 5;
+            
+            if(bar.targetHeight < 0) bar.targetHeight = 0;
+            if(bar.targetHeight > canvas.height) bar.targetHeight = canvas.height;
+        });
+        
+        requestAnimationFrame(() => this.animateVisualizer());
+    }
 }
 
+// Instance Globale
 const App = new Application();
-window.onload = () => App.init();
+
+window.onload = () => {
+    App.init();
+    // Initialiser le visualiseur au chargement (même si pas connecté, il sera vide)
+    App.initVisualizer();
+};
