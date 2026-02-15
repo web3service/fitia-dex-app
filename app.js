@@ -2,14 +2,13 @@
 // CONFIGURATION
 // ==========================================
 const CONFIG = {
-    // --- VOS ADRESSES ---
-    MINING: "0xcD718eCb9e46f474E28508E07b692610488a4Ba4", 
-    FTA: "0x535bBe393D64a60E14B731b7350675792d501623",          
+    MINING: "VOTRE_ADRESSE_CONTRAT_DEPLOYE_ICI", 
+    FTA: "VOTRE_ADRESSE_TOKEN_FTA_ICI",          
     USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", 
     CHAIN_ID: 137 
 };
 
-// --- ABI (COMPLET AVEC USERS POUR L'INVENTAIRE) ---
+// --- ABI (COMPLET) ---
 const MINING_ABI = [
     "function buyMachine(uint256 typeId)",
     "function claimRewards()",
@@ -67,13 +66,17 @@ class Application {
     }
 
     async init() {
-        console.log("FITIA PRO Final Version");
+        console.log("FITIA PRO - Démarrage sécurisé");
         this.checkReferral();
         
         if (window.ethereum) {
-            this.provider = new ethers.BrowserProvider(window.ethereum);
-            window.ethereum.on('accountsChanged', () => window.location.reload());
-            window.ethereum.on('chainChanged', () => window.location.reload());
+            try {
+                this.provider = new ethers.BrowserProvider(window.ethereum);
+                window.ethereum.on('accountsChanged', () => window.location.reload());
+                window.ethereum.on('chainChanged', () => window.location.reload());
+            } catch (e) {
+                console.error("Erreur init:", e);
+            }
         } else {
             this.showToast("Wallet non détecté", true);
         }
@@ -113,7 +116,7 @@ class Application {
             document.getElementById('addr-display').innerText = this.user.slice(0,6) + "..." + this.user.slice(38);
             document.getElementById('ref-link').value = window.location.origin + "?ref=" + this.user;
 
-            // Premier chargement
+            // Premier chargement des données
             await this.updateData();
             
             // Refresh automatique
@@ -123,10 +126,10 @@ class Application {
             this.initVisualizer();
 
         } catch (e) {
-            console.error(e);
-            this.showToast("Erreur connexion", true);
+            console.error("Erreur connexion:", e);
+            this.showToast("Erreur de connexion", true);
+            this.setLoader(false);
         }
-        this.setLoader(false);
     }
 
     async switchNetwork() {
@@ -145,39 +148,48 @@ class Application {
         }
     }
 
-    // C'EST ICI QUE LA SYNCHRONISATION SE FAIT
+    // --- CŒUR DE SYNCHRONISATION (SÉCURISÉ) ---
     async updateData() {
         if (!this.user) return;
+        
         try {
-            // 1. Récupérer les données brutes
+            // 1. Lecture des données brutes
             const rawPower = await this.contracts.mining.getActivePower(this.user);
-            const multiplier = await this.contracts.mining.difficultyMultiplier();
+            console.log("DEBUG: Raw Power du contrat:", rawPower.toString());
             
-            // 2. Lire l'heure du dernier retrait (pour le calcul offline)
+            const multiplier = await this.contracts.mining.difficultyMultiplier();
+            console.log("DEBUG: Multiplicateur:", multiplier.toString());
+            
+            // 2. Calcul de la puissance réelle
+            let realPowerBN = 0n;
+            try {
+                realPowerBN = (rawPower * multiplier) / 1000000000000000000n;
+                this.currentRealPower = parseFloat(ethers.formatUnits(realPowerBN, 8));
+                console.log("DEBUG: Puissance calculée (v8):", this.currentRealPower);
+            } catch (e) {
+                console.error("Erreur calcul puissance:", e);
+            }
+
+            // 3. Gestion du temps
             const userInfo = await this.contracts.mining.users(this.user);
             this.lastClaimTimeChain = userInfo.lastClaimTime;
 
-            // 3. Calculer la puissance réelle (avec la difficulté 0.001)
-            const realPowerBN = (rawPower * multiplier) / 1000000000000000000n;
-            this.currentRealPower = parseFloat(ethers.formatUnits(realPowerBN, 8));
-
-            // 4. CALCUL DU MINING HORS LIGNE
-            if (this.currentRealPower > 0 && this.lastClaimTimeChain > 0) {
+            let timePassed = 0;
+            if (this.lastClaimTimeChain > 0 && this.currentRealPower > 0) {
                 const currentTime = Math.floor(Date.now() / 1000);
-                const timeSinceLastClaim = currentTime - Number(this.lastClaimTimeChain);
-                const offlineEarnings = this.currentRealPower * timeSinceLastClaim;
-                
-                // Mise à jour du compteur "En Attente"
+                // Sécurité: Empêcher les calculs négatifs
+                const safeTimePassed = Math.max(0, currentTime - Number(this.lastClaimTime));
+                timePassed = safeTimePassed;
+            }
+
+            // 4. Calcul des gains en attente
+            if (timePassed > 0 && this.currentRealPower > 0) {
+                const offlineEarnings = this.currentRealPower * timePassed;
                 this.pendingBalance = offlineEarnings;
-                
-                // Mise à jour de l'état visuel
                 document.getElementById('viz-status').innerText = "MINAGE ACTIF";
                 document.getElementById('viz-status').style.color = "var(--primary)";
                 this.updateVisualizerIntensity(this.currentRealPower);
-
-                // Lancer le timer visuel
                 if (!this.miningTimer) this.startMiningCounter();
-
             } else if (this.currentRealPower === 0) {
                 this.stopMiningCounter();
                 document.getElementById('viz-status').innerText = "AUCUNE MACHINE";
@@ -185,7 +197,7 @@ class Application {
                 this.updateVisualizerIntensity(0);
             }
 
-            // 5. AFFICHAGE TABLEAU DE BORD
+            // 5. Affichage
             document.getElementById('val-power').innerText = this.currentRealPower.toFixed(5);
             document.getElementById('val-pending').innerText = this.pendingBalance.toFixed(5);
             
@@ -203,23 +215,32 @@ class Application {
             this.currentRate = parseFloat(ethers.formatUnits(rate, 8));
             document.getElementById('swap-rate').innerText = `1 USDT = ${this.currentRate} FTA`;
 
-            // Rendu boutique
+            // Rendu boutique si vide
             if (document.getElementById('shop-list').children.length === 0) {
                 await this.renderShop();
             }
+            
+            // Si on est sur la page inventaire, on rafraichit
+            if(document.getElementById('view-inventory').classList.contains('active')) {
+                this.renderInventory();
+            }
 
         } catch (e) {
-            console.error("Erreur refresh:", e);
+            console.error("Erreur updateData:", e);
+            // On ne bloque pas tout si une partie échoue, on affiche ce qu'on a pu récupérer
+            this.showToast("Erreur de synchronisation", true);
         }
     }
 
-    // --- FONCTION DU MINUTEUR VISUEL (Effet Live) ---
+    // --- FONCTION DU MINUTEUR VISUEL ---
     startMiningCounter() {
         if (this.miningTimer) return;
+
         this.miningTimer = setInterval(() => {
             if (this.currentRealPower > 0) {
                 this.pendingBalance += this.currentRealPower;
                 document.getElementById('val-pending').innerText = this.pendingBalance.toFixed(5);
+                
                 const el = document.getElementById('val-pending');
                 el.style.color = 'var(--primary)';
                 setTimeout(() => el.style.color = 'var(--text)', 500);
@@ -236,53 +257,59 @@ class Application {
 
     async renderShop() {
         const container = document.getElementById('shop-list');
-        const count = await this.contracts.mining.getMachineCount();
-        const icons = ["🟢", "🔵", "🟣", "🟡", "🔴"];
-        
         container.innerHTML = '';
-        for(let i=0; i<count; i++) {
-            const data = await this.contracts.mining.machineTypes(i);
-            const price = parseFloat(ethers.formatUnits(data.price, 6)).toFixed(2);
+        try {
+            const count = await this.contracts.mining.getMachineCount();
+            const icons = ["🟢", "🔵", "🟣", "🟡", "🔴"];
             
-            // Calcul avec difficulté
-            let multiplier = 1e18;
-            try {
-                multiplier = await this.contracts.mining.difficultyMultiplier();
-            } catch(e){}
-            
-            const rawShopPower = (data.power * multiplier) / 1000000000000000000n;
-            const power = parseFloat(ethers.formatUnits(rawShopPower, 8)).toFixed(5);
-            
-            const div = document.createElement('div');
-            div.className = 'rig-item';
-            div.innerHTML = `
-                <span class="rig-name">RIG ${i+1}</span>
-                <span class="rig-power">${power} FTA/s</span>
-                <span class="rig-price">${price} USDT</span>
-                <button class="btn-primary" style="padding:10px; font-size:0.9rem" onclick="App.buyMachine(${i})">ACHETER</button>
-            `;
-            container.appendChild(div);
+            for(let i=0; i<count; i++) {
+                const data = await this.contracts.mining.machineTypes(i);
+                const price = parseFloat(ethers.formatUnits(data.price, 6)).toFixed(2);
+                
+                // Calcul boutique avec difficulté
+                let multiplier = 1e18;
+                try {
+                    multiplier = await this.contracts.mining.difficultyMultiplier();
+                } catch(e){}
+                
+                const rawShopPower = (data.power * multiplier) / 1000000000000000000n;
+                const power = parseFloat(ethers.formatUnits(rawShopPower, 8)).toFixed(5);
+                
+                const div = document.createElement('div');
+                div.className = 'rig-item';
+                div.innerHTML = `
+                    <span class="rig-name">RIG ${i+1}</span>
+                    <span class="rig-power">${power} FTA/s</span>
+                    <span class="rig-price">${price} USDT</span>
+                    <button class="btn-primary" style="padding:10px; font-size:0.9rem" onclick="App.buyMachine(${i})">ACHETER</button>
+                `;
+                container.appendChild(div);
+            }
+        } catch (e) {
+            console.error("Erreur renderShop:", e);
+            const container = document.getElementById('shop-list');
+            container.innerHTML = '<p style="text-align:center; color:var(--danger)">Erreur chargement boutique. (Vérifiez la console F12)</p>';
         }
-    };
+    }
 
-    // --- FONCTION AFFICHAGE INVENTAIRE (NOUVEAU) ---
+    // --- FONCTION INVENTAIRE (AJOUTÉE ET SÉCURISÉE) ---
     async renderInventory() {
         const container = document.getElementById('inventory-list');
-        container.innerHTML = '<p style="text-align:center; color:#888;"> Chargement de l'/inventaire//
+        container.innerHTML = '<p style="text-align:center; color:#888;">Analyse du parc minier...</p>';
 
         try {
-            // 1. Lire la liste des machines brutes depuis le contrat
+            // 1. Lire les machines depuis le contrat
             const userData = await this.contracts.mining.users(this.user);
             const rawMachines = userData.machines;
             const now = Math.floor(Date.now() / 1000);
             const lifespan = 90 * 24 * 60 * 60; // 90 jours en secondes
-            const counts = {}; // Pour compter combien de chaque type on a
+            const counts = {};
 
-            // 2. Parcourir les machines
+            // 2. Parcourir et compter
             rawMachines.forEach(m => {
                 let typeId, boughtAt;
                 
-                // Gestion des formats de données renvoyés par Ethers
+                // Gestion des formats de données renvoyés (Array vs Object)
                 if (typeof m === 'object') {
                     typeId = Number(m.typeId);
                     boughtAt = Number(m.boughtAt);
@@ -291,13 +318,13 @@ class Application {
                     boughtAt = Number(m[1]);
                 }
 
-                // 3. Vérifier si la machine est toujours active (90 jours)
+                // Vérification Expiration
                 if (now < boughtAt + lifespan) {
                     counts[typeId] = (counts[typeId] || 0) + 1;
                 }
             });
 
-            // 4. Affichage
+            // 3. Affichage
             let html = '';
             const count = await this.contracts.mining.getMachineCount();
             const icons = ["💾", "💚", "💜", "🔷", "🟠"];
@@ -307,7 +334,7 @@ class Application {
                 return;
             }
 
-            // Récupérer le multiplicateur pour afficher la puissance réelle (0.0005)
+            // Calculer la puissance réelle pour l'affichage (0.0005)
             const multiplier = await this.contracts.mining.difficultyMultiplier();
 
             for (const [id, qty] of Object.entries(counts)) {
@@ -340,9 +367,9 @@ class Application {
 
         } catch (e) {
             console.error("Erreur inventaire:", e);
-            container.innerHTML = '<p style="text-align:center; color:var(--danger)">Erreur de chargement.</p>';
+            container.innerHTML = '<p style="text-align:center; color:var(--danger)">Erreur de chargement (Voir console F12).</p>';
         }
-    };
+    }
 
     async buyMachine(id) {
         if (!this.user) return this.connect();
@@ -425,7 +452,7 @@ class Application {
                 const tx = await this.contracts.mining.swapUsdtForFta(amount);
                 await tx.wait();
             } else {
-                const allowance = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
+                const allowance = this.contracts.fta.allowance(this.contracts.mining.app(this.user));
                 if (allowance < amount) {
                     const txApp = await this.contracts.fta.approve(CONFIG.MINING, amount);
                     await txApp.wait();
@@ -436,7 +463,10 @@ class Application {
             this.showToast("Échange réussi !");
             document.getElementById('swap-from-in').value = '';
             this.updateData();
-        } catch (e) { this.showToast("Erreur Swap", true); }
+        } catch (e) { 
+            console.error("Erreur Swap:", e);
+            this.showToast("Erreur Swap", true); 
+        }
         this.setLoader(false);
     }
 
@@ -467,7 +497,8 @@ class Application {
     updateVisualizerIntensity(power) {
         let intensity = 0;
         if(power > 0) {
-            intensity = Math.min((power * 500) + 20, 100);
+            // Adapter l'intensité pour le visuel (0.0005 est petit, donc on boost un peu pour qu'on voie quelque chose)
+            intensity = Math.min((power * 1000) + 20, 100);
         }
         
         this.vizBars.forEach(bar => {
@@ -485,11 +516,13 @@ class Application {
         ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--primary');
         
         this.vizBars.forEach(bar => {
+            // Animation fluide
             bar.height += (bar.targetHeight - bar.height) * 0.1;
             
             const y = canvas.height - bar.height;
             ctx.fillRect(bar.x, y, bar.width, bar.height);
             
+            // Mouvement aléatoire
             bar.targetHeight += (Math.random() - 0.5) * 5;
             
             if(bar.targetHeight < 0) bar.targetHeight = 0;
@@ -506,7 +539,7 @@ class Application {
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         event.currentTarget.classList.add('active');
 
-        // Lancer l'inventaire si on clique dessus
+        // Si on va sur l'inventaire, on rafraichit l'inventaire
         if (viewId === 'inventory') {
             this.renderInventory();
         }
