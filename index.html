@@ -2,10 +2,11 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0f172a">
     <title>FITIA PRO MINER</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Ethers.js V6 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 </head>
 <body>
@@ -14,7 +15,7 @@
     <div id="toast-container"></div>
 
     <div class="app-container">
-        
+       
         <header>
             <div class="brand">
                 <div class="logo-icon">⚡</div>
@@ -28,19 +29,19 @@
         </header>
 
         <main id="main-view">
-            
+           
             <!-- DASHBOARD -->
             <div id="view-dashboard" class="view active">
-                
+               
                 <!-- PARRAINAGE -->
                 <div class="card glass" id="ref-box">
                     <div class="card-header">
-                        <h3>Parrainage</h3>
+                        <h3>Système de Parrainage</h3>
                         <span class="badge">3 Niveaux</span>
                     </div>
                     <div class="card-body">
                         <div class="input-group" onclick="App.copyLink()">
-                            <input type="text" id="ref-link" readonly value="Connectez-vous pour voir votre lien...">
+                            <input type="text" id="ref-link" readonly value="Connectez-vous...">
                             <button class="icon-btn">📋</button>
                         </div>
                         <div id="bind-ref-area" style="display:none; margin-top:10px;">
@@ -64,29 +65,29 @@
                     </div>
                 </div>
 
-                <!-- VISUALISEUR (NOUVEAU) -->
+                <!-- VISUALISEUR -->
                 <div class="card visualizer-card">
                     <div class="viz-header">
-                        <small>ACTIVITÉ MINIÈRE EN TEMPS RÉEL</small>
+                        <small>ACTIVITÉ MINIÈRE</small>
                         <span id="viz-status">EN ATTENTE</span>
                     </div>
-                    <canvas id="mining-canvas" width="300" height="100"></canvas>
+                    <canvas id="mining-canvas"></canvas>
                 </div>
 
                 <!-- ACTION -->
                 <button class="btn-mega" onclick="App.claim()">
                     <span class="pulse-ring"></span>
-                    RÉCLAMER
+                    RÉCLAMER LES GAINS
                 </button>
 
                 <!-- SOLDES -->
-                <div class="card">
+                <div class="card balances-card">
                     <div class="row-between">
-                        <span>Portefeuille USDT</span>
+                        <span>💰 USDT</span>
                         <span class="balance" id="bal-usdt">0.00</span>
                     </div>
                     <div class="row-between" style="margin-top:10px;">
-                        <span>Portefeuille FTA</span>
+                        <span>💎 FTA</span>
                         <span class="balance" id="bal-fta">0.00</span>
                     </div>
                 </div>
@@ -94,32 +95,41 @@
 
             <!-- SHOP -->
             <div id="view-shop" class="view">
-                <h2 class="view-title">Marché des Rigs</h2>
+                <h2 class="view-title">⛏️ Marché des Rigs</h2>
                 <div id="shop-list" class="grid-list"></div>
             </div>
 
             <!-- SWAP -->
             <div id="view-swap" class="view">
-                <h2 class="view-title">Échange Interne</h2>
+                <h2 class="view-title">💱 Échange</h2>
                 <div class="card swap-interface">
+                    <!-- From -->
                     <div class="swap-header">
                         <span>Vous payez</span>
-                        <span>Balance: <span id="swap-bal-from">0</span></span>
+                        <span>Solde: <span id="swap-bal-from">0</span></span>
                     </div>
                     <div class="input-wrap">
                         <input type="number" id="swap-from-in" placeholder="0.0" oninput="App.calcSwap()">
+                        <button class="max-btn" onclick="App.setMax()">MAX</button>
                         <div class="token-select" onclick="App.toggleSwap()" id="token-from-display">USDT</div>
                     </div>
-                    <div class="swap-arrow" onclick="App.toggleSwap()">⇄</div>
+                    
+                    <!-- Arrow -->
+                    <div class="swap-arrow-wrap">
+                        <div class="swap-arrow" onclick="App.toggleSwap()">⇅</div>
+                    </div>
+
+                    <!-- To -->
                     <div class="swap-header">
                         <span>Vous recevez</span>
-                        <span>Balance: <span id="swap-bal-to">0</span></span>
+                        <span>Solde: <span id="swap-bal-to">0</span></span>
                     </div>
                     <div class="input-wrap">
                         <input type="number" id="swap-to-in" placeholder="0.0" readonly>
                         <div class="token-select" style="background:#333; cursor:default;" id="token-to-display">FTA</div>
                     </div>
-                    <div class="rate-info" id="swap-rate">1 USDT = 0 FTA</div>
+                    
+                    <div class="rate-info" id="swap-rate">Chargement...</div>
                     <button class="btn-primary" id="btn-execute-swap" onclick="App.executeSwap()">ÉCHANGER</button>
                 </div>
             </div>
