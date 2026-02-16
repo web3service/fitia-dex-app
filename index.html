@@ -86,14 +86,12 @@
                 </div>
             </div>
 
-            <!-- MES MACHINES (NOUVEAU) -->
+            <!-- MES MACHINES -->
             <div id="view-my-rigs" class="view">
                 <h2 class="view-title">⚙️ Mes Machines</h2>
-                <div id="my-rigs-list" class="rigs-list-container">
-                    <!-- Les machines seront injectées ici -->
-                </div>
+                <div id="my-rigs-list" class="rigs-list-container"></div>
                 <div id="no-rigs" class="card" style="text-align:center; display:none;">
-                    <p>Vous n'avez pas encore de machines.</p>
+                    <p>Vous n'avez pas encore de machines actives.</p>
                     <button class="btn-primary" onclick="App.nav('shop')" style="margin-top:10px;">Acheter une machine</button>
                 </div>
             </div>
@@ -140,7 +138,6 @@
                 <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
                 <span>Accueil</span>
             </button>
-            <!-- Nouveau bouton Mes Rigs -->
             <button class="nav-item" onclick="App.nav('my-rigs')">
                 <svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg>
                 <span>Mes Rigs</span>

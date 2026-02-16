@@ -2,13 +2,13 @@
 // CONFIGURATION
 // ==========================================
 const CONFIG = {
-    MINING: "0xcD718eCb9e46f474E28508E07b692610488a4Ba4", // Votre adresse contrat
+    MINING: "0xcD718eCb9e46f474E28508E07b692610488a4Ba4", // Remplacez par l'adresse du contrat
     FTA: "0x535bBe393D64a60E14B731b7350675792d501623",          
     USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
     CHAIN_ID: 137
 };
 
-// --- ABI MIS À JOUR POUR COMPATIBILITÉ MAXIMALE ---
+// --- ABI COMPATIBLE ---
 const MINING_ABI = [
     "function buyMachine(uint256 typeId)",
     "function claimRewards()",
@@ -21,18 +21,10 @@ const MINING_ABI = [
     "function getMachineCount() view returns (uint256)",
     "function difficultyMultiplier() view returns (uint256)",
     
-    // --- FONCTIONS DE DETECTION DES MACHINES ---
-    // Méthode 1: Tableau simple (ex: getUserMachines)
+    // Fonctions pour lister les machines (Multiples essais pour compatibilité)
     "function getUserMachines(address) view returns (uint256[] memory)",
-    
-    // Méthode 2: Mapping quantité (ex: combien l'utilisateur a de machine type 0)
-    // Essai avec nom standard
     "function userMachines(address, uint256) view returns (uint256)",
-    // Essai avec nom type ERC1155
-    "function balanceOf(address, uint256) view returns (uint256)",
-    
-    // Méthode 3: Vérification d'expiration (optionnel)
-    "function machineDuration() view returns (uint256)"
+    "function balanceOf(address, uint256) view returns (uint256)"
 ];
 
 const ERC20_ABI = [
@@ -223,75 +215,66 @@ class Application {
         }
     }
 
-    // --- FONCTION INTELLIGENTE POUR TROUVER LES MACHINES ---
+    // --- FONCTION CORRIGÉE : MES MACHINES ---
     async checkMyMachines() {
         const container = document.getElementById('my-rigs-list');
         const noRigsDiv = document.getElementById('no-rigs');
-        container.innerHTML = '<p style="text-align:center; color:var(--text-muted);">Analyse de vos actifs...</p>';
+        
+        container.innerHTML = '<p style="text-align:center; color:var(--text-muted);">Analyse en cours...</p>';
         
         if (!this.user || this.shopData.length === 0) return;
 
         try {
             let hasMachines = false;
-            container.innerHTML = ''; // Clear loading
+            let htmlContent = '';
             
-            // 1. On essaie de récupérer la durée (si le contrat gère l'expiration)
-            let duration = 0;
-            try {
-                duration = await this.contracts.mining.machineDuration();
-            } catch(e) { /* Pas de durée, machines illimitées */ }
-
-            // 2. On boucle sur TOUS les types de machines disponibles dans la boutique
+            // On va scanner chaque type de machine (0, 1, 2...) pour voir combien l'utilisateur en possède
             for (let i = 0; i < this.shopData.length; i++) {
                 let count = 0;
 
-                // Tentative Méthode A: Fonction userMachines(address, id)
+                // TENTATIVE 1: Fonction standard 'userMachines'
                 try {
                     count = await this.contracts.mining.userMachines(this.user, i);
                 } catch (e) {
-                    // Tentative Méthode B: Fonction balanceOf(address, id) (Style ERC1155)
+                    // TENTATIVE 2: Fonction style ERC1155 'balanceOf'
                     try {
                         count = await this.contracts.mining.balanceOf(this.user, i);
                     } catch (e2) {
-                        // Tentative Méthode C: Tableau simple (rare mais possible)
-                        try {
-                            const ids = await this.contracts.mining.getUserMachines(this.user);
-                            // Si on arrive ici, ids est un tableau, on doit filtrer
-                            // Cette méthode est complexe à gérer dans une boucle, on skip pour l'instant
-                        } catch (e3) {
-                            // Silence
-                        }
+                        // Si les deux échouent, on suppose 0 ou fonction non supportée
+                        count = 0;
                     }
                 }
 
-                // Si on a trouvé une quantité > 0
-                if (count > 0) {
+                // Conversion du BigNumber en nombre entier
+                const amount = parseInt(count.toString());
+
+                if (amount > 0) {
                     hasMachines = true;
                     const typeData = this.shopData[i];
                     
-                    // Affichage
-                    const div = document.createElement('div');
-                    div.className = 'my-rig-card active'; // On assume actif si le temps n'est pas géré
-                    div.innerHTML = `
-                        <div class="rig-info">
-                            <h4>RIG ${i+1} <span style="opacity:0.7">x${count}</span></h4>
-                            <p>Puissance: ${typeData.power} FTA/s (par unité)</p>
+                    htmlContent += `
+                        <div class="my-rig-card active">
+                            <div class="rig-info">
+                                <h4>RIG ${i+1} <span style="opacity:0.7">x${amount}</span></h4>
+                                <p>${typeData.power} FTA/s par unité</p>
+                            </div>
+                            <span class="rig-status-badge status-active">ACTIF</span>
                         </div>
-                        <span class="rig-status-badge status-active">ACTIF</span>
                     `;
-                    container.appendChild(div);
                 }
             }
 
-            if (!hasMachines) {
-                noRigsDiv.style.display = 'block';
-            } else {
+            if (hasMachines) {
+                container.innerHTML = htmlContent;
                 noRigsDiv.style.display = 'none';
+            } else {
+                container.innerHTML = '';
+                noRigsDiv.style.display = 'block';
             }
 
         } catch (e) {
             console.error("Erreur critique check machines:", e);
-            container.innerHTML = `<div class="card"><p style="color:var(--danger); text-align:center;">Impossible de lire les données du contrat.<br>Vérifiez que l'adresse du contrat est correcte.</p></div>`;
+            container.innerHTML = `<div class="card"><p style="color:var(--danger); text-align:center;">Erreur de lecture du contrat.</p></div>`;
         }
     }
 
