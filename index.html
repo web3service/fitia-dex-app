@@ -59,16 +59,17 @@
     <!-- APPLICATION PRINCIPALE -->
     <div class="app-shell" id="main-app" style="display:none;">
        
-        <!-- Header -->
+        <!-- Header avec Statut Connexion -->
         <header class="top-bar">
             <div class="brand-logo">
                 <div class="logo-icon-box"><i class="fas fa-bolt"></i></div>
                 <span class="brand-text">FITIA</span>
             </div>
             <div class="header-right">
-                <div class="wallet-badge-pill">
-                    <span id="addr-display">0x...</span>
-                    <div class="live-dot"></div>
+                <!-- NOUVEAU : Statut de connexion -->
+                <div class="connection-status" id="connection-status">
+                    <span class="status-label" id="status-label">Hors ligne</span>
+                    <div class="status-dot" id="status-dot"></div>
                 </div>
             </div>
         </header>
@@ -110,7 +111,6 @@
                         </div>
                         <div class="asset-row" onclick="App.nav('swap')">
                             <div class="coin-icon fta">
-                                <!-- REMPLACEZ L'URL CI-DESSOUS PAR LE LIEN DE VOTRE LOGO FTA -->
                                 <img src="https://via.placeholder.com/40/FFD700/000000?text=FTA" alt="FTA">
                             </div>
                             <div class="coin-info"><span class="coin-name">FTA</span><span class="coin-full">Fitia Token</span></div>
@@ -127,16 +127,13 @@
                     </div>
                 </section>
                 
-                <button class="btn-danger-full" onclick="App.lockWallet()"><i class="fas fa-lock"></i> Verrouiller</button>
+                <!-- NOUVEAU : Bouton Déconnexion explicite -->
+                <button class="btn-danger-full" onclick="App.disconnectWallet()"><i class="fas fa-power-off"></i> Déconnexion</button>
             </div>
 
-            <!-- SHOP (AFFICHAGE EXPLICITE) -->
+            <!-- SHOP -->
             <div id="view-shop" class="view">
-                <div class="section-title">
-                    <h3>Boutique Minage</h3>
-                    <p>Puissance FTA/s</p>
-                </div>
-                <!-- Conteneur des machines -->
+                <div class="section-title"><h3>Boutique</h3><p>Puissance FTA/s</p></div>
                 <div id="shop-list" class="shop-grid">
                     <p style="color:var(--text-dim); text-align:center; width:100%; grid-column: 1/-1; padding: 20px;">Chargement des machines...</p>
                 </div>

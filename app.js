@@ -42,12 +42,14 @@ class Application {
     async init() {
         try {
             if (typeof ethers === 'undefined') {
-                document.body.innerHTML = '<div style="color:red;padding:20px;text-align:center;">Erreur critique : Bibliothèque Ethers.js non chargée. Vérifiez votre connexion internet.</div>';
-                return;
+                document.body.innerHTML = '<div style="color:red;padding:20px;text-align:center;">Erreur : Ethers.js non chargé.</div>'; return;
             }
             this.provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
-            const storedKeystore = localStorage.getItem('fitia_keystore');
             
+            // Vérifier l'état de la connexion dès le démarrage
+            await this.updateConnectionStatus();
+
+            const storedKeystore = localStorage.getItem('fitia_keystore');
             if (storedKeystore) {
                 this.keystoreString = storedKeystore;
                 document.getElementById('auth-setup').style.display = 'none';
@@ -58,7 +60,32 @@ class Application {
                 document.getElementById('auth-unlock').style.display = 'none';
                 document.getElementById('auth-title').innerText = "Bienvenue";
             }
-        } catch (e) { console.error(e); this.showToast("Erreur d'initialisation", true); }
+        } catch (e) { console.error(e); }
+    }
+
+    // --- NOUVEAU : GESTION DE LA CONNEXION ---
+    async updateConnectionStatus() {
+        const label = document.getElementById('status-label');
+        const dot = document.getElementById('status-dot');
+        try {
+            // On essaie de récupérer le dernier bloc pour vérifier la connexion
+            const block = await this.provider.getBlockNumber();
+            if(block > 0) {
+                label.innerText = "En ligne";
+                dot.className = "status-dot online";
+            }
+        } catch (error) {
+            label.innerText = "Hors ligne";
+            dot.className = "status-dot offline";
+        }
+    }
+
+    // --- NOUVEAU : FONCTION DÉCONNEXION ---
+    disconnectWallet() {
+        // 1. Verrouiller le wallet
+        this.lockWallet();
+        // 2. Message utilisateur
+        this.showToast("Vous êtes déconnecté");
     }
 
     // --- WALLET MANAGEMENT ---
@@ -146,13 +173,19 @@ class Application {
             this.contracts.usdt = new ethers.Contract(CONFIG.USDT, ERC20_ABI, this.signer);
             this.contracts.fta = new ethers.Contract(CONFIG.FTA, ERC20_ABI, this.signer);
 
-            document.getElementById('addr-display').innerText = this.user.slice(0,6) + "..." + this.user.slice(38);
+            document.getElementById('addr-display').innerText = this.user.slice(0,6) + "...";
             document.getElementById('auth-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'flex';
             document.getElementById('ref-link').value = window.location.origin + "?ref=" + this.user;
 
+            // Connexion réussie -> Mise à jour statut
+            await this.updateConnectionStatus();
+            
             await this.loadAllData();
-            setInterval(() => this.loadAllData(), 10000); // Toutes les 10s pour économiser la batterie
+            
+            // Vérifier la connexion toutes les 10s
+            setInterval(() => this.updateConnectionStatus(), 10000);
+
         } catch(e) {
             document.getElementById('pin-error').innerText = "Code PIN incorrect";
             this.pinCode = ""; this.updatePinDots();
@@ -161,13 +194,17 @@ class Application {
     }
 
     lockWallet() {
-        this.pinCode = ""; this.signer = null; this.user = null;
+        this.pinCode = ""; this.signer = null; this.user = null; this.shopData = []; // Reset données
         document.getElementById('main-app').style.display = 'none';
         document.getElementById('auth-screen').style.display = 'flex';
         document.getElementById('auth-setup').style.display = 'none';
         document.getElementById('auth-unlock').style.display = 'block';
         document.getElementById('pin-error').innerText = "";
         this.updatePinDots();
+        
+        // Mettre à jour le statut visuel
+        document.getElementById('status-label').innerText = "Hors ligne";
+        document.getElementById('status-dot').className = "status-dot offline";
     }
 
     // --- DEPOSIT / WITHDRAW ---
@@ -223,7 +260,7 @@ class Application {
                 if (balance < amount) { this.setLoader(false); return this.showToast("Solde insuffisant", true); }
                 tx = await contract.transfer(toAddress, amount);
             }
-            this.showToast("Envoi en cours..."); await tx.wait();
+            this.showToast("Envoi..."); await tx.wait();
             this.showToast("Succès !"); this.loadAllData();
         } catch(e) { this.showToast("Erreur: " + (e.reason || "Echec"), true); }
         this.setLoader(false);
@@ -257,7 +294,7 @@ class Application {
         if (this.shopData.length > 0) return;
         const container = document.getElementById('shop-list');
         try {
-            container.innerHTML = ''; // Nettoyer "Chargement..."
+            container.innerHTML = '';
             const count = await this.contracts.mining.getMachineCount();
             for(let i=0; i<count; i++) {
                 const m = await this.contracts.mining.machineTypes(i);
@@ -271,7 +308,7 @@ class Application {
                 container.appendChild(div);
             }
         } catch (error) {
-            container.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--danger);"><i class="fas fa-plug" style="font-size:2rem;"></i><p>Connexion impossible</p><p style="font-size:0.8rem;color:var(--text-dim);">Vérifiez CONFIG.MINING dans app.js</p></div>`;
+            container.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--danger);"><i class="fas fa-plug"></i><p>Connexion impossible</p><p style="font-size:0.8rem;color:var(--text-dim);">Vérifiez le RPC ou les adresses.</p></div>`;
         }
     }
 
@@ -315,18 +352,14 @@ class Application {
             const priceBN = ethers.parseUnits(m.price.toString(), this.decimalsUSDT);
             amount = (priceBN * rate) / (10n ** 6n);
             tokenContract = this.contracts.fta;
-            this.setLoader(true, "Achat FTA...");
         } else {
             amount = ethers.parseUnits(m.price.toString(), this.decimalsUSDT);
             tokenContract = this.contracts.usdt;
-            this.setLoader(true, "Achat USDT...");
         }
-
+        this.setLoader(true, "Achat...");
         try {
             const allowance = await tokenContract.allowance(this.user, CONFIG.MINING);
-            if (allowance < amount) {
-                this.showToast("Approbation..."); await (await tokenContract.approve(CONFIG.MINING, amount)).wait();
-            }
+            if (allowance < amount) { await (await tokenContract.approve(CONFIG.MINING, amount)).wait(); }
             const tx = useFTA ? await this.contracts.mining.buyMachineWithFTA(id) : await this.contracts.mining.buyMachine(id);
             await tx.wait();
             this.showToast("Achat réussi !"); this.loadAllData();
@@ -374,7 +407,7 @@ class Application {
         let result = this.swapDirection === 'USDT_TO_FTA' ? input * parseFloat(ethers.formatUnits(rate, 8)) : input / parseFloat(ethers.formatUnits(rate, 8));
         document.getElementById('swap-to-in').value = result.toFixed(5);
     }
-    async executeSwap() { this.showToast("Swap: Fonction à implémenter"); }
+    async executeSwap() { this.showToast("Swap: à implémenter"); }
 
     nav(viewId) {
         document.querySelectorAll('.view').forEach(el => { el.classList.remove('active'); el.style.display = 'none'; });
