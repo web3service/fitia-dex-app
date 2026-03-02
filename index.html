@@ -2,220 +2,110 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FITIA PRO MINER</title>
-    <link rel="icon" type="image/png" href="logo.png">
-    <link rel="apple-touch-icon" href="logo.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <!-- Ethers.js V6 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 </head>
 <body>
 
-    <!-- ÉCRAN DE VERROUILLAGE (PIN) -->
-    <div id="auth-screen" class="auth-screen">
-        <div class="auth-box glass-card">
-            <div class="auth-logo"><i class="fas fa-shield-alt"></i></div>
-            <h2 id="auth-title">Bienvenue</h2>
-            <p id="auth-subtitle">Portefeuille Intégré Sécurisé</p>
-
-            <div id="auth-setup">
-                <button class="btn-gold" onclick="App.showCreateModal()"><i class="fas fa-plus-circle"></i> Créer un Portefeuille</button>
-                <button class="btn-secondary" onclick="App.showImportModal()"><i class="fas fa-key"></i> Importer un Portefeuille</button>
-            </div>
-
-            <div id="auth-unlock" style="display:none;">
-                <p>Entrez votre code PIN</p>
-                <div class="pin-dots">
-                    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-                    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-                </div>
-                <div class="pin-pad">
-                    <button onclick="App.enterPin(1)">1</button><button onclick="App.enterPin(2)">2</button><button onclick="App.enterPin(3)">3</button>
-                    <button onclick="App.enterPin(4)">4</button><button onclick="App.enterPin(5)">5</button><button onclick="App.enterPin(6)">6</button>
-                    <button onclick="App.enterPin(7)">7</button><button onclick="App.enterPin(8)">8</button><button onclick="App.enterPin(9)">9</button>
-                    <button onclick="App.clearPin()"><i class="fas fa-backspace"></i></button>
-                    <button onclick="App.enterPin(0)">0</button>
-                    <button onclick="App.submitPin()" style="background:var(--primary); color:#000;"><i class="fas fa-check"></i></button>
-                </div>
-                <p id="pin-error" class="error-msg"></p>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL POPUP -->
-    <div id="modal-overlay" class="modal-overlay hidden">
-        <div class="modal-content glass-card">
-            <button class="modal-close" onclick="App.closeModal()"><i class="fas fa-times"></i></button>
-            <h3 id="modal-title">Titre</h3>
-            <div id="modal-body"></div>
-        </div>
-    </div>
-
+    <div class="bg-gradient"></div>
     <div id="toast-container"></div>
-    <div class="bg-glow"></div>
 
-    <!-- APPLICATION PRINCIPALE (VOTRE CODE) -->
-    <div class="app-shell" id="main-app" style="display:none;">
+    <div class="app-container">
        
-        <header class="top-bar">
+        <header>
             <div class="brand">
-                <div class="logo-icon"><i class="fas fa-bolt"></i></div>
+                <div class="logo-icon">⚡</div>
                 <div class="brand-text">FITIA <span class="pro-badge">PRO</span></div>
             </div>
-            <div class="header-right">
-                <div id="wallet-status" class="wallet-status">
-                    <span id="addr-display">0x...</span>
-                    <span class="status-dot"></span>
-                </div>
+            <button id="btn-connect" class="btn-wallet" onclick="App.connect()">Connecter</button>
+            <div id="wallet-status" class="wallet-status hidden">
+                <span id="addr-display">0x...</span>
+                <span class="status-dot online"></span>
             </div>
         </header>
 
-        <main id="main-view" class="main-scroll">
+        <main id="main-view">
+           
             <!-- DASHBOARD -->
             <div id="view-dashboard" class="view active">
-                <div class="card referral-card">
-                    <h3>👥 Système de Parrainage</h3>
-                    <p class="small-text">Gagnez des commissions sur 3 niveaux.</p>
+                <div class="card glass">
+                    <div class="card-header">
+                        <h3>📊 Mes Stats</h3>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card primary">
+                            <small>PUISSANCE</small>
+                            <div class="stat-val" id="val-power">0.00</div>
+                            <small>FTA / sec</small>
+                        </div>
+                        <div class="stat-card accent">
+                            <small>EN ATTENTE</small>
+                            <div class="stat-val" id="val-pending">0.00</div>
+                            <small>FTA</small>
+                        </div>
+                    </div>
+                    <button class="btn-mega" onclick="App.claim()">
+                        <span class="pulse-ring"></span>
+                        RÉCLAMER
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="row-between">
+                        <span>💰 USDT</span>
+                        <span class="balance" id="bal-usdt">0.00</span>
+                    </div>
+                    <div class="row-between" style="margin-top:10px;">
+                        <span>💎 FTA</span>
+                        <span class="balance" id="bal-fta">0.00</span>
+                    </div>
+                </div>
+
+                <div class="card glass">
+                    <h3>🔗 Parrainage</h3>
                     <div class="input-group" onclick="App.copyLink()">
                         <input type="text" id="ref-link" readonly value="Connectez-vous...">
                         <button class="icon-btn">📋</button>
                     </div>
-                    <div id="bind-ref-area" style="display:none; margin-top:15px;">
-                        <p class="small-text">Parrain détecté : <span id="detected-ref" class="highlight"></span></p>
-                        <button class="btn-sm btn-full" onclick="App.bindReferrer()">LIER MON PARRAIN</button>
-                    </div>
                 </div>
-
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <small>PUISSANCE</small>
-                        <div class="stat-val" id="val-power">0.00000</div>
-                        <small>FTA / sec</small>
-                    </div>
-                    <div class="stat-card accent">
-                        <small>EN ATTENTE</small>
-                        <div class="stat-val" id="val-pending">0.00000</div>
-                        <small>FTA</small>
-                    </div>
-                </div>
-
-                <div class="visualizer-wrap">
-                    <canvas id="mining-canvas"></canvas>
-                    <div class="viz-label" id="viz-status">EN ATTENTE</div>
-                </div>
-
-                <button class="btn-mega" onclick="App.claim()">
-                    <span class="pulse-ring"></span>
-                    RÉCLAMER
-                </button>
-
-                <div class="card balances-card">
-                    <div class="row-between" style="align-items: center;">
-                        <span style="display:flex; align-items:center; gap:8px;">
-                            <img src="https://i.ibb.co/BRGx1GN/IMG-20260228-134642-512-x-512-pixel.webp" class="token-logo" alt="USDT">
-                            USDT
-                        </span>
-                        <span class="balance" id="bal-usdt">0.00</span>
-                    </div>
-                    <div class="row-between" style="margin-top:12px; align-items: center;">
-                        <span style="display:flex; align-items:center; gap:8px;">
-                            <img id="logo-fta-bal" src="https://i.ibb.co/vvz2DDK5/20260207-190817.webp" class="token-logo" alt="FTA">
-                            FTA
-                        </span>
-                        <span class="balance" id="bal-fta">0.00</span>
-                    </div>
-                </div>
-                <button class="btn-danger-full" onclick="App.disconnectWallet()"><i class="fas fa-power-off"></i> Déconnexion</button>
             </div>
 
-            <!-- SHOP (Inchangé) -->
+            <!-- SHOP -->
             <div id="view-shop" class="view">
-                <div class="shop-header">
-                    <h2 class="view-title">⛏️ Boutique</h2>
-                    <div class="toggle-pay">
-                        <button id="btn-pay-usdt" class="toggle-btn active" onclick="App.setPayMode('USDT')">USDT</button>
-                        <button id="btn-pay-fta" class="toggle-btn" onclick="App.setPayMode('FTA')">FTA</button>
-                    </div>
-                </div>
+                <h2 class="view-title">🛒 Boutique (11 Machines)</h2>
                 <div id="shop-list" class="grid-list"></div>
             </div>
 
-            <!-- MY RIGS (Inchangé) -->
+            <!-- MES MACHINES -->
             <div id="view-my-rigs" class="view">
                 <h2 class="view-title">⚙️ Mes Machines</h2>
                 <div id="my-rigs-list" class="rigs-list-container"></div>
-                <div id="no-rigs" class="card" style="text-align:center; display:none;"><p>Vous n'avez pas encore de machines actives.</p></div>
-            </div>
-
-            <!-- GAMES (Inchangé) -->
-            <div id="view-games" class="view">
-                <h2 class="view-title">🎮 Game Center</h2>
-                <div class="game-tabs">
-                    <button class="game-tab active" onclick="App.showGame('wingo')">Win Go</button>
-                    <button class="game-tab" onclick="App.showGame('wheel')">Roue</button>
-                    <button class="game-tab" onclick="App.showGame('fishing')">Pêche</button>
-                    <button class="game-tab" onclick="App.showGame('lottery')">Loterie</button>
-                </div>
-
-                <div id="game-wingo" class="game-area active">
-                    <p class="game-info">Deviner le numéro (0-9) ou Grand/Petit.</p>
-                    <div class="slot-machine">
-                        <div class="slot-window">
-                            <div class="slot-reel" id="slot-reel"><span>5</span><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>0</span></div>
-                        </div>
-                    </div>
-                    <div id="wingo-result" class="game-result-box hidden"></div>
-                    <input type="number" id="wingo-bet" class="game-input" placeholder="Mise en FTA">
-                    <div class="game-options">
-                        <button onclick="App.playWinGo(1, 0)">Petit (0-4)</button>
-                        <button onclick="App.playWinGo(1, 1)">Grand (5-9)</button>
-                    </div>
-                </div>
-
-                <div id="game-wheel" class="game-area">
-                    <p class="game-info">Tournez pour tenter de gagner le Jackpot !</p>
-                    <div class="wheel-container">
-                        <div class="wheel-pointer">▼</div>
-                        <canvas id="wheel-canvas" width="300" height="300"></canvas>
-                    </div>
-                    <div id="wheel-result" class="game-result-box hidden"></div>
-                    <div class="jackpot-display">Jackpot: <span id="wheel-jackpot">0</span> FTA</div>
-                    <button class="btn-game" onclick="App.spinWheel()">Tourner (100 FTA)</button>
-                </div>
-
-                <div id="game-fishing" class="game-area">
-                    <p class="game-info">Lancez votre ligne.</p>
-                    <div class="fishing-container">
-                        <div class="fishing-line" id="fishing-line"></div>
-                        <div class="fishing-hook" id="fishing-hook">🪝</div>
-                    </div>
-                    <div id="fishing-status" class="fishing-status">En attente...</div>
-                    <div id="fish-result" class="game-result-box hidden"></div>
-                    <button class="btn-game" onclick="App.goFishing()">Pêcher (50 FTA)</button>
-                </div>
-
-                <div id="game-lottery" class="game-area">
-                    <p class="game-info">Achetez un ticket.</p>
-                    <div class="jackpot-display">Pot: <span id="lottery-pot">0</span> FTA</div>
-                    <button class="btn-game" onclick="App.buyLotteryTicket()">Acheter Ticket (50 FTA)</button>
+                <div id="no-rigs" class="card" style="display:none; text-align:center;">
+                    <p>Vous n'avez pas de machines actives.</p>
                 </div>
             </div>
 
-            <!-- SWAP (Inchangé) -->
+            <!-- SWAP -->
             <div id="view-swap" class="view">
                 <h2 class="view-title">💱 Échange</h2>
                 <div class="card swap-interface">
-                    <div class="swap-header"><span>Vous payez</span><span>Solde: <span id="swap-bal-from">0</span></span></div>
+                    <div class="swap-header">
+                        <span>Vous payez</span>
+                        <span>Solde: <span id="swap-bal-from">0</span></span>
+                    </div>
                     <div class="input-wrap">
                         <input type="number" id="swap-from-in" placeholder="0.0" oninput="App.calcSwap()">
+                        <button class="max-btn" onclick="App.setMax()">MAX</button>
                         <div class="token-select" onclick="App.toggleSwap()" id="token-from-display">USDT</div>
                     </div>
-                    <div class="swap-arrow-wrap"><div class="swap-arrow" onclick="App.toggleSwap()">⇅</div></div>
-                    <div class="swap-header"><span>Vous recevez</span><span>Solde: <span id="swap-bal-to">0</span></span></div>
+                    <div class="swap-arrow" onclick="App.toggleSwap()">⇅</div>
+                    <div class="swap-header">
+                        <span>Vous recevez</span>
+                        <span>Solde: <span id="swap-bal-to">0</span></span>
+                    </div>
                     <div class="input-wrap">
                         <input type="number" id="swap-to-in" placeholder="0.0" readonly>
                         <div class="token-select" style="background:#333; cursor:default;" id="token-to-display">FTA</div>
@@ -224,18 +114,89 @@
                     <button class="btn-primary" onclick="App.executeSwap()">ÉCHANGER</button>
                 </div>
             </div>
+
+            <!-- JEUX -->
+            <div id="view-games" class="view">
+                <h2 class="view-title">🎰 Game Center</h2>
+                
+                <!-- Win Go -->
+                <div class="game-card">
+                    <h3>🎯 Win Go (Prédiction)</h3>
+                    <div class="input-wrap" style="margin-bottom:10px;">
+                        <input type="number" id="wingo-amount" placeholder="Montant FTA">
+                    </div>
+                    <div class="game-choices" id="wingo-choices">
+                        <button class="choice-btn" onclick="App.playWinGo(0, 0)">0</button>
+                        <button class="choice-btn" onclick="App.playWinGo(0, 1)">1</button>
+                        <button class="choice-btn" onclick="App.playWinGo(0, 2)">2</button>
+                        <button class="choice-btn" onclick="App.playWinGo(0, 3)">3</button>
+                        <button class="choice-btn" onclick="App.playWinGo(0, 4)">4</button>
+                        <button class="choice-btn" onclick="App.playWinGo(0, 5)">5</button>
+                        <button class="choice-btn" onclick="App.playWinGo(0, 6)">6</button>
+                        <button class="choice-btn" onclick="App.playWinGo(0, 7)">7</button>
+                        <button class="choice-btn" onclick="App.playWinGo(0, 8)">8</button>
+                        <button class="choice-btn" onclick="App.playWinGo(0, 9)">9</button>
+                    </div>
+                    <div class="game-actions">
+                        <button class="btn-game" onclick="App.playWinGo(1, 0)">PETIT (0-4)</button>
+                        <button class="btn-game" onclick="App.playWinGo(1, 1)">GRAND (5-9)</button>
+                    </div>
+                </div>
+
+                <!-- Wheel -->
+                <div class="game-card">
+                    <h3>🎡 Roue de la Fortune</h3>
+                    <p class="jackpot-display">Jackpot: <span id="wheel-jackpot">0</span> FTA</p>
+                    <button class="btn-game big-btn" onclick="App.spinWheel()">TOURNER (<span id="wheel-price">100</span> FTA)</button>
+                </div>
+
+                <!-- Fishing -->
+                <div class="game-card">
+                    <h3>🎣 Fishing Era</h3>
+                    <p style="font-size:0.8rem; color:var(--text-muted);">Attrapez le gros lot !</p>
+                    <button class="btn-game big-btn" onclick="App.goFishing()">PÊCHER (<span id="fish-price">50</span> FTA)</button>
+                </div>
+
+                <!-- Lottery -->
+                <div class="game-card">
+                    <h3>🎟️ Loterie</h3>
+                    <p class="jackpot-display">Pot: <span id="lottery-pot">0</span> FTA</p>
+                    <button class="btn-game big-btn" onclick="App.buyLotteryTicket()">ACHETER TICKET (<span id="lottery-price">50</span> FTA)</button>
+                </div>
+            </div>
+
         </main>
 
         <nav class="bottom-nav">
-            <button class="nav-item active" onclick="App.nav('dashboard')"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span>Home</span></button>
-            <button class="nav-item" onclick="App.nav('shop')"><svg viewBox="0 0 24 24"><path d="M12 2l-5.5 9h11z"/></svg><span>Shop</span></button>
-            <button class="nav-item" onclick="App.nav('my-rigs')"><svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg><span>Rigs</span></button>
-            <button class="nav-item" onclick="App.nav('games')"><svg viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg><span>Jeux</span></button>
-            <button class="nav-item" onclick="App.nav('swap')"><svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg><span>Swap</span></button>
+            <button class="nav-item active" onclick="App.nav('dashboard')">
+                <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                <span>Accueil</span>
+            </button>
+            <button class="nav-item" onclick="App.nav('shop')">
+                <svg viewBox="0 0 24 24"><path d="M12 2l-5.5 9h11z"/></svg>
+                <span>Shop</span>
+            </button>
+            <button class="nav-item" onclick="App.nav('my-rigs')">
+                <svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg>
+                <span>Mes Rigs</span>
+            </button>
+            <button class="nav-item" onclick="App.nav('swap')">
+                <svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+                <span>Swap</span>
+            </button>
+            <button class="nav-item" onclick="App.nav('games')">
+                <svg viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+                <span>Jeux</span>
+            </button>
         </nav>
+
     </div>
 
-    <div id="loader" class="loader hidden"><div class="spinner-ring"></div><p id="loader-text">Traitement...</p></div>
+    <div id="loader" class="loader hidden">
+        <div class="spinner-ring"></div>
+        <p id="loader-text">Traitement...</p>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>
