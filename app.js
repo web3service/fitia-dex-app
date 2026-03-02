@@ -38,6 +38,7 @@ const ERC20_ABI = [
 
 class Application {
     constructor() {
+        // Vos variables métier
         this.provider = null; this.signer = null; this.contracts = {}; this.user = null;
         this.currentRate = 0; this.payMode = 'USDT'; this.swapDirection = 'USDT_TO_FTA';
         this.ftaDecimals = 18; this.currentMultiplier = 1000000000000000000n;
@@ -46,17 +47,30 @@ class Application {
         this.shopData = []; this.isLoadingShop = false; 
         this.vizContext = null; this.vizBars = [];
         
-        this.keystoreString = null; this.pinCode = ""; this.isUnlocking = false;
-        this.wheelAngle = 0; this.wheelInterval = null; this.isSpinning = false; this.wheelCtx = null;
+        // Variables Portefeuille Intégré
+        this.keystoreString = null;
+        this.pinCode = "";
+        this.isUnlocking = false;
+        
+        // Variables Jeux
+        this.wheelAngle = 0;
+        this.wheelInterval = null;
+        this.isSpinning = false;
+        this.wheelCtx = null;
+        
+        // État de connexion
+        this.isAppReady = false;
     }
 
-    // --- PARTIE 1: GESTION PORTEFEUILLE INTÉGRÉ ---
+    // --- PARTIE 1: AUTHENTIFICATION ---
 
     async init() {
         if (typeof ethers === 'undefined') { document.body.innerHTML = '<div style="color:red;padding:20px;">Erreur : Ethers.js non chargé.</div>'; return; }
         
-        this.provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
+        // Initialisation du Provider (Connexion au réseau Polygon)
+        this.provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL, CONFIG.CHAIN_ID);
 
+        // Vérification du stockage local
         const storedKeystore = localStorage.getItem('fitia_keystore');
         if (storedKeystore) {
             try {
@@ -146,6 +160,7 @@ class Application {
     clearPin() { this.pinCode = this.pinCode.slice(0, -1); this.updatePinDots(); document.getElementById('pin-error').innerText = ""; }
     updatePinDots() { const dots = document.querySelectorAll('.dot'); dots.forEach((dot, i) => dot.classList.toggle('active', i < this.pinCode.length)); }
 
+    // --- CONNEXION AU RESEAU ---
     async submitPin() {
         if (this.isUnlocking) return;
         if (!this.keystoreString) { document.getElementById('pin-error').innerText = "Erreur: Pas de portefeuille."; return; }
@@ -158,42 +173,53 @@ class Application {
             // 1. Déchiffrer le wallet
             this.signer = await ethers.Wallet.fromEncryptedJson(this.keystoreString, this.pinCode);
             
-            // 2. Le connecter au réseau (RPC)
+            // 2. Connecter au réseau
             this.signer = this.signer.connect(this.provider);
             this.user = this.signer.address;
 
-            // 3. Initialiser VOS contrats
+            // 3. TEST DE CONNEXION RPC (Vérification critique)
+            try {
+                const network = await this.provider.getNetwork();
+                console.log("Connecté au réseau:", network.name);
+            } catch (netErr) {
+                throw new Error("Impossible de joindre le réseau Polygon. Vérifiez votre internet.");
+            }
+
+            // 4. Initialisation des Contrats
             this.contracts.mining = new ethers.Contract(CONFIG.MINING, MINING_ABI, this.signer);
             this.contracts.usdt = new ethers.Contract(CONFIG.USDT, ERC20_ABI, this.signer);
             this.contracts.fta = new ethers.Contract(CONFIG.FTA, ERC20_ABI, this.signer);
 
-            // Récupérer les décimales FTA dynamiquement
+            // Récupération décimales
             try { this.ftaDecimals = await this.contracts.fta.decimals(); } catch(e) { this.ftaDecimals = 18; }
 
-            // 4. MAJ Interface
+            // 5. Mise à jour UI
             document.getElementById('addr-display').innerText = this.user.slice(0,6) + "...";
             document.getElementById('auth-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'flex';
             document.getElementById('ref-link').value = window.location.origin + "?ref=" + this.user;
 
-            // Charger le logo FTA
             const ftaLogoEl = document.getElementById('logo-fta-bal');
             if(ftaLogoEl) ftaLogoEl.src = CONFIG.LOGO_FTA;
 
-            // Initialiser le temps de claim si nouveau
             if (!localStorage.getItem(this.storageKey)) { localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000)); }
 
-            // 5. LANCER VOS FONCTIONS
+            // 6. LANCEMENT DE L'APPLICATION
+            this.isAppReady = true;
             this.checkReferral();
             await this.updateData();
-            setInterval(() => this.updateData(), 5000); // Refresh loop
+            setInterval(() => this.updateData(), 5000);
             this.initVisualizer();
             window.addEventListener('resize', () => this.resizeCanvas());
             this.initWheel();
 
         } catch(e) {
-            console.error("Erreur Unlock:", e);
-            document.getElementById('pin-error').innerText = "Code PIN incorrect";
+            console.error("Erreur Critique:", e);
+            let msg = e.message;
+            if(msg.includes("incorrect password")) msg = "Code PIN incorrect";
+            if(msg.includes("call revert") || msg.includes("BAD DATA")) msg = "Erreur: Adresse contrat invalide ou ABI incorrect.";
+            
+            document.getElementById('pin-error').innerText = msg;
             this.pinCode = ""; this.updatePinDots();
         }
         this.isUnlocking = false;
@@ -201,6 +227,7 @@ class Application {
     }
 
     disconnectWallet() {
+        this.isAppReady = false;
         this.pinCode = ""; this.signer = null; this.user = null;
         document.getElementById('main-app').style.display = 'none';
         document.getElementById('auth-screen').style.display = 'flex';
@@ -210,10 +237,10 @@ class Application {
         this.updatePinDots();
     }
 
-    // --- PARTIE 2: VOTRE LOGIQUE METIER (AVEC CORRECTION AFFICHAGE) ---
+    // --- PARTIE 2: LOGIQUE METIER ---
 
     async updateData() {
-        if (!this.user) return;
+        if (!this.isAppReady || !this.user) return;
         try {
             const rawPower = await this.contracts.mining.getActivePower(this.user);
             try { this.currentMultiplier = await this.contracts.mining.difficultyMultiplier(); } catch(e) { this.currentMultiplier = 1000000000000000000n; }
@@ -251,20 +278,14 @@ class Application {
             document.getElementById('swap-bal-from').innerText = parseFloat(ethers.formatUnits(fromBal, this.swapDirection === 'USDT_TO_FTA' ? 6 : this.ftaDecimals)).toFixed(2);
             document.getElementById('swap-bal-to').innerText = parseFloat(ethers.formatUnits(toBal, this.swapDirection === 'USDT_TO_FTA' ? this.ftaDecimals : 6)).toFixed(2);
 
-            // --- CORRECTION ICI : Forcer le rafraîchissement de la boutique ---
-            this.isLoadingShop = false; // Reset lock
-            await this.renderShop(true); // Force fetch à chaque update pour être sûr
+            await this.renderShop(false);
             
             try {
                 document.getElementById('wheel-jackpot').innerText = parseFloat(ethers.formatUnits(await this.contracts.mining.getWheelJackpot(), this.ftaDecimals)).toFixed(2);
                 document.getElementById('lottery-pot').innerText = parseFloat(ethers.formatUnits(await this.contracts.mining.getLotteryPool(), this.ftaDecimals)).toFixed(2);
             } catch(e) {}
 
-        } catch (e) { 
-            console.error("Refresh Error", e); 
-            // Si erreur ici, c'est souvent que l'adresse contrat est fausse
-            document.getElementById('shop-list').innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--danger); padding:20px;">Erreur de connexion au contrat.<br>Vérifiez CONFIG.MINING.</div>`;
-        }
+        } catch (e) { console.error("Update Data Error:", e); }
     }
 
     startMiningCounter() {
@@ -313,41 +334,27 @@ class Application {
         this.payMode = mode;
         document.getElementById('btn-pay-usdt').classList.toggle('active', mode === 'USDT');
         document.getElementById('btn-pay-fta').classList.toggle('active', mode === 'FTA');
-        this.renderShop(true); // Force refresh on mode change
+        this.renderShop(false);
     }
 
     async renderShop(forceFetch = false) {
         if (this.isLoadingShop) return;
         const container = document.getElementById('shop-list');
         
-        // Afficher "Chargement..." si vide
-        if (this.shopData.length === 0 && !forceFetch) {
-             container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: var(--text-muted);">Chargement...</div>';
-             return; // Attendre le forceFetch de updateData
-        }
-
         if (this.shopData.length > 0 && !forceFetch) { this._renderShopHTML(container); return; }
 
         this.isLoadingShop = true;
         try {
             const count = await this.contracts.mining.getMachineCount();
-            
-            // CORRECTION: Gestion du BigInt (0n vs 0)
-            if (count === 0n) { 
-                 container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: var(--text-muted);">Aucune machine disponible.</div>';
-                 this.isLoadingShop = false; return;
-            }
-
             const promises = [];
-            // CORRECTION: Loop avec Number() pour être sûr
-            for(let i=0; i<Number(count); i++) promises.push(this.contracts.mining.machineTypes(i));
+            for(let i=0; i<count; i++) promises.push(this.contracts.mining.machineTypes(i));
             const results = await Promise.all(promises);
 
             this.shopData = [];
-            for(let i=0; i<Number(count); i++) {
+            for(let i=0; i<count; i++) {
                 const data = results[i];
                 const priceUsdt = parseFloat(ethers.formatUnits(data.price, 6));
-                const priceFta = this.currentRate > 0 ? priceUsdt * this.currentRate : 0; 
+                const priceFta = priceUsdt * this.currentRate; 
                 const powerBN = BigInt(data.power.toString());
                 const effectivePowerBN = (powerBN * this.currentMultiplier) / 1000000000000000000n;
                 const power = parseFloat(ethers.formatUnits(effectivePowerBN, 8)); 
@@ -355,8 +362,8 @@ class Application {
             }
             this._renderShopHTML(container);
         } catch(e) { 
-            console.error("Shop Error", e); 
-            container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 20px; color: var(--danger);">Impossible de charger la boutique.</div>';
+            console.error("Shop Error:", e);
+            container.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--danger);">Erreur de chargement de la boutique.<br>Vérifiez la console (F12).</div>`;
         }
         this.isLoadingShop = false;
     }
@@ -468,29 +475,39 @@ class Application {
         setTimeout(() => el.classList.add('hidden'), 5000);
     }
 
+    // WIN GO
     async playWinGo(type, choice) {
         const betVal = document.getElementById('wingo-bet').value;
         if (!betVal || betVal <= 0) return this.showToast("Mise invalide", true);
         const amount = ethers.parseUnits(betVal, this.ftaDecimals);
+        
         const buttons = document.querySelectorAll('#game-wingo .game-options button');
         buttons.forEach(b => b.disabled = true);
         const reel = document.getElementById('slot-reel');
         reel.classList.add('spinning');
+        
         try {
             const allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
             if (allow < amount) await (await this.contracts.fta.approve(CONFIG.MINING, amount)).wait();
             const tx = await this.contracts.mining.playWinGo(amount, type, choice);
             await tx.wait();
+
             reel.classList.remove('spinning');
             const randomNum = Math.floor(Math.random() * 10);
             const finalOffset = -80 * randomNum; 
             reel.style.transform = `translateY(${finalOffset}px)`;
+
             this.showGameResult('wingo-result', `Résultat: ${randomNum}`, true);
             this.updateData();
-        } catch(e) { reel.classList.remove('spinning'); reel.style.transform = 'translateY(0px)'; this.showError(e); }
+        } catch(e) { 
+            reel.classList.remove('spinning'); 
+            reel.style.transform = 'translateY(0px)'; 
+            this.showError(e); 
+        }
         buttons.forEach(b => b.disabled = false);
     }
 
+    // WHEEL
     initWheel() {
         const canvas = document.getElementById('wheel-canvas');
         if(!canvas) return;
@@ -499,20 +516,30 @@ class Application {
     }
 
     drawWheel(rotation) {
-        const ctx = this.wheelCtx; if(!ctx) return;
+        const ctx = this.wheelCtx;
+        if(!ctx) return;
         const seg = ["10x", "2x", "5x", "1x", "50x", "0x", "3x", "WIN"];
         const colors = ["#10b981", "#3b82f6", "#f59e0b", "#8b5cf6", "#ef4444", "#1e293b", "#ec4899", "#fbbf24"];
+        
         ctx.clearRect(0, 0, 300, 300);
-        ctx.save(); ctx.translate(150, 150); ctx.rotate(rotation); ctx.translate(-150, -150);
+        ctx.save();
+        ctx.translate(150, 150);
+        ctx.rotate(rotation);
+        ctx.translate(-150, -150);
+
         const step = (2 * Math.PI) / seg.length;
         for(let i=0; i<seg.length; i++) {
-            ctx.beginPath(); ctx.moveTo(150, 150);
-            ctx.arc(150, 150, 140, i * step, (i + 1) * step); ctx.closePath();
-            ctx.fillStyle = colors[i]; ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(150, 150);
+            ctx.arc(150, 150, 140, i * step, (i + 1) * step);
+            ctx.closePath();
+            ctx.fillStyle = colors[i];
+            ctx.fill();
             ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
             ctx.save(); ctx.translate(150, 150); ctx.rotate(i * step + step / 2);
             ctx.textAlign = "right"; ctx.fillStyle = "#fff"; ctx.font = "bold 14px sans-serif";
-            ctx.fillText(seg[i], 110, 5); ctx.restore();
+            ctx.fillText(seg[i], 110, 5);
+            ctx.restore();
         }
         ctx.beginPath(); ctx.arc(150, 150, 20, 0, 2 * Math.PI); ctx.fillStyle = "#000"; ctx.fill();
         ctx.restore();
@@ -523,41 +550,66 @@ class Application {
         this.isSpinning = true;
         const btn = document.querySelector('#game-wheel .btn-game');
         btn.disabled = true;
+
         if (this.wheelInterval) clearInterval(this.wheelInterval);
-        this.wheelInterval = setInterval(() => { this.wheelAngle += 0.2; this.drawWheel(this.wheelAngle); }, 20);
+        this.wheelInterval = setInterval(() => {
+            this.wheelAngle += 0.2;
+            this.drawWheel(this.wheelAngle);
+        }, 20);
+
         try {
             const price = ethers.parseUnits("100", this.ftaDecimals); 
             const allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
             if (allow < price) await (await this.contracts.fta.approve(CONFIG.MINING, price)).wait();
             const tx = await this.contracts.mining.spinWheel();
             await tx.wait();
+            
             clearInterval(this.wheelInterval);
-            this.wheelAngle += 5; this.drawWheel(this.wheelAngle);
+            this.wheelAngle += 5; 
+            this.drawWheel(this.wheelAngle);
+
             this.showGameResult('wheel-result', "Roue tournée !", true);
             this.updateData();
-        } catch(e) { clearInterval(this.wheelInterval); this.showError(e); }
-        this.isSpinning = false; btn.disabled = false;
+        } catch(e) {
+            clearInterval(this.wheelInterval);
+            this.showError(e);
+        }
+        
+        this.isSpinning = false;
+        btn.disabled = false;
     }
     
+    // FISHING
     async goFishing() {
         const line = document.getElementById('fishing-line');
         const hook = document.getElementById('fishing-hook');
         const status = document.getElementById('fishing-status');
         const btn = document.querySelector('#game-fishing .btn-game');
         btn.disabled = true;
+        
         line.style.height = '0px'; hook.style.top = '0px'; status.innerText = "Lancer...";
+        
         try {
             const price = ethers.parseUnits("50", this.ftaDecimals); 
             const allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
             if (allow < price) await (await this.contracts.fta.approve(CONFIG.MINING, price)).wait();
-            setTimeout(() => { line.style.height = '120px'; hook.style.top = '120px'; status.innerText = "Ligne lancée..."; }, 500);
+            
+            setTimeout(() => {
+                line.style.height = '120px'; hook.style.top = '120px'; status.innerText = "Ligne lancée...";
+            }, 500);
+
             const tx = await this.contracts.mining.goFishing();
             await tx.wait();
-            status.innerText = "Ça mord !"; hook.style.fontSize = "3rem";
+            
+            status.innerText = "Ça mord !";
+            hook.style.fontSize = "3rem";
             setTimeout(() => hook.style.fontSize = "2rem", 500);
+
             this.showGameResult('fish-result', "Pêche réussie !", true);
             this.updateData();
-        } catch(e) { line.style.height = '0px'; hook.style.top = '0px'; status.innerText="Erreur"; this.showError(e); }
+        } catch(e) { 
+            line.style.height = '0px'; hook.style.top = '0px'; status.innerText="Erreur"; this.showError(e); 
+        }
         btn.disabled = false;
     }
     
@@ -587,13 +639,15 @@ class Application {
         const noRigs = document.getElementById('no-rigs');
         container.innerHTML = '';
         if(!this.user) return;
+
         try {
             const count = await this.contracts.mining.getMachineCount();
             const promises = [];
-            for(let i=0; i<Number(count); i++) promises.push(this.contracts.mining.getUserMachineCount(this.user, i));
+            for(let i=0; i<count; i++) promises.push(this.contracts.mining.getUserMachineCount(this.user, i));
             const results = await Promise.all(promises);
             let found = false;
-            for(let i=0; i<Number(count); i++) {
+            
+            for(let i=0; i<count; i++) {
                 const machineCount = results[i];
                 if (machineCount > 0) {
                     found = true;
@@ -654,7 +708,8 @@ class Application {
         console.error(e);
         let msg = "Erreur inconnue";
         if(e.reason) msg = e.reason;
-        if(msg.includes("insufficient funds")) msg = "Fonds insuffisants";
+        if(msg.includes("insufficient funds")) msg = "Fonds insuffisants (besoin de MATIC pour le gas)";
+        if(msg.includes("user rejected")) msg = "Transaction annulée";
         this.showToast(msg, true);
     }
 
