@@ -28,7 +28,8 @@ const MINING_ABI = [
 const ERC20_ABI = [
     "function balanceOf(address) view returns (uint256)",
     "function approve(address spender, uint256 amount) returns (bool)",
-    "function allowance(address owner, address spender) view returns (uint256)"
+    "function allowance(address owner, address spender) view returns (uint256)",
+    "function transfer(address to, uint256 amount) returns (bool)" // Ajout pour retrait
 ];
 
 class Application {
@@ -41,26 +42,19 @@ class Application {
         this.decimalsUSDT = 6;
         this.decimalsFTA = 8;
         this.swapDirection = 'USDT_TO_FTA';
-        
-        // CORRECTION : On stocke la chaîne JSON brute, pas l'objet
-        this.keystoreString = null; 
+        this.keystoreString = null;
         this.pinCode = "";
         this.isUnlocking = false;
     }
 
     async init() {
         try {
-            if (typeof ethers === 'undefined') {
-                return alert("Erreur: Ethers.js non chargé.");
-            }
-            
+            if (typeof ethers === 'undefined') return alert("Ethers.js non chargé.");
             this.provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
-            
-            // Récupération du Keystore (Chaîne JSON brute)
             const storedKeystore = localStorage.getItem('fitia_keystore');
             
             if (storedKeystore) {
-                this.keystoreString = storedKeystore; // On garde la STRING
+                this.keystoreString = storedKeystore;
                 document.getElementById('auth-setup').style.display = 'none';
                 document.getElementById('auth-unlock').style.display = 'block';
                 document.getElementById('auth-title').innerText = "Déverrouillage";
@@ -69,10 +63,7 @@ class Application {
                 document.getElementById('auth-unlock').style.display = 'none';
                 document.getElementById('auth-title').innerText = "Bienvenue";
             }
-        } catch (e) {
-            console.error(e);
-            alert("Erreur d'initialisation: " + e.message);
-        }
+        } catch (e) { console.error(e); }
     }
 
     // --- WALLET MANAGEMENT ---
@@ -106,66 +97,57 @@ class Application {
         try {
             const pin = document.getElementById('new-pin').value;
             const confirm = document.getElementById('confirm-pin').value;
-
             if (pin.length < 4) return this.showToast("PIN trop court (4 min)", true);
             if (pin !== confirm) return this.showToast("Les PINs ne correspondent pas", true);
 
             this.setLoader(true, "Génération...");
-            
             const wallet = ethers.Wallet.createRandom();
-            
-            // Cela renvoie une STRING JSON
             const keystoreJson = await wallet.encrypt(pin);
-            
             localStorage.setItem('fitia_keystore', keystoreJson);
-            this.keystoreString = keystoreJson; // On stocke la STRING
-            
+            this.keystoreString = keystoreJson;
             this.setLoader(false);
             
+            // AFFICHAGE AVEC BOUTON COPIER
             const html = `
                 <p class="seed-warning"><i class="fas fa-exclamation-triangle"></i> SAUVEGARDEZ CES MOTS C'EST VOTRE SEULE CLÉ !</p>
-                <div style="background:#000; padding:15px; border-radius:8px; margin-bottom:15px; color:var(--primary); font-weight:bold; font-family:monospace; word-break:break-all;">
+                <div id="seed-display" style="background:#000; padding:15px; border-radius:8px; margin-bottom:15px; color:var(--primary); font-weight:bold; font-family:monospace; word-break:break-all; user-select:all;">
                     ${wallet.mnemonic.phrase}
                 </div>
-                <button class="btn-gold" onclick="App.finalizeSetup()">J'ai noté ma phrase</button>
+                <button class="btn-copy-seed" onclick="App.copySeed()"><i class="fas fa-copy"></i> Copier la phrase</button>
+                <button class="btn-gold" onclick="App.finalizeSetup()" style="margin-top:10px;">J'ai sauvegardé</button>
             `;
             document.getElementById('modal-body').innerHTML = html;
             document.getElementById('modal-title').innerText = "Sauvegarde";
-            
         } catch (e) {
             this.setLoader(false);
-            console.error(e);
-            this.showToast("Erreur Création: " + e.message, true);
+            this.showToast("Erreur: " + e.message, true);
         }
+    }
+
+    copySeed() {
+        const text = document.getElementById('seed-display').innerText;
+        navigator.clipboard.writeText(text);
+        this.showToast("Phrase copiée !");
     }
 
     async importWallet() {
         try {
             const seed = document.getElementById('import-seed').value.trim();
             const pin = document.getElementById('import-pin').value;
+            if (!seed) return this.showToast("Phrase vide", true);
+            if (pin.length < 4) return this.showToast("PIN court", true);
 
-            if (!seed) return this.showToast("Phrase secrète vide", true);
-            if (pin.length < 4) return this.showToast("PIN trop court", true);
-
-            this.setLoader(true, "Chiffrement...");
-            
-            // Cela peut échouer si la phrase est invalide
+            this.setLoader(true, "Import...");
             const wallet = ethers.Wallet.fromPhrase(seed);
-            
-            // Cela peut prendre du temps
             const keystoreJson = await wallet.encrypt(pin);
-            
             localStorage.setItem('fitia_keystore', keystoreJson);
-            this.keystoreString = keystoreJson; // On stocke la STRING
-            
+            this.keystoreString = keystoreJson;
             this.setLoader(false);
             this.closeModal();
-            this.init(); // Recharger l'écran de PIN
-
+            this.init();
         } catch (e) {
-            this.setLoader(false); // IMPORTANT : Arrêter le chargement en cas d'erreur
-            console.error(e);
-            this.showToast("Erreur: " + (e.reason || e.message), true);
+            this.setLoader(false);
+            this.showToast("Erreur: " + (e.reason || "Phrase invalide"), true);
         }
     }
 
@@ -176,16 +158,9 @@ class Application {
         if (this.pinCode.length >= 6) return;
         this.pinCode += num;
         this.updatePinDots();
-        // Auto-submit si 6 chiffres (optionnel, sinon cliquer sur valider)
         if (this.pinCode.length === 6) setTimeout(() => this.submitPin(), 300);
     }
-
-    clearPin() { 
-        this.pinCode = this.pinCode.slice(0, -1); 
-        this.updatePinDots(); 
-        document.getElementById('pin-error').innerText = "";
-    }
-
+    clearPin() { this.pinCode = this.pinCode.slice(0, -1); this.updatePinDots(); document.getElementById('pin-error').innerText = ""; }
     updatePinDots() {
         const dots = document.querySelectorAll('.dot');
         dots.forEach((dot, i) => dot.classList.toggle('active', i < this.pinCode.length));
@@ -193,19 +168,11 @@ class Application {
 
     async submitPin() {
         if (this.isUnlocking) return;
-        if (!this.keystoreString) {
-            this.showToast("Erreur: Keystore manquant", true);
-            return;
-        }
-        
         this.isUnlocking = true;
         this.setLoader(true, "Déverrouillage...");
         
         try {
-            // CORRECTION MAJEURE ICI
-            // On passe la STRING JSON (this.keystoreString) et non un objet
             this.signer = await ethers.Wallet.fromEncryptedJson(this.keystoreString, this.pinCode);
-            
             this.signer = this.signer.connect(this.provider);
             this.user = this.signer.address;
 
@@ -220,14 +187,11 @@ class Application {
 
             await this.loadAllData();
             setInterval(() => this.loadAllData(), 5000);
-
         } catch(e) {
-            console.error(e);
             document.getElementById('pin-error').innerText = "Code PIN incorrect";
             this.pinCode = "";
             this.updatePinDots();
         }
-        
         this.isUnlocking = false;
         this.setLoader(false);
     }
@@ -240,6 +204,102 @@ class Application {
         document.getElementById('auth-unlock').style.display = 'block';
         document.getElementById('pin-error').innerText = "";
         this.updatePinDots();
+    }
+
+    // --- DEPOSIT / WITHDRAW ---
+    
+    showDepositModal() {
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${this.user}`;
+        const html = `
+            <p style="color:var(--text-dim); margin-bottom:5px;">Votre adresse de dépôt</p>
+            <div class="network-badge">POLYGON NETWORK</div>
+            <div style="text-align:center;">
+                <div class="qr-container"><img src="${qrUrl}" alt="QR Code"></div>
+            </div>
+            <div class="address-box">${this.user}</div>
+            <button class="btn-gold" onclick="App.copyAddress()"><i class="fas fa-copy"></i> Copier l'adresse</button>
+            <p style="font-size:0.8rem; color:var(--text-dim); margin-top:15px;">
+                Envoyez uniquement des USDT ou FTA sur le réseau Polygon. L'envoi d'autres actifs entraînera une perte définitive.
+            </p>
+        `;
+        document.getElementById('modal-body').innerHTML = html;
+        document.getElementById('modal-title').innerText = "Dépôt";
+        document.getElementById('modal-overlay').classList.remove('hidden');
+    }
+
+    copyAddress() {
+        navigator.clipboard.writeText(this.user);
+        this.showToast("Adresse copiée !");
+    }
+
+    showWithdrawModal() {
+        const html = `
+            <div style="margin-bottom:15px;">
+                <label class="label-dim">Sélectionner le token</label>
+                <select id="withdraw-token" class="input-seed" style="height:50px; cursor:pointer;">
+                    <option value="USDT">USDT (Tether)</option>
+                    <option value="FTA">FTA (Fitia)</option>
+                </select>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label class="label-dim">Adresse de destination</label>
+                <input type="text" id="withdraw-addr" class="input-seed" placeholder="0x...">
+            </div>
+            <div style="margin-bottom:15px;">
+                <label class="label-dim">Montant</label>
+                <input type="number" id="withdraw-amount" class="input-seed" placeholder="0.00">
+            </div>
+            <button class="btn-gold" onclick="App.executeWithdraw()">Envoyer</button>
+            <p style="font-size:0.8rem; color:var(--warning); margin-top:10px;">
+                <i class="fas fa-exclamation-circle"></i> Assurez-vous d'avoir du MATIC pour les frais de réseau (Gas).
+            </p>
+        `;
+        document.getElementById('modal-body').innerHTML = html;
+        document.getElementById('modal-title').innerText = "Retrait";
+        document.getElementById('modal-overlay').classList.remove('hidden');
+    }
+
+    async executeWithdraw() {
+        const tokenSymbol = document.getElementById('withdraw-token').value;
+        const toAddress = document.getElementById('withdraw-addr').value;
+        const amountStr = document.getElementById('withdraw-amount').value;
+
+        if (!ethers.isAddress(toAddress)) return this.showToast("Adresse invalide", true);
+        if (!amountStr || parseFloat(amountStr) <= 0) return this.showToast("Montant invalide", true);
+
+        this.setLoader(true, "Transaction...");
+        this.closeModal();
+
+        try {
+            let contract, decimals;
+            if (tokenSymbol === "USDT") {
+                contract = this.contracts.usdt;
+                decimals = this.decimalsUSDT;
+            } else {
+                contract = this.contracts.fta;
+                decimals = this.decimalsFTA;
+            }
+
+            const amount = ethers.parseUnits(amountStr, decimals);
+            
+            // Vérifier le solde
+            const balance = await contract.balanceOf(this.user);
+            if (balance < amount) {
+                this.setLoader(false);
+                return this.showToast("Solde insuffisant", true);
+            }
+
+            const tx = await contract.transfer(toAddress, amount);
+            this.showToast("Transaction envoyée...");
+            await tx.wait();
+            this.showToast("Retrait réussi !");
+            this.loadAllData();
+
+        } catch(e) {
+            console.error(e);
+            this.showToast("Erreur: " + (e.reason || "Transaction échouée"), true);
+        }
+        this.setLoader(false);
     }
 
     // --- DATA LOADERS ---
@@ -260,7 +320,7 @@ class Application {
             if (this.shopData.length === 0) await this.loadShop();
             await this.loadMyMachines();
             await this.loadGameInfo();
-        } catch(e) { console.error("Load Data Error", e); }
+        } catch(e) { console.error(e); }
     }
 
     async loadShop() {
@@ -309,6 +369,8 @@ class Application {
             document.getElementById('wheel-jackpot').innerText = parseFloat(ethers.formatUnits(jp, this.decimalsFTA)).toFixed(0);
             const lp = await this.contracts.mining.getLotteryPool();
             document.getElementById('lottery-pot').innerText = parseFloat(ethers.formatUnits(lp, this.decimalsFTA)).toFixed(0);
+            const rate = await this.contracts.mining.exchangeRate();
+            document.getElementById('swap-rate').innerText = `1 USDT = ${parseFloat(ethers.formatUnits(rate, 8)).toFixed(0)} FTA`;
         } catch(e){}
     }
 
@@ -336,15 +398,15 @@ class Application {
         try {
             const allowance = await tokenContract.allowance(this.user, CONFIG.MINING);
             if (allowance < amount) {
-                this.showToast("Approbation requise...");
+                this.showToast("Approbation...");
                 const txApp = await tokenContract.approve(CONFIG.MINING, amount);
                 await txApp.wait();
             }
             const tx = useFTA ? await this.contracts.mining.buyMachineWithFTA(id) : await this.contracts.mining.buyMachine(id);
             await tx.wait();
-            this.showToast("Machine achetée !");
+            this.showToast("Achat réussi !");
             this.loadAllData();
-        } catch(e) { this.showToast("Erreur achat", true); console.error(e); }
+        } catch(e) { this.showToast("Erreur", true); }
         this.setLoader(false);
     }
 
@@ -389,10 +451,13 @@ class Application {
     async calcSwap() {
         const input = document.getElementById('swap-from-in').value;
         if(!input) return;
-        let result = this.swapDirection === 'USDT_TO_FTA' ? input * 2000 : input / 2000;
+        const rate = await this.contracts.mining.exchangeRate();
+        let result = this.swapDirection === 'USDT_TO_FTA' ? input * parseFloat(ethers.formatUnits(rate, 8)) : input / parseFloat(ethers.formatUnits(rate, 8));
         document.getElementById('swap-to-in').value = result.toFixed(5);
     }
-    async executeSwap() { this.showToast("Fonction swap à implémenter"); }
+    async executeSwap() { 
+        this.showToast("Fonction swap à implémenter avec allowance"); 
+    }
 
     nav(viewId) {
         document.querySelectorAll('.view').forEach(el => { el.classList.remove('active'); el.style.display = 'none'; });

@@ -4,36 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#121212">
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>FITIA PRO Wallet</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-    <!-- Ethers.js V6 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 </head>
 <body>
 
-    <!-- ÉCRAN DE VERROUILLAGE / CRÉATION -->
+    <!-- ÉCRAN DE VERROUILLAGE -->
     <div id="auth-screen" class="auth-screen">
         <div class="auth-box glass-card">
             <div class="auth-logo"><i class="fas fa-shield-alt"></i></div>
             <h2 id="auth-title">Bienvenue</h2>
             <p id="auth-subtitle">Sécurisez vos actifs</p>
 
-            <!-- Boutons Initiaux -->
             <div id="auth-setup">
-                <button class="btn-gold" onclick="App.showCreateModal()">
-                    <i class="fas fa-plus-circle"></i> Créer un Portefeuille
-                </button>
-                <button class="btn-secondary" onclick="App.showImportModal()">
-                    <i class="fas fa-key"></i> Importer un Portefeuille
-                </button>
+                <button class="btn-gold" onclick="App.showCreateModal()"><i class="fas fa-plus-circle"></i> Créer un Portefeuille</button>
+                <button class="btn-secondary" onclick="App.showImportModal()"><i class="fas fa-key"></i> Importer un Portefeuille</button>
             </div>
 
-            <!-- Clavier PIN -->
             <div id="auth-unlock" style="display:none;">
                 <p>Entrez votre code PIN</p>
                 <div class="pin-dots">
@@ -98,8 +90,14 @@
                     </div>
                 </div>
 
+                <!-- BOUTONS DÉPÔT / RETRAIT -->
+                <div class="action-grid">
+                    <button class="action-btn" onclick="App.showDepositModal()"><i class="fas fa-qrcode"></i> Dépôt</button>
+                    <button class="action-btn" onclick="App.showWithdrawModal()"><i class="fas fa-paper-plane"></i> Retrait</button>
+                </div>
+
                 <section class="content-section">
-                    <div class="section-title"><h3>Actifs</h3></div>
+                    <div class="section-title"><h3>Actifs (Polygon)</h3></div>
                     <div class="asset-list-card">
                         <div class="asset-row" onclick="App.nav('swap')">
                             <div class="coin-icon usdt"></div>
@@ -125,20 +123,9 @@
                 <button class="btn-danger-full" onclick="App.lockWallet()"><i class="fas fa-lock"></i> Verrouiller</button>
             </div>
 
-            <!-- SHOP -->
-            <div id="view-shop" class="view">
-                <div class="section-title"><h3>Boutique</h3></div>
-                <div id="shop-list" class="shop-grid"></div>
-            </div>
-
-            <!-- MES MACHINES -->
-            <div id="view-my-rigs" class="view">
-                <div class="section-title"><h3>Mes Machines</h3></div>
-                <div id="my-rigs-list" class="rigs-list"></div>
-                <div id="no-rigs" class="empty-state" style="display:none;"><i class="fas fa-server"></i><p>Aucune machine</p></div>
-            </div>
-
-            <!-- SWAP -->
+            <!-- Autres Vues (Shop, Rigs, Swap, Games) -->
+            <div id="view-shop" class="view"><div class="section-title"><h3>Boutique</h3></div><div id="shop-list" class="shop-grid"></div></div>
+            <div id="view-my-rigs" class="view"><div class="section-title"><h3>Mes Machines</h3></div><div id="my-rigs-list" class="rigs-list"></div><div id="no-rigs" class="empty-state" style="display:none;"><i class="fas fa-server"></i><p>Aucune machine</p></div></div>
             <div id="view-swap" class="view">
                 <div class="swap-card-dark">
                     <div class="swap-header"><span>Échange</span></div>
@@ -157,12 +144,10 @@
                             <div class="token-tag" id="token-to-display">FTA</div>
                         </div>
                     </div>
-                    <div class="rate-bar"><span>Taux</span><span id="swap-rate">1 USDT = 0 FTA</span></div>
+                    <div class="rate-bar"><span>Taux</span><span id="swap-rate">...</span></div>
                     <button class="btn-gold-full" onclick="App.executeSwap()">Échanger</button>
                 </div>
             </div>
-
-            <!-- JEUX -->
             <div id="view-games" class="view">
                 <div class="section-title"><h3>Games</h3></div>
                 <div class="game-card-dark">
