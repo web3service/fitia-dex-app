@@ -37,7 +37,7 @@ class Application {
         this.decimalsUSDT = 6; this.decimalsFTA = 8;
     }
 
-    async init() { console.log("Bitget Style UI Ready"); }
+    async init() { console.log("App Ready"); }
 
     async connect() {
         if (!window.ethereum) return alert("Installez MetaMask");
@@ -59,7 +59,7 @@ class Application {
 
             await this.loadAllData();
             setInterval(() => this.loadAllData(), 5000);
-        } catch (e) { this.showToast("Erreur de connexion", true); }
+        } catch (e) { this.showToast("Erreur de connexion", true); console.error(e); }
         this.setLoader(false);
     }
 
@@ -74,7 +74,6 @@ class Application {
         document.getElementById('bal-usdt').innerText = parseFloat(ethers.formatUnits(balUsdt, this.decimalsUSDT)).toFixed(2);
         document.getElementById('bal-fta').innerText = parseFloat(ethers.formatUnits(balFta, this.decimalsFTA)).toFixed(2);
         
-        // Swap
         document.getElementById('swap-bal-from').innerText = this.swapDirection === 'USDT_TO_FTA' ? parseFloat(ethers.formatUnits(balUsdt, this.decimalsUSDT)).toFixed(2) : parseFloat(ethers.formatUnits(balFta, this.decimalsFTA)).toFixed(2);
         document.getElementById('swap-bal-to').innerText = this.swapDirection === 'USDT_TO_FTA' ? parseFloat(ethers.formatUnits(balFta, this.decimalsFTA)).toFixed(2) : parseFloat(ethers.formatUnits(balUsdt, this.decimalsUSDT)).toFixed(2);
 
@@ -115,7 +114,7 @@ class Application {
             if (count > 0) {
                 hasMachines = true;
                 const div = document.createElement('div');
-                div.className = 'rig-row'; // Utiliser style asset-row ou custom
+                div.className = 'rig-row';
                 div.innerHTML = `
                     <div style="flex:1"><strong>RIG ${i+1}</strong> <span style="opacity:0.7">x${count}</span></div>
                     <div style="color:var(--primary)">${this.shopData[i].power.toFixed(5)} FTA/s</div>
@@ -158,7 +157,7 @@ class Application {
         try {
             const allowance = await tokenContract.allowance(this.user, CONFIG.MINING);
             if (allowance < amount) {
-                this.showToast("Approbation...");
+                this.showToast("Approbation requise...");
                 const txApp = await tokenContract.approve(CONFIG.MINING, amount);
                 await txApp.wait();
             }
@@ -166,17 +165,17 @@ class Application {
             await tx.wait();
             this.showToast("Machine achetée !");
             this.loadAllData();
-        } catch(e) { this.showToast("Erreur", true); }
+        } catch(e) { this.showToast("Erreur achat", true); console.error(e); }
         this.setLoader(false);
     }
 
     async claim() {
         if(!this.user) return;
-        this.setLoader(true, "Claim...");
+        this.setLoader(true, "Réclamation...");
         try {
             const tx = await this.contracts.mining.claimRewards();
             await tx.wait();
-            this.showToast("Réclamé !");
+            this.showToast("Gains réclamés !");
             this.loadAllData();
         } catch(e) { this.showToast("Erreur", true); }
         this.setLoader(false);
@@ -194,9 +193,13 @@ class Application {
     async calcSwap() {
         const input = document.getElementById('swap-from-in').value;
         if(!input) return;
-        const rate = 2000; // Idéalement fetch rate
-        let result = this.swapDirection === 'USDT_TO_FTA' ? input * rate : input / rate;
+        // Idéalement lire le rate du contrat, ici on simplifie
+        let result = this.swapDirection === 'USDT_TO_FTA' ? input * 2000 : input / 2000; 
         document.getElementById('swap-to-in').value = result.toFixed(5);
+    }
+
+    async executeSwap() {
+        this.showToast("Fonction Swap (implémenter logique allowance + tx comme buyMachine)");
     }
 
     async playWinGo(betType, choice) {
@@ -211,7 +214,7 @@ class Application {
 
     async _playGame(funcName, args, amount) {
         if(!this.user) return this.connect();
-        this.setLoader(true, "Jeu...");
+        this.setLoader(true, "Jeu en cours...");
         try {
             const allowance = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
             if (allowance < amount) {
@@ -222,7 +225,7 @@ class Application {
             await tx.wait();
             this.showToast("Jeu terminé !");
             this.loadAllData();
-        } catch(e) { this.showToast("Erreur Jeu", true); }
+        } catch(e) { this.showToast("Erreur Jeu", true); console.error(e); }
         this.setLoader(false);
     }
 
@@ -236,7 +239,12 @@ class Application {
     }
 
     copyLink() { navigator.clipboard.writeText(document.getElementById('ref-link').value); this.showToast("Lien copié !"); }
-    setLoader(show, msg="Chargement...") { document.getElementById('loader-text').innerText = msg; document.getElementById('loader').classList.toggle('hidden', !show); }
+    
+    setLoader(show, msg="Chargement...") { 
+        document.getElementById('loader-text').innerText = msg; 
+        document.getElementById('loader').classList.toggle('hidden', !show); 
+    }
+    
     showToast(msg, isError=false) {
         const div = document.createElement('div');
         div.className = 'toast';

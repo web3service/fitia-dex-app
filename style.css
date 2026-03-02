@@ -1,5 +1,5 @@
 :root {
-    --bg-base: #121212; /* Noir pur Bitget */
+    --bg-base: #121212;
     --bg-card: #1E1E1E;
     --bg-input: #2A2A2A;
     --text-main: #FFFFFF;
@@ -13,7 +13,7 @@
 
 * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
 body {
-    margin: 0; background-color: var(--bg-base); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif;
+    margin: 0; background-color: var(--bg-base); font-family: -apple-system, BlinkMacSystemFont, "Inter", Roboto, sans-serif;
     color: var(--text-main); height: 100vh; overflow: hidden;
 }
 
@@ -23,6 +23,8 @@ body {
 .top-bar {
     padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;
     background: var(--bg-base); border-bottom: 1px solid var(--border); z-index: 10;
+    /* Fix pour les encuches iPhone */
+    padding-top: max(15px, env(safe-area-inset-top));
 }
 .brand-logo { display: flex; align-items: center; gap: 10px; }
 .logo-icon-box {
@@ -46,7 +48,7 @@ body {
 .view { display: none; }
 .view.active { display: block; animation: fadeIn 0.3s ease; }
 
-/* --- HERO CARD (Dashboard) --- */
+/* --- HERO CARD --- */
 .asset-hero-card {
     background: linear-gradient(145deg, #2A2A2A, #1A1A1A);
     border-radius: 16px; padding: 25px; margin-bottom: 25px;
@@ -69,7 +71,7 @@ body {
     cursor: pointer; box-shadow: 0 4px 12px rgba(240, 185, 11, 0.2);
 }
 
-/* --- LISTS & SECTIONS --- */
+/* --- LISTS --- */
 .section-title { margin-bottom: 15px; display: flex; justify-content: space-between; align-items: end; }
 .section-title h3 { margin: 0; font-size: 1.1rem; font-weight: 600; }
 .section-title p { margin: 0; font-size: 0.8rem; color: var(--text-dim); }
@@ -104,6 +106,13 @@ body {
 .btn-tile.usdt { background: #fff; color: #000; }
 .btn-tile.fta { background: var(--primary); color: #000; }
 
+/* --- RIGS LIST --- */
+.rigs-list { display: flex; flex-direction: column; gap: 10px; }
+.rig-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 15px; background: var(--bg-card); border-radius: 10px; border-left: 3px solid var(--primary);
+}
+
 /* --- SWAP --- */
 .swap-card-dark { background: var(--bg-card); border-radius: 16px; padding: 20px; border: 1px solid var(--border); }
 .swap-header { font-weight: 600; margin-bottom: 20px; }
@@ -111,9 +120,9 @@ body {
 .flex-between { display: flex; justify-content: space-between; margin-bottom: 8px; }
 .label-dim { font-size: 0.8rem; color: var(--text-dim); }
 .input-line { display: flex; align-items: center; background: var(--bg-input); border-radius: 8px; padding: 12px; }
-.input-line input { flex: 1; background: transparent; border: none; font-size: 1.5rem; color: white; font-weight: 500; }
+.input-line input { flex: 1; background: transparent; border: none; font-size: 1.5rem; color: white; font-weight: 500; min-width: 0; }
 .token-tag { padding: 4px 10px; background: #333; border-radius: 6px; font-weight: 600; font-size: 0.9rem; }
-.swap-divider { text-align: center; padding: 5px 0; color: var(--text-dim); }
+.swap-divider { text-align: center; padding: 5px 0; color: var(--text-dim); cursor: pointer; }
 .rate-bar { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; margin: 15px 0; }
 .btn-gold-full { width: 100%; padding: 16px; border-radius: 10px; border: none; background: var(--primary); color: #000; font-weight: 700; font-size: 1rem; cursor: pointer; }
 
@@ -138,21 +147,28 @@ body {
 .gi-content h5 { margin: 0; font-size: 1rem; }
 .gi-content p { margin: 0; font-size: 0.8rem; color: var(--text-dim); }
 
-/* --- BOTTOM NAV --- */
+/* --- NAVIGATION (Safe Area Support) --- */
 .bottom-nav-float {
-    position: fixed; bottom: 15px; left: 15px; right: 15px;
-    background: #1E1E1E; border-radius: 25px;
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #1E1E1E; 
     display: flex; justify-content: space-around; padding: 12px 0;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--border); z-index: 100;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.5); 
+    border-top: 1px solid var(--border); 
+    z-index: 100;
+    /* Magic for iPhones */
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 .nav-item-bit { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-dim); font-size: 0.7rem; cursor: pointer; transition: all 0.2s; width: 50px; }
 .nav-item-bit i { font-size: 1.1rem; }
 .nav-item-bit.active { color: var(--primary); }
 
-/* --- LOADER --- */
+/* --- EMPTY STATE --- */
+.empty-state { text-align: center; padding: 40px; color: var(--text-dim); }
+.empty-state i { font-size: 3rem; margin-bottom: 10px; opacity: 0.5; }
+
+/* --- UTILS --- */
 .loader-screen { position: fixed; inset: 0; background: rgba(18, 18, 18, 0.95); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .spinner-bit { width: 40px; height: 40px; border: 3px solid #333; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
-
 .hidden { display: none !important; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes spin { 100% { transform: rotate(360deg); } }

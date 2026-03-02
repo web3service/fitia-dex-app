@@ -2,23 +2,29 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FITIA PRO Wallet</title>
+    <!-- Configuration critique pour les téléphones (encoches, bordures) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#121212">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <title>FITIA PRO Wallet</title>
+    
+    <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 </head>
 <body>
 
-    <!-- Toast Container -->
     <div id="toast-container"></div>
 
     <div class="app-shell">
        
-        <!-- Header Style Bitget -->
+        <!-- Header -->
         <header class="top-bar">
             <div class="brand-logo">
                 <div class="logo-icon-box"><i class="fas fa-bolt"></i></div>
@@ -37,10 +43,8 @@
 
         <main class="main-scroll">
            
-            <!-- DASHBOARD (Bitget Style) -->
+            <!-- DASHBOARD -->
             <div id="view-dashboard" class="view active">
-                
-                <!-- Main Asset Card -->
                 <div class="asset-hero-card">
                     <div class="hero-bg-art"></div>
                     <div class="hero-content">
@@ -58,11 +62,8 @@
                     </div>
                 </div>
 
-                <!-- Wallet Section -->
                 <section class="content-section">
-                    <div class="section-title">
-                        <h3>Actifs</h3>
-                    </div>
+                    <div class="section-title"><h3>Actifs</h3></div>
                     <div class="asset-list-card">
                         <div class="asset-row" onclick="App.nav('swap')">
                             <div class="coin-icon usdt"></div>
@@ -70,9 +71,7 @@
                                 <span class="coin-name">USDT</span>
                                 <span class="coin-full">Tether USD</span>
                             </div>
-                            <div class="coin-balance">
-                                <span id="bal-usdt">0.00</span>
-                            </div>
+                            <div class="coin-balance"><span id="bal-usdt">0.00</span></div>
                         </div>
                         <div class="asset-row" onclick="App.nav('swap')">
                             <div class="coin-icon fta"></div>
@@ -80,24 +79,18 @@
                                 <span class="coin-name">FTA</span>
                                 <span class="coin-full">Fitia Token</span>
                             </div>
-                            <div class="coin-balance">
-                                <span id="bal-fta">0.00</span>
-                            </div>
+                            <div class="coin-balance"><span id="bal-fta">0.00</span></div>
                         </div>
                     </div>
                 </section>
 
-                <!-- Referral Section -->
                 <section class="content-section">
-                    <div class="section-title">
-                        <h3>Parrainage</h3>
-                    </div>
+                    <div class="section-title"><h3>Parrainage</h3></div>
                     <div class="ref-card-dark">
                         <input type="text" id="ref-link" readonly value="Connectez-vous...">
                         <button class="copy-btn" onclick="App.copyLink()"><i class="fas fa-copy"></i></button>
                     </div>
                 </section>
-
             </div>
 
             <!-- SHOP -->
@@ -111,9 +104,7 @@
 
             <!-- MES MACHINES -->
             <div id="view-my-rigs" class="view">
-                <div class="section-title">
-                    <h3>Mes Machines</h3>
-                </div>
+                <div class="section-title"><h3>Mes Machines</h3></div>
                 <div id="my-rigs-list" class="rigs-list"></div>
                 <div id="no-rigs" class="empty-state" style="display:none;">
                     <i class="fas fa-inbox"></i>
@@ -124,9 +115,7 @@
             <!-- SWAP -->
             <div id="view-swap" class="view">
                 <div class="swap-card-dark">
-                    <div class="swap-header">
-                        <span>Échange Rapide</span>
-                    </div>
+                    <div class="swap-header"><span>Échange Rapide</span></div>
                     
                     <div class="swap-box-style">
                         <div class="flex-between">
@@ -139,9 +128,7 @@
                         </div>
                     </div>
 
-                    <div class="swap-divider" onclick="App.toggleSwap()">
-                        <i class="fas fa-arrow-down"></i>
-                    </div>
+                    <div class="swap-divider" onclick="App.toggleSwap()"><i class="fas fa-arrow-down"></i></div>
 
                     <div class="swap-box-style">
                         <div class="flex-between">
@@ -158,16 +145,13 @@
                         <span>Taux</span>
                         <span id="swap-rate">1 USDT = 0 FTA</span>
                     </div>
-
                     <button class="btn-gold-full" onclick="App.executeSwap()">Échanger</button>
                 </div>
             </div>
 
             <!-- JEUX -->
             <div id="view-games" class="view">
-                <div class="section-title">
-                    <h3>Game Center</h3>
-                </div>
+                <div class="section-title"><h3>Game Center</h3></div>
                 
                 <!-- Win Go -->
                 <div class="game-card-dark">
@@ -175,7 +159,7 @@
                         <i class="fas fa-dice game-ic"></i>
                         <div class="game-title-area">
                             <h4>Win Go</h4>
-                            <span>Choisissez un numéro</span>
+                            <span>Choisissez un numéro (x9)</span>
                         </div>
                     </div>
                     <input type="number" id="wingo-amount" class="dark-input" placeholder="Montant FTA">
@@ -193,7 +177,6 @@
                     </div>
                 </div>
 
-                <!-- Other Games -->
                 <div class="game-list-grid">
                     <div class="game-item-small" onclick="App.spinWheel()">
                         <div class="gi-icon"><i class="fas fa-life-ring"></i></div>
@@ -220,15 +203,12 @@
                         <i class="fas fa-chevron-right"></i>
                     </div>
                 </div>
-
             </div>
 
-            <!-- Spacer for bottom nav -->
-            <div style="height:100px;"></div>
-
+            <div style="height:100px;"></div> <!-- Espace pour la nav -->
         </main>
 
-        <!-- Navigation Flottante Style Bitget -->
+        <!-- Navigation Flottante -->
         <nav class="bottom-nav-float">
             <div class="nav-item-bit active" onclick="App.nav('dashboard')">
                 <i class="fas fa-wallet"></i>
@@ -251,7 +231,6 @@
                 <span>Games</span>
             </div>
         </nav>
-
     </div>
 
     <div id="loader" class="loader-screen hidden">
