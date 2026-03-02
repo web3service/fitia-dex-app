@@ -96,19 +96,48 @@
                     <button class="action-btn" onclick="App.showWithdrawModal()"><i class="fas fa-paper-plane"></i> Retrait</button>
                 </div>
 
+                <!-- LISTE DES ACTIFS AVEC LOGOS -->
                 <section class="content-section">
                     <div class="section-title"><h3>Actifs (Polygon)</h3></div>
                     <div class="asset-list-card">
+                        
+                        <!-- MATIC -->
+                        <div class="asset-row" onclick="App.showDepositModal()">
+                            <div class="coin-icon matic">
+                                <img src="https://cryptologos.cc/logos/polygon-matic-logo.png" alt="MATIC">
+                            </div>
+                            <div class="coin-info">
+                                <span class="coin-name">MATIC</span>
+                                <span class="coin-full">Polygon</span>
+                            </div>
+                            <div class="coin-balance"><span id="bal-matic">0.00</span></div>
+                        </div>
+
+                        <!-- USDT -->
                         <div class="asset-row" onclick="App.nav('swap')">
-                            <div class="coin-icon usdt"></div>
-                            <div class="coin-info"><span class="coin-name">USDT</span></div>
+                            <div class="coin-icon usdt">
+                                <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" alt="USDT">
+                            </div>
+                            <div class="coin-info">
+                                <span class="coin-name">USDT</span>
+                                <span class="coin-full">Tether USD</span>
+                            </div>
                             <div class="coin-balance"><span id="bal-usdt">0.00</span></div>
                         </div>
+
+                        <!-- FTA -->
                         <div class="asset-row" onclick="App.nav('swap')">
-                            <div class="coin-icon fta"></div>
-                            <div class="coin-info"><span class="coin-name">FTA</span></div>
+                            <div class="coin-icon fta">
+                                <!-- Logo FTA : Utilisation d'un style CSS car pas d'URL officielle -->
+                                <span class="logo-text">FTA</span>
+                            </div>
+                            <div class="coin-info">
+                                <span class="coin-name">FTA</span>
+                                <span class="coin-full">Fitia Token</span>
+                            </div>
                             <div class="coin-balance"><span id="bal-fta">0.00</span></div>
                         </div>
+
                     </div>
                 </section>
 

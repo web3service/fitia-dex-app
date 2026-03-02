@@ -29,7 +29,7 @@ const ERC20_ABI = [
     "function balanceOf(address) view returns (uint256)",
     "function approve(address spender, uint256 amount) returns (bool)",
     "function allowance(address owner, address spender) view returns (uint256)",
-    "function transfer(address to, uint256 amount) returns (bool)" // Ajout pour retrait
+    "function transfer(address to, uint256 amount) returns (bool)"
 ];
 
 class Application {
@@ -107,7 +107,6 @@ class Application {
             this.keystoreString = keystoreJson;
             this.setLoader(false);
             
-            // AFFICHAGE AVEC BOUTON COPIER
             const html = `
                 <p class="seed-warning"><i class="fas fa-exclamation-triangle"></i> SAUVEGARDEZ CES MOTS C'EST VOTRE SEULE CLÉ !</p>
                 <div id="seed-display" style="background:#000; padding:15px; border-radius:8px; margin-bottom:15px; color:var(--primary); font-weight:bold; font-family:monospace; word-break:break-all; user-select:all;">
@@ -219,7 +218,7 @@ class Application {
             <div class="address-box">${this.user}</div>
             <button class="btn-gold" onclick="App.copyAddress()"><i class="fas fa-copy"></i> Copier l'adresse</button>
             <p style="font-size:0.8rem; color:var(--text-dim); margin-top:15px;">
-                Envoyez uniquement des USDT ou FTA sur le réseau Polygon. L'envoi d'autres actifs entraînera une perte définitive.
+                Envoyez uniquement des MATIC, USDT ou FTA sur le réseau Polygon.
             </p>
         `;
         document.getElementById('modal-body').innerHTML = html;
@@ -237,6 +236,7 @@ class Application {
             <div style="margin-bottom:15px;">
                 <label class="label-dim">Sélectionner le token</label>
                 <select id="withdraw-token" class="input-seed" style="height:50px; cursor:pointer;">
+                    <option value="MATIC">MATIC (POL)</option>
                     <option value="USDT">USDT (Tether)</option>
                     <option value="FTA">FTA (Fitia)</option>
                 </select>
@@ -271,25 +271,33 @@ class Application {
         this.closeModal();
 
         try {
-            let contract, decimals;
-            if (tokenSymbol === "USDT") {
-                contract = this.contracts.usdt;
-                decimals = this.decimalsUSDT;
-            } else {
-                contract = this.contracts.fta;
-                decimals = this.decimalsFTA;
+            let tx;
+            // Si c'est du MATIC (Native)
+            if (tokenSymbol === "MATIC") {
+                const amount = ethers.parseUnits(amountStr, 18);
+                const balance = await this.provider.getBalance(this.user);
+                if (balance < amount) { this.setLoader(false); return this.showToast("Solde MATIC insuffisant", true); }
+                
+                tx = await this.signer.sendTransaction({ to: toAddress, value: amount });
+            } 
+            // Si c'est un Token (USDT ou FTA)
+            else {
+                let contract, decimals;
+                if (tokenSymbol === "USDT") {
+                    contract = this.contracts.usdt;
+                    decimals = this.decimalsUSDT;
+                } else {
+                    contract = this.contracts.fta;
+                    decimals = this.decimalsFTA;
+                }
+
+                const amount = ethers.parseUnits(amountStr, decimals);
+                const balance = await contract.balanceOf(this.user);
+                if (balance < amount) { this.setLoader(false); return this.showToast("Solde insuffisant", true); }
+
+                tx = await contract.transfer(toAddress, amount);
             }
 
-            const amount = ethers.parseUnits(amountStr, decimals);
-            
-            // Vérifier le solde
-            const balance = await contract.balanceOf(this.user);
-            if (balance < amount) {
-                this.setLoader(false);
-                return this.showToast("Solde insuffisant", true);
-            }
-
-            const tx = await contract.transfer(toAddress, amount);
             this.showToast("Transaction envoyée...");
             await tx.wait();
             this.showToast("Retrait réussi !");
@@ -306,6 +314,11 @@ class Application {
     async loadAllData() {
         if (!this.user) return;
         try {
+            // 1. MATIC Balance (Native)
+            const balMatic = await this.provider.getBalance(this.user);
+            document.getElementById('bal-matic').innerText = parseFloat(ethers.formatUnits(balMatic, 18)).toFixed(4);
+
+            // 2. Token Balances
             const balUsdt = await this.contracts.usdt.balanceOf(this.user);
             const balFta = await this.contracts.fta.balanceOf(this.user);
             document.getElementById('bal-usdt').innerText = parseFloat(ethers.formatUnits(balUsdt, this.decimalsUSDT)).toFixed(2);
