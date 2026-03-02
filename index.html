@@ -90,56 +90,32 @@
                     </div>
                 </div>
 
-                <!-- BOUTONS DÉPÔT / RETRAIT -->
                 <div class="action-grid">
                     <button class="action-btn" onclick="App.showDepositModal()"><i class="fas fa-qrcode"></i> Dépôt</button>
                     <button class="action-btn" onclick="App.showWithdrawModal()"><i class="fas fa-paper-plane"></i> Retrait</button>
                 </div>
 
-                <!-- LISTE DES ACTIFS AVEC LOGOS -->
                 <section class="content-section">
                     <div class="section-title"><h3>Actifs (Polygon)</h3></div>
                     <div class="asset-list-card">
-                        
-                        <!-- MATIC -->
                         <div class="asset-row" onclick="App.showDepositModal()">
-                            <div class="coin-icon matic">
-                                <img src="https://i.ibb.co/NdCLLsck/IMG-20260302-131520-512-x-512-pixel.webp" alt="MATIC">
-                            </div>
-                            <div class="coin-info">
-                                <span class="coin-name">MATIC</span>
-                                <span class="coin-full">Polygon</span>
-                            </div>
+                            <div class="coin-icon matic"><img src="https://cryptologos.cc/logos/polygon-matic-logo.png" alt="MATIC"></div>
+                            <div class="coin-info"><span class="coin-name">MATIC</span><span class="coin-full">Polygon</span></div>
                             <div class="coin-balance"><span id="bal-matic">0.00</span></div>
                         </div>
-
-                        <!-- USDT -->
                         <div class="asset-row" onclick="App.nav('swap')">
-                            <div class="coin-icon usdt">
-                                <img src="https://i.ibb.co/BRGx1GN/IMG-20260228-134642-512-x-512-pixel.webp" alt="USDT">
-                            </div>
-                            <div class="coin-info">
-                                <span class="coin-name">USDT</span>
-                                <span class="coin-full">Tether USD</span>
-                            </div>
+                            <div class="coin-icon usdt"><img src="https://cryptologos.cc/logos/tether-usdt-logo.png" alt="USDT"></div>
+                            <div class="coin-info"><span class="coin-name">USDT</span><span class="coin-full">Tether USD</span></div>
                             <div class="coin-balance"><span id="bal-usdt">0.00</span></div>
                         </div>
-
-                        <!-- FTA -->
                         <div class="asset-row" onclick="App.nav('swap')">
                             <div class="coin-icon fta">
-                                <!-- ============================================== -->
                                 <!-- REMPLACEZ L'URL CI-DESSOUS PAR LE LIEN DE VOTRE LOGO FTA -->
-                                <img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" alt="FTA">
-                                <!-- ============================================== -->
+                                <img src="https://via.placeholder.com/40/FFD700/000000?text=FTA" alt="FTA">
                             </div>
-                            <div class="coin-info">
-                                <span class="coin-name">FTA</span>
-                                <span class="coin-full">Fitia Token</span>
-                            </div>
+                            <div class="coin-info"><span class="coin-name">FTA</span><span class="coin-full">Fitia Token</span></div>
                             <div class="coin-balance"><span id="bal-fta">0.00</span></div>
                         </div>
-
                     </div>
                 </section>
 
@@ -154,9 +130,26 @@
                 <button class="btn-danger-full" onclick="App.lockWallet()"><i class="fas fa-lock"></i> Verrouiller</button>
             </div>
 
-            <!-- Autres Vues (Shop, Rigs, Swap, Games) -->
-            <div id="view-shop" class="view"><div class="section-title"><h3>Boutique</h3></div><div id="shop-list" class="shop-grid"></div></div>
-            <div id="view-my-rigs" class="view"><div class="section-title"><h3>Mes Machines</h3></div><div id="my-rigs-list" class="rigs-list"></div><div id="no-rigs" class="empty-state" style="display:none;"><i class="fas fa-server"></i><p>Aucune machine</p></div></div>
+            <!-- SHOP (AFFICHAGE EXPLICITE) -->
+            <div id="view-shop" class="view">
+                <div class="section-title">
+                    <h3>Boutique Minage</h3>
+                    <p>Puissance FTA/s</p>
+                </div>
+                <!-- Conteneur des machines -->
+                <div id="shop-list" class="shop-grid">
+                    <p style="color:var(--text-dim); text-align:center; width:100%; grid-column: 1/-1; padding: 20px;">Chargement des machines...</p>
+                </div>
+            </div>
+
+            <!-- MES MACHINES -->
+            <div id="view-my-rigs" class="view">
+                <div class="section-title"><h3>Mes Machines</h3></div>
+                <div id="my-rigs-list" class="rigs-list"></div>
+                <div id="no-rigs" class="empty-state" style="display:none;"><i class="fas fa-server"></i><p>Aucune machine</p></div>
+            </div>
+
+            <!-- SWAP -->
             <div id="view-swap" class="view">
                 <div class="swap-card-dark">
                     <div class="swap-header"><span>Échange</span></div>
@@ -179,6 +172,8 @@
                     <button class="btn-gold-full" onclick="App.executeSwap()">Échanger</button>
                 </div>
             </div>
+
+            <!-- GAMES -->
             <div id="view-games" class="view">
                 <div class="section-title"><h3>Games</h3></div>
                 <div class="game-card-dark">

@@ -84,14 +84,9 @@ body {
 .coin-icon {
     width: 40px; height: 40px; border-radius: 50%; margin-right: 12px; 
     display: flex; align-items: center; justify-content: center;
-    overflow: hidden; background-color: #333; flex-shrink: 0; 
+    overflow: hidden; background-color: #333; flex-shrink: 0;
 }
-/* Force image to fill the circle */
-.coin-icon img {
-    width: 100%; height: 100%; object-fit: cover;
-}
-
-/* Specific backgrounds if image fails */
+.coin-icon img { width: 100%; height: 100%; object-fit: cover; }
 .coin-icon.matic { background: transparent; }
 .coin-icon.usdt { background: transparent; }
 .coin-icon.fta { background: linear-gradient(135deg, var(--primary), #8247E5); }
@@ -105,14 +100,15 @@ body {
 .ref-card-dark input { flex: 1; border: none; background: transparent; padding: 15px; color: var(--text-main); }
 .copy-btn { background: var(--bg-input); border: none; color: var(--text-dim); padding: 0 15px; cursor: pointer; }
 
-/* Shop Grid */
+/* Shop Grid (Important pour l'affichage) */
 .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.machine-tile { background: var(--bg-card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); text-align: center; }
-.m-name { font-weight: 600; font-size: 1rem; margin-bottom: 5px; display: block; }
+.machine-tile { background: var(--bg-card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); text-align: center; transition: transform 0.2s; }
+.machine-tile:active { transform: scale(0.98); }
+.m-name { font-weight: 700; font-size: 1.1rem; margin-bottom: 5px; display: block; }
 .m-power { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px; display: block; }
-.m-price { color: var(--primary); font-weight: 700; font-size: 1.1rem; margin-bottom: 15px; display: block; }
+.m-price { color: var(--primary); font-weight: 800; font-size: 1.2rem; margin-bottom: 15px; display: block; }
 .btn-grp { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.btn-tile { padding: 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; }
+.btn-tile { padding: 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: none; }
 .btn-tile.usdt { background: #fff; color: #000; }
 .btn-tile.fta { background: var(--primary); color: #000; }
 

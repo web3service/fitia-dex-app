@@ -326,12 +326,17 @@ class Application {
 
     async loadShop() {
         const container = document.getElementById('shop-list');
+        // IMPORTANT : On vide le conteneur avant de charger (enlève "Chargement...")
+        container.innerHTML = ''; 
+
         const count = await this.contracts.mining.getMachineCount();
+        
         for(let i=0; i<count; i++) {
             const m = await this.contracts.mining.machineTypes(i);
             const price = parseFloat(ethers.formatUnits(m.price, this.decimalsUSDT));
             const power = parseFloat(ethers.formatUnits(m.power, this.decimalsFTA));
             this.shopData.push({price, power});
+            
             const div = document.createElement('div');
             div.className = 'machine-tile';
             div.innerHTML = `
@@ -381,6 +386,8 @@ class Application {
 
     async _buyLogic(id, useFTA) {
         if (!this.user) return;
+        if(this.shopData.length === 0) return this.showToast("Shop loading...", true);
+
         const m = this.shopData[id];
         let amount, tokenContract;
         
@@ -407,7 +414,7 @@ class Application {
             await tx.wait();
             this.showToast("Achat réussi !");
             this.loadAllData();
-        } catch(e) { this.showToast("Erreur", true); }
+        } catch(e) { this.showToast("Erreur", true); console.error(e); }
         this.setLoader(false);
     }
 
