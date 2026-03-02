@@ -250,8 +250,8 @@ class Application {
                 <input type="number" id="withdraw-amount" class="input-seed" placeholder="0.00">
             </div>
             <button class="btn-gold" onclick="App.executeWithdraw()">Envoyer</button>
-            <p style="font-size:0.8rem; color:var(--warning); margin-top:10px;">
-                <i class="fas fa-exclamation-circle"></i> Assurez-vous d'avoir du MATIC pour les frais de réseau (Gas).
+            <p style="font-size:0.8rem; color:orange; margin-top:10px;">
+                <i class="fas fa-exclamation-circle"></i> Assurez-vous d'avoir du MATIC pour les frais de réseau.
             </p>
         `;
         document.getElementById('modal-body').innerHTML = html;
@@ -272,29 +272,19 @@ class Application {
 
         try {
             let tx;
-            // Si c'est du MATIC (Native)
             if (tokenSymbol === "MATIC") {
                 const amount = ethers.parseUnits(amountStr, 18);
                 const balance = await this.provider.getBalance(this.user);
                 if (balance < amount) { this.setLoader(false); return this.showToast("Solde MATIC insuffisant", true); }
-                
                 tx = await this.signer.sendTransaction({ to: toAddress, value: amount });
-            } 
-            // Si c'est un Token (USDT ou FTA)
-            else {
+            } else {
                 let contract, decimals;
-                if (tokenSymbol === "USDT") {
-                    contract = this.contracts.usdt;
-                    decimals = this.decimalsUSDT;
-                } else {
-                    contract = this.contracts.fta;
-                    decimals = this.decimalsFTA;
-                }
+                if (tokenSymbol === "USDT") { contract = this.contracts.usdt; decimals = this.decimalsUSDT; }
+                else { contract = this.contracts.fta; decimals = this.decimalsFTA; }
 
                 const amount = ethers.parseUnits(amountStr, decimals);
                 const balance = await contract.balanceOf(this.user);
                 if (balance < amount) { this.setLoader(false); return this.showToast("Solde insuffisant", true); }
-
                 tx = await contract.transfer(toAddress, amount);
             }
 
@@ -314,11 +304,9 @@ class Application {
     async loadAllData() {
         if (!this.user) return;
         try {
-            // 1. MATIC Balance (Native)
             const balMatic = await this.provider.getBalance(this.user);
             document.getElementById('bal-matic').innerText = parseFloat(ethers.formatUnits(balMatic, 18)).toFixed(4);
 
-            // 2. Token Balances
             const balUsdt = await this.contracts.usdt.balanceOf(this.user);
             const balFta = await this.contracts.fta.balanceOf(this.user);
             document.getElementById('bal-usdt').innerText = parseFloat(ethers.formatUnits(balUsdt, this.decimalsUSDT)).toFixed(2);
@@ -468,9 +456,7 @@ class Application {
         let result = this.swapDirection === 'USDT_TO_FTA' ? input * parseFloat(ethers.formatUnits(rate, 8)) : input / parseFloat(ethers.formatUnits(rate, 8));
         document.getElementById('swap-to-in').value = result.toFixed(5);
     }
-    async executeSwap() { 
-        this.showToast("Fonction swap à implémenter avec allowance"); 
-    }
+    async executeSwap() { this.showToast("Fonction swap à implémenter"); }
 
     nav(viewId) {
         document.querySelectorAll('.view').forEach(el => { el.classList.remove('active'); el.style.display = 'none'; });
