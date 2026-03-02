@@ -318,37 +318,56 @@ class Application {
             const power = await this.contracts.mining.getActivePower(this.user);
             document.getElementById('val-power').innerText = parseFloat(ethers.formatUnits(power, this.decimalsFTA)).toFixed(5) + " FTA/s";
             
-            if (this.shopData.length === 0) await this.loadShop();
+            // Chargement Shop (avec gestion d'erreur)
+            await this.loadShop();
+            
             await this.loadMyMachines();
             await this.loadGameInfo();
-        } catch(e) { console.error(e); }
+        } catch(e) { 
+            console.error("Erreur Load Data", e); 
+        }
     }
 
     async loadShop() {
         const container = document.getElementById('shop-list');
-        // IMPORTANT : On vide le conteneur avant de charger (enlève "Chargement...")
-        container.innerHTML = ''; 
-
-        const count = await this.contracts.mining.getMachineCount();
         
-        for(let i=0; i<count; i++) {
-            const m = await this.contracts.mining.machineTypes(i);
-            const price = parseFloat(ethers.formatUnits(m.price, this.decimalsUSDT));
-            const power = parseFloat(ethers.formatUnits(m.power, this.decimalsFTA));
-            this.shopData.push({price, power});
+        // Si déjà chargé, on quitte
+        if (this.shopData.length > 0) return;
+
+        try {
+            // On vide le conteneur AVANT de charger pour enlever "Chargement..."
+            container.innerHTML = '';
+
+            const count = await this.contracts.mining.getMachineCount();
             
-            const div = document.createElement('div');
-            div.className = 'machine-tile';
-            div.innerHTML = `
-                <span class="m-name">RIG ${i+1}</span>
-                <span class="m-power">${power.toFixed(5)} FTA/s</span>
-                <span class="m-price">${price}$</span>
-                <div class="btn-grp">
-                    <button class="btn-tile usdt" onclick="App.buyMachine(${i})">USDT</button>
-                    <button class="btn-tile fta" onclick="App.buyMachineFTA(${i})">FTA</button>
+            for(let i=0; i<count; i++) {
+                const m = await this.contracts.mining.machineTypes(i);
+                const price = parseFloat(ethers.formatUnits(m.price, this.decimalsUSDT));
+                const power = parseFloat(ethers.formatUnits(m.power, this.decimalsFTA));
+                this.shopData.push({price, power});
+                const div = document.createElement('div');
+                div.className = 'machine-tile';
+                div.innerHTML = `
+                    <span class="m-name">RIG ${i+1}</span>
+                    <span class="m-power">${power.toFixed(5)} FTA/s</span>
+                    <span class="m-price">${price}$</span>
+                    <div class="btn-grp">
+                        <button class="btn-tile usdt" onclick="App.buyMachine(${i})">USDT</button>
+                        <button class="btn-tile fta" onclick="App.buyMachineFTA(${i})">FTA</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            }
+        } catch (error) {
+            console.error("Erreur Chargement Shop:", error);
+            // Affichage d'un message d'erreur DANS la page
+            container.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--danger);">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                    <p>Impossible de charger la boutique.</p>
+                    <p style="font-size: 0.8rem; color: var(--text-dim);">Vérifiez que l'adresse du contrat (<b>CONFIG.MINING</b>) est correcte dans le fichier <b>app.js</b>.</p>
                 </div>
             `;
-            container.appendChild(div);
         }
     }
 
