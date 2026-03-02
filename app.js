@@ -47,7 +47,7 @@ class Application {
         this.shopData = []; this.isLoadingShop = false; 
         this.vizContext = null; this.vizBars = [];
         
-        // Mes variables pour le PIN et le Wallet
+        // Variables Portefeuille Intégré
         this.keystoreString = null;
         this.pinCode = "";
         this.isUnlocking = false;
@@ -59,16 +59,16 @@ class Application {
         this.wheelCtx = null;
     }
 
-    // --- PARTIE 1: GESTION PIN & WALLET (NOUVEAU) ---
-    
+    // --- PARTIE 1: GESTION PORTEFEUILLE INTÉGRÉ ---
+
     async init() {
-        if (typeof ethers === 'undefined') {
-            document.body.innerHTML = '<div style="color:red;padding:20px;">Erreur : Ethers.js non chargé.</div>'; return;
-        }
+        // 1. Vérifier la bibliothèque
+        if (typeof ethers === 'undefined') { document.body.innerHTML = '<div style="color:red;padding:20px;">Erreur : Ethers.js non chargé.</div>'; return; }
         
-        // Utilisation du RPC Public pour créer le provider (indépendant de MetaMask pour la lecture)
+        // 2. Configurer le Provider RPC (Connecté à Polygon sans MetaMask)
         this.provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
 
+        // 3. Vérifier si un wallet existe déjà
         const storedKeystore = localStorage.getItem('fitia_keystore');
         if (storedKeystore) {
             try {
@@ -158,6 +158,7 @@ class Application {
     clearPin() { this.pinCode = this.pinCode.slice(0, -1); this.updatePinDots(); document.getElementById('pin-error').innerText = ""; }
     updatePinDots() { const dots = document.querySelectorAll('.dot'); dots.forEach((dot, i) => dot.classList.toggle('active', i < this.pinCode.length)); }
 
+    // C'EST ICI QUE TOUT DEMARRE
     async submitPin() {
         if (this.isUnlocking) return;
         if (!this.keystoreString) { document.getElementById('pin-error').innerText = "Erreur: Pas de portefeuille."; return; }
@@ -167,33 +168,40 @@ class Application {
         this.setLoader(true, "Déverrouillage...");
         
         try {
+            // 1. Déchiffrer le wallet
             this.signer = await ethers.Wallet.fromEncryptedJson(this.keystoreString, this.pinCode);
-            // Connecter le signer au provider public
+            
+            // 2. Le connecter au réseau (RPC)
             this.signer = this.signer.connect(this.provider);
             this.user = this.signer.address;
 
+            // 3. Initialiser VOS contrats
             this.contracts.mining = new ethers.Contract(CONFIG.MINING, MINING_ABI, this.signer);
             this.contracts.usdt = new ethers.Contract(CONFIG.USDT, ERC20_ABI, this.signer);
             this.contracts.fta = new ethers.Contract(CONFIG.FTA, ERC20_ABI, this.signer);
 
+            // Récupérer les décimales FTA dynamiquement
+            try { this.ftaDecimals = await this.contracts.fta.decimals(); } catch(e) { this.ftaDecimals = 18; }
+
+            // 4. MAJ Interface
             document.getElementById('addr-display').innerText = this.user.slice(0,6) + "...";
             document.getElementById('auth-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'flex';
             document.getElementById('ref-link').value = window.location.origin + "?ref=" + this.user;
 
-            // Init vos systèmes
-            if (!localStorage.getItem(this.storageKey)) { localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000)); }
-            
-            // Logo FTA
+            // Charger le logo FTA
             const ftaLogoEl = document.getElementById('logo-fta-bal');
             if(ftaLogoEl) ftaLogoEl.src = CONFIG.LOGO_FTA;
 
+            // Initialiser le temps de claim si nouveau
+            if (!localStorage.getItem(this.storageKey)) { localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000)); }
+
+            // 5. LANCER VOS FONCTIONS
+            this.checkReferral();
             await this.updateData();
-            setInterval(() => this.updateData(), 5000);
+            setInterval(() => this.updateData(), 5000); // Refresh loop
             this.initVisualizer();
             window.addEventListener('resize', () => this.resizeCanvas());
-            
-            // Init Wheel
             this.initWheel();
 
         } catch(e) {
@@ -215,7 +223,7 @@ class Application {
         this.updatePinDots();
     }
 
-    // --- PARTIE 2: VOTRE LOGIQUE METIER (INTACT) ---
+    // --- PARTIE 2: VOTRE LOGIQUE METIER (INTACTE) ---
 
     async updateData() {
         if (!this.user) return;
@@ -458,7 +466,6 @@ class Application {
         
         const buttons = document.querySelectorAll('#game-wingo .game-options button');
         buttons.forEach(b => b.disabled = true);
-        
         const reel = document.getElementById('slot-reel');
         reel.classList.add('spinning');
         
@@ -684,7 +691,7 @@ class Application {
         console.error(e);
         let msg = "Erreur inconnue";
         if(e.reason) msg = e.reason;
-        if(msg.includes("Invalid bet amount")) msg = "Mise invalide";
+        if(msg.includes("insufficient funds")) msg = "Fonds insuffisants";
         this.showToast(msg, true);
     }
 
