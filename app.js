@@ -42,23 +42,25 @@ class Application {
         this.decimalsFTA = 8;
         this.swapDirection = 'USDT_TO_FTA';
         
-        this.keystore = null;
+        // CORRECTION : On stocke la chaîne JSON brute, pas l'objet
+        this.keystoreString = null; 
         this.pinCode = "";
         this.isUnlocking = false;
     }
 
     async init() {
         try {
-            // Vérifier que Ethers est chargé
             if (typeof ethers === 'undefined') {
-                return alert("Erreur: Ethers.js non chargé. Vérifiez votre connexion internet.");
+                return alert("Erreur: Ethers.js non chargé.");
             }
             
             this.provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
+            
+            // Récupération du Keystore (Chaîne JSON brute)
             const storedKeystore = localStorage.getItem('fitia_keystore');
             
             if (storedKeystore) {
-                this.keystore = JSON.parse(storedKeystore);
+                this.keystoreString = storedKeystore; // On garde la STRING
                 document.getElementById('auth-setup').style.display = 'none';
                 document.getElementById('auth-unlock').style.display = 'block';
                 document.getElementById('auth-title').innerText = "Déverrouillage";
@@ -98,28 +100,25 @@ class Application {
         document.getElementById('modal-overlay').classList.remove('hidden');
     }
 
-    closeModal() { 
-        document.getElementById('modal-overlay').classList.add('hidden'); 
-    }
+    closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); }
 
     async createWallet() {
         try {
             const pin = document.getElementById('new-pin').value;
             const confirm = document.getElementById('confirm-pin').value;
 
-            if (pin.length < 6) return this.showToast("PIN trop court (6 min)", true);
+            if (pin.length < 4) return this.showToast("PIN trop court (4 min)", true);
             if (pin !== confirm) return this.showToast("Les PINs ne correspondent pas", true);
 
             this.setLoader(true, "Génération...");
             
-            // V6 Syntax
             const wallet = ethers.Wallet.createRandom();
             
-            // V6 Syntax for encryption
+            // Cela renvoie une STRING JSON
             const keystoreJson = await wallet.encrypt(pin);
             
             localStorage.setItem('fitia_keystore', keystoreJson);
-            this.keystore = JSON.parse(keystoreJson);
+            this.keystoreString = keystoreJson; // On stocke la STRING
             
             this.setLoader(false);
             
@@ -146,38 +145,39 @@ class Application {
             const pin = document.getElementById('import-pin').value;
 
             if (!seed) return this.showToast("Phrase secrète vide", true);
-            if (pin.length < 6) return this.showToast("PIN trop court", true);
+            if (pin.length < 4) return this.showToast("PIN trop court", true);
 
-            this.setLoader(true, "Import...");
+            this.setLoader(true, "Chiffrement...");
             
-            // V6 Syntax
+            // Cela peut échouer si la phrase est invalide
             const wallet = ethers.Wallet.fromPhrase(seed);
+            
+            // Cela peut prendre du temps
             const keystoreJson = await wallet.encrypt(pin);
             
             localStorage.setItem('fitia_keystore', keystoreJson);
-            this.keystore = JSON.parse(keystoreJson);
+            this.keystoreString = keystoreJson; // On stocke la STRING
             
+            this.setLoader(false);
             this.closeModal();
-            this.init(); // Recheck state to show PIN screen
+            this.init(); // Recharger l'écran de PIN
 
         } catch (e) {
-            this.setLoader(false);
+            this.setLoader(false); // IMPORTANT : Arrêter le chargement en cas d'erreur
             console.error(e);
-            this.showToast("Phrase invalide: " + e.message, true);
+            this.showToast("Erreur: " + (e.reason || e.message), true);
         }
     }
 
-    finalizeSetup() { 
-        this.closeModal(); 
-        location.reload(); 
-    }
+    finalizeSetup() { this.closeModal(); location.reload(); }
 
     // --- PIN PAD ---
     enterPin(num) {
         if (this.pinCode.length >= 6) return;
         this.pinCode += num;
         this.updatePinDots();
-        if (this.pinCode.length === 6) setTimeout(() => this.submitPin(), 200);
+        // Auto-submit si 6 chiffres (optionnel, sinon cliquer sur valider)
+        if (this.pinCode.length === 6) setTimeout(() => this.submitPin(), 300);
     }
 
     clearPin() { 
@@ -193,18 +193,22 @@ class Application {
 
     async submitPin() {
         if (this.isUnlocking) return;
+        if (!this.keystoreString) {
+            this.showToast("Erreur: Keystore manquant", true);
+            return;
+        }
+        
         this.isUnlocking = true;
         this.setLoader(true, "Déverrouillage...");
         
         try {
-            // V6 Syntax: Wallet.fromEncryptedJson
-            this.signer = await ethers.Wallet.fromEncryptedJson(this.keystore, this.pinCode);
+            // CORRECTION MAJEURE ICI
+            // On passe la STRING JSON (this.keystoreString) et non un objet
+            this.signer = await ethers.Wallet.fromEncryptedJson(this.keystoreString, this.pinCode);
             
-            // Connect to RPC
             this.signer = this.signer.connect(this.provider);
             this.user = this.signer.address;
 
-            // Init Contracts
             this.contracts.mining = new ethers.Contract(CONFIG.MINING, MINING_ABI, this.signer);
             this.contracts.usdt = new ethers.Contract(CONFIG.USDT, ERC20_ABI, this.signer);
             this.contracts.fta = new ethers.Contract(CONFIG.FTA, ERC20_ABI, this.signer);
