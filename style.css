@@ -4,7 +4,7 @@
     --bg-input: #2A2A2A;
     --text-main: #FFFFFF;
     --text-dim: #8A8A8A;
-    --primary: #F0B90B; /* Or Bitget */
+    --primary: #F0B90B;
     --danger: #FF4D4F;
     --border: rgba(255, 255, 255, 0.08);
 }
@@ -20,7 +20,6 @@ body {
 .auth-box { width: 100%; max-width: 400px; text-align: center; padding: 40px 20px; border-radius: 20px; background: var(--bg-card); border: 1px solid var(--border); }
 .auth-logo { font-size: 4rem; color: var(--primary); margin-bottom: 20px; }
 .auth-box h2 { margin: 0 0 10px 0; font-size: 1.5rem; }
-.auth-subtitle { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 30px; }
 
 /* Buttons */
 .btn-gold { width: 100%; padding: 16px; border-radius: 12px; border: none; background: var(--primary); color: #000; font-weight: 700; font-size: 1rem; cursor: pointer; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; }
@@ -69,7 +68,6 @@ body {
 /* Lists */
 .section-title { margin-bottom: 15px; display: flex; justify-content: space-between; align-items: end; }
 .section-title h3 { margin: 0; font-size: 1.1rem; }
-.section-title p { margin: 0; font-size: 0.8rem; color: var(--text-dim); }
 .asset-list-card { background: var(--bg-card); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
 .asset-row { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid var(--border); cursor: pointer; }
 .asset-row:last-child { border-bottom: none; }
@@ -78,7 +76,6 @@ body {
 .fta { background: linear-gradient(135deg, var(--primary), #F8D12F); }
 .coin-info { flex: 1; }
 .coin-name { display: block; font-weight: 600; }
-.coin-full { font-size: 0.8rem; color: var(--text-dim); }
 .coin-balance { font-weight: 600; text-align: right; }
 
 .ref-card-dark { display: flex; background: var(--bg-card); border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
@@ -144,4 +141,3 @@ body {
 .toast { background: #2A2A2A; border: 1px solid var(--primary); color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; text-align: center; }
 .rigs-list .rig-row { display: flex; justify-content: space-between; padding: 15px; background: var(--bg-card); border-radius: 8px; margin-bottom: 8px; border-left: 3px solid var(--primary); }
 .empty-state { text-align: center; padding: 40px; color: var(--text-dim); }
-.empty-state i { font-size: 2rem; margin-bottom: 10px; opacity: 0.5; }

@@ -2,9 +2,8 @@ const CONFIG = {
     MINING: "0xb7555D092b0B30D30552502f8a2674D48601b10F", // Adresse du contrat
     USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
     FTA: "0x535bBe393D64a60E14B731b7350675792d501623",
-    CHAIN_ID: 137
-
-    (RPC_URL)/ "https://polygon-rpc.com" // RPC Public Polygon
+    CHAIN_ID: 137,
+    RPC_URL: "https://polygon-rpc.com"
 };
 
 const MINING_ABI = [
@@ -49,18 +48,28 @@ class Application {
     }
 
     async init() {
-        this.provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
-        const storedKeystore = localStorage.getItem('fitia_keystore');
-        
-        if (storedKeystore) {
-            this.keystore = JSON.parse(storedKeystore);
-            document.getElementById('auth-setup').style.display = 'none';
-            document.getElementById('auth-unlock').style.display = 'block';
-            document.getElementById('auth-title').innerText = "Déverrouillage";
-        } else {
-            document.getElementById('auth-setup').style.display = 'block';
-            document.getElementById('auth-unlock').style.display = 'none';
-            document.getElementById('auth-title').innerText = "Bienvenue";
+        try {
+            // Vérifier que Ethers est chargé
+            if (typeof ethers === 'undefined') {
+                return alert("Erreur: Ethers.js non chargé. Vérifiez votre connexion internet.");
+            }
+            
+            this.provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
+            const storedKeystore = localStorage.getItem('fitia_keystore');
+            
+            if (storedKeystore) {
+                this.keystore = JSON.parse(storedKeystore);
+                document.getElementById('auth-setup').style.display = 'none';
+                document.getElementById('auth-unlock').style.display = 'block';
+                document.getElementById('auth-title').innerText = "Déverrouillage";
+            } else {
+                document.getElementById('auth-setup').style.display = 'block';
+                document.getElementById('auth-unlock').style.display = 'none';
+                document.getElementById('auth-title').innerText = "Bienvenue";
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Erreur d'initialisation: " + e.message);
         }
     }
 
@@ -68,8 +77,8 @@ class Application {
     showCreateModal() {
         const html = `
             <p style="color:var(--text-dim); margin-bottom:15px;">Code PIN (6 chiffres min)</p>
-            <input type="password" id="new-pin" class="input-seed" placeholder="Nouveau PIN">
-            <input type="password" id="confirm-pin" class="input-seed" placeholder="Confirmer PIN">
+            <input type="password" id="new-pin" class="input-seed" placeholder="Nouveau PIN" inputmode="numeric">
+            <input type="password" id="confirm-pin" class="input-seed" placeholder="Confirmer PIN" inputmode="numeric">
             <button class="btn-gold" onclick="App.createWallet()">Créer</button>
         `;
         document.getElementById('modal-body').innerHTML = html;
@@ -79,9 +88,9 @@ class Application {
 
     showImportModal() {
         const html = `
-            <p style="color:var(--text-dim); margin-bottom:15px;">Phrase secrète (12 mots)</p>
+            <p style="color:var(--text-dim); margin-bottom:15px;">Phrase secrète (12 ou 24 mots)</p>
             <textarea id="import-seed" class="input-seed" rows="2" placeholder="word1 word2 ..."></textarea>
-            <input type="password" id="import-pin" class="input-seed" placeholder="Définir un PIN">
+            <input type="password" id="import-pin" class="input-seed" placeholder="Définir un PIN" inputmode="numeric">
             <button class="btn-gold" onclick="App.importWallet()">Importer</button>
         `;
         document.getElementById('modal-body').innerHTML = html;
@@ -89,52 +98,79 @@ class Application {
         document.getElementById('modal-overlay').classList.remove('hidden');
     }
 
-    closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); }
+    closeModal() { 
+        document.getElementById('modal-overlay').classList.add('hidden'); 
+    }
 
     async createWallet() {
-        const pin = document.getElementById('new-pin').value;
-        const confirm = document.getElementById('confirm-pin').value;
-        if (pin.length < 6) return this.showToast("PIN trop court", true);
-        if (pin !== confirm) return this.showToast("PIN différents", true);
-
-        this.setLoader(true, "Génération...");
         try {
+            const pin = document.getElementById('new-pin').value;
+            const confirm = document.getElementById('confirm-pin').value;
+
+            if (pin.length < 6) return this.showToast("PIN trop court (6 min)", true);
+            if (pin !== confirm) return this.showToast("Les PINs ne correspondent pas", true);
+
+            this.setLoader(true, "Génération...");
+            
+            // V6 Syntax
             const wallet = ethers.Wallet.createRandom();
+            
+            // V6 Syntax for encryption
             const keystoreJson = await wallet.encrypt(pin);
+            
             localStorage.setItem('fitia_keystore', keystoreJson);
             this.keystore = JSON.parse(keystoreJson);
             
             this.setLoader(false);
+            
             const html = `
-                <p class="seed-warning"><i class="fas fa-exclamation-triangle"></i> SAUVEGARDEZ CES MOTS. C'EST VOTRE SEULE CLÉ !</p>
-                <div style="background:#000; padding:15px; border-radius:8px; margin-bottom:15px; color:var(--primary); font-weight:bold; font-family:monospace;">
+                <p class="seed-warning"><i class="fas fa-exclamation-triangle"></i> SAUVEGARDEZ CES MOTS C'EST VOTRE SEULE CLÉ !</p>
+                <div style="background:#000; padding:15px; border-radius:8px; margin-bottom:15px; color:var(--primary); font-weight:bold; font-family:monospace; word-break:break-all;">
                     ${wallet.mnemonic.phrase}
                 </div>
                 <button class="btn-gold" onclick="App.finalizeSetup()">J'ai noté ma phrase</button>
             `;
             document.getElementById('modal-body').innerHTML = html;
             document.getElementById('modal-title').innerText = "Sauvegarde";
-        } catch(e) { this.showToast("Erreur création", true); this.setLoader(false); }
+            
+        } catch (e) {
+            this.setLoader(false);
+            console.error(e);
+            this.showToast("Erreur Création: " + e.message, true);
+        }
     }
 
     async importWallet() {
-        const seed = document.getElementById('import-seed').value.trim();
-        const pin = document.getElementById('import-pin').value;
-        if (!seed) return this.showToast("Phrase vide", true);
-        if (pin.length < 6) return this.showToast("PIN trop court", true);
-
-        this.setLoader(true, "Chiffrement...");
         try {
+            const seed = document.getElementById('import-seed').value.trim();
+            const pin = document.getElementById('import-pin').value;
+
+            if (!seed) return this.showToast("Phrase secrète vide", true);
+            if (pin.length < 6) return this.showToast("PIN trop court", true);
+
+            this.setLoader(true, "Import...");
+            
+            // V6 Syntax
             const wallet = ethers.Wallet.fromPhrase(seed);
             const keystoreJson = await wallet.encrypt(pin);
+            
             localStorage.setItem('fitia_keystore', keystoreJson);
             this.keystore = JSON.parse(keystoreJson);
+            
             this.closeModal();
-            this.init(); 
-        } catch(e) { this.showToast("Phrase invalide", true); this.setLoader(false); }
+            this.init(); // Recheck state to show PIN screen
+
+        } catch (e) {
+            this.setLoader(false);
+            console.error(e);
+            this.showToast("Phrase invalide: " + e.message, true);
+        }
     }
 
-    finalizeSetup() { this.closeModal(); location.reload(); }
+    finalizeSetup() { 
+        this.closeModal(); 
+        location.reload(); 
+    }
 
     // --- PIN PAD ---
     enterPin(num) {
@@ -144,7 +180,11 @@ class Application {
         if (this.pinCode.length === 6) setTimeout(() => this.submitPin(), 200);
     }
 
-    clearPin() { this.pinCode = this.pinCode.slice(0, -1); this.updatePinDots(); }
+    clearPin() { 
+        this.pinCode = this.pinCode.slice(0, -1); 
+        this.updatePinDots(); 
+        document.getElementById('pin-error').innerText = "";
+    }
 
     updatePinDots() {
         const dots = document.querySelectorAll('.dot');
@@ -157,10 +197,14 @@ class Application {
         this.setLoader(true, "Déverrouillage...");
         
         try {
+            // V6 Syntax: Wallet.fromEncryptedJson
             this.signer = await ethers.Wallet.fromEncryptedJson(this.keystore, this.pinCode);
+            
+            // Connect to RPC
             this.signer = this.signer.connect(this.provider);
             this.user = this.signer.address;
 
+            // Init Contracts
             this.contracts.mining = new ethers.Contract(CONFIG.MINING, MINING_ABI, this.signer);
             this.contracts.usdt = new ethers.Contract(CONFIG.USDT, ERC20_ABI, this.signer);
             this.contracts.fta = new ethers.Contract(CONFIG.FTA, ERC20_ABI, this.signer);
@@ -174,10 +218,12 @@ class Application {
             setInterval(() => this.loadAllData(), 5000);
 
         } catch(e) {
+            console.error(e);
             document.getElementById('pin-error').innerText = "Code PIN incorrect";
             this.pinCode = "";
             this.updatePinDots();
         }
+        
         this.isUnlocking = false;
         this.setLoader(false);
     }
@@ -189,6 +235,7 @@ class Application {
         document.getElementById('auth-setup').style.display = 'none';
         document.getElementById('auth-unlock').style.display = 'block';
         document.getElementById('pin-error').innerText = "";
+        this.updatePinDots();
     }
 
     // --- DATA LOADERS ---
@@ -209,7 +256,7 @@ class Application {
             if (this.shopData.length === 0) await this.loadShop();
             await this.loadMyMachines();
             await this.loadGameInfo();
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error("Load Data Error", e); }
     }
 
     async loadShop() {
@@ -293,7 +340,7 @@ class Application {
             await tx.wait();
             this.showToast("Machine achetée !");
             this.loadAllData();
-        } catch(e) { this.showToast("Erreur", true); console.error(e); }
+        } catch(e) { this.showToast("Erreur achat", true); console.error(e); }
         this.setLoader(false);
     }
 
@@ -338,11 +385,10 @@ class Application {
     async calcSwap() {
         const input = document.getElementById('swap-from-in').value;
         if(!input) return;
-        // Simulated rate, should read from contract ideally
         let result = this.swapDirection === 'USDT_TO_FTA' ? input * 2000 : input / 2000;
         document.getElementById('swap-to-in').value = result.toFixed(5);
     }
-    async executeSwap() { this.showToast("Fonction swap à implémenter avec allowance"); }
+    async executeSwap() { this.showToast("Fonction swap à implémenter"); }
 
     nav(viewId) {
         document.querySelectorAll('.view').forEach(el => { el.classList.remove('active'); el.style.display = 'none'; });

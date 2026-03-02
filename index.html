@@ -5,14 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#121212">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>FITIA PRO Wallet</title>
     
-    <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <link rel="stylesheet" href="style.css">
     <!-- Ethers.js V6 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
@@ -24,9 +21,9 @@
         <div class="auth-box glass-card">
             <div class="auth-logo"><i class="fas fa-shield-alt"></i></div>
             <h2 id="auth-title">Bienvenue</h2>
-            <p id="auth-subtitle">Sécurisez vos actifs numériques</p>
+            <p id="auth-subtitle">Sécurisez vos actifs</p>
 
-            <!-- Étape 1: Choix Créer / Importer -->
+            <!-- Boutons Initiaux -->
             <div id="auth-setup">
                 <button class="btn-gold" onclick="App.showCreateModal()">
                     <i class="fas fa-plus-circle"></i> Créer un Portefeuille
@@ -36,9 +33,9 @@
                 </button>
             </div>
 
-            <!-- Étape 2: Entrer PIN -->
+            <!-- Clavier PIN -->
             <div id="auth-unlock" style="display:none;">
-                <p style="margin-bottom: 20px;">Entrez votre code PIN</p>
+                <p>Entrez votre code PIN</p>
                 <div class="pin-dots">
                     <span class="dot"></span><span class="dot"></span><span class="dot"></span>
                     <span class="dot"></span><span class="dot"></span><span class="dot"></span>
@@ -93,10 +90,7 @@
                         <span class="hero-label">Total Estimé</span>
                         <h1 class="hero-value" id="val-pending">0.00 <span>FTA</span></h1>
                         <div class="hero-stats-row">
-                            <div class="stat-box">
-                                <small>Puissance</small>
-                                <p id="val-power">0.00 FTA/s</p>
-                            </div>
+                            <div class="stat-box"><small>Puissance</small><p id="val-power">0.00 FTA/s</p></div>
                         </div>
                         <div class="hero-actions">
                             <button class="btn-gold" onclick="App.claim()"><i class="fas fa-gem"></i> RÉCLAMER</button>
@@ -109,12 +103,12 @@
                     <div class="asset-list-card">
                         <div class="asset-row" onclick="App.nav('swap')">
                             <div class="coin-icon usdt"></div>
-                            <div class="coin-info"><span class="coin-name">USDT</span><span class="coin-full">Tether USD</span></div>
+                            <div class="coin-info"><span class="coin-name">USDT</span></div>
                             <div class="coin-balance"><span id="bal-usdt">0.00</span></div>
                         </div>
                         <div class="asset-row" onclick="App.nav('swap')">
                             <div class="coin-icon fta"></div>
-                            <div class="coin-info"><span class="coin-name">FTA</span><span class="coin-full">Fitia Token</span></div>
+                            <div class="coin-info"><span class="coin-name">FTA</span></div>
                             <div class="coin-balance"><span id="bal-fta">0.00</span></div>
                         </div>
                     </div>
@@ -133,7 +127,7 @@
 
             <!-- SHOP -->
             <div id="view-shop" class="view">
-                <div class="section-title"><h3>Boutique</h3><p>3$ - 100$</p></div>
+                <div class="section-title"><h3>Boutique</h3></div>
                 <div id="shop-list" class="shop-grid"></div>
             </div>
 
@@ -149,7 +143,7 @@
                 <div class="swap-card-dark">
                     <div class="swap-header"><span>Échange</span></div>
                     <div class="swap-box-style">
-                        <div class="flex-between"><span class="label-dim">Vous payez</span><span class="label-dim">Solde: <span id="swap-bal-from">0</span></span></div>
+                        <div class="flex-between"><span class="label-dim">De</span><span class="label-dim">Solde: <span id="swap-bal-from">0</span></span></div>
                         <div class="input-line">
                             <input type="number" id="swap-from-in" placeholder="0.00" oninput="App.calcSwap()">
                             <div class="token-tag" onclick="App.toggleSwap()" id="token-from-display">USDT</div>
@@ -157,7 +151,7 @@
                     </div>
                     <div class="swap-divider" onclick="App.toggleSwap()"><i class="fas fa-arrow-down"></i></div>
                     <div class="swap-box-style">
-                        <div class="flex-between"><span class="label-dim">Vous recevez</span><span class="label-dim">Solde: <span id="swap-bal-to">0</span></span></div>
+                        <div class="flex-between"><span class="label-dim">Vers</span><span class="label-dim">Solde: <span id="swap-bal-to">0</span></span></div>
                         <div class="input-line">
                             <input type="number" id="swap-to-in" placeholder="0.00" readonly>
                             <div class="token-tag" id="token-to-display">FTA</div>
@@ -171,7 +165,6 @@
             <!-- JEUX -->
             <div id="view-games" class="view">
                 <div class="section-title"><h3>Games</h3></div>
-                <!-- WinGo -->
                 <div class="game-card-dark">
                     <div class="game-head"><i class="fas fa-dice game-ic"></i><div class="game-title-area"><h4>Win Go</h4></div></div>
                     <input type="number" id="wingo-amount" class="dark-input" placeholder="Montant FTA">
@@ -182,14 +175,12 @@
                         <button onclick="App.playWinGo(0, 9)">9</button>
                     </div>
                 </div>
-                <!-- List Games -->
                 <div class="game-list-grid">
                     <div class="game-item-small" onclick="App.spinWheel()"><div class="gi-icon"><i class="fas fa-life-ring"></i></div><div class="gi-content"><h5>Wheel</h5><p>JP: <span id="wheel-jackpot">0</span></p></div><i class="fas fa-chevron-right"></i></div>
-                    <div class="game-item-small" onclick="App.goFishing()"><div class="gi-icon"><i class="fas fa-fish"></i></div><div class="gi-content"><h5>Fishing</h5><p>Prix: <span id="fish-price">50</span></p></div><i class="fas fa-chevron-right"></i></div>
+                    <div class="game-item-small" onclick="App.goFishing()"><div class="gi-icon"><i class="fas fa-fish"></i></div><div class="gi-content"><h5>Fishing</h5><p><span id="fish-price">50</span> FTA</p></div><i class="fas fa-chevron-right"></i></div>
                     <div class="game-item-small" onclick="App.buyLotteryTicket()"><div class="gi-icon"><i class="fas fa-ticket-alt"></i></div><div class="gi-content"><h5>Loterie</h5><p>Pot: <span id="lottery-pot">0</span></p></div><i class="fas fa-chevron-right"></i></div>
                 </div>
             </div>
-
             <div style="height:100px;"></div>
         </main>
 
