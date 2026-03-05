@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#121212">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>FITIA PRO WALLET</title>
     
     <!-- Fonts & Icons -->
@@ -11,12 +12,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <link rel="stylesheet" href="style.css">
-    <!-- Ethers.js V6 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 </head>
 <body>
 
-    <!-- CONTAINERS -->
+    <!-- TOAST -->
     <div id="toast-container"></div>
 
     <!-- 1. MODAL AUTHENTIFICATION -->
@@ -24,17 +24,20 @@
         <div class="modal-box">
             <div class="modal-logo"><i class="fas fa-bolt"></i></div>
             <h2>Bienvenue</h2>
-            <p>Créez un portefeuille ou connectez-vous.</p>
+            <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:25px;">Créez ou importez votre portefeuille FITIA.</p>
             
-            <button class="btn-gold-full" onclick="App.uiShowCreateWallet()">
+            <button class="btn-gold-full" onclick="App.uiShowCreate()">
                 <i class="fas fa-plus-circle"></i> Créer un Portefeuille
             </button>
-            <button class="btn-secondary-full" onclick="App.uiShowImportWallet()">
-                <i class="fas fa-key"></i> Importer un Portefeuille
+            <button class="btn-secondary-full" onclick="App.uiShowImport()">
+                <i class="fas fa-key"></i> J'ai déjà un portefeuille
             </button>
+            
             <div class="divider-px"><span>OU</span></div>
-            <button class="btn-conn-metamask" onclick="App.connectMetaMask()">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="20"> MetaMask
+            
+            <button class="btn-metamask" onclick="App.connectMetaMask()">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="20"> 
+                <span>MetaMask / TrustWallet</span>
             </button>
         </div>
     </div>
@@ -43,13 +46,13 @@
     <div id="create-modal" class="modal-overlay hidden">
         <div class="modal-box">
             <h3><i class="fas fa-shield-alt"></i> Sauvegardez</h3>
-            <p class="warning-text">Notez ces 12 mots. C'est la SEULE façon de récupérer vos fonds.</p>
+            <p class="warning-text">Notez ces 12 mots sur papier. C'est la SEULE façon de récupérer vos fonds.</p>
             <div id="mnemonic-display" class="mnemonic-box"></div>
             <div class="checkbox-terms">
-                <input type="checkbox" id="terms-check" onchange="document.getElementById('btn-validate-create').disabled = !this.checked">
-                <label for="terms-check">J'ai noté ma phrase</label>
+                <input type="checkbox" id="terms-check" onchange="App.enableCreateBtn()">
+                <label for="terms-check">J'ai bien noté ma phrase secrète</label>
             </div>
-            <button id="btn-validate-create" class="btn-gold-full" disabled onclick="App.finalizeWalletCreation()">Ouvrir le Portefeuille</button>
+            <button id="btn-create-final" class="btn-gold-full" disabled onclick="App.finalizeWallet()">Continuer</button>
         </div>
     </div>
 
@@ -57,36 +60,36 @@
     <div id="import-modal" class="modal-overlay hidden">
         <div class="modal-box">
             <h3><i class="fas fa-download"></i> Importation</h3>
-            <p>Entrez votre phrase secrète :</p>
+            <p>Entrez votre phrase secrète (12 mots) :</p>
             <textarea id="import-phrase" placeholder="mot1 mot2 mot3 ..."></textarea>
-            <button class="btn-gold-full" onclick="App.finalizeWalletImport()">Importer</button>
+            <button class="btn-gold-full" onclick="App.finalizeImport()">Importer</button>
             <button class="btn-secondary-full" onclick="App.uiShowAuth()">Annuler</button>
         </div>
     </div>
 
     <!-- 4. MODAL DEPOT / RETRAIT -->
     <div id="tx-modal" class="modal-overlay hidden">
-        <div class="modal-box">
+        <div class="modal-box tx-box">
             <div class="modal-header">
                 <h3 id="tx-title">Dépôt</h3>
-                <button onclick="App.uiCloseTxModal()" class="close-btn"><i class="fas fa-times"></i></button>
+                <button onclick="App.uiCloseTx()" class="close-btn"><i class="fas fa-times"></i></button>
             </div>
             
-            <!-- Vue Depot -->
+            <!-- Vue Dépôt -->
             <div id="deposit-view">
-                <p>Envoyez des fonds à cette adresse :</p>
+                <p style="font-size:0.85rem; text-align:center; color:var(--text-dim);">Envoyez des fonds à cette adresse :</p>
                 <div class="qr-container" id="qr-code"></div>
                 <div class="address-box">
                     <span id="deposit-address">0x...</span>
-                    <button onclick="App.copyDepositAddress()"><i class="fas fa-copy"></i></button>
+                    <button onclick="App.copyAddress()"><i class="fas fa-copy"></i></button>
                 </div>
-                <p style="font-size:0.8rem; color:var(--text-dim); margin-top:10px;">Ne envoyez que des actifs sur le réseau Polygon (MATIC).</p>
+                <button class="btn-secondary-full" onclick="App.uiShowWithdraw()" style="margin-top:15px">Retirer des fonds</button>
             </div>
 
             <!-- Vue Retrait -->
             <div id="withdraw-view" class="hidden">
                 <div class="input-group-modal">
-                    <label>Actif</label>
+                    <label>Actif à envoyer</label>
                     <select id="withdraw-token" class="select-dark">
                         <option value="MATIC">MATIC (POL)</option>
                         <option value="USDT">USDT</option>
@@ -101,12 +104,13 @@
                     <label>Montant</label>
                     <input type="number" id="withdraw-amount" placeholder="0.00">
                 </div>
-                <button class="btn-gold-full" onclick="App.processWithdraw()">Envoyer</button>
+                <button class="btn-gold-full" onclick="App.processSend()">Envoyer</button>
+                <button class="btn-secondary-full" onclick="App.uiShowDeposit()">Annuler</button>
             </div>
         </div>
     </div>
 
-    <!-- 5. APPLICATION PRINCIPALE -->
+    <!-- APPLICATION PRINCIPALE -->
     <div class="app-shell">
        
         <!-- HEADER -->
@@ -147,9 +151,8 @@
                 <section class="content-section">
                     <div class="section-title"><h3>Mes Actifs</h3></div>
                     <div class="asset-list-card">
-                        
                         <!-- MATIC -->
-                        <div class="asset-row" onclick="App.uiShowDeposit('MATIC')">
+                        <div class="asset-row" onclick="App.uiShowDeposit()">
                             <div class="coin-icon matic"></div>
                             <div class="coin-info">
                                 <span class="coin-name">MATIC</span>
@@ -160,9 +163,8 @@
                                 <i class="fas fa-chevron-right"></i>
                             </div>
                         </div>
-
                         <!-- USDT -->
-                        <div class="asset-row" onclick="App.uiShowDeposit('USDT')">
+                        <div class="asset-row" onclick="App.uiShowDeposit()">
                             <div class="coin-icon usdt"></div>
                             <div class="coin-info">
                                 <span class="coin-name">USDT</span>
@@ -173,9 +175,8 @@
                                 <i class="fas fa-chevron-right"></i>
                             </div>
                         </div>
-
                         <!-- FTA -->
-                        <div class="asset-row" onclick="App.uiShowDeposit('FTA')">
+                        <div class="asset-row" onclick="App.uiShowDeposit()">
                             <div class="coin-icon fta"></div>
                             <div class="coin-info">
                                 <span class="coin-name">FTA</span>
@@ -198,24 +199,22 @@
                 </section>
             </div>
 
-            <!-- AUTRES VUES (Shop, Rigs, Swap, Games) -->
-            <!-- Le code est raccourci ici pour la lisibilité, mais fonctionne comme avant -->
-            
+            <!-- SHOP -->
             <div id="view-shop" class="view">
                 <div class="section-title"><h3>Boutique Minage</h3></div>
                 <div id="shop-list" class="shop-grid"></div>
             </div>
 
+            <!-- MES MACHINES -->
             <div id="view-my-rigs" class="view">
                 <div class="section-title"><h3>Mes Machines</h3></div>
                 <div id="my-rigs-list" class="rigs-list"></div>
-                <div id="no-rigs" class="empty-state" style="display:none;">
-                    <i class="fas fa-inbox"></i><p>Aucune machine</p>
-                </div>
+                <div id="no-rigs" class="empty-state" style="display:none;"><i class="fas fa-inbox"></i><p>Aucune machine</p></div>
             </div>
 
+            <!-- SWAP -->
             <div id="view-swap" class="view">
-                 <div class="swap-card-dark">
+                <div class="swap-card-dark">
                     <div class="swap-header"><span>Échange Rapide</span></div>
                     <div class="swap-box-style">
                         <div class="flex-between"><span class="label-dim">Vous payez</span><span class="label-dim">Solde: <span id="swap-bal-from">0</span></span></div>
@@ -237,10 +236,11 @@
                 </div>
             </div>
 
+            <!-- JEUX -->
             <div id="view-games" class="view">
                 <div class="section-title"><h3>Game Center</h3></div>
                 <div class="game-card-dark">
-                    <div class="game-head"><i class="fas fa-dice game-ic"></i><div class="game-title-area"><h4>Win Go</h4></div></div>
+                    <div class="game-head"><i class="fas fa-dice game-ic"></i><div class="game-title-area"><h4>Win Go</h4><span>Choisissez un numéro</span></div></div>
                     <input type="number" id="wingo-amount" class="dark-input" placeholder="Montant FTA">
                     <div class="num-grid-style">
                         <button onclick="App.playWinGo(0, 0)">0</button><button onclick="App.playWinGo(0, 1)">1</button><button onclick="App.playWinGo(0, 2)">2</button><button onclick="App.playWinGo(0, 3)">3</button><button onclick="App.playWinGo(0, 4)">4</button>
@@ -253,11 +253,11 @@
                     <div class="game-item-small" onclick="App.buyLotteryTicket()"><div class="gi-icon"><i class="fas fa-ticket-alt"></i></div><div class="gi-content"><h5>Loterie</h5><p>Pot: <span id="lottery-pot">0</span></p></div><i class="fas fa-chevron-right"></i></div>
                 </div>
             </div>
-            
+
             <div style="height:40px;"></div>
         </main>
 
-        <!-- NAVIGATION -->
+        <!-- NAV -->
         <nav class="bottom-nav-float">
             <div class="nav-item-bit active" onclick="App.nav('dashboard')"><i class="fas fa-wallet"></i><span>Wallet</span></div>
             <div class="nav-item-bit" onclick="App.nav('shop')"><i class="fas fa-shopping-bag"></i><span>Shop</span></div>
@@ -269,7 +269,6 @@
     </div>
 
     <div id="loader" class="loader-screen hidden"><div class="spinner-bit"></div><p id="loader-text">Chargement...</p></div>
-
     <script src="app.js"></script>
 </body>
 </html>
