@@ -35,7 +35,7 @@ const ERC20_ABI = [
     "function decimals() view returns (uint8)",
     "function approve(address, uint256) returns (bool)",
     "function allowance(address, address) view returns (uint256)",
-    "function transfer(address to, uint256 amount) returns (bool)" // Ajouté pour le retrait
+    "function transfer(address to, uint256 amount) returns (bool)"
 ];
 
 class Application {
@@ -79,7 +79,6 @@ class Application {
             document.getElementById('wallet-status').classList.remove('hidden');
             document.getElementById('addr-display').innerText = this.user.slice(0,6) + "..." + this.user.slice(38);
             
-            // Mettre à jour l'adresse de dépôt
             document.getElementById('deposit-address').value = this.user;
 
             this.checkReferral();
@@ -133,7 +132,7 @@ class Application {
 
             document.getElementById('val-power').innerText = this.currentRealPower.toFixed(5);
 
-            // --- NOUVEAU : SOLDES MATIC, USDT, FTA ---
+            // --- SOLDES ---
             const maticBal = await this.provider.getBalance(this.user);
             const usdtBal = await this.contracts.usdt.balanceOf(this.user);
             const ftaBal = await this.contracts.fta.balanceOf(this.user);
@@ -195,14 +194,12 @@ class Application {
     copyLink() { const val = document.getElementById('ref-link').value; if (!val || val === "Connectez-vous...") return this.showToast("Connectez-vous d'abord", true); navigator.clipboard.writeText(val); this.showToast("Lien copié !"); }
     copyAddress() { navigator.clipboard.writeText(this.user); this.showToast("Adresse copiée !"); }
 
-    // --- NOUVELLES FONCTIONS MODAL ---
     openDeposit() { document.getElementById('modal-deposit').classList.remove('hidden'); }
     openWithdraw() { document.getElementById('modal-withdraw').classList.remove('hidden'); }
     closeModal(id) { document.getElementById('modal-' + id).classList.add('hidden'); }
     
     setMaxWithdraw() {
         const token = document.getElementById('withdraw-token').value;
-        // On récupère les valeurs affichées
         const balMatic = document.getElementById('bal-matic').innerText;
         const balUsdt = document.getElementById('bal-usdt').innerText;
         const balFta = document.getElementById('bal-fta').innerText;
@@ -239,7 +236,6 @@ class Application {
         } catch(e) { this.showError(e); }
         this.setLoader(false);
     }
-    // ---------------------------------
 
     setPayMode(mode) {
         this.payMode = mode;
@@ -382,7 +378,6 @@ class Application {
         setTimeout(() => el.classList.add('hidden'), 5000);
     }
 
-    // WIN GO
     async playWinGo(type, choice) {
         const betVal = document.getElementById('wingo-bet').value;
         if (!betVal || betVal <= 0) return this.showToast("Mise invalide", true);
@@ -415,7 +410,6 @@ class Application {
         buttons.forEach(b => b.disabled = false);
     }
 
-    // WHEEL
     initWheel() {
         const canvas = document.getElementById('wheel-canvas');
         if(!canvas) return;
@@ -481,7 +475,6 @@ class Application {
         btn.disabled = false;
     }
     
-    // FISHING
     async goFishing() {
         const line = document.getElementById('fishing-line');
         const hook = document.getElementById('fishing-hook');
@@ -580,7 +573,7 @@ class Application {
         if(!this.vizContext) return;
         const ctx = this.vizContext;
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        ctx.fillStyle = "#F0B90B"; // Couleur Bitget pour le visualizer
+        ctx.fillStyle = "#F0B90B";
         const w = ctx.canvas.width / 20;
         this.vizBars.forEach((bar, i) => {
             bar.height += (bar.targetHeight - bar.height) * 0.1;

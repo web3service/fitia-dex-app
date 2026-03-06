@@ -2,9 +2,12 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <!-- Meta Tags Essentiels pour Mobile -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#121212">
+    
     <title>FITIA PRO | Wallet</title>
     
     <!-- Favicons -->
@@ -22,7 +25,7 @@
 
     <div id="toast-container"></div>
 
-    <!-- MODAL RETRAIT (Nouveau) -->
+    <!-- MODAL RETRAIT -->
     <div id="modal-withdraw" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -51,7 +54,7 @@
         </div>
     </div>
 
-    <!-- MODAL DEPOT (Nouveau) -->
+    <!-- MODAL DEPOT -->
     <div id="modal-deposit" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -59,9 +62,8 @@
                 <button onclick="App.closeModal('deposit')"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body center-content">
-                <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:15px;">Envoyez uniquement MATIC, USDT ou FTA à cette adresse.</p>
+                <p style="font-size:0.9rem; color:var(--text-dim); margin-bottom:15px;">Envoyez uniquement MATIC, USDT ou FTA à cette adresse.</p>
                 <div id="qr-code-box" class="qr-box">
-                    <!-- QR Code sera généré ici ou juste l'adresse -->
                     <i class="fas fa-qrcode" style="font-size:50px; color:var(--text-muted)"></i>
                 </div>
                 <div class="input-group" style="margin-top:15px;" onclick="App.copyAddress()">
@@ -95,8 +97,6 @@
         <main id="main-view">
             <!-- DASHBOARD -->
             <div id="view-dashboard" class="view active">
-               
-                <!-- Hero Stats Card -->
                 <div class="asset-hero-card">
                     <div class="hero-bg-art"></div>
                     <div class="hero-content">
@@ -114,7 +114,6 @@
                     </div>
                 </div>
 
-                <!-- WALLET ASSETS (Mise à jour avec MATIC) -->
                 <section class="content-section">
                     <div class="section-title">
                         <h3>Actifs</h3>
@@ -131,9 +130,7 @@
                                 <span class="coin-name">MATIC</span>
                                 <span class="coin-full">Polygon</span>
                             </div>
-                            <div class="coin-balance">
-                                <span id="bal-matic">0.00</span>
-                            </div>
+                            <div class="coin-balance"><span id="bal-matic">0.00</span></div>
                         </div>
                         <!-- USDT -->
                         <div class="asset-row" onclick="App.nav('swap')">
@@ -142,9 +139,7 @@
                                 <span class="coin-name">USDT</span>
                                 <span class="coin-full">Tether USD</span>
                             </div>
-                            <div class="coin-balance">
-                                <span id="bal-usdt">0.00</span>
-                            </div>
+                            <div class="coin-balance"><span id="bal-usdt">0.00</span></div>
                         </div>
                         <!-- FTA -->
                         <div class="asset-row" onclick="App.nav('swap')">
@@ -153,14 +148,11 @@
                                 <span class="coin-name">FTA</span>
                                 <span class="coin-full">Fitia Token</span>
                             </div>
-                            <div class="coin-balance">
-                                <span id="bal-fta">0.00</span>
-                            </div>
+                            <div class="coin-balance"><span id="bal-fta">0.00</span></div>
                         </div>
                     </div>
                 </section>
 
-                <!-- PARRAINAGE -->
                 <section class="content-section">
                     <div class="section-title"><h3>Parrainage</h3></div>
                     <div class="ref-card-dark">
@@ -170,7 +162,7 @@
                 </section>
             </div>
 
-            <!-- SHOP (Inchangé) -->
+            <!-- SHOP -->
             <div id="view-shop" class="view">
                 <div class="shop-header">
                     <h2 class="view-title">⛏️ Boutique</h2>
@@ -182,7 +174,7 @@
                 <div id="shop-list" class="grid-list"></div>
             </div>
 
-            <!-- MY RIGS (Inchangé) -->
+            <!-- MY RIGS -->
             <div id="view-my-rigs" class="view">
                 <h2 class="view-title">⚙️ Mes Machines</h2>
                 <div id="my-rigs-list" class="rigs-list-container"></div>
@@ -191,7 +183,7 @@
                 </div>
             </div>
 
-            <!-- GAMES (Inchangé) -->
+            <!-- GAMES -->
             <div id="view-games" class="view">
                 <h2 class="view-title">🎮 Game Center</h2>
                 <div class="game-tabs">
@@ -245,7 +237,7 @@
                 </div>
             </div>
 
-            <!-- SWAP (Inchangé) -->
+            <!-- SWAP -->
             <div id="view-swap" class="view">
                 <h2 class="view-title">💱 Échange</h2>
                 <div class="card swap-interface">
