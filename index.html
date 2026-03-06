@@ -2,15 +2,15 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <!-- Configuration Critique pour Mobile -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#121212">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#121212">
+    <title>FITIA PRO | Wallet</title>
     
-    <title>FITIA PRO</title>
-    
-    <!-- Fonts & Icons -->
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="apple-touch-icon" href="logo.png">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -22,16 +22,67 @@
 
     <div id="toast-container"></div>
 
-    <div class="app-shell">
-       
-        <!-- HEADER -->
-        <header class="top-bar">
-            <div class="brand-logo">
-                <div class="logo-icon-box"><i class="fas fa-bolt"></i></div>
-                <span class="brand-text">FITIA</span>
+    <!-- MODAL RETRAIT (Nouveau) -->
+    <div id="modal-withdraw" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Retirer des actifs</h3>
+                <button onclick="App.closeModal('withdraw')"><i class="fas fa-times"></i></button>
             </div>
-            <div class="header-right">
-                <button id="btn-connect" class="connect-btn-outline" onclick="App.connect()">
+            <div class="modal-body">
+                <label>Actif à retirer</label>
+                <select id="withdraw-token" class="modal-select">
+                    <option value="MATIC">MATIC (POL)</option>
+                    <option value="USDT">USDT</option>
+                    <option value="FTA">FTA</option>
+                </select>
+                
+                <label>Adresse de destination</label>
+                <input type="text" id="withdraw-address" placeholder="0x...">
+
+                <label>Montant</label>
+                <div class="input-wrap-modal">
+                    <input type="number" id="withdraw-amount" placeholder="0.00">
+                    <button class="max-btn-modal" onclick="App.setMaxWithdraw()">MAX</button>
+                </div>
+
+                <button class="btn-modal-gold" onclick="App.executeWithdraw()">Confirmer le retrait</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DEPOT (Nouveau) -->
+    <div id="modal-deposit" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Déposer des actifs</h3>
+                <button onclick="App.closeModal('deposit')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body center-content">
+                <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:15px;">Envoyez uniquement MATIC, USDT ou FTA à cette adresse.</p>
+                <div id="qr-code-box" class="qr-box">
+                    <!-- QR Code sera généré ici ou juste l'adresse -->
+                    <i class="fas fa-qrcode" style="font-size:50px; color:var(--text-muted)"></i>
+                </div>
+                <div class="input-group" style="margin-top:15px;" onclick="App.copyAddress()">
+                    <input type="text" id="deposit-address" readonly value="Connectez-vous...">
+                    <button class="icon-btn"><i class="fas fa-copy"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-glow"></div>
+
+    <div class="app-shell">
+        <!-- HEADER -->
+        <header>
+            <div class="brand">
+                <div class="logo-icon"><i class="fas fa-bolt"></i></div>
+                <div class="brand-text">FITIA <span class="pro-badge">PRO</span></div>
+            </div>
+            <div class="header-actions">
+                <button id="btn-connect" class="btn-connect-outline" onclick="App.connect()">
                     <i class="fas fa-wallet"></i> Connecter
                 </button>
                 <div id="wallet-status" class="wallet-badge-pill hidden">
@@ -41,10 +92,11 @@
             </div>
         </header>
 
-        <main class="main-scroll">
-           
+        <main id="main-view">
             <!-- DASHBOARD -->
             <div id="view-dashboard" class="view active">
+               
+                <!-- Hero Stats Card -->
                 <div class="asset-hero-card">
                     <div class="hero-bg-art"></div>
                     <div class="hero-content">
@@ -57,33 +109,58 @@
                             </div>
                         </div>
                         <div class="hero-actions">
-                            <button class="btn-gold" onclick="App.claim()"><i class="fas fa-hand-holding-usd"></i> Réclamer</button>
+                            <button class="btn-gold" onclick="App.claim()"><i class="fas fa-gem"></i> Réclamer</button>
                         </div>
                     </div>
                 </div>
 
+                <!-- WALLET ASSETS (Mise à jour avec MATIC) -->
                 <section class="content-section">
-                    <div class="section-title"><h3>Actifs</h3></div>
+                    <div class="section-title">
+                        <h3>Actifs</h3>
+                        <div class="action-icons">
+                            <i class="fas fa-arrow-down" title="Déposer" onclick="App.openDeposit()"></i>
+                            <i class="fas fa-arrow-up" title="Retirer" onclick="App.openWithdraw()"></i>
+                        </div>
+                    </div>
                     <div class="asset-list-card">
+                        <!-- MATIC -->
+                        <div class="asset-row" onclick="App.openDeposit()">
+                            <div class="coin-icon matic"></div>
+                            <div class="coin-info">
+                                <span class="coin-name">MATIC</span>
+                                <span class="coin-full">Polygon</span>
+                            </div>
+                            <div class="coin-balance">
+                                <span id="bal-matic">0.00</span>
+                            </div>
+                        </div>
+                        <!-- USDT -->
                         <div class="asset-row" onclick="App.nav('swap')">
                             <div class="coin-icon usdt"></div>
                             <div class="coin-info">
                                 <span class="coin-name">USDT</span>
                                 <span class="coin-full">Tether USD</span>
                             </div>
-                            <div class="coin-balance"><span id="bal-usdt">0.00</span></div>
+                            <div class="coin-balance">
+                                <span id="bal-usdt">0.00</span>
+                            </div>
                         </div>
+                        <!-- FTA -->
                         <div class="asset-row" onclick="App.nav('swap')">
                             <div class="coin-icon fta"></div>
                             <div class="coin-info">
                                 <span class="coin-name">FTA</span>
                                 <span class="coin-full">Fitia Token</span>
                             </div>
-                            <div class="coin-balance"><span id="bal-fta">0.00</span></div>
+                            <div class="coin-balance">
+                                <span id="bal-fta">0.00</span>
+                            </div>
                         </div>
                     </div>
                 </section>
 
+                <!-- PARRAINAGE -->
                 <section class="content-section">
                     <div class="section-title"><h3>Parrainage</h3></div>
                     <div class="ref-card-dark">
@@ -93,151 +170,139 @@
                 </section>
             </div>
 
-            <!-- SHOP -->
+            <!-- SHOP (Inchangé) -->
             <div id="view-shop" class="view">
-                <div class="section-title">
-                    <h3>Boutique Minage</h3>
-                    <p>Sélectionnez une machine</p>
+                <div class="shop-header">
+                    <h2 class="view-title">⛏️ Boutique</h2>
+                    <div class="toggle-pay">
+                        <button id="btn-pay-usdt" class="toggle-btn active" onclick="App.setPayMode('USDT')">USDT</button>
+                        <button id="btn-pay-fta" class="toggle-btn" onclick="App.setPayMode('FTA')">FTA</button>
+                    </div>
                 </div>
-                <div id="shop-list" class="shop-grid"></div>
+                <div id="shop-list" class="grid-list"></div>
             </div>
 
-            <!-- MES MACHINES -->
+            <!-- MY RIGS (Inchangé) -->
             <div id="view-my-rigs" class="view">
-                <div class="section-title"><h3>Mes Machines</h3></div>
-                <div id="my-rigs-list" class="rigs-list"></div>
-                <div id="no-rigs" class="empty-state" style="display:none;">
-                    <i class="fas fa-inbox"></i>
-                    <p>Aucune machine active</p>
+                <h2 class="view-title">⚙️ Mes Machines</h2>
+                <div id="my-rigs-list" class="rigs-list-container"></div>
+                <div id="no-rigs" class="card" style="text-align:center; display:none;">
+                    <p>Vous n'avez pas encore de machines actives.</p>
                 </div>
             </div>
 
-            <!-- SWAP -->
-            <div id="view-swap" class="view">
-                <div class="swap-card-dark">
-                    <div class="swap-header"><span>Échange Rapide</span></div>
-                    
-                    <div class="swap-box-style">
-                        <div class="flex-between">
-                            <span class="label-dim">Vous payez</span>
-                            <span class="label-dim">Solde: <span id="swap-bal-from">0</span></span>
-                        </div>
-                        <div class="input-line">
-                            <input type="number" id="swap-from-in" placeholder="0.00" oninput="App.calcSwap()">
-                            <div class="token-tag" id="token-from-display">USDT</div>
-                        </div>
-                    </div>
-
-                    <div class="swap-divider" onclick="App.toggleSwap()"><i class="fas fa-arrow-down"></i></div>
-
-                    <div class="swap-box-style">
-                        <div class="flex-between">
-                            <span class="label-dim">Vous recevez</span>
-                            <span class="label-dim">Solde: <span id="swap-bal-to">0</span></span>
-                        </div>
-                        <div class="input-line">
-                            <input type="number" id="swap-to-in" placeholder="0.00" readonly>
-                            <div class="token-tag" id="token-to-display">FTA</div>
-                        </div>
-                    </div>
-
-                    <div class="rate-bar">
-                        <span>Taux</span>
-                        <span id="swap-rate">1 USDT = 0 FTA</span>
-                    </div>
-
-                    <button class="btn-gold-full" onclick="App.executeSwap()">Échanger</button>
-                </div>
-            </div>
-
-            <!-- JEUX -->
+            <!-- GAMES (Inchangé) -->
             <div id="view-games" class="view">
-                <div class="section-title"><h3>Game Center</h3></div>
-                
-                <!-- Win Go -->
-                <div class="game-card-dark">
-                    <div class="game-head">
-                        <i class="fas fa-dice game-ic"></i>
-                        <div class="game-title-area">
-                            <h4>Win Go</h4>
-                            <span>Choisissez un numéro</span>
+                <h2 class="view-title">🎮 Game Center</h2>
+                <div class="game-tabs">
+                    <button class="game-tab active" onclick="App.showGame('wingo')">Win Go</button>
+                    <button class="game-tab" onclick="App.showGame('wheel')">Roue</button>
+                    <button class="game-tab" onclick="App.showGame('fishing')">Pêche</button>
+                    <button class="game-tab" onclick="App.showGame('lottery')">Loterie</button>
+                </div>
+
+                <div id="game-wingo" class="game-area active">
+                    <p class="game-info">Deviner le numéro (0-9) ou Grand/Petit.</p>
+                    <div class="slot-machine">
+                        <div class="slot-window">
+                            <div class="slot-reel" id="slot-reel"><span>5</span><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>0</span></div>
                         </div>
                     </div>
-                    <input type="number" id="wingo-amount" class="dark-input" placeholder="Montant FTA">
-                    <div class="num-grid-style">
-                        <button onclick="App.playWinGo(0, 0)">0</button>
-                        <button onclick="App.playWinGo(0, 1)">1</button>
-                        <button onclick="App.playWinGo(0, 2)">2</button>
-                        <button onclick="App.playWinGo(0, 3)">3</button>
-                        <button onclick="App.playWinGo(0, 4)">4</button>
-                        <button onclick="App.playWinGo(0, 5)">5</button>
-                        <button onclick="App.playWinGo(0, 6)">6</button>
-                        <button onclick="App.playWinGo(0, 7)">7</button>
-                        <button onclick="App.playWinGo(0, 8)">8</button>
-                        <button onclick="App.playWinGo(0, 9)">9</button>
+                    <div id="wingo-result" class="game-result-box hidden"></div>
+                    <input type="number" id="wingo-bet" class="game-input" placeholder="Mise en FTA">
+                    <div class="game-options">
+                        <button onclick="App.playWinGo(1, 0)">Petit (0-4)</button>
+                        <button onclick="App.playWinGo(1, 1)">Grand (5-9)</button>
                     </div>
                 </div>
 
-                <div class="game-list-grid">
-                    <div class="game-item-small" onclick="App.spinWheel()">
-                        <div class="gi-icon"><i class="fas fa-life-ring"></i></div>
-                        <div class="gi-content">
-                            <h5>Lucky Wheel</h5>
-                            <p>Jackpot: <span id="wheel-jackpot">0</span> FTA</p>
-                        </div>
-                        <i class="fas fa-chevron-right"></i>
+                <div id="game-wheel" class="game-area">
+                    <p class="game-info">Tournez pour tenter de gagner le Jackpot !</p>
+                    <div class="wheel-container">
+                        <div class="wheel-pointer">▼</div>
+                        <canvas id="wheel-canvas" width="300" height="300"></canvas>
                     </div>
-                    <div class="game-item-small" onclick="App.goFishing()">
-                        <div class="gi-icon"><i class="fas fa-fish"></i></div>
-                        <div class="gi-content">
-                            <h5>Fishing Era</h5>
-                            <p>Prix: <span id="fish-price">50</span> FTA</p>
-                        </div>
-                        <i class="fas fa-chevron-right"></i>
+                    <div id="wheel-result" class="game-result-box hidden"></div>
+                    <div class="jackpot-display">Jackpot: <span id="wheel-jackpot">0</span> FTA</div>
+                    <button class="btn-game" onclick="App.spinWheel()">Tourner (100 FTA)</button>
+                </div>
+
+                <div id="game-fishing" class="game-area">
+                    <p class="game-info">Lancez votre ligne.</p>
+                    <div class="fishing-container">
+                        <div class="fishing-line" id="fishing-line"></div>
+                        <div class="fishing-hook" id="fishing-hook">🪝</div>
                     </div>
-                    <div class="game-item-small" onclick="App.buyLotteryTicket()">
-                        <div class="gi-icon"><i class="fas fa-ticket-alt"></i></div>
-                        <div class="gi-content">
-                            <h5>Loterie</h5>
-                            <p>Pot: <span id="lottery-pot">0</span> FTA</p>
-                        </div>
-                        <i class="fas fa-chevron-right"></i>
-                    </div>
+                    <div id="fishing-status" class="fishing-status">En attente...</div>
+                    <div id="fish-result" class="game-result-box hidden"></div>
+                    <button class="btn-game" onclick="App.goFishing()">Pêcher (50 FTA)</button>
+                </div>
+
+                <div id="game-lottery" class="game-area">
+                    <p class="game-info">Achetez un ticket pour participer.</p>
+                    <div class="jackpot-display">Pot: <span id="lottery-pot">0</span> FTA</div>
+                    <button class="btn-game" onclick="App.buyLotteryTicket()">Ticket (50 FTA)</button>
                 </div>
             </div>
 
-            <div style="height:40px;"></div>
+            <!-- SWAP (Inchangé) -->
+            <div id="view-swap" class="view">
+                <h2 class="view-title">💱 Échange</h2>
+                <div class="card swap-interface">
+                    <div class="swap-header">
+                        <span>Vous payez</span>
+                        <span>Solde: <span id="swap-bal-from">0</span></span>
+                    </div>
+                    <div class="input-wrap">
+                        <input type="number" id="swap-from-in" placeholder="0.0" oninput="App.calcSwap()">
+                        <div class="token-select" onclick="App.toggleSwap()" id="token-from-display">USDT</div>
+                    </div>
+                    <div class="swap-arrow-wrap"><div class="swap-arrow" onclick="App.toggleSwap()">⇅</div></div>
+                    <div class="swap-header">
+                        <span>Vous recevez</span>
+                        <span>Solde: <span id="swap-bal-to">0</span></span>
+                    </div>
+                    <div class="input-wrap">
+                        <input type="number" id="swap-to-in" placeholder="0.0" readonly>
+                        <div class="token-select" style="background:#333; cursor:default;" id="token-to-display">FTA</div>
+                    </div>
+                    <div class="rate-info" id="swap-rate">Chargement...</div>
+                    <button class="btn-primary" onclick="App.executeSwap()">ÉCHANGER</button>
+                </div>
+            </div>
+
+            <div style="height:100px;"></div>
         </main>
 
         <!-- NAVIGATION -->
-        <nav class="bottom-nav-float">
-            <div class="nav-item-bit active" onclick="App.nav('dashboard')">
-                <i class="fas fa-wallet"></i>
+        <nav class="bottom-nav">
+            <button class="nav-item active" onclick="App.nav('dashboard')">
+                <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
                 <span>Wallet</span>
-            </div>
-            <div class="nav-item-bit" onclick="App.nav('shop')">
-                <i class="fas fa-shopping-bag"></i>
+            </button>
+            <button class="nav-item" onclick="App.nav('shop')">
+                <svg viewBox="0 0 24 24"><path d="M12 2l-5.5 9h11z"/></svg>
                 <span>Shop</span>
-            </div>
-            <div class="nav-item-bit" onclick="App.nav('my-rigs')">
-                <i class="fas fa-server"></i>
+            </button>
+            <button class="nav-item" onclick="App.nav('my-rigs')">
+                <svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg>
                 <span>Rigs</span>
-            </div>
-            <div class="nav-item-bit" onclick="App.nav('swap')">
-                <i class="fas fa-exchange-alt"></i>
+            </button>
+            <button class="nav-item" onclick="App.nav('games')">
+                <svg viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
+                <span>Jeux</span>
+            </button>
+            <button class="nav-item" onclick="App.nav('swap')">
+                <svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
                 <span>Swap</span>
-            </div>
-            <div class="nav-item-bit" onclick="App.nav('games')">
-                <i class="fas fa-gamepad"></i>
-                <span>Games</span>
-            </div>
+            </button>
         </nav>
 
     </div>
 
-    <div id="loader" class="loader-screen hidden">
-        <div class="spinner-bit"></div>
-        <p id="loader-text">Chargement...</p>
+    <div id="loader" class="loader hidden">
+        <div class="spinner-ring"></div>
+        <p id="loader-text">Traitement...</p>
     </div>
 
     <script src="app.js"></script>
