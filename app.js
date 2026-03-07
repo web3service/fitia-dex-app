@@ -1,7 +1,6 @@
 // ============================================
 // FITIA PRO - Application JavaScript
 // Version Production - Polygon Mainnet
-// SUIVRE EXACTEMENT LA LOGIQUE DU CONTRAT
 // ============================================
 
 const App = {
@@ -28,37 +27,51 @@ const App = {
         refreshInterval: null
     },
 
+    // Initialisation
     async init() {
-        console.log('🚀 FITIA PRO Initialisé (Production)');
+        console.log('🚀 FITIA PRO - Initialisation...');
         console.log('📍 Contrat Mining:', CONTRACT_ADDRESSES.FITIA_MINING);
         console.log('📍 Token FTA:', CONTRACT_ADDRESSES.FTA_TOKEN);
-        console.log('📍 Token USDT:', CONTRACT_ADDRESSES.USDT_TOKEN);
         
         this.loadState();
         this.checkReferral();
         this.renderShop();
         this.initCanvas();
         this.startAutoRefresh();
-        await this.checkNetwork();
-        await this.initContracts();
-        await this.loadContractData();
-        this.updateBalances();
+        
+        // Vérifier MetaMask
+        if (typeof window.ethereum !== 'undefined') {
+            await this.checkNetwork();
+            await this.initContracts();
+            await this.loadContractData();
+            this.updateBalances();
+        } else {
+            console.warn('⚠️ MetaMask non installé');
+        }
+        
+        console.log('✅ FITIA PRO Initialisé');
     },
 
+    // Vérifier le réseau
     async checkNetwork() {
-        if (typeof window.ethereum === 'undefined') return;
         try {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const network = await provider.getNetwork();
             const currentChainId = Number(network.chainId);
+            
             console.log('Chain ID actuel:', currentChainId);
-            if (currentChainId !== CONFIG.NETWORK.CHAIN_ID) await this.switchNetwork();
+            console.log('Chain ID requis:', CONFIG.NETWORK.CHAIN_ID);
+            
+            if (currentChainId !== CONFIG.NETWORK.CHAIN_ID) {
+                await this.switchNetwork();
+            }
             this.state.chainId = currentChainId;
         } catch (error) {
-            console.error('Erreur réseau:', error);
+            console.error('Erreur vérification réseau:', error);
         }
     },
 
+    // Changer de réseau
     async switchNetwork() {
         try {
             await window.ethereum.request({
@@ -67,11 +80,15 @@ const App = {
             });
             this.showToast('✅ Réseau changé vers Polygon', 'success');
         } catch (error) {
-            if (error.code === 4902) await this.addNetwork();
-            else this.showToast('❌ Veuillez changer pour Polygon', 'error');
+            if (error.code === 4902) {
+                await this.addNetwork();
+            } else {
+                this.showToast('❌ Veuillez changer pour Polygon Manuellement', 'error');
+            }
         }
     },
 
+    // Ajouter le réseau Polygon
     async addNetwork() {
         try {
             await window.ethereum.request({
@@ -86,20 +103,25 @@ const App = {
             });
             this.showToast('✅ Polygon ajouté au wallet', 'success');
         } catch (error) {
+            console.error('Erreur ajout réseau:', error);
             this.showToast('❌ Échec ajout réseau', 'error');
         }
     },
 
+    // Initialiser les contrats
     async initContracts() {
-        if (typeof window.ethereum === 'undefined') {
-            this.showToast('⚠️ MetaMask non installé', 'error');
+        // Vérifier les adresses
+        if (!CONTRACT_ADDRESSES.FITIA_MINING || 
+            CONTRACT_ADDRESSES.FITIA_MINING === '0x0000000000000000000000000000000000000000') {
+            console.error('❌ ADRESSE CONTRAT MINING NON CONFIGURÉE!');
+            this.showToast('⚠️ Configurez les adresses dans config.js', 'error');
             return;
         }
 
-        if (CONTRACT_ADDRESSES.FITIA_MINING === '0x0000000000000000000000000000000000000000' ||
+        if (!CONTRACT_ADDRESSES.FTA_TOKEN || 
             CONTRACT_ADDRESSES.FTA_TOKEN === '0x0000000000000000000000000000000000000000') {
-            console.error('❌ ADRESSES CONTRATS NON CONFIGURÉES!');
-            this.showToast('⚠️ Configurez les adresses dans config.js', 'error');
+            console.error('❌ ADRESSE TOKEN FTA NON CONFIGURÉE!');
+            this.showToast('⚠️ Configurez l\'adresse FTA dans config.js', 'error');
             return;
         }
 
@@ -107,6 +129,7 @@ const App = {
             const provider = new ethers.BrowserProvider(window.ethereum);
             this.state.provider = provider;
 
+            // Contrat Mining
             this.state.contracts.mining = new ethers.Contract(
                 CONTRACT_ADDRESSES.FITIA_MINING,
                 CONTRACT_ABI.FITIA_MINING,
@@ -114,6 +137,7 @@ const App = {
             );
             console.log('✅ Contrat Mining initialisé');
 
+            // Token FTA
             this.state.contracts.fta = new ethers.Contract(
                 CONTRACT_ADDRESSES.FTA_TOKEN,
                 CONTRACT_ABI.ERC20,
@@ -121,6 +145,7 @@ const App = {
             );
             console.log('✅ Token FTA initialisé');
 
+            // Token USDT
             this.state.contracts.usdt = new ethers.Contract(
                 CONTRACT_ADDRESSES.USDT_TOKEN,
                 CONTRACT_ABI.ERC20,
@@ -134,8 +159,12 @@ const App = {
         }
     },
 
+    // Charger les données du contrat
     async loadContractData() {
-        if (!this.state.contracts.mining) return;
+        if (!this.state.contracts.mining) {
+            console.warn('⚠️ Contrat mining non initialisé');
+            return;
+        }
         try {
             const rate = await this.state.contracts.mining.exchangeRate();
             this.state.exchangeRate = parseFloat(ethers.formatUnits(rate, 6));
@@ -153,6 +182,7 @@ const App = {
         }
     },
 
+    // Navigation
     nav(view) {
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -163,81 +193,97 @@ const App = {
         if (view === 'swap') this.loadContractData();
     },
 
+    // Connexion Wallet
     async connect() {
         this.showLoader('Connexion au wallet...');
+        
         try {
-            if (typeof window.ethereum !== 'undefined') {
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                const accounts = await provider.send("eth_requestAccounts", []);
-                
-                if (!accounts || accounts.length === 0) {
-                    this.showToast('❌ Aucun compte trouvé', 'error');
-                    this.hideLoader();
-                    return;
-                }
-
-                this.state.address = accounts[0];
-                this.state.connected = true;
-                this.state.signer = await provider.getSigner();
-                
-                console.log('✅ Wallet connecté:', this.state.address);
-
-                this.state.contracts.mining = this.state.contracts.mining.connect(this.state.signer);
-                this.state.contracts.fta = this.state.contracts.fta.connect(this.state.signer);
-                this.state.contracts.usdt = this.state.contracts.usdt.connect(this.state.signer);
-                
-                // Charger les données on-chain
-                await this.loadOnChainData();
-                
-                this.updateWalletUI();
-                this.showToast('✅ Wallet connecté !', 'success');
-                this.saveState();
-            } else {
-                this.showToast('⚠️ Installez MetaMask', 'error');
+            // Vérifier MetaMask
+            if (typeof window.ethereum === 'undefined') {
+                this.showToast('⚠️ MetaMask non installé', 'error');
+                this.hideLoader();
+                return;
             }
+
+            // Vérifier les contrats
+            if (!this.state.contracts.mining || !this.state.contracts.fta) {
+                console.warn('⚠️ Contrats non initialisés, réinitialisation...');
+                await this.initContracts();
+            }
+
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const accounts = await provider.send("eth_requestAccounts", []);
+            
+            if (!accounts || accounts.length === 0) {
+                this.showToast('❌ Aucun compte trouvé', 'error');
+                this.hideLoader();
+                return;
+            }
+
+            this.state.address = accounts[0];
+            this.state.connected = true;
+            this.state.signer = await provider.getSigner();
+            
+            console.log('✅ Wallet connecté:', this.state.address);
+
+            // Connecter les contrats au signer
+            this.state.contracts.mining = this.state.contracts.mining.connect(this.state.signer);
+            this.state.contracts.fta = this.state.contracts.fta.connect(this.state.signer);
+            this.state.contracts.usdt = this.state.contracts.usdt.connect(this.state.signer);
+            
+            // Charger les données
+            await this.loadOnChainData();
+            
+            this.updateWalletUI();
+            this.showToast('✅ Wallet connecté !', 'success');
+            this.saveState();
+
         } catch (error) {
             console.error('Erreur connexion:', error);
-            this.showToast('❌ Échec de connexion', 'error');
+            if (error.code === 4001) {
+                this.showToast('❌ Connexion refusée', 'error');
+            } else {
+                this.showToast('❌ Échec de connexion: ' + error.message.substring(0, 50), 'error');
+            }
         }
         this.hideLoader();
     },
 
-    // === CORRECTION: CHARGEMENT DONNÉES ON-CHAIN ===
+    // Charger les données on-chain
     async loadOnChainData() {
         if (!this.state.connected) {
+            console.log('⚠️ Pas connecté');
             return;
         }
 
         try {
-            console.log('📊 Chargement données on-chain pour:', this.state.address);
+            console.log('📊 Chargement données pour:', this.state.address);
 
-            // 1. Balance FTA (8 décimales)
+            // Balance FTA
             const ftaBalance = await this.state.contracts.fta.balanceOf(this.state.address);
             this.state.balances.FTA = parseFloat(ethers.formatUnits(ftaBalance, 8));
             console.log('✅ Balance FTA:', this.state.balances.FTA);
 
-            // 2. Balance USDT (6 décimales)
+            // Balance USDT
             const usdtBalance = await this.state.contracts.usdt.balanceOf(this.state.address);
             this.state.balances.USDT = parseFloat(ethers.formatUnits(usdtBalance, 6));
             console.log('✅ Balance USDT:', this.state.balances.USDT);
 
-            // 3. Power Mining (depuis le contrat)
+            // Power Mining
             const power = await this.state.contracts.mining.getActivePower(this.state.address);
             this.state.power = parseFloat(ethers.formatUnits(power, 8));
             console.log('✅ Power Mining:', this.state.power);
 
-            // 4. User Info (lastClaimTime + machines)
+            // User Info
             const userInfo = await this.state.contracts.mining.users(this.state.address);
             this.state.lastClaimTime = Number(userInfo.lastClaimTime);
             this.state.userMachines = userInfo.machines;
             console.log('✅ Last Claim Time:', this.state.lastClaimTime);
-            console.log('📅 Date dernier claim:', new Date(this.state.lastClaimTime * 1000).toLocaleString());
 
-            // 5. === CALCUL PENDING REWARDS (LOGIQUE CONTRAT) ===
-            // Formule du contrat: (timePassed * power * difficultyMultiplier) / 1e18
+            // Calculer pending rewards
             await this.calculatePendingRewards();
 
-            // 6. Parrain
+            // Parrain
             const referrer = await this.state.contracts.mining.referrers(this.state.address);
             if (referrer !== ethers.ZeroAddress) {
                 this.state.referralCode = referrer;
@@ -255,18 +301,15 @@ const App = {
         }
     },
 
-    // === CORRECTION: CALCUL PENDING (LOGIQUE CONTRAT) ===
+    // Calculer les rewards pending
     async calculatePendingRewards() {
         if (this.state.lastClaimTime === 0 || this.state.power === 0) {
             this.state.pending = 0;
-            console.log('⚠️ Pas de rewards (lastClaimTime=0 ou power=0)');
             return;
         }
 
         const now = Math.floor(Date.now() / 1000);
         const timePassed = now - this.state.lastClaimTime;
-
-        console.log('⏱️ Temps écoulé:', timePassed, 'secondes');
 
         if (timePassed <= 0) {
             this.state.pending = 0;
@@ -274,23 +317,16 @@ const App = {
         }
 
         try {
-            // Récupérer difficultyMultiplier depuis le contrat
             const difficulty = await this.state.contracts.mining.difficultyMultiplier();
             
-            // === FORMULE EXACTE DU CONTRAT ===
-            // uint256 rawRewards = timePassed * currentPower;
-            // uint256 finalRewards = (rawRewards * difficultyMultiplier) / 1e18;
-            
+            // Formule du contrat: (timePassed * power * difficulty) / 1e18
             const powerWei = BigInt(Math.floor(this.state.power * 1e8));
             const rawRewards = BigInt(timePassed) * powerWei;
             const finalRewards = (rawRewards * difficulty) / BigInt(1e18);
             
             this.state.pending = parseFloat(ethers.formatUnits(finalRewards, 8));
             
-            console.log('✅ Pending Rewards:', this.state.pending, 'FTA');
-            console.log('   - Power:', this.state.power, 'FTA/s');
-            console.log('   - Time:', timePassed, 's');
-            console.log('   - Difficulty:', difficulty.toString());
+            console.log('✅ Pending:', this.state.pending, 'FTA');
             
         } catch (error) {
             console.error('Erreur calcul pending:', error);
@@ -298,25 +334,23 @@ const App = {
         }
     },
 
-    // === CORRECTION: AUTO REFRESH (PAS SIMULATION) ===
+    // Auto refresh
     startAutoRefresh() {
-        // Clear existing interval
         if (this.state.refreshInterval) {
             clearInterval(this.state.refreshInterval);
         }
 
-        // Refresh every 10 seconds (pour affichage temps réel)
         this.state.refreshInterval = setInterval(() => {
             if (this.state.connected && this.state.power > 0) {
-                // Recalculer pending basé sur lastClaimTime on-chain
                 this.calculatePendingRewards();
                 this.updateStats();
             }
         }, 10000);
 
-        console.log('✅ Auto-refresh started (10s)');
+        console.log('✅ Auto-refresh activé (10s)');
     },
 
+    // Update Wallet UI
     updateWalletUI() {
         const btn = document.getElementById('btn-connect');
         const status = document.getElementById('wallet-status');
@@ -329,6 +363,7 @@ const App = {
         }
     },
 
+    // Vérifier parrainage URL
     checkReferral() {
         const urlParams = new URLSearchParams(window.location.search);
         const ref = urlParams.get('ref');
@@ -339,8 +374,12 @@ const App = {
         }
     },
 
+    // Lier parrain
     async bindReferrer() {
-        if (!this.state.connected) { this.showToast('⚠️ Connectez votre wallet', 'error'); return; }
+        if (!this.state.connected) { 
+            this.showToast('⚠️ Connectez votre wallet', 'error'); 
+            return; 
+        }
         try {
             this.showLoader('Liaison du parrain...');
             const tx = await this.state.contracts.mining.setReferrer(this.state.detectedRef);
@@ -353,12 +392,14 @@ const App = {
         this.hideLoader();
     },
 
+    // Copier lien
     copyLink() {
         const input = document.getElementById('ref-link');
         navigator.clipboard.writeText(input.value);
         this.showToast('📋 Lien copié !', 'success');
     },
 
+    // Mode de paiement
     setPayMode(mode) {
         this.state.payMode = mode;
         document.getElementById('btn-pay-usdt').classList.toggle('active', mode === 'USDT');
@@ -366,6 +407,7 @@ const App = {
         this.renderShop();
     },
 
+    // Afficher boutique
     renderShop() {
         const container = document.getElementById('shop-list');
         container.innerHTML = '';
@@ -385,8 +427,12 @@ const App = {
         });
     },
 
+    // Acheter machine
     async buyMachine(id) {
-        if (!this.state.connected) { this.showToast('⚠️ Connectez votre wallet', 'error'); return; }
+        if (!this.state.connected) { 
+            this.showToast('⚠️ Connectez votre wallet', 'error'); 
+            return; 
+        }
         const machine = MACHINE_TYPES.find(m => m.id === id);
         try {
             this.showLoader('Achat en cours...');
@@ -405,11 +451,13 @@ const App = {
             const approveTx = await tokenContract.approve(CONTRACT_ADDRESSES.FITIA_MINING, amount);
             this.showToast('📤 Approbation en cours...', 'info');
             await approveTx.wait();
+            
             const buyTx = this.state.payMode === 'USDT'
                 ? await this.state.contracts.mining.buyMachine(id)
                 : await this.state.contracts.mining.buyMachineWithFTA(id);
             this.showToast('📤 Transaction en cours...', 'info');
             await buyTx.wait();
+            
             this.showToast(`✅ ${machine.name} acheté !`, 'success');
             await this.loadOnChainData();
         } catch (error) { 
@@ -418,6 +466,7 @@ const App = {
         this.hideLoader();
     },
 
+    // Afficher mes rigs
     renderMyRigs() {
         const container = document.getElementById('my-rigs-list');
         const noRigs = document.getElementById('no-rigs');
@@ -453,10 +502,10 @@ const App = {
         });
     },
 
+    // Update stats
     updateStats() {
         document.getElementById('val-power').textContent = this.state.power.toFixed(5);
         document.getElementById('val-pending').textContent = this.state.pending.toFixed(5);
-        
         const vizStatus = document.getElementById('viz-status');
         if (this.state.power > 0) {
             vizStatus.textContent = 'MINING';
@@ -467,7 +516,7 @@ const App = {
         }
     },
 
-    // === CORRECTION: CLAIM (LOGIQUE CONTRAT) ===
+    // Claim rewards
     async claim() {
         if (!this.state.connected) { 
             this.showToast('⚠️ Connectez votre wallet', 'error'); 
@@ -479,34 +528,18 @@ const App = {
         }
         try {
             this.showLoader('Réclamation en cours...');
-            
-            // Appeler claimRewards() du contrat
-            // Le contrat va:
-            // 1. Calculer les rewards
-            // 2. Transférer FTA au user
-            // 3. Mettre à jour lastClaimTime = block.timestamp
-            // 4. Reset pending à 0 (car lastClaimTime = now)
             const tx = await this.state.contracts.mining.claimRewards();
             this.showToast('📤 Transaction envoyée...', 'info');
-            
-            // Attendre la confirmation
-            const receipt = await tx.wait();
-            console.log('✅ Transaction confirmée:', receipt.transactionHash);
-            
+            await tx.wait();
             this.showToast('✅ Réclamation réussie !', 'success');
-            
-            // IMPORTANT: Recharger les données on-chain
-            // lastClaimTime a été mis à jour par le contrat
-            // pending sera recalculé à 0 (ou très proche de 0)
             await this.loadOnChainData();
-            
         } catch (error) { 
-            console.error('Erreur claim:', error);
             this.showToast(`❌ ${this.getErrorMessage(error)}`, 'error'); 
         }
         this.hideLoader();
     },
 
+    // Update balances
     updateBalances() {
         document.getElementById('bal-usdt').textContent = this.state.balances.USDT.toFixed(2);
         document.getElementById('bal-fta').textContent = this.state.balances.FTA.toFixed(5);
@@ -514,6 +547,7 @@ const App = {
         document.getElementById('swap-bal-to').textContent = this.state.balances[this.state.swapTo].toFixed(5);
     },
 
+    // Toggle swap
     toggleSwap() {
         [this.state.swapFrom, this.state.swapTo] = [this.state.swapTo, this.state.swapFrom];
         document.getElementById('token-from-display').querySelector('span').textContent = this.state.swapFrom;
@@ -521,6 +555,7 @@ const App = {
         this.calcSwap();
     },
 
+    // Calc swap
     calcSwap() {
         const fromAmount = parseFloat(document.getElementById('swap-from-in').value) || 0;
         const rate = this.state.swapFrom === 'USDT' ? this.state.exchangeRate : 1 / this.state.exchangeRate;
@@ -529,10 +564,17 @@ const App = {
         document.getElementById('swap-rate').textContent = `1 ${this.state.swapFrom} = ${rate.toFixed(4)} ${this.state.swapTo}`;
     },
 
+    // Execute swap
     async executeSwap() {
-        if (!this.state.connected) { this.showToast('⚠️ Connectez votre wallet', 'error'); return; }
+        if (!this.state.connected) { 
+            this.showToast('⚠️ Connectez votre wallet', 'error'); 
+            return; 
+        }
         const fromAmount = parseFloat(document.getElementById('swap-from-in').value) || 0;
-        if (fromAmount <= 0) { this.showToast('⚠️ Montant invalide', 'error'); return; }
+        if (fromAmount <= 0) { 
+            this.showToast('⚠️ Montant invalide', 'error'); 
+            return; 
+        }
         try {
             this.showLoader('Échange en cours...');
             const amountIn = this.state.swapFrom === 'USDT'
@@ -553,6 +595,7 @@ const App = {
         this.hideLoader();
     },
 
+    // Show game
     showGame(game) {
         document.querySelectorAll('.game-area').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.game-tab').forEach(el => el.classList.remove('active'));
@@ -561,10 +604,17 @@ const App = {
         if (game === 'wheel') this.initWheel();
     },
 
+    // Play WinGo
     async playWinGo(multiplier, type) {
-        if (!this.state.connected) { this.showToast('⚠️ Connectez votre wallet', 'error'); return; }
+        if (!this.state.connected) { 
+            this.showToast('⚠️ Connectez votre wallet', 'error'); 
+            return; 
+        }
         const bet = parseFloat(document.getElementById('wingo-bet').value) || 0;
-        if (bet <= 0) { this.showToast('❌ Mise invalide', 'error'); return; }
+        if (bet <= 0) { 
+            this.showToast('❌ Mise invalide', 'error'); 
+            return; 
+        }
         try {
             this.showLoader('Jeu en cours...');
             const betAmount = ethers.parseUnits(bet.toString(), TOKEN_DECIMALS.FTA);
@@ -586,8 +636,12 @@ const App = {
         this.hideLoader();
     },
 
+    // Spin wheel
     async spinWheel() {
-        if (!this.state.connected) { this.showToast('⚠️ Connectez votre wallet', 'error'); return; }
+        if (!this.state.connected) { 
+            this.showToast('⚠️ Connectez votre wallet', 'error'); 
+            return; 
+        }
         try {
             this.showLoader('La roue tourne...');
             const ticketPrice = await this.state.contracts.mining.wheelTicketPrice();
@@ -608,14 +662,17 @@ const App = {
             this.showToast('🎡 Tour terminé !', 'success');
             await this.loadOnChainData();
         } catch (error) { 
-            console.error('Erreur spinWheel:', error);
             this.showToast(`❌ ${this.getErrorMessage(error)}`, 'error'); 
         }
         this.hideLoader();
     },
 
+    // Buy lottery ticket
     async buyLotteryTicket() {
-        if (!this.state.connected) { this.showToast('⚠️ Connectez votre wallet', 'error'); return; }
+        if (!this.state.connected) { 
+            this.showToast('⚠️ Connectez votre wallet', 'error'); 
+            return; 
+        }
         try {
             this.showLoader('Achat du ticket...');
             const ticketPrice = await this.state.contracts.mining.lotteryTicketPrice();
@@ -637,8 +694,12 @@ const App = {
         this.hideLoader();
     },
 
+    // Go fishing
     async goFishing() {
-        if (!this.state.connected) { this.showToast('⚠️ Connectez votre wallet', 'error'); return; }
+        if (!this.state.connected) { 
+            this.showToast('⚠️ Connectez votre wallet', 'error'); 
+            return; 
+        }
         try {
             this.showLoader('Pêche en cours...');
             const ticketPrice = await this.state.contracts.mining.fishingTicketPrice();
@@ -660,6 +721,7 @@ const App = {
         this.hideLoader();
     },
 
+    // Init canvas
     initCanvas() {
         const canvas = document.getElementById('mining-canvas');
         if (!canvas) return;
@@ -687,6 +749,7 @@ const App = {
         animate();
     },
 
+    // Init wheel
     initWheel() {
         const canvas = document.getElementById('wheel-canvas');
         if (!canvas) return;
@@ -715,22 +778,21 @@ const App = {
         });
     },
 
+    // Get error message
     getErrorMessage(error) {
-        console.error('Erreur détaillée:', error);
+        console.error('Erreur:', error);
         if (error.reason) return error.reason;
         if (error.message) {
             if (error.message.includes('user rejected') || error.message.includes('rejected')) return 'Transaction refusée';
-            if (error.message.includes('insufficient funds')) return 'Solde insuffisant en MATIC pour les frais';
+            if (error.message.includes('insufficient funds')) return 'Solde insuffisant en MATIC';
             if (error.message.includes('failed')) return 'Transaction échouée';
             if (error.message.includes('allowance')) return 'Approbation requise';
-            if (error.message.includes('coalesce')) return 'Erreur réseau - Réessayez';
-            return error.message.split('(')[0].trim();
+            return error.message.split('(')[0].trim().substring(0, 100);
         }
-        if (error.code === 'ACTION_REJECTED') return 'Transaction refusée';
-        if (error.code === 'INSUFFICIENT_FUNDS') return 'Solde insuffisant';
-        return 'Erreur de transaction - Vérifiez votre solde';
+        return 'Erreur de transaction';
     },
 
+    // Toast
     showToast(message, type = 'info') {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
@@ -741,13 +803,17 @@ const App = {
         setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
     },
 
+    // Loader
     showLoader(text = 'Chargement...') {
         document.getElementById('loader-text').textContent = text;
         document.getElementById('loader').classList.remove('hidden');
     },
 
-    hideLoader() { document.getElementById('loader').classList.add('hidden'); },
+    hideLoader() { 
+        document.getElementById('loader').classList.add('hidden'); 
+    },
 
+    // Save state
     saveState() {
         const stateToSave = { 
             address: this.state.address, 
@@ -759,6 +825,7 @@ const App = {
         localStorage.setItem('fitiaProState', JSON.stringify(stateToSave));
     },
 
+    // Load state
     loadState() {
         const saved = localStorage.getItem('fitiaProState');
         if (saved) {
@@ -772,4 +839,8 @@ const App = {
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => { App.init(); });
+// Démarrage
+document.addEventListener('DOMContentLoaded', () => { 
+    console.log('📄 DOM Chargé');
+    App.init(); 
+});

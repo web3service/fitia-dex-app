@@ -32,8 +32,7 @@
             </div>
             <div class="header-actions">
                 <button id="btn-connect" class="btn-connect" onclick="App.connect()">
-                    <span class="btn-icon">🔗</span>
-                    <span>Connecter</span>
+                    <span>🔗 Connecter</span>
                 </button>
                 <div id="wallet-status" class="wallet-status hidden">
                     <span id="addr-display">0x...</span>
@@ -43,6 +42,7 @@
         </header>
 
         <main id="main-view">
+            <!-- DASHBOARD -->
             <div id="view-dashboard" class="view active">
                 <div class="card welcome-card">
                     <div class="welcome-content">
@@ -132,6 +132,7 @@
                 </div>
             </div>
 
+            <!-- SHOP -->
             <div id="view-shop" class="view">
                 <div class="shop-header">
                     <h2 class="view-title">⛏️ Boutique</h2>
@@ -143,6 +144,7 @@
                 <div id="shop-list" class="grid-list"></div>
             </div>
 
+            <!-- MY RIGS -->
             <div id="view-my-rigs" class="view">
                 <h2 class="view-title">⚙️ Mes Machines</h2>
                 <div id="my-rigs-list" class="rigs-list-container"></div>
@@ -153,6 +155,7 @@
                 </div>
             </div>
 
+            <!-- GAMES -->
             <div id="view-games" class="view">
                 <h2 class="view-title">🎮 Game Center</h2>
                 <div class="game-tabs">
@@ -224,6 +227,7 @@
                 </div>
             </div>
 
+            <!-- SWAP -->
             <div id="view-swap" class="view">
                 <h2 class="view-title">💱 Échange</h2>
                 <div class="card swap-interface">
@@ -262,6 +266,7 @@
             </div>
         </main>
 
+        <!-- NAVIGATION -->
         <nav class="bottom-nav">
             <button class="nav-item active" onclick="App.nav('dashboard')">
                 <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>

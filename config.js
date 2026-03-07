@@ -1,6 +1,6 @@
 // ============================================
 // FITIA PRO - Configuration Blockchain
-// Version Production - Polygon Mainnet
+// ⚠️ REMPLACEZ LES ADRESSES CI-DESSOUS
 // ============================================
 
 const CONFIG = {
@@ -12,15 +12,15 @@ const CONFIG = {
         CURRENCY: 'MATIC'
     },
 
-    // ⚠️ REMPLACEZ CES ADRESSES PAR LES VÔTRES (TRÈS IMPORTANT)
+    // ⚠️⚠️⚠️ REMPLACEZ CES ADRESSES PAR LES VÔTRES ⚠️⚠️⚠️
     CONTRACTS: {
         // Votre contrat FitiaMiningV2 déployé sur Polygon
-        FITIA_MINING: '0xb7555D092b0B30D30552502f8a2674D48601b10F',  // Exemple - METTEZ LA VÔTRE
+        FITIA_MINING: '0xb7555D092b0B30D30552502f8a2674D48601b10F',
         
         // Votre token FTA déployé (8 décimales)
-        FTA_TOKEN: '0x535bBe393D64a60E14B731b7350675792d501623',  // ⚠️ REMPLACER
+        FTA_TOKEN: '0x535bBe393D64a60E14B731b7350675792d501623',
         
-        // USDT officiel sur Polygon (6 décimales)
+        // USDT officiel sur Polygon (6 décimales) - NE PAS CHANGER
         USDT_TOKEN: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F'
     },
 
@@ -53,20 +53,12 @@ const CONFIG = {
         { id: 7, name: 'Miner X2', price: 50, power: 12.5, currency: 'USDT' },
         { id: 8, name: 'Miner Pro1', price: 75, power: 19.5, currency: 'USDT' },
         { id: 9, name: 'Miner Pro2', price: 100, power: 27.0, currency: 'USDT' }
-    ],
-
-    UI: {
-        APP_NAME: 'FITIA PRO',
-        APP_VERSION: '2.0.0',
-        SUPPORT_EMAIL: 'support@fitia.pro',
-        TELEGRAM: 'https://t.me/fitiapro',
-        TWITTER: 'https://twitter.com/fitiapro'
-    }
+    ]
 };
 
+// Export global
 window.CONTRACT_ADDRESSES = CONFIG.CONTRACTS;
 window.NETWORK_CONFIG = CONFIG.NETWORK;
 window.TOKEN_DECIMALS = CONFIG.DECIMALS;
 window.MACHINE_TYPES = CONFIG.MACHINE_TYPES;
 window.CONTRACT_SETTINGS = CONFIG.SETTINGS;
-window.APP_CONFIG = CONFIG;
