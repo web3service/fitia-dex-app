@@ -1,13 +1,9 @@
 // ============================================
 // FITIA PRO - Configuration Blockchain
 // Version Production - Polygon Mainnet
-// Thème: Jaune Bitget
 // ============================================
 
 const CONFIG = {
-    // ==========================================
-    // RÉSEAU POLYGON MAINNET
-    // ==========================================
     NETWORK: {
         CHAIN_ID: 137,
         NAME: 'Polygon Mainnet',
@@ -16,31 +12,23 @@ const CONFIG = {
         CURRENCY: 'MATIC'
     },
 
-    // ==========================================
-    // ⚠️ ADRESSES DES CONTRATS (À REMPLACER)
-    // ==========================================
+    // ⚠️ REMPLACEZ CES ADRESSES PAR LES VÔTRES (TRÈS IMPORTANT)
     CONTRACTS: {
-        // Votre contrat FitiaMiningV2 déployé
-        FITIA_MINING: '0xb7555D092b0B30D30552502f8a2674D48601b10F',
+        // Votre contrat FitiaMiningV2 déployé sur Polygon
+        FITIA_MINING: '0xb7555D092b0B30D30552502f8a2674D48601b10F',  // Exemple - METTEZ LA VÔTRE
         
-        // Votre token FTA déployé
-        FTA_TOKEN: '0x535bBe393D64a60E14B731b7350675792d501623',
+        // Votre token FTA déployé (8 décimales)
+        FTA_TOKEN: '0x535bBe393D64a60E14B731b7350675792d501623',  // ⚠️ REMPLACER
         
-        // USDT officiel sur Polygon
+        // USDT officiel sur Polygon (6 décimales)
         USDT_TOKEN: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F'
     },
 
-    // ==========================================
-    // DÉCIMALES DES TOKENS
-    // ==========================================
     DECIMALS: {
         USDT: 6,
         FTA: 8
     },
 
-    // ==========================================
-    // PARAMÈTRES DU CONTRAT
-    // ==========================================
     SETTINGS: {
         MACHINE_LIFESPAN: 7776000,
         DIFFICULTY_MULTIPLIER: '1000000000000000000',
@@ -54,11 +42,8 @@ const CONFIG = {
         FISHING_TICKET_PRICE: 50
     },
 
-    // ==========================================
-    // TYPES DE MACHINES (10 TYPES)
-    // ==========================================
     MACHINE_TYPES: [
-        { id: 0, name: 'Miner S1', price: 3, power: 0.5, currency: 'USDT' },{id: 0, name: 'Miner S1', price: 6000, power: 0.5,currency: 'FTA' },
+        { id: 0, name: 'Miner S1', price: 3, power: 0.5, currency: 'USDT' },
         { id: 1, name: 'Miner S2', price: 5, power: 0.9, currency: 'USDT' },
         { id: 2, name: 'Miner M1', price: 10, power: 2.0, currency: 'USDT' },
         { id: 3, name: 'Miner M2', price: 15, power: 3.2, currency: 'USDT' },
@@ -70,9 +55,6 @@ const CONFIG = {
         { id: 9, name: 'Miner Pro2', price: 100, power: 27.0, currency: 'USDT' }
     ],
 
-    // ==========================================
-    // CONFIGURATION UI
-    // ==========================================
     UI: {
         APP_NAME: 'FITIA PRO',
         APP_VERSION: '2.0.0',
@@ -82,9 +64,6 @@ const CONFIG = {
     }
 };
 
-// ==========================================
-// EXPORTS GLOBAUX
-// ==========================================
 window.CONTRACT_ADDRESSES = CONFIG.CONTRACTS;
 window.NETWORK_CONFIG = CONFIG.NETWORK;
 window.TOKEN_DECIMALS = CONFIG.DECIMALS;

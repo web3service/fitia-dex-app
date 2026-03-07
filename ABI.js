@@ -1,6 +1,5 @@
 // ============================================
 // FITIA MINING V2 - Contract ABI
-// Version Production - Polygon Mainnet
 // ============================================
 
 const CONTRACT_ABI = {
@@ -13,13 +12,9 @@ const CONTRACT_ABI = {
         "function devFeeMachine() view returns (uint256)",
         "function swapFee() view returns (uint256)",
         "function claimFee() view returns (uint256)",
-        "function commissionRates(uint256) view returns (uint256)",
-        "function maxBetPercentage() view returns (uint256)",
         "function machineTypes(uint256) view returns (uint256 price, uint256 power)",
-        "function getMachineCount() view returns (uint256)",
         "function users(address) view returns (tuple(uint256 typeId, uint256 boughtAt)[] machines, uint256 lastClaimTime)",
         "function getActivePower(address _user) view returns (uint256)",
-        "function getUserMachineCount(address _user, uint256 _typeId) view returns (uint256)",
         "function buyMachine(uint256 _typeId) external",
         "function buyMachineWithFTA(uint256 _typeId) external",
         "function claimRewards() external",
@@ -36,22 +31,10 @@ const CONTRACT_ABI = {
         "function wheelTicketPrice() view returns (uint256)",
         "function lotteryTicketPrice() view returns (uint256)",
         "function fishingTicketPrice() view returns (uint256)",
-        "function lotteryActive() view returns (bool)",
-        "function lotteryTicketCount() view returns (uint256)",
-        "function owner() view returns (address)",
-        "function pause() external",
-        "function unpause() external",
-        "function setExchangeRate(uint256 _val) external",
-        "function setDifficulty(uint256 _val) external",
-        "function setFees(uint256 _devMachine, uint256 _swap, uint256 _claim) external",
-        "function setGameSettings(uint256 _maxBetPct, uint256 _wheelPrice, uint256 _lotteryPrice, uint256 _fishingPrice) external",
-        "function depositFtaLiquidity(uint256 _amount) external",
-        "function withdrawTokens(address _token, uint256 _amount) external",
         "event MachineBought(address indexed user, uint256 machineId, uint256 price, string currency)",
         "event RewardsClaimed(address indexed user, uint256 amount, uint256 fee)",
         "event Swapped(address indexed user, string direction, uint256 amountIn, uint256 amountOut, uint256 fee)",
-        "event GamePlayed(address indexed user, string gameType, uint256 betAmount, uint256 payout)",
-        "event ReferrerBound(address indexed user, address indexed referrer)"
+        "event GamePlayed(address indexed user, string gameType, uint256 betAmount, uint256 payout)"
     ],
 
     ERC20: [
