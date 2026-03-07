@@ -1,6 +1,7 @@
 // ============================================
 // FITIA PRO - Application JavaScript
 // Version Production - Polygon Mainnet
+// CORRECTION: Erreur de Connexion
 // ============================================
 
 const App = {
@@ -10,7 +11,11 @@ const App = {
         provider: null,
         signer: null,
         chainId: null,
-        contracts: { mining: null, fta: null, usdt: null },
+        contracts: { 
+            mining: null, 
+            fta: null, 
+            usdt: null 
+        },
         payMode: 'USDT',
         swapFrom: 'USDT',
         swapTo: 'FTA',
@@ -27,11 +32,14 @@ const App = {
         refreshInterval: null
     },
 
-    // Initialisation
+    // ==========================================
+    // INITIALISATION
+    // ==========================================
     async init() {
         console.log('🚀 FITIA PRO - Initialisation...');
-        console.log('📍 Contrat Mining:', CONTRACT_ADDRESSES.FITIA_MINING);
-        console.log('📍 Token FTA:', CONTRACT_ADDRESSES.FTA_TOKEN);
+        
+        // Vérifier les adresses de contrat
+        this.checkContractAddresses();
         
         this.loadState();
         this.checkReferral();
@@ -39,20 +47,52 @@ const App = {
         this.initCanvas();
         this.startAutoRefresh();
         
-        // Vérifier MetaMask
+        // Initialiser les contrats AVANT toute connexion
+        await this.initContracts();
+        
+        // Vérifier le réseau
         if (typeof window.ethereum !== 'undefined') {
             await this.checkNetwork();
-            await this.initContracts();
             await this.loadContractData();
             this.updateBalances();
-        } else {
-            console.warn('⚠️ MetaMask non installé');
         }
         
         console.log('✅ FITIA PRO Initialisé');
     },
 
-    // Vérifier le réseau
+    // ==========================================
+    // VÉRIFIER LES ADRESSES DE CONTRAT
+    // ==========================================
+    checkContractAddresses() {
+        console.log('🔍 Vérification des adresses de contrat...');
+        
+        if (!CONTRACT_ADDRESSES.FITIA_MINING || 
+            CONTRACT_ADDRESSES.FITIA_MINING === '0x0000000000000000000000000000000000000000' ||
+            CONTRACT_ADDRESSES.FITIA_MINING === '0xVOTRE_ADRESSE_CONTRAT_DEPLOYEE') {
+            console.error('❌ ADRESSE CONTRAT MINING NON CONFIGURÉE!');
+            console.error('⚠️ Veuillez modifier config.js et ajouter votre adresse de contrat');
+            setTimeout(() => {
+                this.showToast('⚠️ Configurez les adresses dans config.js', 'error');
+            }, 1000);
+        } else {
+            console.log('✅ Adresse Mining:', CONTRACT_ADDRESSES.FITIA_MINING);
+        }
+        
+        if (!CONTRACT_ADDRESSES.FTA_TOKEN || 
+            CONTRACT_ADDRESSES.FTA_TOKEN === '0x0000000000000000000000000000000000000000' ||
+            CONTRACT_ADDRESSES.FTA_TOKEN === '0xVOTRE_ADRESSE_FTA_TOKEN_ICI') {
+            console.error('❌ ADRESSE TOKEN FTA NON CONFIGURÉE!');
+            console.error('⚠️ Veuillez modifier config.js et ajouter votre adresse de token');
+        } else {
+            console.log('✅ Adresse FTA:', CONTRACT_ADDRESSES.FTA_TOKEN);
+        }
+        
+        console.log('✅ Adresse USDT:', CONTRACT_ADDRESSES.USDT_TOKEN);
+    },
+
+    // ==========================================
+    // VÉRIFIER LE RÉSEAU
+    // ==========================================
     async checkNetwork() {
         try {
             const provider = new ethers.BrowserProvider(window.ethereum);
@@ -71,7 +111,6 @@ const App = {
         }
     },
 
-    // Changer de réseau
     async switchNetwork() {
         try {
             await window.ethereum.request({
@@ -88,7 +127,6 @@ const App = {
         }
     },
 
-    // Ajouter le réseau Polygon
     async addNetwork() {
         try {
             await window.ethereum.request({
@@ -108,20 +146,30 @@ const App = {
         }
     },
 
-    // Initialiser les contrats
+    // ==========================================
+    // INITIALISER LES CONTRATS
+    // ==========================================
     async initContracts() {
+        console.log('🔧 Initialisation des contrats...');
+        
+        // Vérifier MetaMask
+        if (typeof window.ethereum === 'undefined') {
+            console.warn('⚠️ MetaMask non installé');
+            return;
+        }
+
         // Vérifier les adresses
         if (!CONTRACT_ADDRESSES.FITIA_MINING || 
             CONTRACT_ADDRESSES.FITIA_MINING === '0x0000000000000000000000000000000000000000') {
-            console.error('❌ ADRESSE CONTRAT MINING NON CONFIGURÉE!');
-            this.showToast('⚠️ Configurez les adresses dans config.js', 'error');
+            console.error('❌ ADRESSE CONTRAT MINING MANQUANTE');
+            this.showToast('⚠️ Adresse contrat manquante', 'error');
             return;
         }
 
         if (!CONTRACT_ADDRESSES.FTA_TOKEN || 
             CONTRACT_ADDRESSES.FTA_TOKEN === '0x0000000000000000000000000000000000000000') {
-            console.error('❌ ADRESSE TOKEN FTA NON CONFIGURÉE!');
-            this.showToast('⚠️ Configurez l\'adresse FTA dans config.js', 'error');
+            console.error('❌ ADRESSE TOKEN FTA MANQUANTE');
+            this.showToast('⚠️ Adresse token manquante', 'error');
             return;
         }
 
@@ -135,7 +183,7 @@ const App = {
                 CONTRACT_ABI.FITIA_MINING,
                 provider
             );
-            console.log('✅ Contrat Mining initialisé');
+            console.log('✅ Contrat Mining initialisé:', CONTRACT_ADDRESSES.FITIA_MINING);
 
             // Token FTA
             this.state.contracts.fta = new ethers.Contract(
@@ -143,7 +191,7 @@ const App = {
                 CONTRACT_ABI.ERC20,
                 provider
             );
-            console.log('✅ Token FTA initialisé');
+            console.log('✅ Token FTA initialisé:', CONTRACT_ADDRESSES.FTA_TOKEN);
 
             // Token USDT
             this.state.contracts.usdt = new ethers.Contract(
@@ -151,15 +199,17 @@ const App = {
                 CONTRACT_ABI.ERC20,
                 provider
             );
-            console.log('✅ Token USDT initialisé');
+            console.log('✅ Token USDT initialisé:', CONTRACT_ADDRESSES.USDT_TOKEN);
 
         } catch (error) {
             console.error('❌ Erreur initialisation contrats:', error);
-            this.showToast('❌ Erreur de connexion blockchain', 'error');
+            this.showToast('❌ Erreur contrats: ' + error.message.substring(0, 50), 'error');
         }
     },
 
-    // Charger les données du contrat
+    // ==========================================
+    // CHARGER LES DONNÉES DU CONTRAT
+    // ==========================================
     async loadContractData() {
         if (!this.state.contracts.mining) {
             console.warn('⚠️ Contrat mining non initialisé');
@@ -182,7 +232,9 @@ const App = {
         }
     },
 
-    // Navigation
+    // ==========================================
+    // NAVIGATION
+    // ==========================================
     nav(view) {
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -193,24 +245,34 @@ const App = {
         if (view === 'swap') this.loadContractData();
     },
 
-    // Connexion Wallet
+    // ==========================================
+    // CONNEXION WALLET - CORRIGÉ
+    // ==========================================
     async connect() {
         this.showLoader('Connexion au wallet...');
         
         try {
-            // Vérifier MetaMask
+            // 1. Vérifier MetaMask
             if (typeof window.ethereum === 'undefined') {
                 this.showToast('⚠️ MetaMask non installé', 'error');
                 this.hideLoader();
                 return;
             }
 
-            // Vérifier les contrats
+            // 2. Vérifier que les contrats sont initialisés
             if (!this.state.contracts.mining || !this.state.contracts.fta) {
                 console.warn('⚠️ Contrats non initialisés, réinitialisation...');
                 await this.initContracts();
+                
+                // Vérifier à nouveau
+                if (!this.state.contracts.mining || !this.state.contracts.fta) {
+                    this.showToast('❌ Erreur: Contrats non configurés', 'error');
+                    this.hideLoader();
+                    return;
+                }
             }
 
+            // 3. Demander la connexion
             const provider = new ethers.BrowserProvider(window.ethereum);
             const accounts = await provider.send("eth_requestAccounts", []);
             
@@ -220,36 +282,54 @@ const App = {
                 return;
             }
 
+            // 4. Définir l'adresse et le signer
             this.state.address = accounts[0];
             this.state.connected = true;
             this.state.signer = await provider.getSigner();
             
             console.log('✅ Wallet connecté:', this.state.address);
 
-            // Connecter les contrats au signer
-            this.state.contracts.mining = this.state.contracts.mining.connect(this.state.signer);
-            this.state.contracts.fta = this.state.contracts.fta.connect(this.state.signer);
-            this.state.contracts.usdt = this.state.contracts.usdt.connect(this.state.signer);
+            // 5. Connecter les contrats au signer (CORRECTION ICI)
+            if (this.state.contracts.mining) {
+                this.state.contracts.mining = this.state.contracts.mining.connect(this.state.signer);
+                console.log('✅ Contrat Mining connecté au signer');
+            }
             
-            // Charger les données
+            if (this.state.contracts.fta) {
+                this.state.contracts.fta = this.state.contracts.fta.connect(this.state.signer);
+                console.log('✅ Token FTA connecté au signer');
+            }
+            
+            if (this.state.contracts.usdt) {
+                this.state.contracts.usdt = this.state.contracts.usdt.connect(this.state.signer);
+                console.log('✅ Token USDT connecté au signer');
+            }
+
+            // 6. Charger les données on-chain
             await this.loadOnChainData();
             
+            // 7. Mettre à jour l'UI
             this.updateWalletUI();
             this.showToast('✅ Wallet connecté !', 'success');
             this.saveState();
 
         } catch (error) {
             console.error('Erreur connexion:', error);
+            
             if (error.code === 4001) {
                 this.showToast('❌ Connexion refusée', 'error');
+            } else if (error.message.includes('null')) {
+                this.showToast('❌ Erreur: Configurez les adresses dans config.js', 'error');
             } else {
-                this.showToast('❌ Échec de connexion: ' + error.message.substring(0, 50), 'error');
+                this.showToast('❌ ' + error.message.substring(0, 80), 'error');
             }
         }
         this.hideLoader();
     },
 
-    // Charger les données on-chain
+    // ==========================================
+    // CHARGER LES DONNÉES ON-CHAIN
+    // ==========================================
     async loadOnChainData() {
         if (!this.state.connected) {
             console.log('⚠️ Pas connecté');
@@ -301,7 +381,9 @@ const App = {
         }
     },
 
-    // Calculer les rewards pending
+    // ==========================================
+    // CALCULER LES REWARDS PENDING
+    // ==========================================
     async calculatePendingRewards() {
         if (this.state.lastClaimTime === 0 || this.state.power === 0) {
             this.state.pending = 0;
@@ -319,7 +401,6 @@ const App = {
         try {
             const difficulty = await this.state.contracts.mining.difficultyMultiplier();
             
-            // Formule du contrat: (timePassed * power * difficulty) / 1e18
             const powerWei = BigInt(Math.floor(this.state.power * 1e8));
             const rawRewards = BigInt(timePassed) * powerWei;
             const finalRewards = (rawRewards * difficulty) / BigInt(1e18);
@@ -334,7 +415,9 @@ const App = {
         }
     },
 
-    // Auto refresh
+    // ==========================================
+    // AUTO REFRESH
+    // ==========================================
     startAutoRefresh() {
         if (this.state.refreshInterval) {
             clearInterval(this.state.refreshInterval);
@@ -350,7 +433,9 @@ const App = {
         console.log('✅ Auto-refresh activé (10s)');
     },
 
-    // Update Wallet UI
+    // ==========================================
+    // UPDATE WALLET UI
+    // ==========================================
     updateWalletUI() {
         const btn = document.getElementById('btn-connect');
         const status = document.getElementById('wallet-status');
@@ -363,7 +448,9 @@ const App = {
         }
     },
 
-    // Vérifier parrainage URL
+    // ==========================================
+    // VÉRIFIER PARRAINAGE URL
+    // ==========================================
     checkReferral() {
         const urlParams = new URLSearchParams(window.location.search);
         const ref = urlParams.get('ref');
@@ -374,7 +461,9 @@ const App = {
         }
     },
 
-    // Lier parrain
+    // ==========================================
+    // LIER PARRAIN
+    // ==========================================
     async bindReferrer() {
         if (!this.state.connected) { 
             this.showToast('⚠️ Connectez votre wallet', 'error'); 
@@ -392,14 +481,18 @@ const App = {
         this.hideLoader();
     },
 
-    // Copier lien
+    // ==========================================
+    // COPIER LIEN
+    // ==========================================
     copyLink() {
         const input = document.getElementById('ref-link');
         navigator.clipboard.writeText(input.value);
         this.showToast('📋 Lien copié !', 'success');
     },
 
-    // Mode de paiement
+    // ==========================================
+    // MODE DE PAIEMENT
+    // ==========================================
     setPayMode(mode) {
         this.state.payMode = mode;
         document.getElementById('btn-pay-usdt').classList.toggle('active', mode === 'USDT');
@@ -407,7 +500,9 @@ const App = {
         this.renderShop();
     },
 
-    // Afficher boutique
+    // ==========================================
+    // AFFICHER BOUTIQUE
+    // ==========================================
     renderShop() {
         const container = document.getElementById('shop-list');
         container.innerHTML = '';
@@ -427,7 +522,9 @@ const App = {
         });
     },
 
-    // Acheter machine
+    // ==========================================
+    // ACHETER MACHINE
+    // ==========================================
     async buyMachine(id) {
         if (!this.state.connected) { 
             this.showToast('⚠️ Connectez votre wallet', 'error'); 
@@ -466,7 +563,9 @@ const App = {
         this.hideLoader();
     },
 
-    // Afficher mes rigs
+    // ==========================================
+    // AFFICHER MES RIGS
+    // ==========================================
     renderMyRigs() {
         const container = document.getElementById('my-rigs-list');
         const noRigs = document.getElementById('no-rigs');
@@ -502,7 +601,9 @@ const App = {
         });
     },
 
-    // Update stats
+    // ==========================================
+    // UPDATE STATS
+    // ==========================================
     updateStats() {
         document.getElementById('val-power').textContent = this.state.power.toFixed(5);
         document.getElementById('val-pending').textContent = this.state.pending.toFixed(5);
@@ -516,7 +617,9 @@ const App = {
         }
     },
 
-    // Claim rewards
+    // ==========================================
+    // CLAIM REWARDS
+    // ==========================================
     async claim() {
         if (!this.state.connected) { 
             this.showToast('⚠️ Connectez votre wallet', 'error'); 
@@ -539,7 +642,9 @@ const App = {
         this.hideLoader();
     },
 
-    // Update balances
+    // ==========================================
+    // UPDATE BALANCES
+    // ==========================================
     updateBalances() {
         document.getElementById('bal-usdt').textContent = this.state.balances.USDT.toFixed(2);
         document.getElementById('bal-fta').textContent = this.state.balances.FTA.toFixed(5);
@@ -547,7 +652,9 @@ const App = {
         document.getElementById('swap-bal-to').textContent = this.state.balances[this.state.swapTo].toFixed(5);
     },
 
-    // Toggle swap
+    // ==========================================
+    // TOGGLE SWAP
+    // ==========================================
     toggleSwap() {
         [this.state.swapFrom, this.state.swapTo] = [this.state.swapTo, this.state.swapFrom];
         document.getElementById('token-from-display').querySelector('span').textContent = this.state.swapFrom;
@@ -555,7 +662,9 @@ const App = {
         this.calcSwap();
     },
 
-    // Calc swap
+    // ==========================================
+    // CALC SWAP
+    // ==========================================
     calcSwap() {
         const fromAmount = parseFloat(document.getElementById('swap-from-in').value) || 0;
         const rate = this.state.swapFrom === 'USDT' ? this.state.exchangeRate : 1 / this.state.exchangeRate;
@@ -564,7 +673,9 @@ const App = {
         document.getElementById('swap-rate').textContent = `1 ${this.state.swapFrom} = ${rate.toFixed(4)} ${this.state.swapTo}`;
     },
 
-    // Execute swap
+    // ==========================================
+    // EXECUTE SWAP
+    // ==========================================
     async executeSwap() {
         if (!this.state.connected) { 
             this.showToast('⚠️ Connectez votre wallet', 'error'); 
@@ -595,7 +706,9 @@ const App = {
         this.hideLoader();
     },
 
-    // Show game
+    // ==========================================
+    // SHOW GAME
+    // ==========================================
     showGame(game) {
         document.querySelectorAll('.game-area').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.game-tab').forEach(el => el.classList.remove('active'));
@@ -604,7 +717,9 @@ const App = {
         if (game === 'wheel') this.initWheel();
     },
 
-    // Play WinGo
+    // ==========================================
+    // PLAY WINGO
+    // ==========================================
     async playWinGo(multiplier, type) {
         if (!this.state.connected) { 
             this.showToast('⚠️ Connectez votre wallet', 'error'); 
@@ -636,7 +751,9 @@ const App = {
         this.hideLoader();
     },
 
-    // Spin wheel
+    // ==========================================
+    // SPIN WHEEL
+    // ==========================================
     async spinWheel() {
         if (!this.state.connected) { 
             this.showToast('⚠️ Connectez votre wallet', 'error'); 
@@ -667,7 +784,9 @@ const App = {
         this.hideLoader();
     },
 
-    // Buy lottery ticket
+    // ==========================================
+    // BUY LOTTERY TICKET
+    // ==========================================
     async buyLotteryTicket() {
         if (!this.state.connected) { 
             this.showToast('⚠️ Connectez votre wallet', 'error'); 
@@ -694,7 +813,9 @@ const App = {
         this.hideLoader();
     },
 
-    // Go fishing
+    // ==========================================
+    // GO FISHING
+    // ==========================================
     async goFishing() {
         if (!this.state.connected) { 
             this.showToast('⚠️ Connectez votre wallet', 'error'); 
@@ -721,7 +842,9 @@ const App = {
         this.hideLoader();
     },
 
-    // Init canvas
+    // ==========================================
+    // INIT CANVAS
+    // ==========================================
     initCanvas() {
         const canvas = document.getElementById('mining-canvas');
         if (!canvas) return;
@@ -749,7 +872,9 @@ const App = {
         animate();
     },
 
-    // Init wheel
+    // ==========================================
+    // INIT WHEEL
+    // ==========================================
     initWheel() {
         const canvas = document.getElementById('wheel-canvas');
         if (!canvas) return;
@@ -778,7 +903,9 @@ const App = {
         });
     },
 
-    // Get error message
+    // ==========================================
+    // GET ERROR MESSAGE
+    // ==========================================
     getErrorMessage(error) {
         console.error('Erreur:', error);
         if (error.reason) return error.reason;
@@ -787,12 +914,15 @@ const App = {
             if (error.message.includes('insufficient funds')) return 'Solde insuffisant en MATIC';
             if (error.message.includes('failed')) return 'Transaction échouée';
             if (error.message.includes('allowance')) return 'Approbation requise';
+            if (error.message.includes('null')) return 'Erreur de configuration - Vérifiez config.js';
             return error.message.split('(')[0].trim().substring(0, 100);
         }
         return 'Erreur de transaction';
     },
 
-    // Toast
+    // ==========================================
+    // TOAST
+    // ==========================================
     showToast(message, type = 'info') {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
@@ -803,7 +933,9 @@ const App = {
         setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
     },
 
-    // Loader
+    // ==========================================
+    // LOADER
+    // ==========================================
     showLoader(text = 'Chargement...') {
         document.getElementById('loader-text').textContent = text;
         document.getElementById('loader').classList.remove('hidden');
@@ -813,7 +945,9 @@ const App = {
         document.getElementById('loader').classList.add('hidden'); 
     },
 
-    // Save state
+    // ==========================================
+    // SAVE STATE
+    // ==========================================
     saveState() {
         const stateToSave = { 
             address: this.state.address, 
@@ -825,7 +959,9 @@ const App = {
         localStorage.setItem('fitiaProState', JSON.stringify(stateToSave));
     },
 
-    // Load state
+    // ==========================================
+    // LOAD STATE
+    // ==========================================
     loadState() {
         const saved = localStorage.getItem('fitiaProState');
         if (saved) {
@@ -839,8 +975,12 @@ const App = {
     }
 };
 
-// Démarrage
+// ==========================================
+// DÉMARRAGE
+// ==========================================
 document.addEventListener('DOMContentLoaded', () => { 
     console.log('📄 DOM Chargé');
+    console.log('🔍 Contrat Mining:', CONTRACT_ADDRESSES.FITIA_MINING);
+    console.log('🔍 Token FTA:', CONTRACT_ADDRESSES.FTA_TOKEN);
     App.init(); 
 });
