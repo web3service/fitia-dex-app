@@ -65,8 +65,8 @@ console.log('📍 FTA Token:', CONFIG.FTA);
 console.log('📍 USDT Token:', CONFIG.USDT);
 console.log('📍 Network: Polygon (Chain ID:', CONFIG.CHAIN_ID + ')');
 
-if (CONFIG.MINING === '0x0000000000000000000000000000000000000000' || 
-    CONFIG.FTA === '0x0000000000000000000000000000000000000000') {
+if (CONFIG.MINING === '0xb7555D092b0B30D30552502f8a2674D48601b10F' || 
+    CONFIG.FTA === '0x535bBe393D64a60E14B731b7350675792d501623') {
     console.warn('⚠️ ATTENTION: Adresses de contrat non configurées!');
     console.warn('⚠️ Modifiez config.js avec vos vraies adresses déployées');
 }
