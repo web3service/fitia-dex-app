@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="description" content="FitiaMining V2 - Plateforme de mining crypto sur Polygon">
+    <meta name="theme-color" content="#8247e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FitiaMining">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    
+    <title>FitiaMining V2 - Mining Crypto Polygon</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icon-192.png">
+    <link rel="icon" type="image/png" href="assets/icon-192.png">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen">
+    
+    <!-- HEADER -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-slate-900/90 backdrop-blur-xl border-b border-white/10 safe-area-top">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                        <i class="fas fa-gem text-white text-lg"></i>
+                    </div>
+                    <span class="text-xl font-bold text-white hidden sm:block">FitiaMining</span>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <div id="networkInfo" class="hidden sm:flex items-center space-x-2 text-xs text-purple-400 bg-purple-500/10 px-3 py-1.5 rounded-lg border border-purple-500/20">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="font-medium">Polygon</span>
+                        <a href="https://polygonscan.com" target="_blank" rel="noopener" class="hover:text-purple-300 transition-colors">
+                            <i class="fas fa-external-link-alt text-xs"></i>
+                        </a>
+                    </div>
+                    
+                    <button onclick="toggleNotifications()" class="relative p-2 rounded-lg hover:bg-white/5 transition-colors" aria-label="Notifications">
+                        <i class="fas fa-bell text-gray-400 text-lg"></i>
+                        <span id="notificationBadge" class="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center font-bold hidden">0</span>
+                    </button>
+                    
+                    <select id="languageSelect" class="hidden sm:block bg-slate-800 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500">
+                        <option value="fr">🇫🇷</option>
+                        <option value="en">🇬🇧</option>
+                        <option value="es">🇪🇸</option>
+                    </select>
+                    
+                    <button id="connectWallet" class="btn-primary text-sm sm:text-base">
+                        <i class="fas fa-wallet mr-2"></i>
+                        <span class="hidden sm:inline">Connecter</span>
+                        <span class="sm:hidden">Wallet</span>
+                    </button>
+                    
+                    <div id="walletInfo" class="hidden items-center space-x-2">
+                        <div class="hidden sm:block text-right">
+                            <div id="walletAddress" class="text-sm text-white font-semibold">0x...</div>
+                            <div id="walletBalance" class="text-xs text-gray-400">0 FTA</div>
+                        </div>
+                        <button id="disconnectWallet" class="w-9 h-9 bg-red-500/20 hover:bg-red-500/30 rounded-lg flex items-center justify-center transition-all" aria-label="Déconnecter">
+                            <i class="fas fa-sign-out-alt text-red-400 text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- NOTIFICATION PANEL -->
+    <div id="notificationPanel" class="fixed top-20 right-4 w-80 max-w-[calc(100vw-2rem)] bg-slate-800 border border-white/10 rounded-2xl shadow-2xl z-50 hidden">
+        <div class="p-4 border-b border-white/10">
+            <div class="flex items-center justify-between">
+                <h3 class="text-white font-semibold"><i class="fas fa-bell mr-2 text-purple-400"></i>Notifications</h3>
+                <button onclick="toggleNotifications()" class="text-gray-400 hover:text-white transition-colors" aria-label="Fermer">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div id="notificationList" class="max-h-80 overflow-y-auto p-4 space-y-2"></div>
+        <div class="p-4 border-t border-white/10">
+            <button onclick="enablePushNotifications()" class="btn-primary w-full text-sm py-2.5">
+                <i class="fas fa-bell mr-2"></i> Activer les notifications
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="pt-16 pb-24 sm:pb-8 min-h-screen">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            
+            <!-- DASHBOARD -->
+            <section id="dashboard" class="tab-content active">
+                
+                <!-- Daily Rewards -->
+                <div class="daily-rewards-card bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-5 sm:p-6 mb-6 shadow-xl">
+                    <div class="flex items-center justify-between flex-wrap gap-4">
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-lg sm:text-xl font-bold text-white mb-2">🎁 Récompense Quotidienne</h3>
+                            <p class="text-indigo-100 text-sm mb-3">Connectez-vous chaque jour pour gagner des bonus FTA!</p>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-white/80 text-sm">Série actuelle:</span>
+                                <span class="bg-white/20 backdrop-blur px-3 py-1 rounded-full text-white font-bold text-sm" id="streakCount">0 jours</span>
+                            </div>
+                        </div>
+                        <button id="claimDailyReward" class="bg-white text-indigo-600 px-5 py-2.5 rounded-xl font-bold hover:bg-indigo-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm whitespace-nowrap shadow-lg" disabled>
+                            <i class="fas fa-gift mr-2"></i> Réclamer
+                        </button>
+                    </div>
+                    
+                    <div class="mt-4 grid grid-cols-7 gap-1.5 sm:gap-2">
+                        <div class="day-item completed"><span class="text-xs font-medium">L</span><div class="reward-amount text-xs font-bold">10</div></div>
+                        <div class="day-item completed"><span class="text-xs font-medium">M</span><div class="reward-amount text-xs font-bold">20</div></div>
+                        <div class="day-item completed"><span class="text-xs font-medium">M</span><div class="reward-amount text-xs font-bold">30</div></div>
+                        <div class="day-item current"><span class="text-xs font-medium">J</span><div class="reward-amount text-xs font-bold">50</div></div>
+                        <div class="day-item"><span class="text-xs font-medium">V</span><div class="reward-amount text-xs font-bold">80</div></div>
+                        <div class="day-item"><span class="text-xs font-medium">S</span><div class="reward-amount text-xs font-bold">100</div></div>
+                        <div class="day-item"><span class="text-xs font-medium">D</span><div class="reward-amount text-xs font-bold">200</div></div>
+                    </div>
+                </div>
+                
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+                    <div class="stat-card">
+                        <div class="stat-icon bg-gradient-to-br from-blue-500 to-cyan-500"><i class="fas fa-bolt"></i></div>
+                        <div class="stat-value" id="totalPower">0</div>
+                        <div class="stat-label">Puissance</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-gradient-to-br from-green-500 to-emerald-500"><i class="fas fa-coins"></i></div>
+                        <div class="stat-value" id="claimableRewards">0</div>
+                        <div class="stat-label">Récompenses</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-gradient-to-br from-purple-500 to-pink-500"><i class="fas fa-microchip"></i></div>
+                        <div class="stat-value" id="machineCount">0</div>
+                        <div class="stat-label">Machines</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-gradient-to-br from-orange-500 to-red-500"><i class="fas fa-trophy"></i></div>
+                        <div class="stat-value" id="jackpotPool">0</div>
+                        <div class="stat-label">Jackpot</div>
+                    </div>
+                </div>
+
+                <!-- SESSION BUTTONS - MINING -->
+                <div class="section-container mb-6">
+                    <div class="section-header">
+                        <i class="fas fa-microchip text-purple-400"></i>
+                        <h3 class="section-title">Mining</h3>
+                    </div>
+                    <div class="button-grid">
+                        <button onclick="switchTab('mining')" class="session-btn mining">
+                            <div class="session-btn-icon"><i class="fas fa-shopping-cart"></i></div>
+                            <span>Acheter Machine</span>
+                        </button>
+                        <button onclick="switchTab('mining')" class="session-btn mining">
+                            <div class="session-btn-icon"><i class="fas fa-list"></i></div>
+                            <span>Mes Machines</span>
+                        </button>
+                        <button onclick="claimRewards()" class="session-btn mining">
+                            <div class="session-btn-icon"><i class="fas fa-hand-holding-usd"></i></div>
+                            <span>Réclamer</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SESSION BUTTONS - SWAP -->
+                <div class="section-container mb-6">
+                    <div class="section-header">
+                        <i class="fas fa-exchange-alt text-blue-400"></i>
+                        <h3 class="section-title">Échange</h3>
+                    </div>
+                    <div class="button-grid">
+                        <button onclick="switchTab('swap')" class="session-btn swap">
+                            <div class="session-btn-icon"><i class="fas fa-dollar-sign"></i></div>
+                            <span>USDT → FTA</span>
+                        </button>
+                        <button onclick="switchTab('swap')" class="session-btn swap">
+                            <div class="session-btn-icon"><i class="fas fa-gem"></i></div>
+                            <span>FTA → USDT</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SESSION BUTTONS - GAMES -->
+                <div class="section-container mb-6">
+                    <div class="section-header">
+                        <i class="fas fa-gamepad text-pink-400"></i>
+                        <h3 class="section-title">Jeux</h3>
+                    </div>
+                    <div class="button-grid">
+                        <button onclick="openGameModal('wingo')" class="session-btn games">
+                            <div class="session-btn-icon"><i class="fas fa-dice-one"></i></div>
+                            <span>Win Go</span>
+                        </button>
+                        <button onclick="openGameModal('wheel')" class="session-btn games">
+                            <div class="session-btn-icon"><i class="fas fa-circle-notch"></i></div>
+                            <span>Roue Chance</span>
+                        </button>
+                        <button onclick="openGameModal('lottery')" class="session-btn games">
+                            <div class="session-btn-icon"><i class="fas fa-ticket-alt"></i></div>
+                            <span>Loterie</span>
+                        </button>
+                        <button onclick="openGameModal('fishing')" class="session-btn games">
+                            <div class="session-btn-icon"><i class="fas fa-fish"></i></div>
+                            <span>Fishing</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SESSION BUTTONS - PROFILE -->
+                <div class="section-container mb-6">
+                    <div class="section-header">
+                        <i class="fas fa-user text-green-400"></i>
+                        <h3 class="section-title">Profil</h3>
+                    </div>
+                    <div class="button-grid">
+                        <button onclick="switchTab('profile')" class="session-btn profile">
+                            <div class="session-btn-icon"><i class="fas fa-user-circle"></i></div>
+                            <span>Mon Profil</span>
+                        </button>
+                        <button onclick="switchTab('profile')" class="session-btn profile">
+                            <div class="session-btn-icon"><i class="fas fa-users"></i></div>
+                            <span>Parrainage</span>
+                        </button>
+                        <button onclick="switchTab('profile')" class="session-btn profile">
+                            <div class="session-btn-icon"><i class="fas fa-cog"></i></div>
+                            <span>Paramètres</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SESSION BUTTONS - ANALYTICS -->
+                <div class="section-container mb-6">
+                    <div class="section-header">
+                        <i class="fas fa-chart-line text-orange-400"></i>
+                        <h3 class="section-title">Statistiques</h3>
+                    </div>
+                    <div class="button-grid">
+                        <button onclick="switchTab('analytics')" class="session-btn analytics">
+                            <div class="session-btn-icon"><i class="fas fa-chart-bar"></i></div>
+                            <span>Analytics</span>
+                        </button>
+                        <button onclick="switchTab('analytics')" class="session-btn analytics">
+                            <div class="session-btn-icon"><i class="fas fa-trophy"></i></div>
+                            <span>Classement</span>
+                        </button>
+                        <button onclick="exportData()" class="session-btn analytics">
+                            <div class="session-btn-icon"><i class="fas fa-download"></i></div>
+                            <span>Exporter</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 sm:p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-white"><i class="fas fa-history mr-2 text-purple-400"></i>Activité Récente</h3>
+                        <button onclick="clearActivity()" class="text-xs text-gray-400 hover:text-white transition-colors flex items-center">
+                            <i class="fas fa-trash mr-1"></i> Effacer
+                        </button>
+                    </div>
+                    <div id="activityList" class="space-y-2 max-h-64 overflow-y-auto">
+                        <div class="text-center text-gray-400 py-8">
+                            <i class="fas fa-inbox text-3xl mb-2 opacity-50"></i>
+                            <p class="text-sm">Aucune activité récente</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- MINING SECTION -->
+            <section id="mining" class="tab-content">
+                <div class="section-tabs">
+                    <button class="section-tab active" onclick="showMiningTab('buy')"><i class="fas fa-shopping-cart mr-2"></i>Acheter</button>
+                    <button class="section-tab" onclick="showMiningTab('my')"><i class="fas fa-list mr-2"></i>Mes Machines</button>
+                </div>
+                
+                <div id="mining-buy" class="mining-tab-content active">
+                    <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 sm:p-6 mb-6">
+                        <div class="mb-6">
+                            <h2 class="text-2xl font-bold text-white mb-2"><i class="fas fa-shopping-cart mr-2 text-purple-400"></i>Acheter une Machine</h2>
+                            <p class="text-gray-400 text-sm">Choisissez votre machine de mining pour commencer à gagner des FTA</p>
+                        </div>
+                        
+                        <div class="flex items-center space-x-3 mb-6 flex-wrap gap-2">
+                            <span class="text-gray-400 text-sm">Payer avec:</span>
+                            <div class="flex items-center space-x-2">
+                                <button id="payUSDT" class="payment-toggle active" data-currency="USDT"><i class="fas fa-dollar-sign text-green-400 mr-1"></i> USDT</button>
+                                <button id="payFTA" class="payment-toggle" data-currency="FTA"><i class="fas fa-gem text-purple-400 mr-1"></i> FTA</button>
+                            </div>
+                        </div>
+                        
+                        <div id="machinesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                    </div>
+                </div>
+                
+                <div id="mining-my" class="mining-tab-content">
+                    <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 sm:p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl font-bold text-white"><i class="fas fa-list mr-2 text-purple-400"></i>Mes Machines</h2>
+                            <button onclick="refreshMachines()" class="text-purple-400 hover:text-purple-300 text-sm transition-colors flex items-center">
+                                <i class="fas fa-sync-alt mr-1"></i> Actualiser
+                            </button>
+                        </div>
+                        <div id="myMachinesList" class="space-y-3 max-h-96 overflow-y-auto"></div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- SWAP SECTION -->
+            <section id="swap" class="tab-content">
+                <div class="max-w-lg mx-auto">
+                    <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 sm:p-6">
+                        <h2 class="text-2xl font-bold text-white mb-6 text-center"><i class="fas fa-exchange-alt mr-2 text-purple-400"></i>Échanger des Tokens</h2>
+                        
+                        <div class="flex items-center justify-center space-x-3 mb-6">
+                            <button id="swapDirection1" class="swap-direction active flex-1" data-direction="USDT_TO_FTA"><i class="fas fa-dollar-sign text-green-400 mr-1"></i> USDT → FTA</button>
+                            <button id="swapDirection2" class="swap-direction flex-1" data-direction="FTA_TO_USDT"><i class="fas fa-gem text-purple-400 mr-1"></i> FTA → USDT</button>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Vous payez</label>
+                                <div class="input-group">
+                                    <input type="number" id="swapInput" class="input-field" placeholder="0.00" step="0.01" inputmode="decimal">
+                                    <span id="swapInputToken" class="input-token">USDT</span>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1 flex items-center justify-between">
+                                    <span>Solde: <span id="swapInputBalance" class="text-purple-400">0</span></span>
+                                    <button onclick="setMaxAmount()" class="text-purple-400 hover:text-purple-300 text-xs">MAX</button>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-center py-2">
+                                <div class="text-center">
+                                    <div class="text-2xl text-purple-400 mb-1"><i class="fas fa-arrow-down"></i></div>
+                                    <div class="text-sm text-gray-400" id="exchangeRateDisplay">1 USDT = 0 FTA</div>
+                                    <button onclick="swapDirections()" class="text-xs text-purple-400 hover:text-purple-300 mt-1 transition-colors">
+                                        <i class="fas fa-sync-alt mr-1"></i> Inverser
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Vous recevez</label>
+                                <div class="input-group">
+                                    <input type="number" id="swapOutput" class="input-field" placeholder="0.00" readonly>
+                                    <span id="swapOutputToken" class="input-token">FTA</span>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white/5 rounded-xl p-4 space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-400">Frais (4%)</span>
+                                    <span class="text-white" id="swapFeeDisplay">0</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-400">Taux</span>
+                                    <span class="text-purple-400" id="swapRateDisplay">1:1</span>
+                                </div>
+                            </div>
+                            
+                            <button id="swapButton" class="btn-primary w-full py-4 text-base font-semibold">
+                                <i class="fas fa-exchange-alt mr-2"></i> Échanger
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- GAMES SECTION -->
+            <section id="games" class="tab-content">
+                <div class="section-tabs">
+                    <button class="section-tab active" onclick="showGamesTab('all')"><i class="fas fa-th mr-2"></i>Tous les Jeux</button>
+                    <button class="section-tab" onclick="showGamesTab('stats')"><i class="fas fa-chart-bar mr-2"></i>Statistiques</button>
+                </div>
+                
+                <div id="games-all" class="games-tab-content active">
+                    <h2 class="text-2xl font-bold text-white mb-6"><i class="fas fa-gamepad mr-2 text-purple-400"></i>Jeux & Gains</h2>
+                    
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div class="game-card" onclick="openGameModal('wingo')">
+                            <div class="game-icon bg-gradient-to-br from-red-500 to-orange-500"><i class="fas fa-dice-one"></i></div>
+                            <h3>Win Go</h3>
+                            <p>Misez sur un numéro</p>
+                            <span class="game-multiplier">x9.00</span>
+                        </div>
+                        
+                        <div class="game-card" onclick="openGameModal('wheel')">
+                            <div class="game-icon bg-gradient-to-br from-purple-500 to-pink-500"><i class="fas fa-circle-notch"></i></div>
+                            <h3>Roue Chance</h3>
+                            <p>Jackpot progressif</p>
+                            <span class="game-multiplier" id="wheelJackpotDisplay">0 FTA</span>
+                        </div>
+                        
+                        <div class="game-card" onclick="openGameModal('lottery')">
+                            <div class="game-icon bg-gradient-to-br from-blue-500 to-cyan-500"><i class="fas fa-ticket-alt"></i></div>
+                            <h3>Loterie</h3>
+                            <p>Tirage hebdo</p>
+                            <span class="game-multiplier" id="lotteryPoolDisplay">0 FTA</span>
+                        </div>
+                        
+                        <div class="game-card" onclick="openGameModal('fishing')">
+                            <div class="game-icon bg-gradient-to-br from-green-500 to-emerald-500"><i class="fas fa-fish"></i></div>
+                            <h3>Fishing</h3>
+                            <p>Pêchez des gains</p>
+                            <span class="game-multiplier">x10.00</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="games-stats" class="games-tab-content">
+                    <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 sm:p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4"><i class="fas fa-chart-bar mr-2 text-purple-400"></i>Statistiques de Jeu</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <div class="text-center p-3 bg-white/5 rounded-xl">
+                                <div class="text-2xl font-bold text-indigo-400" id="gamesPlayed">0</div>
+                                <div class="text-xs text-gray-400 mt-1">Parties</div>
+                            </div>
+                            <div class="text-center p-3 bg-white/5 rounded-xl">
+                                <div class="text-2xl font-bold text-green-400" id="gamesWon">0</div>
+                                <div class="text-xs text-gray-400 mt-1">Gagnées</div>
+                            </div>
+                            <div class="text-center p-3 bg-white/5 rounded-xl">
+                                <div class="text-2xl font-bold text-purple-400" id="totalWagered">0</div>
+                                <div class="text-xs text-gray-400 mt-1">Misé (FTA)</div>
+                            </div>
+                            <div class="text-center p-3 bg-white/5 rounded-xl">
+                                <div class="text-2xl font-bold text-orange-400" id="totalWon">0</div>
+                                <div class="text-xs text-gray-400 mt-1">Gagné (FTA)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- ANALYTICS SECTION -->
+            <section id="analytics" class="tab-content">
+                <div class="section-tabs">
+                    <button class="section-tab active" onclick="showAnalyticsTab('charts')"><i class="fas fa-chart-line mr-2"></i>Graphiques</button>
+                    <button class="section-tab" onclick="showAnalyticsTab('leaderboard')"><i class="fas fa-trophy mr-2"></i>Classement</button>
+                </div>
+                
+                <div id="analytics-charts" class="analytics-tab-content active">
+                    <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 sm:p-6 mb-6">
+                        <h2 class="text-2xl font-bold text-white mb-6"><i class="fas fa-chart-line mr-2 text-purple-400"></i>Analytics & Statistiques</h2>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                            <div class="bg-slate-800/50 rounded-xl p-4">
+                                <h3 class="text-base font-semibold text-white mb-4">Revenus Quotidiens (FTA)</h3>
+                                <canvas id="revenueChart" height="200"></canvas>
+                            </div>
+                            <div class="bg-slate-800/50 rounded-xl p-4">
+                                <h3 class="text-base font-semibold text-white mb-4">Distribution Machines</h3>
+                                <canvas id="machineChart" height="200"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <div class="metric-card">
+                                <div class="metric-value text-green-400" id="roiPercentage">0%</div>
+                                <div class="metric-label">ROI Total</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value text-blue-400" id="avgDailyEarnings">0</div>
+                                <div class="metric-label">Moyenne/Jour</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value text-purple-400" id="totalInvested">0</div>
+                                <div class="metric-label">Investi (USDT)</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value text-orange-400" id="profitLoss">0</div>
+                                <div class="metric-label">Profit/Perte</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="analytics-leaderboard" class="analytics-tab-content">
+                    <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 sm:p-6">
+                        <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
+                            <h2 class="text-2xl font-bold text-white"><i class="fas fa-trophy mr-2 text-yellow-400"></i>Classement Top Miners</h2>
+                            <select id="leaderboardPeriod" class="input-field w-auto min-w-[120px]" style="padding: 0.5rem;">
+                                <option value="day">24h</option>
+                                <option value="week" selected>Semaine</option>
+                                <option value="month">Mois</option>
+                                <option value="all">Tout temps</option>
+                            </select>
+                        </div>
+                        
+                        <div class="podium-container mb-6">
+                            <div class="grid grid-cols-3 gap-3 sm:gap-4 items-end">
+                                <div class="podium-item second">
+                                    <div class="podium-avatar"><i class="fas fa-user"></i></div>
+                                    <div class="podium-rank">2</div>
+                                    <div class="podium-earnings" id="rank2Earnings">0 FTA</div>
+                                </div>
+                                <div class="podium-item first">
+                                    <div class="podium-avatar crown"><i class="fas fa-crown"></i></div>
+                                    <div class="podium-rank">1</div>
+                                    <div class="podium-earnings" id="rank1Earnings">0 FTA</div>
+                                </div>
+                                <div class="podium-item third">
+                                    <div class="podium-avatar"><i class="fas fa-user"></i></div>
+                                    <div class="podium-rank">3</div>
+                                    <div class="podium-earnings" id="rank3Earnings">0 FTA</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="leaderboard-list">
+                            <div class="leaderboard-header">
+                                <span>#</span>
+                                <span>Joueur</span>
+                                <span class="hidden sm:block">Puissance</span>
+                                <span>Revenus</span>
+                            </div>
+                            <div id="leaderboardRows"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- PROFILE SECTION -->
+            <section id="profile" class="tab-content">
+                <div class="section-tabs">
+                    <button class="section-tab active" onclick="showProfileTab('info')"><i class="fas fa-user mr-2"></i>Profil</button>
+                    <button class="section-tab" onclick="showProfileTab('referral')"><i class="fas fa-users mr-2"></i>Parrainage</button>
+                    <button class="section-tab" onclick="showProfileTab('settings')"><i class="fas fa-cog mr-2"></i>Paramètres</button>
+                </div>
+                
+                <div id="profile-info" class="profile-tab-content active">
+                    <div class="max-w-2xl mx-auto">
+                        <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 sm:p-6 mb-6">
+                            <div class="flex items-center space-x-4 mb-6">
+                                <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-user text-3xl text-white"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h2 class="text-xl font-bold text-white">Mon Profil</h2>
+                                    <p id="profileAddress" class="text-sm text-gray-400 truncate">0x...</p>
+                                    <div class="flex items-center space-x-2 mt-2">
+                                        <span class="bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded text-xs font-medium">Niveau 1</span>
+                                        <span class="bg-green-500/20 text-green-400 px-2 py-0.5 rounded text-xs font-medium">Actif</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="bg-white/5 rounded-xl p-4">
+                                    <div class="text-xs text-gray-400 mb-1">Parrain</div>
+                                    <div id="referrerAddress" class="text-white font-medium text-sm truncate">Non défini</div>
+                                </div>
+                                <div class="bg-white/5 rounded-xl p-4">
+                                    <div class="text-xs text-gray-400 mb-1">Récompenses</div>
+                                    <div id="totalRewards" class="text-white font-medium text-sm">0 FTA</div>
+                                </div>
+                                <div class="bg-white/5 rounded-xl p-4">
+                                    <div class="text-xs text-gray-400 mb-1">Membre depuis</div>
+                                    <div id="memberSince" class="text-white font-medium text-sm">-</div>
+                                </div>
+                                <div class="bg-white/5 rounded-xl p-4">
+                                    <div class="text-xs text-gray-400 mb-1">Transactions</div>
+                                    <div id="transactionCount" class="text-white font-medium text-sm">0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="profile-referral" class="profile-tab-content">
+                    <div class="max-w-2xl mx-auto">
+                        <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 sm:p-6 mb-6">
+                            <h3 class="text-lg font-semibold text-white mb-4"><i class="fas fa-users mr-2 text-purple-400"></i>Parrainage</h3>
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm text-gray-400 mb-2">Votre lien de parrainage</label>
+                                <div class="flex items-center space-x-2">
+                                    <input type="text" id="referralLink" class="input-field flex-1 text-sm" readonly>
+                                    <button onclick="copyReferralLink()" class="btn-secondary px-4" aria-label="Copier">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm text-gray-400 mb-2">Définir un parrain</label>
+                                <div class="flex items-center space-x-2">
+                                    <input type="text" id="referrerInput" class="input-field flex-1 text-sm" placeholder="0x...">
+                                    <button onclick="setReferrer()" class="btn-primary text-sm py-2.5">Définir</button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-indigo-500/10 rounded-xl p-4 border border-indigo-500/20">
+                                <div class="flex items-start space-x-3">
+                                    <i class="fas fa-info-circle text-indigo-400 mt-0.5"></i>
+                                    <div class="text-sm text-gray-300">
+                                        <p class="font-medium text-indigo-400 mb-1">Commission de parrainage:</p>
+                                        <p class="text-xs">Niveau 1: 3% | Niveau 2: 2% | Niveau 3: 1%</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="profile-settings" class="profile-tab-content">
+                    <div class="max-w-2xl mx-auto">
+                        <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 sm:p-6">
+                            <h3 class="text-lg font-semibold text-white mb-4"><i class="fas fa-cog mr-2 text-purple-400"></i>Paramètres</h3>
+                            
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                                    <div>
+                                        <div class="text-white text-sm font-medium">Notifications</div>
+                                        <div class="text-xs text-gray-400">Recevoir des alertes</div>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="notificationsToggle" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                
+                                <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                                    <div>
+                                        <div class="text-white text-sm font-medium">Son</div>
+                                        <div class="text-xs text-gray-400">Effets sonores</div>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="soundToggle">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 pt-6 border-t border-white/10 space-y-3">
+                                <button onclick="exportData()" class="btn-secondary w-full py-3 text-sm">
+                                    <i class="fas fa-download mr-2"></i> Exporter mes données
+                                </button>
+                                <button onclick="clearData()" class="w-full py-3 px-4 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl transition-all text-sm font-medium">
+                                    <i class="fas fa-trash mr-2"></i> Effacer les données locales
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- MOBILE NAVIGATION -->
+    <nav class="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-t border-white/10 sm:hidden safe-area-bottom">
+        <div class="grid grid-cols-5 h-16">
+            <button class="nav-item active" data-tab="dashboard" aria-label="Accueil">
+                <i class="fas fa-home"></i><span>Accueil</span>
+            </button>
+            <button class="nav-item" data-tab="mining" aria-label="Mining">
+                <i class="fas fa-microchip"></i><span>Mining</span>
+            </button>
+            <button class="nav-item" data-tab="analytics" aria-label="Stats">
+                <i class="fas fa-chart-line"></i><span>Stats</span>
+            </button>
+            <button class="nav-item" data-tab="games" aria-label="Jeux">
+                <i class="fas fa-gamepad"></i><span>Jeux</span>
+            </button>
+            <button class="nav-item" data-tab="profile" aria-label="Profil">
+                <i class="fas fa-user"></i><span>Profil</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- MODALS -->
+    <div id="gameModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle" class="text-xl font-bold text-white">Jeu</h3>
+                <button onclick="closeGameModal()" class="text-gray-400 hover:text-white transition-colors" aria-label="Fermer">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="modalBody" class="modal-body"></div>
+        </div>
+    </div>
+
+    <div id="confirmModal" class="modal hidden">
+        <div class="modal-content max-w-sm">
+            <div class="modal-header">
+                <h3 class="text-xl font-bold text-white">Confirmation</h3>
+                <button onclick="closeConfirmModal()" class="text-gray-400 hover:text-white transition-colors" aria-label="Fermer">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage" class="text-gray-300 mb-6"></p>
+                <div class="flex space-x-3">
+                    <button onclick="closeConfirmModal()" class="btn-secondary flex-1 py-3">Annuler</button>
+                    <button id="confirmAction" class="btn-primary flex-1 py-3">Confirmer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="toast hidden">
+        <div class="toast-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="toast-message" id="toastMessage">Message</div>
+    </div>
+
+    <!-- LOADING -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+        <p class="text-white mt-4 font-medium">Transaction en cours...</p>
+        <p class="text-gray-400 text-sm mt-2">Veuillez ne pas fermer cette page</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/contract.js"></script>
+    <script src="js/web3.js"></script>
+    <script src="js/app.js"></script>
+    
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('SW registered:', reg))
+                    .catch(err => console.log('SW failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>
