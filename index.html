@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#FFC107">
-    <meta name="description" content="FITIA PRO - Ecosystem de Mining Décentralisé">
+    <meta name="description" content="FITIA PRO - Ecosystem de Mining Décentralisé sur Polygon">
     <title>FITIA PRO | Mining Ecosystem</title>
     
     <link rel="icon" type="image/png" href="https://i.ibb.co/vvz2DDK5/20260207-190817.webp">
@@ -31,7 +31,7 @@
                 <div class="brand-text">FITIA <span class="pro-badge">PRO</span></div>
             </div>
             <div class="header-actions">
-                <button id="btn-connect" class="btn-connect" onclick="App.connect()">
+                <button id="btn-connect" class="btn-connect">
                     <span class="btn-icon">🔗</span>
                     <span>Connecter</span>
                 </button>
@@ -43,6 +43,7 @@
         </header>
 
         <main id="main-view">
+            <!-- DASHBOARD -->
             <div id="view-dashboard" class="view active">
                 <div class="card welcome-card">
                     <div class="welcome-content">
@@ -106,7 +107,7 @@
                     <div class="balance-list">
                         <div class="balance-item">
                             <div class="balance-left">
-                                <img src="https://assets.coingecko.com/coins/images/325/small/Tether.png" class="token-logo" alt="USDT">
+                                <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" class="token-logo" alt="USDT">
                                 <div class="balance-info">
                                     <span class="balance-name">Tether USD</span>
                                     <span class="balance-symbol">USDT</span>
@@ -118,7 +119,7 @@
                         </div>
                         <div class="balance-item">
                             <div class="balance-left">
-                                <img src="https://i.ibb.co/vvz2DDK5/20260207-190817.webp" class="token-logo" alt="FTA">
+                                <img id="logo-fta-bal" src="https://i.ibb.co/vvz2DDK5/20260207-190817.webp" class="token-logo" alt="FTA">
                                 <div class="balance-info">
                                     <span class="balance-name">Fitia Token</span>
                                     <span class="balance-symbol">FTA</span>
@@ -132,6 +133,7 @@
                 </div>
             </div>
 
+            <!-- SHOP -->
             <div id="view-shop" class="view">
                 <div class="shop-header">
                     <h2 class="view-title">⛏️ Boutique</h2>
@@ -143,6 +145,7 @@
                 <div id="shop-list" class="grid-list"></div>
             </div>
 
+            <!-- MY RIGS -->
             <div id="view-my-rigs" class="view">
                 <h2 class="view-title">⚙️ Mes Machines</h2>
                 <div id="my-rigs-list" class="rigs-list-container"></div>
@@ -153,6 +156,7 @@
                 </div>
             </div>
 
+            <!-- GAMES -->
             <div id="view-games" class="view">
                 <h2 class="view-title">🎮 Game Center</h2>
                 <div class="game-tabs">
@@ -162,6 +166,7 @@
                     <button class="game-tab" onclick="App.showGame('lottery')">Loterie</button>
                 </div>
 
+                <!-- Win Go -->
                 <div id="game-wingo" class="game-area active">
                     <div class="game-card">
                         <p class="game-info">Deviner le numéro (0-9) ou Grand/Petit.</p>
@@ -181,6 +186,7 @@
                     </div>
                 </div>
 
+                <!-- Wheel -->
                 <div id="game-wheel" class="game-area">
                     <div class="game-card">
                         <p class="game-info">Tournez pour tenter de gagner le Jackpot !</p>
@@ -198,6 +204,7 @@
                     </div>
                 </div>
 
+                <!-- Fishing -->
                 <div id="game-fishing" class="game-area">
                     <div class="game-card">
                         <p class="game-info">Lancez votre ligne pour attraper des gains.</p>
@@ -211,6 +218,7 @@
                     </div>
                 </div>
 
+                <!-- Lottery -->
                 <div id="game-lottery" class="game-area">
                     <div class="game-card">
                         <p class="game-info">Achetez un ticket pour participer au tirage.</p>
@@ -224,6 +232,7 @@
                 </div>
             </div>
 
+            <!-- SWAP -->
             <div id="view-swap" class="view">
                 <h2 class="view-title">💱 Échange</h2>
                 <div class="card swap-interface">
@@ -262,6 +271,7 @@
             </div>
         </main>
 
+        <!-- NAVIGATION -->
         <nav class="bottom-nav">
             <button class="nav-item active" onclick="App.nav('dashboard')">
                 <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
@@ -286,6 +296,7 @@
         </nav>
     </div>
 
+    <!-- LOADER -->
     <div id="loader" class="loader hidden">
         <div class="loader-content">
             <div class="spinner-ring"></div>
