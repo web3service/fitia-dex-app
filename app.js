@@ -20,7 +20,7 @@ const MINING_ABI = [
     "function buyMachine(uint256 typeId)",
     "function buyMachineWithFTA(uint256 typeId)",
     "function claimRewards()",
-    "function setReferrer(address)", // FONCTION PARRAINAGE
+    "function setReferrer(address)",
     "function swapUsdtForFta(uint256 amount)",
     "function swapFtaForUsdt(uint256 amount)",
     "function playWinGo(uint256 amount, uint8 betType, uint8 choice)",
@@ -45,7 +45,6 @@ class Application {
         this.miningTimer = null; this.storageKey = "fitia_last_claim_time_v2"; 
         this.shopData = []; this.isLoadingShop = false; 
         this.vizContext = null; this.vizBars = [];
-        // Ajouts pour les états des jeux
         this.wheelAngle = 0;
         this.wheelInterval = null;
         this.isSpinning = false;
@@ -81,14 +80,11 @@ class Application {
             document.getElementById('wallet-status').classList.remove('hidden');
             document.getElementById('addr-display').innerText = this.user.slice(0,6) + "..." + this.user.slice(38);
 
-            // 1. Vérifier le parrainage dès la connexion
             this.checkReferral();
             document.getElementById('ref-link').value = window.location.origin + "?ref=" + this.user;
 
-            // --- AJOUT : CHARGEMENT DU LOGO FTA ---
             const ftaLogoEl = document.getElementById('logo-fta-bal');
             if(ftaLogoEl) ftaLogoEl.src = CONFIG.LOGO_FTA;
-            // --------------------------------------
 
             if (!localStorage.getItem(this.storageKey)) { localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000)); }
 
@@ -96,8 +92,6 @@ class Application {
             setInterval(() => this.updateData(), 5000);
             this.initVisualizer();
             window.addEventListener('resize', () => this.resizeCanvas());
-            
-            // Initialisation visuelle de la roue
             this.initWheel();
 
         } catch (e) { this.showToast("Erreur connexion", true); console.error(e); }
@@ -183,7 +177,6 @@ class Application {
     }
     stopMiningCounter() { if (this.miningTimer) { clearInterval(this.miningTimer); this.miningTimer = null; } }
 
-    // --- LOGIQUE PARRAINAGE (INTACTE) ---
     checkReferral() {
         const params = new URLSearchParams(window.location.search);
         const ref = params.get('ref');
@@ -198,12 +191,14 @@ class Application {
         if (!ethers.isAddress(addr)) return;
         this.setLoader(true, "Liaison...");
         try {
-            // APPEL AU CONTRAT
             const tx = await this.contracts.mining.setReferrer(addr);
             await tx.wait();
             this.showToast("Parrain lié avec succès !");
             document.getElementById('bind-ref-area').style.display = 'none';
-        } catch(e) { this.showError(e); }
+        } catch(e) { 
+            // Affiche l'erreur exacte du contrat (ex: "Cannot refer yourself")
+            this.showError(e); 
+        }
         this.setLoader(false);
     }
 
@@ -352,8 +347,6 @@ class Application {
         event.currentTarget.classList.add('active');
     }
 
-    // --- FONCTIONS JEUX ---
-
     showGameResult(elementId, message, isWin) {
         const el = document.getElementById(elementId);
         el.className = "game-result-box " + (isWin ? "win" : "lose");
@@ -366,7 +359,6 @@ class Application {
         const betVal = document.getElementById('wingo-bet').value;
         if (!betVal || betVal <= 0) return this.showToast("Mise invalide", true);
         const amount = ethers.parseUnits(betVal, this.ftaDecimals);
-        
         const buttons = document.querySelectorAll('#game-wingo .game-options button');
         buttons.forEach(b => b.disabled = true);
         const reel = document.getElementById('slot-reel');
@@ -380,9 +372,7 @@ class Application {
 
             reel.classList.remove('spinning');
             const randomNum = Math.floor(Math.random() * 10);
-            const finalOffset = -80 * randomNum; 
-            reel.style.transform = `translateY(${finalOffset}px)`;
-
+            reel.style.transform = `translateY(${-80 * randomNum}px)`;
             this.showGameResult('wingo-result', `Résultat: ${randomNum}`, true);
             this.updateData();
         } catch(e) { 
@@ -436,10 +426,7 @@ class Application {
         btn.disabled = true;
 
         if (this.wheelInterval) clearInterval(this.wheelInterval);
-        this.wheelInterval = setInterval(() => {
-            this.wheelAngle += 0.2;
-            this.drawWheel(this.wheelAngle);
-        }, 20);
+        this.wheelInterval = setInterval(() => { this.wheelAngle += 0.2; this.drawWheel(this.wheelAngle); }, 20);
 
         try {
             const price = ethers.parseUnits("100", this.ftaDecimals); 
@@ -528,7 +515,6 @@ class Application {
             for(let i=0; i<count; i++) promises.push(this.contracts.mining.getUserMachineCount(this.user, i));
             const results = await Promise.all(promises);
             let found = false;
-            
             for(let i=0; i<count; i++) {
                 const machineCount = results[i];
                 if (machineCount > 0) {
@@ -582,6 +568,8 @@ class Application {
         console.error(e);
         let msg = "Erreur";
         if(e.reason) msg = e.reason;
+        if(msg.includes("Cannot refer yourself")) msg = "Impossible de vous parrainer vous-même.";
+        if(msg.includes("Referrer already set")) msg = "Parrain déjà défini.";
         if(msg.includes("Invalid bet amount")) msg = "Mise invalide";
         this.showToast(msg, true);
     }
