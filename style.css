@@ -1,7 +1,8 @@
 :root {
-    --bg: #121212; /* Bitget Dark */
+    --bg: #121212;
     --card-bg: #1E1E1E;
     --primary: #F0B90B; /* Bitget Gold */
+    --primary-hover: #FFD43B;
     --accent: #3b82f6;
     --text: #f8fafc;
     --text-muted: #8A8A8A;
@@ -100,17 +101,65 @@ main::-webkit-scrollbar { display: none; }
 #mining-canvas { width: 100%; height: 100%; display: block; }
 .viz-label { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; letter-spacing: 2px; color: #666; font-size: 0.8rem; }
 
-/* SHOP */
+/* SHOP - 3D EFFECT */
 .shop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .toggle-pay { display: flex; gap: 4px; background: #1e293b; padding: 4px; border-radius: 8px; }
 .toggle-btn { background: transparent; border: none; color: var(--text-muted); padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
 .toggle-btn.active { background: var(--primary); color: #000; }
 
-.grid-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.rig-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
-.rig-name { font-weight: bold; font-size: 1rem; }
-.rig-power { color: var(--accent); font-size: 0.85rem; margin: 4px 0; }
-.rig-price { color: var(--primary); font-size: 1.1rem; font-weight: bold; margin-bottom: 8px; }
+/* Conteneur principal avec perspective */
+.grid-list { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 20px; 
+    perspective: 1000px; /* Active la 3D pour les enfants */
+}
+
+.rig-item {
+    background: linear-gradient(145deg, #252525, #1a1a1a);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 16px; 
+    padding: 15px; 
+    text-align: center; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: space-between;
+    
+    /* --- EFFETS 3D --- */
+    transform-style: preserve-3d;
+    transform: rotateY(-5deg) rotateX(5deg);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    
+    /* Ombre portée réaliste */
+    box-shadow: 
+        10px 10px 20px rgba(0,0,0,0.5),
+        -2px -2px 5px rgba(255,255,255,0.02);
+    
+    position: relative;
+}
+
+/* Effet de lumière en haut à gauche */
+.rig-item::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+    border-radius: 16px;
+    pointer-events: none;
+}
+
+/* Animation au survol (ou touch sur mobile) */
+.rig-item:hover, .rig-item:active {
+    transform: rotateY(0deg) rotateX(0deg) translateZ(20px) scale(1.02);
+    box-shadow: 
+        5px 5px 15px rgba(0,0,0,0.6),
+        0px 0px 20px rgba(240, 185, 11, 0.1);
+    z-index: 2;
+}
+
+.rig-name { font-weight: bold; font-size: 1rem; transform: translateZ(20px); } /* Le texte sort légèrement */
+.rig-power { color: var(--accent); font-size: 0.85rem; margin: 4px 0; transform: translateZ(15px); }
+.rig-price { color: var(--primary); font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; transform: translateZ(25px); text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
 
 /* MY RIGS */
 .rigs-list-container { display: flex; flex-direction: column; gap: 8px; }
@@ -176,6 +225,8 @@ main::-webkit-scrollbar { display: none; }
     .rig-price { font-size: 1rem; }
     .view-title { font-size: 1.1rem; }
     .btn-mega { font-size: 1rem; padding: 15px; }
+    /* Réduit l'effet 3D sur très petits écrans pour éviter les bugs visuels */
+    .rig-item { transform: none; }
 }
 
 /* --- AJOUTS STYLES JEUX --- */
