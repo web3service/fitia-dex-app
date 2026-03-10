@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#121212">
+    <meta name="theme-color" content="#0f172a">
     <title>FITIA PRO MINER</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
@@ -128,12 +128,16 @@
                 <!-- Win Go -->
                 <div id="game-wingo" class="game-area active">
                     <p class="game-info">Deviner le numéro (0-9) ou Grand/Petit.</p>
+                    
                     <div class="slot-machine">
                         <div class="slot-window">
-                            <div class="slot-reel" id="slot-reel"><span>5</span><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>0</span></div>
+                            <div class="slot-reel" id="slot-reel">
+                                <span>5</span><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>0</span>
+                            </div>
                         </div>
                     </div>
                     <div id="wingo-result" class="game-result-box hidden"></div>
+
                     <input type="number" id="wingo-bet" class="game-input" placeholder="Mise en FTA">
                     <div class="game-options">
                         <button onclick="App.playWinGo(1, 0)">Petit (0-4)</button>
@@ -144,32 +148,36 @@
                 <!-- Roue -->
                 <div id="game-wheel" class="game-area">
                     <p class="game-info">Tournez pour tenter de gagner le Jackpot !</p>
+                    
                     <div class="wheel-container">
                         <div class="wheel-pointer">▼</div>
                         <canvas id="wheel-canvas" width="300" height="300"></canvas>
                     </div>
                     <div id="wheel-result" class="game-result-box hidden"></div>
+                    
                     <div class="jackpot-display">Jackpot: <span id="wheel-jackpot">0</span> FTA</div>
                     <button class="btn-game" onclick="App.spinWheel()">Tourner (100 FTA)</button>
                 </div>
 
                 <!-- Pêche -->
                 <div id="game-fishing" class="game-area">
-                    <p class="game-info">Lancez votre ligne.</p>
+                    <p class="game-info">Lancez votre ligne pour attraper des gains.</p>
+                    
                     <div class="fishing-container">
                         <div class="fishing-line" id="fishing-line"></div>
                         <div class="fishing-hook" id="fishing-hook">🪝</div>
                     </div>
                     <div id="fishing-status" class="fishing-status">En attente...</div>
                     <div id="fish-result" class="game-result-box hidden"></div>
+                    
                     <button class="btn-game" onclick="App.goFishing()">Pêcher (50 FTA)</button>
                 </div>
 
                 <!-- Loterie -->
                 <div id="game-lottery" class="game-area">
-                    <p class="game-info">Achetez un ticket.</p>
+                    <p class="game-info">Achetez un ticket pour participer au tirage.</p>
                     <div class="jackpot-display">Pot: <span id="lottery-pot">0</span> FTA</div>
-                    <button class="btn-game" onclick="App.buyLotteryTicket()">Ticket (50 FTA)</button>
+                    <button class="btn-game" onclick="App.buyLotteryTicket()">Acheter Ticket (50 FTA)</button>
                 </div>
             </div>
 
@@ -185,7 +193,9 @@
                         <input type="number" id="swap-from-in" placeholder="0.0" oninput="App.calcSwap()">
                         <div class="token-select" onclick="App.toggleSwap()" id="token-from-display">USDT</div>
                     </div>
-                    <div class="swap-arrow-wrap"><div class="swap-arrow" onclick="App.toggleSwap()">⇅</div></div>
+                    <div class="swap-arrow-wrap">
+                        <div class="swap-arrow" onclick="App.toggleSwap()">⇅</div>
+                    </div>
                     <div class="swap-header">
                         <span>Vous recevez</span>
                         <span>Solde: <span id="swap-bal-to">0</span></span>
@@ -213,7 +223,7 @@
             </button>
             <button class="nav-item" onclick="App.nav('my-rigs')">
                 <svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg>
-                <span>Rigs</span>
+                <span>Mes Rigs</span>
             </button>
             <button class="nav-item" onclick="App.nav('games')">
                 <svg viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>

@@ -1,7 +1,7 @@
 :root {
     --bg: #121212;
     --card-bg: #1E1E1E;
-    --primary: #F0B90B;
+    --primary: #F0B90B; /* Bitget Gold */
     --primary-hover: #FFD43B;
     --accent: #3b82f6;
     --text: #f8fafc;
@@ -107,11 +107,12 @@ main::-webkit-scrollbar { display: none; }
 .toggle-btn { background: transparent; border: none; color: var(--text-muted); padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
 .toggle-btn.active { background: var(--primary); color: #000; }
 
+/* Conteneur principal avec perspective */
 .grid-list { 
     display: grid; 
     grid-template-columns: 1fr 1fr; 
     gap: 20px; 
-    perspective: 1000px; 
+    perspective: 1000px; /* Active la 3D pour les enfants */
 }
 
 .rig-item {
@@ -124,30 +125,39 @@ main::-webkit-scrollbar { display: none; }
     flex-direction: column; 
     justify-content: space-between;
     
-    /* 3D EFFECT */
+    /* --- EFFETS 3D --- */
     transform-style: preserve-3d;
     transform: rotateY(-5deg) rotateX(5deg);
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     
-    box-shadow: 10px 10px 20px rgba(0,0,0,0.5), -2px -2px 5px rgba(255,255,255,0.02);
+    /* Ombre portée réaliste */
+    box-shadow: 
+        10px 10px 20px rgba(0,0,0,0.5),
+        -2px -2px 5px rgba(255,255,255,0.02);
+    
     position: relative;
 }
 
+/* Effet de lumière en haut à gauche */
 .rig-item::before {
     content: '';
-    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
     background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
     border-radius: 16px;
     pointer-events: none;
 }
 
+/* Animation au survol (ou touch sur mobile) */
 .rig-item:hover, .rig-item:active {
     transform: rotateY(0deg) rotateX(0deg) translateZ(20px) scale(1.02);
-    box-shadow: 5px 5px 15px rgba(0,0,0,0.6), 0px 0px 20px rgba(240, 185, 11, 0.1);
+    box-shadow: 
+        5px 5px 15px rgba(0,0,0,0.6),
+        0px 0px 20px rgba(240, 185, 11, 0.1);
     z-index: 2;
 }
 
-.rig-name { font-weight: bold; font-size: 1rem; transform: translateZ(20px); }
+.rig-name { font-weight: bold; font-size: 1rem; transform: translateZ(20px); } /* Le texte sort légèrement */
 .rig-power { color: var(--accent); font-size: 0.85rem; margin: 4px 0; transform: translateZ(15px); }
 .rig-price { color: var(--primary); font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; transform: translateZ(25px); text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
 
@@ -180,6 +190,7 @@ main::-webkit-scrollbar { display: none; }
 .swap-header { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px; padding: 0 4px; }
 .input-wrap { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; height: 52px; margin-bottom: 8px; }
 .input-wrap input { flex: 1; height: 100%; background: transparent; border: none; color: var(--text); font-size: 1.3rem; padding: 0 0 0 16px; text-align: left; font-family: 'Courier New', monospace; font-weight: bold; }
+.input-wrap input::placeholder { color: rgba(255, 255, 255, 0.3); text-align: left; }
 .token-select { display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.1); border-radius: 10px; margin: 6px; padding: 0 14px; height: calc(100% - 12px); font-weight: bold; cursor: pointer; font-size: 0.95rem; }
 .token-select:active { background: var(--primary); color: #000; }
 .swap-arrow-wrap { text-align: center; height: 20px; margin: 4px 0; display: flex; justify-content: center; align-items: center; }
@@ -208,27 +219,61 @@ main::-webkit-scrollbar { display: none; }
 
 /* RESPONSIVE */
 @media screen and (max-width: 350px) {
-    .rig-item { transform: none; } /* Disable 3D on very small screens */
+    .brand-text { font-size: 0.9rem; }
+    .stat-val { font-size: 1.4rem; }
+    .rig-name { font-size: 0.9rem; }
+    .rig-price { font-size: 1rem; }
+    .view-title { font-size: 1.1rem; }
+    .btn-mega { font-size: 1rem; padding: 15px; }
+    /* Réduit l'effet 3D sur très petits écrans pour éviter les bugs visuels */
+    .rig-item { transform: none; }
 }
 
-/* GAME ASSETS */
-.slot-machine { background: #111; padding: 20px; border-radius: 15px; border: 2px solid #333; margin: 20px auto; width: 120px; height: 80px; overflow: hidden; position: relative; }
-.slot-reel { display: flex; flex-direction: column; transition: transform 0.1s linear; font-size: 3rem; font-weight: 900; color: var(--primary); text-shadow: 0 0 10px var(--primary); }
+/* --- AJOUTS STYLES JEUX --- */
+/* Slot Machine */
+.slot-machine { 
+    background: #111; padding: 20px; border-radius: 15px; 
+    border: 2px solid #333; margin: 20px auto; width: 120px; height: 80px; 
+    overflow: hidden; position: relative; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+}
+.slot-window { position: relative; height: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+.slot-reel { 
+    display: flex; flex-direction: column; transition: transform 0.1s linear;
+    font-size: 3rem; font-weight: 900; color: var(--primary); text-shadow: 0 0 10px var(--primary);
+}
 .slot-reel span { height: 80px; display: flex; align-items: center; justify-content: center; }
 .slot-reel.spinning { animation: spin-slot 0.1s linear infinite; }
 @keyframes spin-slot { 0% { transform: translateY(0); } 100% { transform: translateY(-80px); } }
 
+/* Wheel */
 .wheel-container { position: relative; width: 300px; height: 300px; margin: 20px auto; }
-#wheel-canvas { width: 100%; height: 100%; filter: drop-shadow(0 0 15px rgba(0, 255, 157, 0.3)); }
-.wheel-pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-size: 2rem; color: var(--danger); z-index: 10; }
+#wheel-canvas { 
+    width: 100%; height: 100%; 
+    filter: drop-shadow(0 0 15px rgba(0, 255, 157, 0.3));
+    transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+}
+.wheel-pointer { 
+    position: absolute; top: -10px; left: 50%; transform: translateX(-50%); 
+    font-size: 2rem; color: var(--danger); z-index: 10; text-shadow: 0 2px 5px black;
+}
 
+/* Fishing */
 .fishing-container { height: 150px; background: linear-gradient(to bottom, #87CEEB, #1e293b); border-radius: 15px; position: relative; overflow: hidden; margin: 20px 0; border: 2px solid #333; }
 .fishing-line { position: absolute; left: 50%; width: 2px; height: 0; background: #333; transition: height 2s; top: 0; }
 .fishing-hook { position: absolute; left: 50%; transform: translateX(-50%); top: 0; font-size: 2rem; transition: top 2s; }
 .fishing-status { text-align: center; font-weight: bold; color: var(--primary); min-height: 24px; margin-top: 10px; }
 
-.game-result-box { margin-top: 20px; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 1.1rem; animation: popIn 0.3s; }
+/* Result Box */
+.game-result-box { margin-top: 20px; padding: 15px; border-radius: 10px; font-weight: bold; font-size: 1.1rem; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 .game-result-box.win { background: rgba(16, 185, 129, 0.1); border: 1px solid var(--primary); color: var(--primary); }
 .game-result-box.lose { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); }
+@keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
-.token-logo { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; vertical-align: middle; }
+/* --- AJOUT STYLE LOGO TOKEN --- */
+.token-logo {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
+    vertical-align: middle;
+}
