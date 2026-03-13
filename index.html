@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fitia Ecosystem</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
-    <!-- Font Awesome pour les icônes (optionnel mais propre) -->
+    <!-- Librairie Ethers.js version 6 (UMD) -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+    <!-- Icônes -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -20,16 +21,16 @@
         </div>
     </header>
 
-    <!-- Loader Global -->
+    <!-- Loader -->
     <div id="loader" class="loader hidden">
         <div class="spinner"></div>
-        <p>Transaction en cours...</p>
+        <p id="loader-text">Transaction en cours...</p>
     </div>
 
-    <!-- Contenu Principal -->
+    <!-- Main Container -->
     <main class="container">
         
-        <!-- SECTION 1: WALLET -->
+        <!-- WALLET SECTION -->
         <section id="section-wallet" class="section active">
             <div class="card">
                 <h2><i class="fas fa-wallet"></i> Portefeuille</h2>
@@ -47,14 +48,14 @@
                     <label>Montant (USDT)</label>
                     <input type="number" id="wallet-amount" placeholder="0.00" />
                     <div class="btn-row">
-                        <button id="btn-deposit" class="btn success"><i class="fas fa-arrow-down"></i> Déposer</button>
-                        <button id="btn-withdraw" class="btn danger"><i class="fas fa-arrow-up"></i> Retirer</button>
+                        <button id="btn-deposit" class="btn success">Déposer</button>
+                        <button id="btn-withdraw" class="btn danger">Retirer</button>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- SECTION 2: TRADING -->
+        <!-- TRADING SECTION -->
         <section id="section-trading" class="section hidden">
             <div class="card">
                 <h2><i class="fas fa-chart-line"></i> Trading Futures</h2>
@@ -78,96 +79,95 @@
                 </div>
 
                 <div class="trade-actions">
-                    <button id="btn-long" class="btn-trade long"><i class="fas fa-arrow-up"></i> LONG</button>
-                    <button id="btn-short" class="btn-trade short"><i class="fas fa-arrow-down"></i> SHORT</button>
+                    <button id="btn-long" class="btn-trade long">LONG</button>
+                    <button id="btn-short" class="btn-trade short">SHORT</button>
                 </div>
 
                 <div class="list-header">Positions Ouvertes</div>
                 <div id="positions-list" class="list-container">
-                    <!-- Les positions s'afficheront ici -->
-                    <p class="empty-msg">Aucune position ouverte.</p>
+                    <p class="empty-msg">Connectez-vous pour voir vos positions.</p>
                 </div>
             </div>
         </section>
 
-        <!-- SECTION 3: AVIATOR -->
+        <!-- AVIATOR SECTION -->
         <section id="section-aviator" class="section hidden">
             <div class="card avi-bg">
                 <h2><i class="fas fa-plane"></i> Aviator Game</h2>
                 <div class="aviator-display">
-                    <span id="aviator-multiplier">1.00x</span>
+                    <span>FTA BET</span>
                 </div>
                 <div class="form-group">
-                    <input type="number" id="aviator-bet" placeholder="Mise FTA" />
-                    <input type="number" id="aviator-target" placeholder="Cible (ex: 2.00)" step="0.1" />
-                    <button id="btn-play-aviator" class="btn primary full-width"><i class="fas fa-play"></i> JOUER</button>
+                    <input type="number" id="aviator-bet" placeholder="Mise en FTA" />
+                    <input type="number" id="aviator-target" placeholder="Multiplicateur Cible (ex: 2.0)" step="0.1" />
+                    <button id="btn-play-aviator" class="btn primary full-width">JOUER</button>
                 </div>
             </div>
         </section>
 
-        <!-- SECTION 4: STAKING -->
+        <!-- STAKING SECTION -->
         <section id="section-staking" class="section hidden">
             <div class="card">
                 <h2><i class="fas fa-coins"></i> Staking</h2>
                 <div class="form-group">
-                    <label>ID du Pool</label>
+                    <label>ID du Pool (0, 1, 2...)</label>
                     <input type="number" id="stake-pool-id" placeholder="Ex: 0" />
                     <label>Montant</label>
-                    <input type="number" id="stake-amount" placeholder="Montant à staker" />
+                    <input type="number" id="stake-amount" placeholder="Montant" />
                     <div class="btn-row">
                         <button id="btn-stake" class="btn primary">Staker</button>
                         <button id="btn-unstake" class="btn secondary">Unstake</button>
                     </div>
                 </div>
-                <p class="info-text">Pools: 0=USDT->FTA, 1=USDT->USDT, etc.</p>
+                <p class="info-text">Ex: Pool 0 = USDT->FTA</p>
             </div>
         </section>
 
-        <!-- SECTION 5: LENDING -->
+        <!-- LENDING SECTION -->
         <section id="section-lending" class="section hidden">
             <div class="card">
-                <h2><i class="fas fa-hand-holding-usd"></i> Prêts (Lending)</h2>
+                <h2><i class="fas fa-hand-holding-usd"></i> Prêts</h2>
                 
                 <div class="lend-box">
                     <h4>Déposer Collatéral (USDT)</h4>
                     <input type="number" id="lend-collateral" placeholder="Montant USDT" />
-                    <button id="btn-deposit-collat" class="btn full-width">Déposer Collatéral</button>
+                    <button id="btn-deposit-collat" class="btn full-width">Déposer</button>
                 </div>
 
                 <div class="lend-box">
                     <h4>Emprunter (FTA)</h4>
                     <input type="number" id="lend-borrow" placeholder="Montant FTA" />
-                    <button id="btn-borrow" class="btn full-width">Emprunter</button>
+                    <button id="btn-borrow" class="btn primary full-width">Emprunter</button>
                 </div>
 
                 <div class="lend-box">
-                    <h4>Rembourser</h4>
-                    <button id="btn-repay" class="btn danger full-width">Rembourser Prêt</button>
+                    <h4>Rembourser le prêt</h4>
+                    <button id="btn-repay" class="btn danger full-width">Rembourser</button>
                 </div>
             </div>
         </section>
 
     </main>
 
-    <!-- Barre de Navigation Mobile -->
+    <!-- Bottom Nav -->
     <nav class="bottom-nav">
-        <button onclick="openSection('wallet')" class="nav-item active" id="nav-wallet">
+        <button onclick="navigate('wallet')" class="nav-item active" id="nav-wallet">
             <i class="fas fa-wallet"></i>
             <span>Wallet</span>
         </button>
-        <button onclick="openSection('trading')" class="nav-item" id="nav-trading">
+        <button onclick="navigate('trading')" class="nav-item" id="nav-trading">
             <i class="fas fa-chart-bar"></i>
             <span>Trade</span>
         </button>
-        <button onclick="openSection('aviator')" class="nav-item" id="nav-aviator">
+        <button onclick="navigate('aviator')" class="nav-item" id="nav-aviator">
             <i class="fas fa-plane"></i>
             <span>Aviator</span>
         </button>
-        <button onclick="openSection('staking')" class="nav-item" id="nav-staking">
+        <button onclick="navigate('staking')" class="nav-item" id="nav-staking">
             <i class="fas fa-piggy-bank"></i>
             <span>Stake</span>
         </button>
-        <button onclick="openSection('lending')" class="nav-item" id="nav-lending">
+        <button onclick="navigate('lending')" class="nav-item" id="nav-lending">
             <i class="fas fa-landmark"></i>
             <span>Prêt</span>
         </button>
