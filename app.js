@@ -1,420 +1,376 @@
 /**
- * FITIA ECOSYSTEM PRO - APPLICATION LOGIC
- * Version: 1.0.0
- * Developer: Modele Pro
+ * FITIA ECOSYSTEM PRO - LOGIC
+ * Connecté au contrat FitiaEcosystemHub
  */
 
-// ================= CONFIGURATION =================
-// REMPLACE CES ADRESSES PAR LES TIENNES SUR POLYGON
-
-const CONFIG = {
-    CONTRACT_ADDR: "0x027579bd6302174b499970955EF534500Cd342Dd",
-    USDT_ADDR: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
-    FTA_ADDR: "0x535bBe393D64a60E14B731b7350675792d501623",
-    POLYGON_CHAIN_ID: "0x89", // 137
-    EXPLORER: "https://polygonscan.com/tx/"
+// Configuration (REMPLACE AVEC TES ADRESSES)
+const ADDR = {
+    HUB: "0x027579bd6302174b499970955EF534500Cd342Dd", // Adresse du contrat déployé
+    USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // USDT Polygon
+    FTA: "0x535bBe393D64a60E14B731b7350675792d501623", // Adresse de ton token FTA
 };
 
-// ABI Simplifié et Optimisé
+const CHAIN = { ID: "0x89", NAME: "Polygon" }; // Polygon Mainnet
+
+// ABI Minimaliste optimisé pour le frontend
 const ABI_HUB = [
-    // Read
+    // View
     "function getMyBalance(address _token) view returns (uint256)",
     "function positions(uint256) view returns (address trader, uint8 asset, uint8 side, uint256 margin, uint256 leverage, uint256 entryPrice, bool isOpen)",
     "function positionCount() view returns (uint256)",
+    "function getAssetPrice(uint8 _asset) view returns (uint256)",
+    
     // Write
     "function depositToWallet(address _token, uint256 _amount) external",
     "function withdrawFromWallet(address _token, uint256 _amount) external",
+    
     "function openPosition(uint8 _asset, uint8 _side, uint256 _marginUSDT, uint256 _leverage) external",
     "function closePosition(uint256 _posId) external",
+    
     "function playAviator(uint256 _ftaBetAmount, uint256 _targetMultiplier) external",
+    
     "function stake(uint256 _poolId, uint256 _amount) external",
     "function unstake(uint256 _poolId) external",
+    
     "function depositCollateral(uint256 _usdtAmount) external",
     "function borrow(uint256 _ftaAmount) external",
     "function repayLoan() external"
 ];
 
 const ABI_ERC20 = [
-    "function approve(address spender, uint256 amount) external returns (bool)",
-    "function allowance(address owner, address spender) view returns (uint256)"
+    "function approve(address spender, uint256 amount) external returns (bool)"
 ];
 
-// ================= STATE =================
-let provider, signer, contract, userAddress;
-let state = { leverage: 1, walletTab: 'deposit' };
+// State
+let provider, signer, contract, user;
+let state = { lev: 1, walletMode: 'deposit', finMode: 'stake' };
 
-// ================= UTILITIES =================
+// DOM Helpers
 const $ = id => document.getElementById(id);
-const toHex = str => ethers.toBeArray(str).length;
+const hide = id => $(id).classList.add('hidden');
+const show = id => $(id).classList.remove('hidden');
 
-const showToast = (message, type = 'info') => {
-    const container = $('toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerText = message;
-    container.appendChild(toast);
-    setTimeout(() => toast.remove(), 4000);
+// Notifications
+const toast = (msg, type = 'info') => {
+    const c = $('toasts');
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerText = msg;
+    c.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
 };
 
-const showLoader = (show, msg = "Chargement...") => {
-    const loader = $('global-loader');
-    const msgEl = $('loader-msg');
-    if(show) {
-        loader.classList.remove('hidden');
-        msgEl.innerText = msg;
-    } else {
-        loader.classList.add('hidden');
-    }
+// Loader
+const load = (show, msg = "Chargement...") => {
+    if (show) { $('loader-text').innerText = msg; show('loader'); }
+    else hide('loader');
 };
 
-const formatAddr = addr => addr ? `${addr.substring(0, 6)}...${addr.substring(38)}` : '';
+// Initialisation
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        $('splash').style.opacity = '0';
+        setTimeout(() => $('splash').remove(), 500);
+    }, 1500);
+});
 
-// ================= CORE BLOCKCHAIN =================
+// Navigation
+window.nav = (id) => {
+    document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    
+    $(`sec-${id}`).classList.remove('hidden');
+    $(`n-${id}`).classList.add('active');
+    
+    if (user) refreshData(id);
+};
 
-async function connectWallet() {
-    if (!window.ethereum) return showToast("Installez MetaMask ou Trust Wallet", "error");
+// Connexion Wallet
+async function connect() {
+    if (!window.ethereum) return toast("Installez MetaMask ou Trust Wallet", "error");
     
-    showLoader(true, "Connexion au portefeuille...");
-    
+    load(true, "Connexion...");
     try {
-        // 1. Connexion Compte
         provider = new ethers.BrowserProvider(window.ethereum);
-        const accounts = await provider.send("eth_requestAccounts", []);
-        signer = await provider.getSigner();
-        userAddress = await signer.getAddress();
         
-        // 2. Vérification Réseau Polygon
-        const network = await provider.getNetwork();
-        if (network.chainId !== 137) { // 137 = Polygon
-            try {
-                await window.ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: '0x89' }]
-                });
-            } catch (switchErr) {
-                showToast("Veuillez basculer sur le réseau Polygon", "error");
-                showLoader(false);
-                return;
-            }
-        }
-
-        // 3. Init Contrat
-        contract = new ethers.Contract(CONFIG.CONTRACT_ADDR, ABI_HUB, signer);
-        
-        // 4. Mise à jour UI
-        $('btn-connect').classList.add('hidden');
-        $('user-pill').classList.remove('hidden');
-        $('addr-short').innerText = formatAddr(userAddress);
-        
-        await loadBalances();
-        showToast("Connecté avec succès", "success");
-
-    } catch (err) {
-        console.error(err);
-        showToast("Erreur de connexion: " + err.message, "error");
-    } finally {
-        showLoader(false);
-    }
-}
-
-async function loadBalances() {
-    if (!contract) return;
-    try {
-        const bUsdt = await contract.getMyBalance(CONFIG.USDT_ADDR);
-        const bFta = await contract.getMyBalance(CONFIG.FTA_ADDR);
-        
-        $('bal-usdt').innerText = parseFloat(ethers.formatUnits(bUsdt, 6)).toFixed(2);
-        $('bal-fta').innerText = parseFloat(ethers.formatUnits(bFta, 18)).toFixed(2);
-    } catch (e) {
-        console.error("Erreur soldes", e);
-    }
-}
-
-// ================= HELPERS TRANSACTION =================
-
-async function checkAllowance(tokenAddr, amountWei) {
-    const tokenContract = new ethers.Contract(tokenAddr, ABI_ERC20, signer);
-    const allowance = await tokenContract.allowance(userAddress, CONFIG.CONTRACT_ADDR);
-    
-    if (allowance < amountWei) {
-        showLoader(true, "Approbation requise (1/2)...");
+        // Switch Network
         try {
-            const tx = await tokenContract.approve(CONFIG.CONTRACT_ADDR, amountWei);
-            await tx.wait();
-            showToast("Approuvé !", "success");
-        } catch (e) {
-            throw new Error("Approbation refusée");
+            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN.ID }] });
+        } catch {
+            toast("Veuillez switcher sur " + CHAIN.NAME, "error");
+            load(false); return;
         }
-    }
-}
 
-async function executeTx(promise, successMsg) {
-    showLoader(true, "Transaction en cours...");
+        await provider.send("eth_requestAccounts", []);
+        signer = await provider.getSigner();
+        user = await signer.getAddress();
+        
+        contract = new ethers.Contract(ADDR.HUB, ABI_HUB, signer);
+        
+        // UI Update
+        hide('btn-connect');
+        show('btn-profile');
+        $('addr-display').innerText = user.substring(0,6) + "..." + user.substring(38);
+        
+        refreshData('wallet');
+        toast("Connecté avec succès", "success");
+    } catch(e) {
+        console.error(e);
+        toast("Erreur de connexion", "error");
+    }
+    load(false);
+}
+ $('btn-connect').onclick = connect;
+
+// Rafraîchir les données
+async function refreshData(sec) {
     try {
-        const tx = await promise;
-        showLoader(true, "Confirmation blockchain...");
-        await tx.wait();
-        showToast(successMsg, "success");
-        return true;
-    } catch (e) {
-        const reason = e.reason || e.message;
-        showToast(`Erreur: ${reason}`, "error");
-        return false;
-    } finally {
-        showLoader(false);
+        // Balances
+        const bU = await contract.getMyBalance(ADDR.USDT);
+        const bF = await contract.getMyBalance(ADDR.FTA);
+        $('bal-usdt').innerText = parseFloat(ethers.formatUnits(bU, 6)).toFixed(2);
+        $('bal-fta').innerText = parseFloat(ethers.formatUnits(bF, 18)).toFixed(2);
+
+        if (sec === 'trade') {
+            updatePrice();
+            loadPositions();
+        }
+    } catch(e) {
+        console.log("Erreur refresh", e);
     }
 }
 
-// ================= WALLET ACTIONS =================
-
-window.switchWalletTab = (tab) => {
-    state.walletTab = tab;
-    const btns = document.querySelectorAll('.tab-min');
-    btns.forEach(b => b.classList.remove('active'));
+// ================= WALLET LOGIC =================
+window.setWalletMode = (mode) => {
+    state.walletMode = mode;
+    document.querySelectorAll('.tab-w').forEach(t => t.classList.remove('active'));
     
-    if(tab === 'deposit') {
-        btns[0].classList.add('active');
-        $('btn-action-wallet').innerText = "Déposer des USDT";
-        $('btn-action-wallet').onclick = depositUSDT;
+    if (mode === 'deposit') {
+        document.querySelector('.tab-w:first-child').classList.add('active');
+        $('btn-wallet-action').innerText = "Déposer sur le Wallet Interne";
     } else {
-        btns[1].classList.add('active');
-        $('btn-action-wallet').innerText = "Retirer des USDT";
-        $('btn-action-wallet').onclick = withdrawUSDT;
+        document.querySelector('.tab-w:last-child').classList.add('active');
+        $('btn-wallet-action').innerText = "Retirer vers mon Wallet";
     }
 };
 
-async function depositUSDT() {
-    const amt = $('input-amount').value;
-    if (!amt || amt <= 0) return showToast("Montant invalide", "error");
+window.walletAction = async () => {
+    const amt = $('wallet-amount').value;
+    const tkn = $('wallet-token').value;
     
-    const wei = ethers.parseUnits(amt, 6);
+    if (!amt || amt <= 0) return toast("Montant invalide", "error");
     
-    showLoader(true, "Vérification...");
+    const addr = tkn === 'usdt' ? ADDR.USDT : ADDR.FTA;
+    const dec = tkn === 'usdt' ? 6 : 18;
+    const wei = ethers.parseUnits(amt, dec);
+    
+    load(true, "Transaction en cours...");
+
     try {
-        await checkAllowance(CONFIG.USDT_ADDR, wei);
-        const success = await executeTx(contract.depositToWallet(CONFIG.USDT_ADDR, wei), "Dépôt réussi !");
-        if (success) {
-            $('input-amount').value = "";
-            loadBalances();
+        if (state.walletMode === 'deposit') {
+            // 1. Approve
+            load(true, "Approbation (1/2)...");
+            const erc20 = new ethers.Contract(addr, ABI_ERC20, signer);
+            const appTx = await erc20.approve(ADDR.HUB, wei);
+            await appTx.wait();
+            
+            // 2. Deposit
+            load(true, "Dépôt (2/2)...");
+            const tx = await contract.depositToWallet(addr, wei);
+            await tx.wait();
+            toast("Dépôt réussi !", "success");
+        } else {
+            const tx = await contract.withdrawFromWallet(addr, wei);
+            await tx.wait();
+            toast("Retrait réussi !", "success");
         }
-    } catch (e) {
-        showLoader(false);
-        showToast(e.message, "error");
+        
+        $('wallet-amount').value = "";
+        refreshData('wallet');
+    } catch(e) {
+        console.error(e);
+        toast("Erreur: " + (e.reason || "Transaction annulée"), "error");
     }
-}
-
-async function withdrawUSDT() {
-    const amt = $('input-amount').value;
-    if (!amt || amt <= 0) return showToast("Montant invalide", "error");
-    
-    const wei = ethers.parseUnits(amt, 6);
-    const success = await executeTx(contract.withdrawFromWallet(CONFIG.USDT_ADDR, wei), "Retrait réussi !");
-    if (success) {
-        $('input-amount').value = "";
-        loadBalances();
-    }
-}
-
-// ================= TRADING =================
-
-window.adjustLev = (dir) => {
-    state.leverage += dir;
-    if (state.leverage < 1) state.leverage = 1;
-    if (state.leverage > 50) state.leverage = 50;
-    $('lev-display').innerText = state.leverage;
+    load(false);
 };
 
-async function openPosition(side) {
-    const margin = $('input-margin').value;
-    const asset = $('select-asset').value; // 0, 1, 2
+// ================= TRADING LOGIC =================
+window.adjLev = (d) => {
+    state.lev += d;
+    if (state.lev < 1) state.lev = 1;
+    if (state.lev > 50) state.lev = 50;
+    $('lev-val').innerText = "x" + state.lev;
+};
+
+window.updatePrice = async () => {
+    try {
+        const assetId = $('trade-asset').value;
+        const price = await contract.getAssetPrice(assetId);
+        // Price is 8 decimals (Chainlink standard)
+        const fmt = parseFloat(ethers.formatUnits(price, 8));
+        
+        $('live-price').innerText = "$" + fmt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    } catch(e) {
+        console.log("Prix non disponible");
+    }
+};
+
+window.openTrade = async (side) => {
+    const margin = $('trade-margin').value;
+    const asset = $('trade-asset').value;
     
-    if (!margin || margin <= 0) return showToast("Marge invalide", "error");
+    if (!margin || margin <= 0) return toast("Marge invalide", "error");
     
     const marginWei = ethers.parseUnits(margin, 6);
     
-    // Contrat: openPosition(uint8 _asset, uint8 _side, uint256 _marginUSDT, uint256 _leverage)
-    const success = await executeTx(
-        contract.openPosition(asset, side, marginWei, state.leverage), 
-        `Position ${side === 0 ? 'LONG' : 'SHORT'} ouverte !`
-    );
-    
-    if (success) {
-        $('input-margin').value = "";
-        loadPositions();
-        loadBalances();
+    load(true, "Ouverture de position...");
+    try {
+        const tx = await contract.openPosition(asset, side, marginWei, state.lev);
+        await tx.wait();
+        toast("Position ouverte !", "success");
+        $('trade-margin').value = "";
+        refreshData('trade');
+    } catch(e) {
+        toast("Erreur Trade: " + (e.reason || ""), "error");
     }
-}
+    load(false);
+};
 
 async function loadPositions() {
-    if (!contract) return;
-    const container = $('positions-container');
-    container.innerHTML = '<div class="empty-state">Chargement...</div>';
+    const cont = $('pos-container');
+    cont.innerHTML = "";
     
     try {
         const count = await contract.positionCount();
-        let html = '';
+        let html = "";
         
-        // On boucle sur les 10 dernières positions
-        const start = count > 10 ? count - 10n : 0n;
+        // Check last 20 positions
+        const start = count > 20 ? count - 20 : 0;
         
         for (let i = start; i < count; i++) {
             const p = await contract.positions(i);
-            if (p.isOpen && p.trader.toLowerCase() === userAddress.toLowerCase()) {
-                const sideText = p.side === 0 ? "LONG" : "SHORT";
-                const color = p.side === 0 ? "var(--primary)" : "var(--danger)";
-                const marginFmt = ethers.formatUnits(p.margin, 6);
+            if (p.isOpen && p.trader.toLowerCase() === user.toLowerCase()) {
+                const sideT = p.side === 0 ? "LONG" : "SHORT";
+                const color = p.side === 0 ? "var(--accent)" : "var(--danger)";
+                const marg = parseFloat(ethers.formatUnits(p.margin, 6)).toFixed(2);
                 
                 html += `
                     <div class="pos-item">
                         <div class="pos-meta">
-                            <span class="type" style="color:${color}">${sideText} x${p.leverage} <small>Asset #${p.asset}</small></span>
-                            <span class="amt">Marge: ${parseFloat(marginFmt).toFixed(2)} USDT</span>
+                            <span class="type" style="color:${color}">${sideT} x${p.leverage} <small>Asset #${p.asset}</small></span>
+                            <span class="amt">Marge: ${marg} USDT</span>
                         </div>
-                        <button class="btn-close-pos" onclick="closePos(${i})">Fermer</button>
+                        <button class="btn-close" onclick="closePos(${i})">Fermer</button>
                     </div>
                 `;
             }
         }
-        
-        container.innerHTML = html || '<div class="empty-state">Aucune position ouverte.</div>';
-        
-    } catch (e) {
-        container.innerHTML = '<div class="empty-state">Erreur de chargement.</div>';
+        cont.innerHTML = html || '<div class="empty">Aucune position ouverte.</div>';
+    } catch(e) {
+        console.error(e);
     }
 }
 
 window.closePos = async (id) => {
-    const success = await executeTx(contract.closePosition(id), "Position fermée !");
-    if (success) {
-        loadPositions();
-        loadBalances();
+    load(true, "Fermeture...");
+    try {
+        const tx = await contract.closePosition(id);
+        await tx.wait();
+        toast("Position fermée", "success");
+        refreshData('trade');
+    } catch(e) {
+        toast("Erreur fermeture", "error");
     }
+    load(false);
 };
 
-// ================= AVIATOR =================
-
-async function playAviator() {
-    const bet = $('aviator-bet').value;
-    const target = $('aviator-target').value;
+// ================= AVIATOR LOGIC =================
+window.playAviator = async () => {
+    const bet = $('avi-bet').value;
+    const target = $('avi-target').value;
     
-    if (!bet || !target) return showToast("Remplissez la mise et la cible", "error");
+    if (!bet || !target) return toast("Remplissez tous les champs", "error");
     
     const betWei = ethers.parseUnits(bet, 18);
-    // La cible dans le contrat est x100 (ex: 2.0x -> 200)
     const targetInt = Math.floor(parseFloat(target) * 100);
     
-    showLoader(true, "Vérification tokens...");
+    load(true, "Jeu en cours...");
     try {
-        await checkAllowance(CONFIG.FTA_ADDR, betWei);
-        const success = await executeTx(contract.playAviator(betWei, targetInt), "Jeu terminé !");
-        if (success) {
-            loadBalances();
-            // Animation simple
-            $('aviator-result').innerText = "?";
-            setTimeout(() => $('aviator-result').innerText = "Voir Solde", 1000);
-        }
-    } catch (e) {
-        showLoader(false);
-        showToast(e.message, "error");
+        // Le contrat utilise internalBalances, pas besoin de approve ici si déjà déposé
+        const tx = await contract.playAviator(betWei, targetInt);
+        await tx.wait();
+        
+        toast("Jeu terminé ! Vérifiez votre solde FTA.", "success");
+        $('avi-bet').value = "";
+        refreshData('wallet');
+    } catch(e) {
+        toast("Erreur Jeu: " + (e.reason || ""), "error");
     }
-}
+    load(false);
+};
 
-// ================= FINANCE (STAKE & LEND) =================
-
-window.openFinTab = (tab) => {
-    document.querySelectorAll('.tab-fin').forEach(b => b.classList.remove('active'));
-    document.getElementById('fin-stake').classList.add('hidden');
-    document.getElementById('fin-lend').classList.add('hidden');
+// ================= FINANCE LOGIC =================
+window.setFinMode = (mode) => {
+    state.finMode = mode;
+    document.querySelectorAll('.tab-fin').forEach(t => t.classList.remove('active'));
     
-    if(tab === 'stake') {
+    if (mode === 'stake') {
         document.querySelector('.tab-fin:first-child').classList.add('active');
-        document.getElementById('fin-stake').classList.remove('hidden');
+        show('fin-stake');
+        hide('fin-lend');
     } else {
         document.querySelector('.tab-fin:last-child').classList.add('active');
-        document.getElementById('fin-lend').classList.remove('hidden');
+        hide('fin-stake');
+        show('fin-lend');
     }
 };
 
-async function stakeTokens() {
+window.stakeAction = async (isStake) => {
     const id = $('stake-id').value;
     const amt = $('stake-amt').value;
-    if(!id || !amt) return showToast("Remplissez tous les champs", "error");
     
-    const wei = ethers.parseUnits(amt, 18); // Suppose 18 decimales
-    const success = await executeTx(contract.stake(id, wei), "Staking réussi !");
-    if (success) loadBalances();
-}
-
-async function unstakeTokens() {
-    const id = $('stake-id').value;
-    if(!id) return showToast("Entrez l'ID du pool", "error");
+    if (id === "" || !amt) return toast("Remplissez ID et Montant", "error");
     
-    const success = await executeTx(contract.unstake(id), "Unstake réussi !");
-    if (success) loadBalances();
-}
-
-async function depositCollateral() {
-    const amt = $('lend-coll').value;
-    if(!amt) return;
-    const wei = ethers.parseUnits(amt, 6);
-    await checkAllowance(CONFIG.USDT_ADDR, wei);
-    const success = await executeTx(contract.depositCollateral(wei), "Collatéral déposé !");
-    if (success) loadBalances();
-}
-
-async function borrowTokens() {
-    const amt = $('lend-borrow-amt').value;
-    if(!amt) return;
-    const wei = ethers.parseUnits(amt, 18);
-    const success = await executeTx(contract.borrow(wei), "Emprunt effectué !");
-    if (success) loadBalances();
-}
-
-// ================= NAVIGATION =================
-
-window.navigate = (view) => {
-    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    const wei = ethers.parseUnits(amt, 18); // Supposé 18 decimales pour tokens stake
     
-    $(`view-${view}`).classList.remove('hidden');
-    $(`nav-${view}`).classList.add('active');
-    
-    // Refresh data on navigation
-    if (contract) {
-        loadBalances();
-        if (view === 'trading') loadPositions();
+    load(true, "Staking...");
+    try {
+        let tx;
+        if (isStake) tx = await contract.stake(id, wei);
+        else tx = await contract.unstake(id);
+        
+        await tx.wait();
+        toast(isStake ? "Staké !" : "Unstaké !", "success");
+        refreshData('wallet');
+    } catch(e) {
+        toast("Erreur Staking", "error");
     }
+    load(false);
 };
 
-// ================= INITIALIZATION =================
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Remove Splash
-    setTimeout(() => {
-        $('splash-screen').style.opacity = '0';
-        setTimeout(() => $('splash-screen').remove(), 500);
-    }, 1500);
-
-    // Event Listeners
-    $('btn-connect').onclick = connectWallet;
-    
-    // Wallet
-    $('btn-action-wallet').onclick = depositUSDT; // Default
-    
-    // Trading
-    $('btn-long').onclick = () => openPosition(0);
-    $('btn-short').onclick = () => openPosition(1);
-    
-    // Aviator
-    $('btn-aviator').onclick = playAviator;
-    
-    // Finance
-    $('btn-stake').onclick = stakeTokens;
-    $('btn-unstake').onclick = unstakeTokens;
-    $('btn-deposit-coll').onclick = depositCollateral;
-    $('btn-borrow').onclick = borrowTokens;
-    $('btn-repay').onclick = async () => {
-        const success = await executeTx(contract.repayLoan(), "Prêt remboursé !");
-        if(success) loadBalances();
-    };
-});
+window.lendAction = async (type) => {
+    load(true, "Transaction Lending...");
+    try {
+        let tx;
+        if (type === 'coll') {
+            const amt = $('lend-coll').value;
+            if (!amt) return;
+            const wei = ethers.parseUnits(amt, 6);
+            tx = await contract.depositCollateral(wei);
+        } else if (type === 'borrow') {
+            const amt = $('lend-borrow').value;
+            if (!amt) return;
+            const wei = ethers.parseUnits(amt, 18);
+            tx = await contract.borrow(wei);
+        } else { // repay
+            tx = await contract.repayLoan();
+        }
+        
+        await tx.wait();
+        toast("Opération réussie", "success");
+        refreshData('wallet');
+    } catch(e) {
+        toast("Erreur Lending: " + (e.reason || ""), "error");
+    }
+    load(false);
+};
