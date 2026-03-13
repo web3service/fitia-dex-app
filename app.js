@@ -1,479 +1,420 @@
+/**
+ * FITIA ECOSYSTEM PRO - APPLICATION LOGIC
+ * Version: 1.0.0
+ * Developer: Modele Pro
+ */
+
 // ================= CONFIGURATION =================
 // REMPLACE CES ADRESSES PAR LES TIENNES SUR POLYGON
-const CONTRACT_ADDRESS = "0x027579bd6302174b499970955EF534500Cd342Dd"; // Adresse du FitiaEcosystemHub
-const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"; // USDT sur Polygon
-const FTA_ADDRESS = "0x535bBe393D64a60E14B731b7350675792d501623"; // Ton token FTA
-const POLYGON_CHAIN_ID = '0x89'; // 137 en hexadécimal
 
-// ABI Complet
-const HUB_ABI = [
+const CONFIG = {
+    CONTRACT_ADDR: "0x027579bd6302174b499970955EF534500Cd342Dd",
+    USDT_ADDR: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+    FTA_ADDR: "0x535bBe393D64a60E14B731b7350675792d501623",
+    POLYGON_CHAIN_ID: "0x89", // 137
+    EXPLORER: "https://polygonscan.com/tx/"
+};
+
+// ABI Simplifié et Optimisé
+const ABI_HUB = [
+    // Read
+    "function getMyBalance(address _token) view returns (uint256)",
+    "function positions(uint256) view returns (address trader, uint8 asset, uint8 side, uint256 margin, uint256 leverage, uint256 entryPrice, bool isOpen)",
+    "function positionCount() view returns (uint256)",
+    // Write
     "function depositToWallet(address _token, uint256 _amount) external",
     "function withdrawFromWallet(address _token, uint256 _amount) external",
-    "function getMyBalance(address _token) view returns (uint256)",
     "function openPosition(uint8 _asset, uint8 _side, uint256 _marginUSDT, uint256 _leverage) external",
     "function closePosition(uint256 _posId) external",
-    "function positionCount() view returns (uint256)",
-    "function positions(uint256) view returns (address trader, uint8 asset, uint8 side, uint256 margin, uint256 leverage, uint256 entryPrice, bool isOpen)",
-    "function getAssetPrice(uint8 _asset) view returns (uint256)",
+    "function playAviator(uint256 _ftaBetAmount, uint256 _targetMultiplier) external",
     "function stake(uint256 _poolId, uint256 _amount) external",
     "function unstake(uint256 _poolId) external",
-    "function playAviator(uint256 _ftaBetAmount, uint256 _targetMultiplier) external",
     "function depositCollateral(uint256 _usdtAmount) external",
     "function borrow(uint256 _ftaAmount) external",
     "function repayLoan() external"
 ];
 
-const ERC20_ABI = [
+const ABI_ERC20 = [
     "function approve(address spender, uint256 amount) external returns (bool)",
     "function allowance(address owner, address spender) view returns (uint256)"
 ];
 
-// ================= VARIABLES GLOBALES =================
+// ================= STATE =================
 let provider, signer, contract, userAddress;
-let currentTradeSide = 0; // 0 = Long, 1 = Short
+let state = { leverage: 1, walletTab: 'deposit' };
 
-// ================= DOM ELEMENTS =================
-const el = {
-    btnConnect: document.getElementById('btn-connect'),
-    userInfo: document.getElementById('user-info'),
-    walletAddress: document.getElementById('wallet-address'),
-    loader: document.getElementById('loader'),
-    loaderText: document.getElementById('loader-text'),
-    
-    balanceUsdt: document.getElementById('balance-usdt'),
-    balanceFta: document.getElementById('balance-fta'),
-    positionsList: document.getElementById('positions-list'),
-    currentPrice: document.getElementById('current-price'),
-    
-    // Inputs
-    walletAmount: document.getElementById('wallet-amount'),
-    tradeMargin: document.getElementById('trade-margin'),
-    tradeLev: document.getElementById('trade-lev'),
-    levVal: document.getElementById('lev-val'),
-    tradeAsset: document.getElementById('trade-asset'),
-    aviatorBet: document.getElementById('aviator-bet'),
-    aviatorTarget: document.getElementById('aviator-target'),
-    stakePoolId: document.getElementById('stake-pool-id'),
-    stakeAmount: document.getElementById('stake-amount'),
-    lendCollat: document.getElementById('lend-collateral'),
-    lendBorrow: document.getElementById('lend-borrow'),
+// ================= UTILITIES =================
+const $ = id => document.getElementById(id);
+const toHex = str => ethers.toBeArray(str).length;
+
+const showToast = (message, type = 'info') => {
+    const container = $('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerText = message;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
 };
 
-// ================= UTILITAIRES =================
-function showLoader(show, text = "Transaction en cours...") {
-    if (show) {
-        el.loaderText.innerText = text;
-        el.loader.classList.remove('hidden');
+const showLoader = (show, msg = "Chargement...") => {
+    const loader = $('global-loader');
+    const msgEl = $('loader-msg');
+    if(show) {
+        loader.classList.remove('hidden');
+        msgEl.innerText = msg;
     } else {
-        el.loader.classList.add('hidden');
+        loader.classList.add('hidden');
     }
-}
+};
 
-function handleErr(e, msg = "Erreur") {
-    console.error(e);
-    alert(msg + ": " + (e.reason || e.message || "Inconnu"));
-    showLoader(false);
-}
+const formatAddr = addr => addr ? `${addr.substring(0, 6)}...${addr.substring(38)}` : '';
 
-// ================= NAVIGATION =================
-function navigate(name) {
-    document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    
-    document.getElementById('section-' + name).classList.remove('hidden');
-    document.getElementById('nav-' + name).classList.add('active');
-    
-    if (name === 'trading' && contract) {
-        loadPrice(); 
-        loadPositions();
-    }
-}
+// ================= CORE BLOCKCHAIN =================
 
-// ================= CONNEXION WALLET =================
 async function connectWallet() {
-    if (!window.ethereum) {
-        alert("Aucun portefeuille détecté. Installez MetaMask, SafePal ou Trust Wallet.");
-        return;
-    }
-
-    showLoader(true, "Connexion...");
-
+    if (!window.ethereum) return showToast("Installez MetaMask ou Trust Wallet", "error");
+    
+    showLoader(true, "Connexion au portefeuille...");
+    
     try {
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        
-        try {
-            await window.ethereum.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: POLYGON_CHAIN_ID }],
-            });
-        } catch (switchError) {
-            if (switchError.code === 4902) {
-                await window.ethereum.request({
-                    method: 'wallet_addEthereumChain',
-                    params: [{
-                        chainId: POLYGON_CHAIN_ID,
-                        chainName: 'Polygon Mainnet',
-                        nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
-                        rpcUrls: ['https://polygon-rpc.com/'],
-                        blockExplorerUrls: ['https://polygonscan.com/']
-                    }]
-                });
-            } else {
-                throw switchError;
-            }
-        }
-
+        // 1. Connexion Compte
         provider = new ethers.BrowserProvider(window.ethereum);
+        const accounts = await provider.send("eth_requestAccounts", []);
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
         
-        contract = new ethers.Contract(CONTRACT_ADDRESS, HUB_ABI, signer);
+        // 2. Vérification Réseau Polygon
+        const network = await provider.getNetwork();
+        if (network.chainId !== 137) { // 137 = Polygon
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x89' }]
+                });
+            } catch (switchErr) {
+                showToast("Veuillez basculer sur le réseau Polygon", "error");
+                showLoader(false);
+                return;
+            }
+        }
 
-        el.btnConnect.classList.add('hidden');
-        el.userInfo.classList.remove('hidden');
-        el.walletAddress.innerText = userAddress.substring(0, 6) + "..." + userAddress.substring(38);
-
+        // 3. Init Contrat
+        contract = new ethers.Contract(CONFIG.CONTRACT_ADDR, ABI_HUB, signer);
+        
+        // 4. Mise à jour UI
+        $('btn-connect').classList.add('hidden');
+        $('user-pill').classList.remove('hidden');
+        $('addr-short').innerText = formatAddr(userAddress);
+        
         await loadBalances();
+        showToast("Connecté avec succès", "success");
 
-    } catch (e) {
-        handleErr(e, "Connexion échouée");
+    } catch (err) {
+        console.error(err);
+        showToast("Erreur de connexion: " + err.message, "error");
     } finally {
         showLoader(false);
     }
 }
 
-// ================= CHARGEMENT DONNÉES =================
 async function loadBalances() {
     if (!contract) return;
     try {
-        const bUsdt = await contract.getMyBalance(USDT_ADDRESS);
-        const bFta = await contract.getMyBalance(FTA_ADDRESS);
+        const bUsdt = await contract.getMyBalance(CONFIG.USDT_ADDR);
+        const bFta = await contract.getMyBalance(CONFIG.FTA_ADDR);
         
-        el.balanceUsdt.innerText = parseFloat(ethers.formatUnits(bUsdt, 6)).toFixed(2);
-        el.balanceFta.innerText = parseFloat(ethers.formatUnits(bFta, 18)).toFixed(2);
+        $('bal-usdt').innerText = parseFloat(ethers.formatUnits(bUsdt, 6)).toFixed(2);
+        $('bal-fta').innerText = parseFloat(ethers.formatUnits(bFta, 18)).toFixed(2);
     } catch (e) {
-        console.log("Erreur chargement soldes", e);
+        console.error("Erreur soldes", e);
+    }
+}
+
+// ================= HELPERS TRANSACTION =================
+
+async function checkAllowance(tokenAddr, amountWei) {
+    const tokenContract = new ethers.Contract(tokenAddr, ABI_ERC20, signer);
+    const allowance = await tokenContract.allowance(userAddress, CONFIG.CONTRACT_ADDR);
+    
+    if (allowance < amountWei) {
+        showLoader(true, "Approbation requise (1/2)...");
+        try {
+            const tx = await tokenContract.approve(CONFIG.CONTRACT_ADDR, amountWei);
+            await tx.wait();
+            showToast("Approuvé !", "success");
+        } catch (e) {
+            throw new Error("Approbation refusée");
+        }
+    }
+}
+
+async function executeTx(promise, successMsg) {
+    showLoader(true, "Transaction en cours...");
+    try {
+        const tx = await promise;
+        showLoader(true, "Confirmation blockchain...");
+        await tx.wait();
+        showToast(successMsg, "success");
+        return true;
+    } catch (e) {
+        const reason = e.reason || e.message;
+        showToast(`Erreur: ${reason}`, "error");
+        return false;
+    } finally {
+        showLoader(false);
+    }
+}
+
+// ================= WALLET ACTIONS =================
+
+window.switchWalletTab = (tab) => {
+    state.walletTab = tab;
+    const btns = document.querySelectorAll('.tab-min');
+    btns.forEach(b => b.classList.remove('active'));
+    
+    if(tab === 'deposit') {
+        btns[0].classList.add('active');
+        $('btn-action-wallet').innerText = "Déposer des USDT";
+        $('btn-action-wallet').onclick = depositUSDT;
+    } else {
+        btns[1].classList.add('active');
+        $('btn-action-wallet').innerText = "Retirer des USDT";
+        $('btn-action-wallet').onclick = withdrawUSDT;
+    }
+};
+
+async function depositUSDT() {
+    const amt = $('input-amount').value;
+    if (!amt || amt <= 0) return showToast("Montant invalide", "error");
+    
+    const wei = ethers.parseUnits(amt, 6);
+    
+    showLoader(true, "Vérification...");
+    try {
+        await checkAllowance(CONFIG.USDT_ADDR, wei);
+        const success = await executeTx(contract.depositToWallet(CONFIG.USDT_ADDR, wei), "Dépôt réussi !");
+        if (success) {
+            $('input-amount').value = "";
+            loadBalances();
+        }
+    } catch (e) {
+        showLoader(false);
+        showToast(e.message, "error");
+    }
+}
+
+async function withdrawUSDT() {
+    const amt = $('input-amount').value;
+    if (!amt || amt <= 0) return showToast("Montant invalide", "error");
+    
+    const wei = ethers.parseUnits(amt, 6);
+    const success = await executeTx(contract.withdrawFromWallet(CONFIG.USDT_ADDR, wei), "Retrait réussi !");
+    if (success) {
+        $('input-amount').value = "";
+        loadBalances();
+    }
+}
+
+// ================= TRADING =================
+
+window.adjustLev = (dir) => {
+    state.leverage += dir;
+    if (state.leverage < 1) state.leverage = 1;
+    if (state.leverage > 50) state.leverage = 50;
+    $('lev-display').innerText = state.leverage;
+};
+
+async function openPosition(side) {
+    const margin = $('input-margin').value;
+    const asset = $('select-asset').value; // 0, 1, 2
+    
+    if (!margin || margin <= 0) return showToast("Marge invalide", "error");
+    
+    const marginWei = ethers.parseUnits(margin, 6);
+    
+    // Contrat: openPosition(uint8 _asset, uint8 _side, uint256 _marginUSDT, uint256 _leverage)
+    const success = await executeTx(
+        contract.openPosition(asset, side, marginWei, state.leverage), 
+        `Position ${side === 0 ? 'LONG' : 'SHORT'} ouverte !`
+    );
+    
+    if (success) {
+        $('input-margin').value = "";
+        loadPositions();
+        loadBalances();
     }
 }
 
 async function loadPositions() {
     if (!contract) return;
+    const container = $('positions-container');
+    container.innerHTML = '<div class="empty-state">Chargement...</div>';
+    
     try {
         const count = await contract.positionCount();
-        el.positionsList.innerHTML = '';
+        let html = '';
         
+        // On boucle sur les 10 dernières positions
         const start = count > 10 ? count - 10n : 0n;
         
-        for (let i = count - 1n; i >= start; i--) {
+        for (let i = start; i < count; i++) {
             const p = await contract.positions(i);
             if (p.isOpen && p.trader.toLowerCase() === userAddress.toLowerCase()) {
                 const sideText = p.side === 0 ? "LONG" : "SHORT";
-                const color = p.side === 0 ? "#22c55e" : "#ef4444";
+                const color = p.side === 0 ? "var(--primary)" : "var(--danger)";
+                const marginFmt = ethers.formatUnits(p.margin, 6);
                 
-                const div = document.createElement('div');
-                div.style.cssText = "background: #0f172a; padding: 10px; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid " + color;
-                div.innerHTML = `
-                    <div>
-                        <div style="font-weight:bold; color:${color}">${sideText} x${p.leverage}</div>
-                        <small style="color:#94a3b8">Marge: ${ethers.formatUnits(p.margin, 6)} USDT</small>
+                html += `
+                    <div class="pos-item">
+                        <div class="pos-meta">
+                            <span class="type" style="color:${color}">${sideText} x${p.leverage} <small>Asset #${p.asset}</small></span>
+                            <span class="amt">Marge: ${parseFloat(marginFmt).toFixed(2)} USDT</span>
+                        </div>
+                        <button class="btn-close-pos" onclick="closePos(${i})">Fermer</button>
                     </div>
-                    <button onclick="closePos(${i})" style="background:#334155; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Fermer</button>
                 `;
-                el.positionsList.appendChild(div);
             }
         }
         
-        if (el.positionsList.innerHTML === '') {
-            el.positionsList.innerHTML = '<p class="empty-msg">Aucune position ouverte.</p>';
-        }
+        container.innerHTML = html || '<div class="empty-state">Aucune position ouverte.</div>';
+        
     } catch (e) {
-        console.error(e);
+        container.innerHTML = '<div class="empty-state">Erreur de chargement.</div>';
     }
-}
-
-async function loadPrice() {
-    if (!contract) return;
-    try {
-        const assetId = el.tradeAsset.value;
-        const price = await contract.getAssetPrice(assetId); 
-        const formattedPrice = ethers.formatUnits(price, 8);
-        el.currentPrice.innerText = parseFloat(formattedPrice).toFixed(2) + " $";
-    } catch (e) {
-        console.log("Erreur prix", e);
-    }
-}
-
-// ================= ACTIONS WALLET =================
-async function approveToken(tokenAddr, amount, decimals) {
-    const tokenContract = new ethers.Contract(tokenAddr, ERC20_ABI, signer);
-    const allowance = await tokenContract.allowance(userAddress, CONTRACT_ADDRESS);
-    
-    if (allowance < amount) {
-        showLoader(true, "Approbation requise...");
-        const tx = await tokenContract.approve(CONTRACT_ADDRESS, amount);
-        await tx.wait();
-        showLoader(true, "Transaction en cours...");
-    }
-}
-
-async function deposit() {
-    if (!contract) return alert("Connectez-vous");
-    const amt = el.walletAmount.value;
-    if (!amt) return alert("Entrez un montant");
-    
-    showLoader(true, "Dépôt...");
-    try {
-        const wei = ethers.parseUnits(amt, 6);
-        await approveToken(USDT_ADDRESS, wei, 6);
-        
-        const tx = await contract.depositToWallet(USDT_ADDRESS, wei);
-        await tx.wait();
-        
-        alert("Dépôt réussi !");
-        el.walletAmount.value = "";
-        loadBalances();
-    } catch (e) { handleErr(e); }
-    showLoader(false);
-}
-
-async function withdraw() {
-    if (!contract) return;
-    const amt = el.walletAmount.value;
-    if (!amt) return;
-    
-    showLoader(true, "Retrait...");
-    try {
-        const wei = ethers.parseUnits(amt, 6);
-        const tx = await contract.withdrawFromWallet(USDT_ADDRESS, wei);
-        await tx.wait();
-        
-        alert("Retrait réussi !");
-        el.walletAmount.value = "";
-        loadBalances();
-    } catch (e) { handleErr(e); }
-    showLoader(false);
-}
-
-// ================= TRADING LOGIC =================
-function setTradeType(type) {
-    currentTradeSide = type;
-    const btnLong = document.getElementById('tab-long');
-    const btnShort = document.getElementById('tab-short');
-    const confirmBtn = document.getElementById('btn-confirm-trade');
-
-    if (type === 0) {
-        btnLong.classList.add('active-long');
-        btnShort.classList.remove('active-short');
-        confirmBtn.innerText = "Ouvrir Long";
-        confirmBtn.style.background = "#22c55e";
-        confirmBtn.classList.remove('short-active');
-    } else {
-        btnShort.classList.add('active-short');
-        btnLong.classList.remove('active-long');
-        confirmBtn.innerText = "Ouvrir Short";
-        confirmBtn.style.background = "#ef4444";
-        confirmBtn.classList.add('short-active');
-    }
-}
-
-function changeLev(delta) {
-    const slider = document.getElementById('trade-lev');
-    let val = parseInt(slider.value) + delta;
-    if (val < 1) val = 1;
-    if (val > 50) val = 50;
-    slider.value = val;
-    updateLevDisplay();
-}
-
-function updateLevDisplay() {
-    const val = document.getElementById('trade-lev').value;
-    document.getElementById('lev-val').innerText = "x" + val;
-    updateFeeDisplay();
-}
-
-function setMargin(amount) {
-    document.getElementById('trade-margin').value = amount;
-    updateFeeDisplay();
-}
-
-function updateFeeDisplay() {
-    const margin = parseFloat(document.getElementById('trade-margin').value) || 0;
-    const fee = margin * 0.001; 
-    document.getElementById('fee-display').innerText = fee.toFixed(2) + " USDT";
-}
-
-async function confirmTrade() {
-    if (!contract) return alert("Connectez-vous");
-    
-    const margin = el.tradeMargin.value;
-    const lev = el.tradeLev.value;
-    const asset = el.tradeAsset.value;
-    
-    if (!margin || margin <= 0) return alert("Entrez une marge valide");
-
-    showLoader(true, "Ouverture de position...");
-    try {
-        const marginWei = ethers.parseUnits(margin, 6);
-        const tx = await contract.openPosition(asset, currentTradeSide, marginWei, lev);
-        await tx.wait();
-        
-        alert("Position ouverte avec succès !");
-        loadPositions();
-        loadBalances();
-        el.tradeMargin.value = "";
-        updateFeeDisplay();
-    } catch (e) { handleErr(e); }
-    showLoader(false);
 }
 
 window.closePos = async (id) => {
-    showLoader(true, "Fermeture position...");
-    try {
-        const tx = await contract.closePosition(id);
-        await tx.wait();
-        alert("Position fermée");
+    const success = await executeTx(contract.closePosition(id), "Position fermée !");
+    if (success) {
         loadPositions();
         loadBalances();
-    } catch(e) { handleErr(e); }
-    showLoader(false);
+    }
 };
 
-// ================= AUTRES ACTIONS (Aviator, Staking, Lending) =================
-// (J'ai condensé pour la clarté, mais tout est fonctionnel comme avant)
+// ================= AVIATOR =================
 
 async function playAviator() {
-    if (!contract) return;
-    const bet = el.aviatorBet.value;
-    const target = el.aviatorTarget.value;
-    if (!bet || !target) return alert("Remplissez tous les champs");
+    const bet = $('aviator-bet').value;
+    const target = $('aviator-target').value;
     
-    showLoader(true, "Jeu Aviator...");
+    if (!bet || !target) return showToast("Remplissez la mise et la cible", "error");
+    
+    const betWei = ethers.parseUnits(bet, 18);
+    // La cible dans le contrat est x100 (ex: 2.0x -> 200)
+    const targetInt = Math.floor(parseFloat(target) * 100);
+    
+    showLoader(true, "Vérification tokens...");
     try {
-        const betWei = ethers.parseUnits(bet, 18);
-        await approveToken(FTA_ADDRESS, betWei, 18);
-        
-        const targetInt = Math.floor(parseFloat(target) * 100);
-        const tx = await contract.playAviator(betWei, targetInt);
-        await tx.wait();
-        
-        alert("Jeu terminé ! Vérifiez votre solde.");
-        loadBalances();
-    } catch(e) { handleErr(e); }
-    showLoader(false);
+        await checkAllowance(CONFIG.FTA_ADDR, betWei);
+        const success = await executeTx(contract.playAviator(betWei, targetInt), "Jeu terminé !");
+        if (success) {
+            loadBalances();
+            // Animation simple
+            $('aviator-result').innerText = "?";
+            setTimeout(() => $('aviator-result').innerText = "Voir Solde", 1000);
+        }
+    } catch (e) {
+        showLoader(false);
+        showToast(e.message, "error");
+    }
 }
 
-async function stake() {
-    if (!contract) return;
-    const pid = el.stakePoolId.value;
-    const amt = el.stakeAmount.value;
-    if(!pid || !amt) return;
-    showLoader(true, "Staking...");
-    try {
-        const wei = ethers.parseUnits(amt, 18);
-        const tx = await contract.stake(pid, wei);
-        await tx.wait();
-        alert("Staké !");
-        loadBalances();
-    } catch(e) { handleErr(e); }
-    showLoader(false);
+// ================= FINANCE (STAKE & LEND) =================
+
+window.openFinTab = (tab) => {
+    document.querySelectorAll('.tab-fin').forEach(b => b.classList.remove('active'));
+    document.getElementById('fin-stake').classList.add('hidden');
+    document.getElementById('fin-lend').classList.add('hidden');
+    
+    if(tab === 'stake') {
+        document.querySelector('.tab-fin:first-child').classList.add('active');
+        document.getElementById('fin-stake').classList.remove('hidden');
+    } else {
+        document.querySelector('.tab-fin:last-child').classList.add('active');
+        document.getElementById('fin-lend').classList.remove('hidden');
+    }
+};
+
+async function stakeTokens() {
+    const id = $('stake-id').value;
+    const amt = $('stake-amt').value;
+    if(!id || !amt) return showToast("Remplissez tous les champs", "error");
+    
+    const wei = ethers.parseUnits(amt, 18); // Suppose 18 decimales
+    const success = await executeTx(contract.stake(id, wei), "Staking réussi !");
+    if (success) loadBalances();
 }
 
-async function unstake() {
-    if (!contract) return;
-    const pid = el.stakePoolId.value;
-    if(!pid) return;
-    showLoader(true, "Unstaking...");
-    try {
-        const tx = await contract.unstake(pid);
-        await tx.wait();
-        alert("Unstaké !");
-        loadBalances();
-    } catch(e) { handleErr(e); }
-    showLoader(false);
+async function unstakeTokens() {
+    const id = $('stake-id').value;
+    if(!id) return showToast("Entrez l'ID du pool", "error");
+    
+    const success = await executeTx(contract.unstake(id), "Unstake réussi !");
+    if (success) loadBalances();
 }
 
 async function depositCollateral() {
-    if(!contract) return;
-    const amt = el.lendCollat.value;
+    const amt = $('lend-coll').value;
     if(!amt) return;
-    showLoader(true, "Dépôt collatéral...");
-    try {
-        const wei = ethers.parseUnits(amt, 6);
-        const tx = await contract.depositCollateral(wei);
-        await tx.wait();
-        alert("Collatéral déposé");
-        loadBalances();
-    } catch(e) { handleErr(e); }
-    showLoader(false);
+    const wei = ethers.parseUnits(amt, 6);
+    await checkAllowance(CONFIG.USDT_ADDR, wei);
+    const success = await executeTx(contract.depositCollateral(wei), "Collatéral déposé !");
+    if (success) loadBalances();
 }
 
-async function borrow() {
-    if(!contract) return;
-    const amt = el.lendBorrow.value;
+async function borrowTokens() {
+    const amt = $('lend-borrow-amt').value;
     if(!amt) return;
-    showLoader(true, "Emprunt...");
-    try {
-        const wei = ethers.parseUnits(amt, 18);
-        const tx = await contract.borrow(wei);
-        await tx.wait();
-        alert("Emprunt réussi");
-        loadBalances();
-    } catch(e) { handleErr(e); }
-    showLoader(false);
+    const wei = ethers.parseUnits(amt, 18);
+    const success = await executeTx(contract.borrow(wei), "Emprunt effectué !");
+    if (success) loadBalances();
 }
 
-async function repay() {
-    if(!contract) return;
-    showLoader(true, "Remboursement...");
-    try {
-        const tx = await contract.repayLoan();
-        await tx.wait();
-        alert("Prêt remboursé");
-        loadBalances();
-    } catch(e) { handleErr(e); }
-    showLoader(false);
-}
+// ================= NAVIGATION =================
 
-// ================= EVENT LISTENERS =================
+window.navigate = (view) => {
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    
+    $(`view-${view}`).classList.remove('hidden');
+    $(`nav-${view}`).classList.add('active');
+    
+    // Refresh data on navigation
+    if (contract) {
+        loadBalances();
+        if (view === 'trading') loadPositions();
+    }
+};
+
+// ================= INITIALIZATION =================
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Nav
-    document.getElementById('nav-wallet').addEventListener('click', () => navigate('wallet'));
-    document.getElementById('nav-trading').addEventListener('click', () => navigate('trading'));
-    document.getElementById('nav-aviator').addEventListener('click', () => navigate('aviator'));
-    document.getElementById('nav-staking').addEventListener('click', () => navigate('staking'));
-    document.getElementById('nav-lending').addEventListener('click', () => navigate('lending'));
+    // Remove Splash
+    setTimeout(() => {
+        $('splash-screen').style.opacity = '0';
+        setTimeout(() => $('splash-screen').remove(), 500);
+    }, 1500);
+
+    // Event Listeners
+    $('btn-connect').onclick = connectWallet;
     
     // Wallet
-    el.btnConnect.addEventListener('click', connectWallet);
-    document.getElementById('btn-deposit').addEventListener('click', deposit);
-    document.getElementById('btn-withdraw').addEventListener('click', withdraw);
+    $('btn-action-wallet').onclick = depositUSDT; // Default
     
     // Trading
-    document.getElementById('tab-long').addEventListener('click', () => setTradeType(0));
-    document.getElementById('tab-short').addEventListener('click', () => setTradeType(1));
-    document.getElementById('btn-lev-minus').addEventListener('click', () => changeLev(-1));
-    document.getElementById('btn-lev-plus').addEventListener('click', () => changeLev(1));
-    document.getElementById('btn-quick-10').addEventListener('click', () => setMargin(10));
-    document.getElementById('btn-quick-50').addEventListener('click', () => setMargin(50));
-    document.getElementById('btn-quick-100').addEventListener('click', () => setMargin(100));
-    document.getElementById('btn-confirm-trade').addEventListener('click', confirmTrade);
-    document.getElementById('btn-refresh-pos').addEventListener('click', loadPositions);
-    el.tradeLev.addEventListener('input', updateLevDisplay);
-    el.tradeMargin.addEventListener('input', updateFeeDisplay);
-    el.tradeAsset.addEventListener('change', loadPrice);
+    $('btn-long').onclick = () => openPosition(0);
+    $('btn-short').onclick = () => openPosition(1);
     
-    // Others
-    document.getElementById('btn-play-aviator').addEventListener('click', playAviator);
-    document.getElementById('btn-stake').addEventListener('click', stake);
-    document.getElementById('btn-unstake').addEventListener('click', unstake);
-    document.getElementById('btn-deposit-collat').addEventListener('click', depositCollateral);
-    document.getElementById('btn-borrow').addEventListener('click', borrow);
-    document.getElementById('btn-repay').addEventListener('click', repay);
+    // Aviator
+    $('btn-aviator').onclick = playAviator;
     
-    // Intervalle prix
-    setInterval(() => {
-        if (contract && !document.getElementById('section-trading').classList.contains('hidden')) {
-            loadPrice();
-        }
-    }, 5000);
+    // Finance
+    $('btn-stake').onclick = stakeTokens;
+    $('btn-unstake').onclick = unstakeTokens;
+    $('btn-deposit-coll').onclick = depositCollateral;
+    $('btn-borrow').onclick = borrowTokens;
+    $('btn-repay').onclick = async () => {
+        const success = await executeTx(contract.repayLoan(), "Prêt remboursé !");
+        if(success) loadBalances();
+    };
 });
