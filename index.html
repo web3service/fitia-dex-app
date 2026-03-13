@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fitia Finance App</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Style pour l'interface Mobile "App" -->
+    <style>
+        /* Reset de base */
+        body, html { height: 100%; overflow: hidden; background-color: #0f172a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        
+        /* Conteneur Principal (effet téléphone) */
+        #app-container {
+            max-width: 480px; /* Taille max type mobile */
+            margin: 0 auto;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        /* Effet Glassmorphism */
+        .glass { background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(12px); border-top: 1px solid rgba(255,255,255,0.05); }
+        
+        /* Boutons */
+        .btn-main { background: linear-gradient(135deg, #3b82f6, #8b5cf6); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); transition: transform 0.1s; }
+        .btn-main:active { transform: scale(0.96); }
+        
+        /* Navigation Bottom Bar */
+        .nav-item { transition: all 0.2s; color: #64748b; }
+        .nav-item.active { color: #3b82f6; transform: translateY(-2px); }
+        
+        /* Inputs */
+        input, select { background: #0f172a; border: 1px solid #334155; color: white; border-radius: 12px; padding: 12px; width: 100%; box-sizing: border-box; }
+        input:focus { outline: none; border-color: #3b82f6; }
+
+        /* Scroll interne des sections */
+        .page-content { flex: 1; overflow-y: auto; padding-bottom: 20px; -webkit-overflow-scrolling: touch; }
+        
+        /* Cacher les sections non actives */
+        .section { display: none; animation: fadeIn 0.3s ease; }
+        .section.active { display: block; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Toast Notification */
+        #toast {
+            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+            background: #1e293b; padding: 10px 20px; border-radius: 20px;
+            border: 1px solid #3b82f6; font-size: 12px; display: none; z-index: 9999;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Conteneur principal de l'App -->
+    <div id="app-container">
+        
+        <!-- HEADER FIXE -->
+        <header class="p-4 flex justify-between items-center border-b border-slate-800">
+            <h1 class="text-lg font-bold text-white">Fitia<span class="text-blue-400">Hub</span></h1>
+            <div class="flex items-center gap-2">
+                <span id="wallet-address" class="text-xs bg-slate-800 px-3 py-1 rounded-full text-slate-300">Non connecté</span>
+            </div>
+        </header>
+
+        <!-- CONTENU PRINCIPAL (SCROLLABLE) -->
+        <main class="page-content p-4">
+            
+            <!-- SECTION 1: ACCUEIL / WALLET -->
+            <div id="page-home" class="section active">
+                <div class="text-center mb-6">
+                    <p class="text-slate-400 text-sm">Solde Total Estimé</p>
+                    <h2 class="text-3xl font-bold text-white mt-1">$0.00</h2>
+                </div>
+
+                <!-- Cartes Soldes -->
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div class="glass p-4 rounded-2xl">
+                        <p class="text-xs text-slate-400">Solde FTA</p>
+                        <h3 id="bal-fta" class="text-xl font-bold text-white">0.00</h3>
+                    </div>
+                    <div class="glass p-4 rounded-2xl">
+                        <p class="text-xs text-slate-400">Solde USDT</p>
+                        <h3 id="bal-usdt" class="text-xl font-bold text-white">0.00</h3>
+                    </div>
+                </div>
+
+                <!-- Actions Rapides -->
+                <div class="mb-6">
+                    <button id="btn-connect" onclick="connectWallet()" class="btn-main w-full py-3 rounded-xl font-bold text-white text-lg mb-3">
+                        Connecter Wallet
+                    </button>
+                </div>
+
+                <!-- Gestion Portefeuille Interne -->
+                <div class="glass rounded-2xl p-4 mb-4">
+                    <h3 class="font-bold text-white mb-3">Dépôt / Retrait</h3>
+                    <div class="flex gap-2 mb-2">
+                        <select id="deposit-token" class="w-1/3 rounded-lg">
+                            <option value="fta">FTA</option>
+                            <option value="usdt">USDT</option>
+                        </select>
+                        <input type="number" id="deposit-amount" placeholder="Montant" class="w-2/3 rounded-lg">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="deposit()" class="bg-green-500/20 text-green-400 py-2 rounded-lg font-semibold text-sm">Déposer</button>
+                        <button onclick="withdraw()" class="bg-red-500/20 text-red-400 py-2 rounded-lg font-semibold text-sm">Retirer</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: TRADING -->
+            <div id="page-trade" class="section">
+                <h2 class="text-xl font-bold mb-4 text-white">Trading Futures</h2>
+                
+                <div class="glass rounded-2xl p-4 mb-4">
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <label class="text-xs text-slate-400">Actif</label>
+                            <select id="trade-asset" class="mt-1 rounded-lg">
+                                <option value="0">BTC/USD</option>
+                                <option value="1">ETH/USD</option>
+                                <option value="2">FTA/USD</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400">Levier</label>
+                            <select id="trade-leverage" class="mt-1 rounded-lg">
+                                <option value="1">x1</option>
+                                <option value="5">x5</option>
+                                <option value="10">x10</option>
+                                <option value="20">x20</option>
+                                <option value="50">x50</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label class="text-xs text-slate-400">Marge USDT (Min 1$)</label>
+                    <input type="number" id="trade-margin" placeholder="Ex: 10" class="mt-1 mb-3 rounded-lg">
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="openTrade(0)" class="bg-green-500 py-3 rounded-xl font-bold text-white">LONG</button>
+                        <button onclick="openTrade(1)" class="bg-red-500 py-3 rounded-xl font-bold text-white">SHORT</button>
+                    </div>
+                </div>
+
+                <h3 class="font-bold text-white mb-2">Mes Positions</h3>
+                <div id="my-positions" class="space-y-2">
+                    <p class="text-slate-500 text-sm text-center">Aucune position ouverte.</p>
+                </div>
+            </div>
+
+            <!-- SECTION 3: STAKING -->
+            <div id="page-stake" class="section">
+                <h2 class="text-xl font-bold mb-4 text-white">Staking</h2>
+                <div id="staking-pools" class="space-y-3">
+                    <!-- Pools chargés ici -->
+                </div>
+            </div>
+
+            <!-- SECTION 4: JEUX (AVIATOR) -->
+            <div id="page-games" class="section">
+                <h2 class="text-xl font-bold mb-4 text-white">Aviator Game</h2>
+                
+                <div class="glass rounded-2xl p-4 text-center mb-4 relative overflow-hidden" style="height: 200px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                    <div id="plane" class="text-6xl mb-2">🛫</div>
+                    <p id="multiplier" class="text-4xl font-bold text-green-400">1.00x</p>
+                </div>
+
+                <div class="glass rounded-2xl p-4">
+                    <input type="number" id="bet-amount" placeholder="Mise en FTA" class="mb-2 rounded-lg">
+                    <input type="number" id="target-mult" placeholder="Multiplicateur Cible (ex: 2)" class="mb-3 rounded-lg">
+                    <button onclick="playAviator()" class="btn-main w-full py-3 rounded-xl font-bold text-white">JOUER</button>
+                </div>
+            </div>
+
+            <!-- SECTION 5: LENDING -->
+            <div id="page-lend" class="section">
+                <h2 class="text-xl font-bold mb-4 text-white">Prêts (Lending)</h2>
+                
+                <div class="glass rounded-2xl p-4 mb-3">
+                    <h3 class="font-bold text-sm mb-2 text-slate-300">Collatéral USDT</h3>
+                    <input type="number" id="collateral-amount" placeholder="Montant USDT" class="mb-2 rounded-lg">
+                    <button onclick="depositCollateral()" class="bg-blue-600 w-full py-2 rounded-lg text-sm font-bold">Déposer</button>
+                </div>
+
+                <div class="glass rounded-2xl p-4">
+                    <h3 class="font-bold text-sm mb-2 text-slate-300">Emprunter FTA</h3>
+                    <input type="number" id="borrow-amount" placeholder="Montant FTA" class="mb-2 rounded-lg">
+                    <button onclick="borrow()" class="bg-purple-600 w-full py-2 rounded-lg text-sm font-bold mb-2">Emprunter</button>
+                    <button onclick="repayLoan()" class="bg-slate-600 w-full py-2 rounded-lg text-sm font-bold">Rembourser</button>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- BARRE DE NAVIGATION BAS (FIXE) -->
+        <nav class="glass w-full py-3 flex justify-around border-t border-slate-700">
+            <div class="nav-item active cursor-pointer text-center" onclick="showPage('home')">
+                <svg class="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                <span class="text-xs">Home</span>
+            </div>
+            <div class="nav-item cursor-pointer text-center" onclick="showPage('trade')">
+                <svg class="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                <span class="text-xs">Trade</span>
+            </div>
+            <div class="nav-item cursor-pointer text-center" onclick="showPage('stake')">
+                <svg class="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="text-xs">Stake</span>
+            </div>
+            <div class="nav-item cursor-pointer text-center" onclick="showPage('games')">
+                <svg class="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="text-xs">Games</span>
+            </div>
+            <div class="nav-item cursor-pointer text-center" onclick="showPage('lend')">
+                <svg class="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                <span class="text-xs">Lend</span>
+            </div>
+        </nav>
+
+        <!-- Toast Notification -->
+        <div id="toast">Message</div>
+
+    </div>
+
+    <!-- JAVASCRIPT (LOGIQUE INTACTE) -->
+    <script>
+        // ================= CONFIGURATION =================
+        // REMPLACE CES VALEURS
+        const HUB_ADDRESS = "0x027579bd6302174b499970955EF534500Cd342Dd";
+        const FTA_ADDRESS = "0x535bBe393D64a60E14B731b7350675792d501623";
+        const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"; // USDT Polygon Mainnet
+        
+        // ABI Simplifié
+        const HUB_ABI = [
+            "function depositToWallet(address _token, uint256 _amount)",
+            "function withdrawFromWallet(address _token, uint256 _amount)",
+            "function internalBalances(address, address) view returns (uint256)",
+            "function getMyBalance(address) view returns (uint256)",
+            "function stake(uint256 _poolId, uint256 _amount)",
+            "function unstake(uint256 _poolId)",
+            "function calculateStakingReward(uint256, address) view returns (uint256)",
+            "function stakingPools(uint256) view returns (address stakeToken, address rewardToken, uint256 apy, bool exists)",
+            "function openPosition(uint8 _asset, uint8 _side, uint256 _marginUSDT, uint256 _leverage)",
+            "function closePosition(uint256 _posId)",
+            "function positions(uint256) view returns (address trader, uint8 asset, uint8 side, uint256 margin, uint256 leverage, uint256 entryPrice, bool isOpen)",
+            "function positionCount() view returns (uint256)",
+            "function playAviator(uint256 _ftaBetAmount, uint256 _targetMultiplier)",
+            "function depositCollateral(uint256 _usdtAmount)",
+            "function borrow(uint256 _ftaAmount)",
+            "function repayLoan()"
+        ];
+
+        const ERC20_ABI = [
+            "function balanceOf(address) view returns (uint256)",
+            "function approve(address spender, uint256 amount) returns (bool)",
+            "function allowance(address owner, address spender) view returns (uint256)"
+        ];
+
+        // ================= VARIABLES GLOBALES =================
+        let provider, signer, userAddress;
+        let hubContract, ftaContract, usdtContract;
+        let isConnected = false;
+
+        // ================= FONCTIONS UI (Mobile) =================
+        function showPage(pageName) {
+            // Cacher toutes les sections
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            // Afficher la bonne
+            document.getElementById('page-' + pageName).classList.add('active');
+            
+            // Mettre à jour la barre de nav
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            // Rafraîchir les données si besoin
+            if(pageName === 'stake') loadPools();
+            if(pageName === 'trade') loadPositions();
+        }
+
+        function showToast(message) {
+            const x = document.getElementById("toast");
+            x.innerText = message;
+            x.style.display = "block";
+            setTimeout(function(){ x.style.display = "none"; }, 3000);
+        }
+
+        // ================= INITIALISATION =================
+        async function connectWallet() {
+            if (window.ethereum) {
+                try {
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
+                    signer = provider.getSigner();
+                    userAddress = await signer.getAddress();
+                    
+                    hubContract = new ethers.Contract(HUB_ADDRESS, HUB_ABI, signer);
+                    ftaContract = new ethers.Contract(FTA_ADDRESS, ERC20_ABI, signer);
+                    usdtContract = new ethers.Contract(USDT_ADDRESS, ERC20_ABI, signer);
+
+                    isConnected = true;
+                    document.getElementById('wallet-address').innerText = userAddress.substring(0,6) + "..." + userAddress.substring(38);
+                    document.getElementById('btn-connect').innerText = "✓ Connecté";
+                    document.getElementById('btn-connect').classList.remove('btn-main');
+                    document.getElementById('btn-connect').classList.add('bg-green-600/20', 'text-green-400');
+                    
+                    await loadBalances();
+                    loadPools(); // Preload staking
+                    loadPositions(); // Preload trading
+                } catch (err) {
+                    console.error(err);
+                    showToast("Erreur: " + err.message);
+                }
+            } else {
+                showToast("Installe MetaMask !");
+            }
+        }
+
+        async function loadBalances() {
+            if(!isConnected) return;
+            try {
+                const ftaBal = await ftaContract.balanceOf(userAddress);
+                const usdtBal = await usdtContract.balanceOf(userAddress);
+                
+                document.getElementById('bal-fta').innerText = parseFloat(ethers.utils.formatUnits(ftaBal, 18)).toFixed(2);
+                document.getElementById('bal-usdt').innerText = parseFloat(ethers.utils.formatUnits(usdtBal, 6)).toFixed(2);
+            } catch(e) { console.error("Error loading balances", e); }
+        }
+
+        // ================= WALLET FUNCTIONS =================
+        async function deposit() {
+            const token = document.getElementById('deposit-token').value;
+            const amountStr = document.getElementById('deposit-amount').value;
+            if(!amountStr) return showToast("Entrez un montant");
+
+            let tokenAddr = token === 'fta' ? FTA_ADDRESS : USDT_ADDRESS;
+            let decimals = token === 'fta' ? 18 : 6;
+            let amount = ethers.utils.parseUnits(amountStr, decimals);
+            let contract = token === 'fta' ? ftaContract : usdtContract;
+
+            try {
+                const allowance = await contract.allowance(userAddress, HUB_ADDRESS);
+                if(allowance.lt(amount)) {
+                    showToast("1. Approbation en cours...");
+                    let tx = await contract.approve(HUB_ADDRESS, amount);
+                    await tx.wait();
+                }
+
+                showToast("2. Dépôt en cours...");
+                let tx = await hubContract.depositToWallet(tokenAddr, amount);
+                await tx.wait();
+                
+                showToast("Dépôt réussi !");
+                loadBalances();
+            } catch(e) { showToast("Erreur: " + (e.error?.message || e.message)); }
+        }
+
+        async function withdraw() {
+            const token = document.getElementById('deposit-token').value; // Utilise le même select
+            const amountStr = document.getElementById('deposit-amount').value;
+            if(!amountStr) return showToast("Entrez un montant");
+
+            let tokenAddr = token === 'fta' ? FTA_ADDRESS : USDT_ADDRESS;
+            let decimals = token === 'fta' ? 18 : 6;
+            let amount = ethers.utils.parseUnits(amountStr, decimals);
+
+            try {
+                showToast("Retrait en cours...");
+                let tx = await hubContract.withdrawFromWallet(tokenAddr, amount);
+                await tx.wait();
+                showToast("Retrait réussi !");
+                loadBalances();
+            } catch(e) { showToast("Erreur: " + (e.error?.message || e.message)); }
+        }
+
+        // ================= STAKING FUNCTIONS =================
+        async function loadPools() {
+            const container = document.getElementById('staking-pools');
+            container.innerHTML = '';
+            
+            for(let i = 0; i < 4; i++) {
+                try {
+                    const pool = await hubContract.stakingPools(i);
+                    if(pool.exists) {
+                        const bal = await hubContract.internalBalances(userAddress, pool.stakeToken);
+                        const balFormatted = ethers.utils.formatUnits(bal, 18);
+                        const reward = await hubContract.calculateStakingReward(i, userAddress);
+                        const rewardFormatted = ethers.utils.formatUnits(reward, 18);
+
+                        const div = document.createElement('div');
+                        div.className = "glass rounded-xl p-4 mb-3";
+                        div.innerHTML = `
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-bold text-white">Pool #${i}</h3>
+                                <span class="bg-blue-500/20 text-blue-400 px-2 py-1 rounded text-xs font-bold">${pool.apy}% APY</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-2">Disponible: ${balFormatted.substring(0,8)} | Rewards: ${rewardFormatted.substring(0,8)}</p>
+                            <div class="flex gap-2">
+                                <input type="number" id="stake-amt-${i}" placeholder="Montant" class="w-1/2 text-sm p-2 rounded">
+                                <button onclick="stakePool(${i})" class="w-1/4 bg-blue-600 rounded text-xs font-bold">Stake</button>
+                                <button onclick="unstakePool(${i})" class="w-1/4 bg-slate-600 rounded text-xs font-bold">Unstake</button>
+                            </div>
+                        `;
+                        container.appendChild(div);
+                    }
+                } catch (e) { break; }
+            }
+        }
+
+        async function stakePool(poolId) {
+            const amountStr = document.getElementById(`stake-amt-${poolId}`).value;
+            if(!amountStr) return showToast("Entrez un montant");
+            const amount = ethers.utils.parseUnits(amountStr, 18);
+            try { await hubContract.stake(poolId, amount); showToast("Staked!"); loadPools(); } 
+            catch(e) { showToast("Erreur"); }
+        }
+
+        async function unstakePool(poolId) {
+            try { await hubContract.unstake(poolId); showToast("Unstaked!"); loadPools(); } 
+            catch(e) { showToast("Erreur"); }
+        }
+
+        // ================= TRADING FUNCTIONS =================
+        async function openTrade(side) {
+            const asset = document.getElementById('trade-asset').value;
+            const leverage = document.getElementById('trade-leverage').value;
+            const marginStr = document.getElementById('trade-margin').value;
+            if(!marginStr) return showToast("Entrez une marge");
+            const margin = ethers.utils.parseUnits(marginStr, 6);
+
+            try {
+                showToast("Ouverture position...");
+                let tx = await hubContract.openPosition(asset, side, margin, leverage);
+                await tx.wait();
+                showToast("Position ouverte !");
+                loadPositions();
+            } catch(e) { showToast("Erreur Trading: " + (e.error?.message || e.message)); }
+        }
+
+        async function loadPositions() {
+            const container = document.getElementById('my-positions');
+            container.innerHTML = '';
+            try {
+                const count = await hubContract.positionCount();
+                for(let i = 1; i <= count; i++) {
+                    const pos = await hubContract.positions(i);
+                    if(pos.isOpen && pos.trader === userAddress) {
+                        const div = document.createElement('div');
+                        div.className = "glass p-3 rounded-lg flex justify-between items-center";
+                        div.innerHTML = `
+                            <div>
+                                <span class="font-bold ${pos.side === 0 ? 'text-green-400' : 'text-red-400'}">${pos.side === 0 ? 'LONG' : 'SHORT'} x${pos.leverage}</span>
+                                <span class="block text-xs text-slate-400">Marge: ${ethers.utils.formatUnits(pos.margin, 6)}</span>
+                            </div>
+                            <button onclick="closePos(${i})" class="bg-red-500 px-3 py-1 rounded text-xs font-bold">Fermer</button>
+                        `;
+                        container.appendChild(div);
+                    }
+                }
+            } catch(e) {}
+        }
+
+        async function closePos(id) {
+            try { await hubContract.closePosition(id); showToast("Fermé !"); loadPositions(); } 
+            catch(e) { showToast("Erreur Fermeture"); }
+        }
+
+        // ================= AVIATOR FUNCTIONS =================
+        async function playAviator() {
+            const betStr = document.getElementById('bet-amount').value;
+            const multStr = document.getElementById('target-mult').value;
+            if(!betStr || !multStr) return showToast("Remplissez tout");
+            
+            const bet = ethers.utils.parseUnits(betStr, 18);
+            const mult = parseFloat(multStr) * 100;
+
+            try {
+                const plane = document.getElementById('plane');
+                plane.className = "text-6xl mb-2 plane-fly"; // Start Animation
+                
+                showToast("Jeu en cours...");
+                let tx = await hubContract.playAviator(bet, mult);
+                await tx.wait();
+                
+                setTimeout(() => { plane.className = "text-6xl mb-2"; }, 3000); // Reset
+                showToast("Résultat calculé !");
+                loadBalances();
+            } catch(e) { showToast("Erreur Jeu"); }
+        }
+
+        // ================= LENDING FUNCTIONS =================
+        async function depositCollateral() {
+            const amtStr = document.getElementById('collateral-amount').value;
+            if(!amtStr) return;
+            const amt = ethers.utils.parseUnits(amtStr, 6);
+            try { await hubContract.depositCollateral(amt); showToast("Collatéral déposé !"); } 
+            catch(e) { showToast("Erreur"); }
+        }
+
+        async function borrow() {
+            const amtStr = document.getElementById('borrow-amount').value;
+            if(!amtStr) return;
+            const amt = ethers.utils.parseUnits(amtStr, 18);
+            try { await hubContract.borrow(amt); showToast("Prêt obtenu !"); loadBalances(); } 
+            catch(e) { showToast("Erreur Emprunt"); }
+        }
+
+        async function repayLoan() {
+            try { await hubContract.repayLoan(); showToast("Remboursé !"); } 
+            catch(e) { showToast("Erreur Remboursement"); }
+        }
+
+    </script>
+</body>
+</html>
