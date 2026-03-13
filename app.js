@@ -3,11 +3,9 @@
 const CONTRACT_ADDRESS = "0x027579bd6302174b499970955EF534500Cd342Dd"; // Adresse du FitiaEcosystemHub
 const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"; // USDT sur Polygon
 const FTA_ADDRESS = "0x535bBe393D64a60E14B731b7350675792d501623"; // Ton token FTA
-
-// Polygon Mainnet Chain ID
 const POLYGON_CHAIN_ID = '0x89'; // 137 en hexadécimal
 
-// ABI Simplifié
+// ABI Complet
 const HUB_ABI = [
     "function depositToWallet(address _token, uint256 _amount) external",
     "function withdrawFromWallet(address _token, uint256 _amount) external",
@@ -16,6 +14,7 @@ const HUB_ABI = [
     "function closePosition(uint256 _posId) external",
     "function positionCount() view returns (uint256)",
     "function positions(uint256) view returns (address trader, uint8 asset, uint8 side, uint256 margin, uint256 leverage, uint256 entryPrice, bool isOpen)",
+    "function getAssetPrice(uint8 _asset) view returns (uint256)",
     "function stake(uint256 _poolId, uint256 _amount) external",
     "function unstake(uint256 _poolId) external",
     "function playAviator(uint256 _ftaBetAmount, uint256 _targetMultiplier) external",
@@ -30,10 +29,8 @@ const ERC20_ABI = [
 ];
 
 // ================= VARIABLES GLOBALES =================
-let provider = null;
-let signer = null;
-let contract = null;
-let userAddress = null;
+let provider, signer, contract, userAddress;
+let currentTradeSide = 0; // 0 = Long, 1 = Short
 
 // ================= DOM ELEMENTS =================
 const el = {
@@ -46,6 +43,7 @@ const el = {
     balanceUsdt: document.getElementById('balance-usdt'),
     balanceFta: document.getElementById('balance-fta'),
     positionsList: document.getElementById('positions-list'),
+    currentPrice: document.getElementById('current-price'),
     
     // Inputs
     walletAmount: document.getElementById('wallet-amount'),
@@ -78,15 +76,18 @@ function handleErr(e, msg = "Erreur") {
 }
 
 // ================= NAVIGATION =================
-window.navigate = (name) => {
+function navigate(name) {
     document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     
     document.getElementById('section-' + name).classList.remove('hidden');
     document.getElementById('nav-' + name).classList.add('active');
     
-    if (name === 'trading' && contract) loadPositions();
-};
+    if (name === 'trading' && contract) {
+        loadPrice(); 
+        loadPositions();
+    }
+}
 
 // ================= CONNEXION WALLET =================
 async function connectWallet() {
@@ -95,21 +96,17 @@ async function connectWallet() {
         return;
     }
 
-    showLoader(true, "Connexion au portefeuille...");
+    showLoader(true, "Connexion...");
 
     try {
-        // 1. Demande l'accès au compte
-        // Cela fonctionne pour MetaMask, Trust Wallet, SafePal (ils injectent tous window.ethereum)
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
         
-        // 2. Vérification et Changement de réseau (Polygon)
         try {
             await window.ethereum.request({
                 method: 'wallet_switchEthereumChain',
-                params: [{ chainId: POLYGON_CHAIN_ID }], // Forçage Polygon
+                params: [{ chainId: POLYGON_CHAIN_ID }],
             });
         } catch (switchError) {
-            // Si le réseau n'est pas ajouté, on l'ajoute (rare sur SafePal/MetaMask pour Polygon)
             if (switchError.code === 4902) {
                 await window.ethereum.request({
                     method: 'wallet_addEthereumChain',
@@ -126,14 +123,12 @@ async function connectWallet() {
             }
         }
 
-        // 3. Initialisation Ethers.js v6
         provider = new ethers.BrowserProvider(window.ethereum);
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
         
         contract = new ethers.Contract(CONTRACT_ADDRESS, HUB_ABI, signer);
 
-        // 4. Mise à jour UI
         el.btnConnect.classList.add('hidden');
         el.userInfo.classList.remove('hidden');
         el.walletAddress.innerText = userAddress.substring(0, 6) + "..." + userAddress.substring(38);
@@ -157,7 +152,7 @@ async function loadBalances() {
         el.balanceUsdt.innerText = parseFloat(ethers.formatUnits(bUsdt, 6)).toFixed(2);
         el.balanceFta.innerText = parseFloat(ethers.formatUnits(bFta, 18)).toFixed(2);
     } catch (e) {
-        console.log("Erreur chargement soldes (peut-être pas sur Polygon)", e);
+        console.log("Erreur chargement soldes", e);
     }
 }
 
@@ -167,8 +162,7 @@ async function loadPositions() {
         const count = await contract.positionCount();
         el.positionsList.innerHTML = '';
         
-        // Boucle inversée pour voir les dernières positions
-        const start = count > 5 ? count - 5n : 0n;
+        const start = count > 10 ? count - 10n : 0n;
         
         for (let i = count - 1n; i >= start; i--) {
             const p = await contract.positions(i);
@@ -177,7 +171,6 @@ async function loadPositions() {
                 const color = p.side === 0 ? "#22c55e" : "#ef4444";
                 
                 const div = document.createElement('div');
-                div.className = 'pos-item';
                 div.style.cssText = "background: #0f172a; padding: 10px; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid " + color;
                 div.innerHTML = `
                     <div>
@@ -198,13 +191,25 @@ async function loadPositions() {
     }
 }
 
+async function loadPrice() {
+    if (!contract) return;
+    try {
+        const assetId = el.tradeAsset.value;
+        const price = await contract.getAssetPrice(assetId); 
+        const formattedPrice = ethers.formatUnits(price, 8);
+        el.currentPrice.innerText = parseFloat(formattedPrice).toFixed(2) + " $";
+    } catch (e) {
+        console.log("Erreur prix", e);
+    }
+}
+
 // ================= ACTIONS WALLET =================
 async function approveToken(tokenAddr, amount, decimals) {
     const tokenContract = new ethers.Contract(tokenAddr, ERC20_ABI, signer);
     const allowance = await tokenContract.allowance(userAddress, CONTRACT_ADDRESS);
     
     if (allowance < amount) {
-        showLoader(true, "Approbation du token...");
+        showLoader(true, "Approbation requise...");
         const tx = await tokenContract.approve(CONTRACT_ADDRESS, amount);
         await tx.wait();
         showLoader(true, "Transaction en cours...");
@@ -212,11 +217,11 @@ async function approveToken(tokenAddr, amount, decimals) {
 }
 
 async function deposit() {
-    if (!contract) return alert("Connectez-vous d'abord");
+    if (!contract) return alert("Connectez-vous");
     const amt = el.walletAmount.value;
     if (!amt) return alert("Entrez un montant");
     
-    showLoader(true, "Dépôt en cours...");
+    showLoader(true, "Dépôt...");
     try {
         const wei = ethers.parseUnits(amt, 6);
         await approveToken(USDT_ADDRESS, wei, 6);
@@ -236,7 +241,7 @@ async function withdraw() {
     const amt = el.walletAmount.value;
     if (!amt) return;
     
-    showLoader(true, "Retrait en cours...");
+    showLoader(true, "Retrait...");
     try {
         const wei = ethers.parseUnits(amt, 6);
         const tx = await contract.withdrawFromWallet(USDT_ADDRESS, wei);
@@ -249,24 +254,74 @@ async function withdraw() {
     showLoader(false);
 }
 
-// ================= TRADING =================
-async function openTrade(side) {
+// ================= TRADING LOGIC =================
+function setTradeType(type) {
+    currentTradeSide = type;
+    const btnLong = document.getElementById('tab-long');
+    const btnShort = document.getElementById('tab-short');
+    const confirmBtn = document.getElementById('btn-confirm-trade');
+
+    if (type === 0) {
+        btnLong.classList.add('active-long');
+        btnShort.classList.remove('active-short');
+        confirmBtn.innerText = "Ouvrir Long";
+        confirmBtn.style.background = "#22c55e";
+        confirmBtn.classList.remove('short-active');
+    } else {
+        btnShort.classList.add('active-short');
+        btnLong.classList.remove('active-long');
+        confirmBtn.innerText = "Ouvrir Short";
+        confirmBtn.style.background = "#ef4444";
+        confirmBtn.classList.add('short-active');
+    }
+}
+
+function changeLev(delta) {
+    const slider = document.getElementById('trade-lev');
+    let val = parseInt(slider.value) + delta;
+    if (val < 1) val = 1;
+    if (val > 50) val = 50;
+    slider.value = val;
+    updateLevDisplay();
+}
+
+function updateLevDisplay() {
+    const val = document.getElementById('trade-lev').value;
+    document.getElementById('lev-val').innerText = "x" + val;
+    updateFeeDisplay();
+}
+
+function setMargin(amount) {
+    document.getElementById('trade-margin').value = amount;
+    updateFeeDisplay();
+}
+
+function updateFeeDisplay() {
+    const margin = parseFloat(document.getElementById('trade-margin').value) || 0;
+    const fee = margin * 0.001; 
+    document.getElementById('fee-display').innerText = fee.toFixed(2) + " USDT";
+}
+
+async function confirmTrade() {
     if (!contract) return alert("Connectez-vous");
+    
     const margin = el.tradeMargin.value;
     const lev = el.tradeLev.value;
     const asset = el.tradeAsset.value;
     
-    if (!margin) return alert("Entrez une marge");
-    
+    if (!margin || margin <= 0) return alert("Entrez une marge valide");
+
     showLoader(true, "Ouverture de position...");
     try {
         const marginWei = ethers.parseUnits(margin, 6);
-        const tx = await contract.openPosition(asset, side, marginWei, lev);
+        const tx = await contract.openPosition(asset, currentTradeSide, marginWei, lev);
         await tx.wait();
         
-        alert("Position ouverte !");
+        alert("Position ouverte avec succès !");
         loadPositions();
         loadBalances();
+        el.tradeMargin.value = "";
+        updateFeeDisplay();
     } catch (e) { handleErr(e); }
     showLoader(false);
 }
@@ -283,17 +338,18 @@ window.closePos = async (id) => {
     showLoader(false);
 };
 
-// ================= AVIATOR =================
+// ================= AUTRES ACTIONS (Aviator, Staking, Lending) =================
+// (J'ai condensé pour la clarté, mais tout est fonctionnel comme avant)
+
 async function playAviator() {
     if (!contract) return;
     const bet = el.aviatorBet.value;
     const target = el.aviatorTarget.value;
-    if (!bet || !target) return alert("Mise et cible requises");
+    if (!bet || !target) return alert("Remplissez tous les champs");
     
     showLoader(true, "Jeu Aviator...");
     try {
         const betWei = ethers.parseUnits(bet, 18);
-        // Approve FTA first
         await approveToken(FTA_ADDRESS, betWei, 18);
         
         const targetInt = Math.floor(parseFloat(target) * 100);
@@ -306,16 +362,13 @@ async function playAviator() {
     showLoader(false);
 }
 
-// ================= STAKING =================
 async function stake() {
     if (!contract) return;
     const pid = el.stakePoolId.value;
     const amt = el.stakeAmount.value;
-    if(!pid || !amt) return alert("Remplissez ID et Montant");
-    
+    if(!pid || !amt) return;
     showLoader(true, "Staking...");
     try {
-        // On suppose décimales 18 pour simplifier ou il faut checker le pool
         const wei = ethers.parseUnits(amt, 18);
         const tx = await contract.stake(pid, wei);
         await tx.wait();
@@ -329,7 +382,6 @@ async function unstake() {
     if (!contract) return;
     const pid = el.stakePoolId.value;
     if(!pid) return;
-    
     showLoader(true, "Unstaking...");
     try {
         const tx = await contract.unstake(pid);
@@ -340,12 +392,10 @@ async function unstake() {
     showLoader(false);
 }
 
-// ================= LENDING =================
 async function depositCollateral() {
     if(!contract) return;
     const amt = el.lendCollat.value;
     if(!amt) return;
-    
     showLoader(true, "Dépôt collatéral...");
     try {
         const wei = ethers.parseUnits(amt, 6);
@@ -361,7 +411,6 @@ async function borrow() {
     if(!contract) return;
     const amt = el.lendBorrow.value;
     if(!amt) return;
-    
     showLoader(true, "Emprunt...");
     try {
         const wei = ethers.parseUnits(amt, 18);
@@ -387,24 +436,44 @@ async function repay() {
 
 // ================= EVENT LISTENERS =================
 document.addEventListener('DOMContentLoaded', () => {
-    // Buttons
-    el.btnConnect.addEventListener('click', connectWallet);
+    // Nav
+    document.getElementById('nav-wallet').addEventListener('click', () => navigate('wallet'));
+    document.getElementById('nav-trading').addEventListener('click', () => navigate('trading'));
+    document.getElementById('nav-aviator').addEventListener('click', () => navigate('aviator'));
+    document.getElementById('nav-staking').addEventListener('click', () => navigate('staking'));
+    document.getElementById('nav-lending').addEventListener('click', () => navigate('lending'));
     
+    // Wallet
+    el.btnConnect.addEventListener('click', connectWallet);
     document.getElementById('btn-deposit').addEventListener('click', deposit);
     document.getElementById('btn-withdraw').addEventListener('click', withdraw);
     
-    document.getElementById('btn-long').addEventListener('click', () => openTrade(0));
-    document.getElementById('btn-short').addEventListener('click', () => openTrade(1));
+    // Trading
+    document.getElementById('tab-long').addEventListener('click', () => setTradeType(0));
+    document.getElementById('tab-short').addEventListener('click', () => setTradeType(1));
+    document.getElementById('btn-lev-minus').addEventListener('click', () => changeLev(-1));
+    document.getElementById('btn-lev-plus').addEventListener('click', () => changeLev(1));
+    document.getElementById('btn-quick-10').addEventListener('click', () => setMargin(10));
+    document.getElementById('btn-quick-50').addEventListener('click', () => setMargin(50));
+    document.getElementById('btn-quick-100').addEventListener('click', () => setMargin(100));
+    document.getElementById('btn-confirm-trade').addEventListener('click', confirmTrade);
+    document.getElementById('btn-refresh-pos').addEventListener('click', loadPositions);
+    el.tradeLev.addEventListener('input', updateLevDisplay);
+    el.tradeMargin.addEventListener('input', updateFeeDisplay);
+    el.tradeAsset.addEventListener('change', loadPrice);
     
+    // Others
     document.getElementById('btn-play-aviator').addEventListener('click', playAviator);
-    
     document.getElementById('btn-stake').addEventListener('click', stake);
     document.getElementById('btn-unstake').addEventListener('click', unstake);
-    
     document.getElementById('btn-deposit-collat').addEventListener('click', depositCollateral);
     document.getElementById('btn-borrow').addEventListener('click', borrow);
     document.getElementById('btn-repay').addEventListener('click', repay);
     
-    // Slider
-    el.tradeLev.addEventListener('input', (e) => el.levVal.innerText = "x" + e.target.value);
+    // Intervalle prix
+    setInterval(() => {
+        if (contract && !document.getElementById('section-trading').classList.contains('hidden')) {
+            loadPrice();
+        }
+    }, 5000);
 });

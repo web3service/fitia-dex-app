@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fitia Ecosystem</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Librairie Ethers.js version 6 (UMD) -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
-    <!-- Icônes -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -55,39 +53,81 @@
             </div>
         </section>
 
-        <!-- TRADING SECTION -->
+        <!-- TRADING SECTION (NOUVEAU DESIGN PRO) -->
         <section id="section-trading" class="section hidden">
-            <div class="card">
-                <h2><i class="fas fa-chart-line"></i> Trading Futures</h2>
-                
-                <div class="trading-controls">
-                    <select id="trade-asset" class="select-styled">
+            
+            <!-- Header Prix -->
+            <div class="trade-header-card">
+                <div class="pair-selector">
+                    <select id="trade-asset" class="pair-dropdown">
                         <option value="0">BTC/USD</option>
                         <option value="1">ETH/USD</option>
                         <option value="2">FTA/USD</option>
                     </select>
-                    
-                    <div class="input-group">
-                        <label>Marge USDT</label>
-                        <input type="number" id="trade-margin" placeholder="10.00" />
-                    </div>
-                    
-                    <div class="leverage-control">
-                        <label>Levier: <span id="lev-val">x1</span></label>
-                        <input type="range" id="trade-lev" min="1" max="50" value="1" class="slider">
-                    </div>
                 </div>
-
-                <div class="trade-actions">
-                    <button id="btn-long" class="btn-trade long">LONG</button>
-                    <button id="btn-short" class="btn-trade short">SHORT</button>
-                </div>
-
-                <div class="list-header">Positions Ouvertes</div>
-                <div id="positions-list" class="list-container">
-                    <p class="empty-msg">Connectez-vous pour voir vos positions.</p>
+                <div class="live-price">
+                    <span class="label">Prix Actuel</span>
+                    <span id="current-price" class="price-value">--- $</span>
                 </div>
             </div>
+
+            <div class="trade-container">
+                <!-- Zone Graphique (Visuel) -->
+                <div class="chart-area">
+                    <div class="chart-placeholder">
+                        <i class="fas fa-chart-line"></i>
+                        <p>Marchés Futures</p>
+                    </div>
+                </div>
+
+                <!-- Formulaire de Trade -->
+                <div class="order-form">
+                    <div class="order-type-tabs">
+                        <button id="tab-long" class="tab-btn active-long">Long</button>
+                        <button id="tab-short" class="tab-btn">Short</button>
+                    </div>
+
+                    <div class="input-box">
+                        <label>Levier</label>
+                        <div class="leverage-display">
+                            <button id="btn-lev-minus" class="lev-btn">-</button>
+                            <span id="lev-val">x1</span>
+                            <button id="btn-lev-plus" class="lev-btn">+</button>
+                        </div>
+                        <input type="range" id="trade-lev" min="1" max="50" value="1" class="slider">
+                    </div>
+
+                    <div class="input-box">
+                        <label>Marge (USDT)</label>
+                        <input type="number" id="trade-margin" placeholder="0.00" />
+                        <div class="quick-amounts">
+                            <span id="btn-quick-10">10$</span>
+                            <span id="btn-quick-50">50$</span>
+                            <span id="btn-quick-100">100$</span>
+                        </div>
+                    </div>
+
+                    <div class="cost-info">
+                        <span>Frais estimés:</span> <span id="fee-display">0.00 USDT</span>
+                    </div>
+
+                    <button id="btn-confirm-trade" class="btn-trade-confirm">
+                        Ouvrir Long
+                    </button>
+                </div>
+            </div>
+
+            <!-- Liste des Positions -->
+            <div class="positions-card">
+                <div class="pos-header">
+                    <span>Mes Positions</span>
+                    <button id="btn-refresh-pos" class="refresh-btn"><i class="fas fa-sync-alt"></i></button>
+                </div>
+                <div id="positions-list" class="positions-body">
+                    <p class="empty-msg">Aucune position ouverte.</p>
+                </div>
+            </div>
+
         </section>
 
         <!-- AVIATOR SECTION -->
@@ -151,23 +191,23 @@
 
     <!-- Bottom Nav -->
     <nav class="bottom-nav">
-        <button onclick="navigate('wallet')" class="nav-item active" id="nav-wallet">
+        <button id="nav-wallet" class="nav-item active">
             <i class="fas fa-wallet"></i>
             <span>Wallet</span>
         </button>
-        <button onclick="navigate('trading')" class="nav-item" id="nav-trading">
+        <button id="nav-trading" class="nav-item">
             <i class="fas fa-chart-bar"></i>
             <span>Trade</span>
         </button>
-        <button onclick="navigate('aviator')" class="nav-item" id="nav-aviator">
+        <button id="nav-aviator" class="nav-item">
             <i class="fas fa-plane"></i>
             <span>Aviator</span>
         </button>
-        <button onclick="navigate('staking')" class="nav-item" id="nav-staking">
+        <button id="nav-staking" class="nav-item">
             <i class="fas fa-piggy-bank"></i>
             <span>Stake</span>
         </button>
-        <button onclick="navigate('lending')" class="nav-item" id="nav-lending">
+        <button id="nav-lending" class="nav-item">
             <i class="fas fa-landmark"></i>
             <span>Prêt</span>
         </button>
