@@ -84,14 +84,16 @@ async function checkAndApprove(tokenAddr, amountWei) {
     
     // 2. Si pas assez de permission, demander l'approbation
     if (allowance.lt(amountWei)) {
-        toast("Étape 1/2 : Approbation requise...");
+        // MESSAGE CORRIGÉ ICI
+        toast("Étape 1 : Veuillez confirmer l'autorisation dans votre Wallet...", false);
+        
         try {
             // On approuve le montant exact (plus sûr pour l'utilisateur)
             const tx = await tokenContract.approve(CONTRACT_ADDR, amountWei);
             await tx.wait();
-            toast("Approbation réussie !");
+            toast("Autorisation validée !");
         } catch (e) {
-            toast("Approbation refusée", true);
+            toast("Autorisation refusée", true);
             throw "Approval Failed";
         }
     }
@@ -112,7 +114,7 @@ async function depositToken(symbol) {
         await checkAndApprove(addr, amountWei);
         
         // Étape de dépôt
-        toast("Étape 2/2 : Dépôt en cours...");
+        toast("Étape 2 : Dépôt en cours...");
         const tx = await contract.depositToWallet(addr, amountWei);
         await tx.wait();
         
