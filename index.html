@@ -3,82 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FITIA Finance | Web3</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" type="text/javascript"></script>
+    <title>Fitia Finance - Web3 Hub</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <header class="app-header">
-        <div class="logo">FITIA<span>Finance</span></div>
-        <div class="user-meta">
-            <div id="user-addr" class="addr-tag">Déconnecté</div>
-            <button id="connectBtn" class="btn-connect">Connecter</button>
+
+    <!-- Header -->
+    <header>
+        <div class="logo">Fitia<span>Finance</span></div>
+        <button id="btn-connect" class="btn-primary">
+            <i class="fas fa-wallet"></i> <span>Connecter</span>
+        </button>
+        <div id="user-info" style="display:none;">
+            <div class="user-badge">
+                <i class="fas fa-circle status-online"></i>
+                <span id="user-address"></span>
+            </div>
         </div>
     </header>
 
-    <div class="top-balances">
-        <div class="bal-box">FTA: <span id="ui-fta">0.00</span></div>
-        <div class="bal-box">USDT: <span id="ui-usdt">0.00</span></div>
-    </div>
+    <!-- Navigation -->
+    <nav>
+        <ul>
+            <li class="active" onclick="showSection('wallet')"><i class="fas fa-wallet"></i> <span>Wallet</span></li>
+            <li onclick="showSection('trading')"><i class="fas fa-chart-line"></i> <span>Trading</span></li>
+            <li onclick="showSection('lending')"><i class="fas fa-hand-holding-usd"></i> <span>Prêts</span></li>
+            <li onclick="showSection('staking')"><i class="fas fa-coins"></i> <span>Staking</span></li>
+            <li onclick="showSection('aviator')"><i class="fas fa-plane"></i> <span>Aviator</span></li>
+        </ul>
+    </nav>
 
-    <main class="content">
-        <section id="dash" class="tab-content active">
-            <div class="card">
-                <h3>📥 Dépôt Hub</h3>
-                <select id="in-token">
-                    <option value="FTA">FTA Token</option>
-                    <option value="USDT">USDT</option>
-                </select>
-                <input type="number" id="in-amount" placeholder="0.00">
-                <button class="btn-primary" onclick="deposit()">DÉPOSER</button>
-            </div>
-            <div class="card">
-                <h3>📤 Retrait Wallet</h3>
-                <select id="out-token"><option value="FTA">FTA</option><option value="USDT">USDT</option></select>
-                <input type="number" id="out-amount" placeholder="0.00">
-                <button class="btn-primary" onclick="withdraw()">RETIRER</button>
-            </div>
-        </section>
+    <main>
+        <div id="notification" class="notification"></div>
 
-        <section id="trade" class="tab-content">
-            <div id="tradingview_chart" class="chart-container"></div>
-            <div class="card trade-form">
-                <input type="number" id="tr-marge" placeholder="Marge USDT">
-                <div class="lev-display">Levier: <span id="lev-ui">10</span>x</div>
-                <input type="range" min="1" max="50" value="10" id="tr-lev" oninput="document.getElementById('lev-ui').innerText=this.value">
-                <div class="btn-group">
-                    <button class="btn-long" onclick="trade(0)">LONG</button>
-                    <button class="btn-short" onclick="trade(1)">SHORT</button>
+        <!-- SECTION WALLET -->
+        <section id="section-wallet" class="content-section active">
+            <h2>Mon Portefeuille Interne</h2>
+            <div class="cards-container">
+                <div class="card">
+                    <div class="card-header">
+                        <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" alt="usdt" class="token-icon">
+                        <h3>USDT</h3>
+                    </div>
+                    <p class="balance" id="bal-usdt">0.00</p>
+                    <div class="card-actions">
+        <input type="number" id="input-usdt-amount" placeholder="Montant" />
+                        <div class="btn-row">
+                            <button onclick="depositToken('USDT')" class="btn-green">Déposer</button>
+                            <button onclick="withdrawToken('USDT')" class="btn-red">Retirer</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="token-icon fta-icon">FTA</div>
+                        <h3>FTA Token</h3>
+                    </div>
+                    <p class="balance" id="bal-fta">0.00</p>
+                    <div class="card-actions">
+                        <input type="number" id="input-fta-amount" placeholder="Montant" />
+                        <div class="btn-row">
+                            <button onclick="depositToken('FTA')" class="btn-green">Déposer</button>
+                            <button onclick="withdrawToken('FTA')" class="btn-red">Retirer</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <section id="game" class="tab-content">
-            <div id="aviator-screen">1.00x</div>
-            <div class="card">
-                <input type="number" id="av-mise" placeholder="Mise FTA">
-                <input type="number" id="av-target" placeholder="Cible (ex: 2.0)">
-                <button class="btn-play" onclick="playAviator()">PARIER</button>
+        <!-- SECTION TRADING -->
+        <section id="section-trading" class="content-section">
+            <h2>Trading Futures</h2>
+            <div class="trading-grid">
+                <div class="chart-area">
+                    <canvas id="priceChart"></canvas>
+                    <div class="price-ticker">
+                        <span>Prix BTC:</span> <span id="live-price">Chargement...</span>
+                    </div>
+                </div>
+                <div class="trading-form">
+                    <h3>Nouvel Ordre</h3>
+                    <label>Actif :</label>
+                    <select id="trade-asset">
+                        <option value="0">BTC/USD</option>
+                        <option value="1">ETH/USD</option>
+                        <option value="2">FTA/USD</option>
+                    </select>
+                    
+                    <label>Marge (USDT) :</label>
+                    <input type="number" id="trade-margin" placeholder="Ex: 10" />
+                    
+                    <label>Levier :</label>
+                    <div class="leverage-selector">
+                        <button onclick="setLeverage(1)" class="lev-btn">x1</button>
+                        <button onclick="setLeverage(5)" class="lev-btn">x5</button>
+                        <button onclick="setLeverage(10)" class="lev-btn active">x10</button>
+                        <button onclick="setLeverage(20)" class="lev-btn">x20</button>
+                    </div>
+                    <input type="hidden" id="trade-leverage" value="10">
+
+                    <div class="pnl-preview">
+                        <small>Effet de levier: <span id="lev-display">x10</span></small>
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn-long" onclick="openTrade(0)"><i class="fas fa-arrow-up"></i> LONG</button>
+                        <button class="btn-short" onclick="openTrade(1)"><i class="fas fa-arrow-down"></i> SHORT</button>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <section id="earn" class="tab-content">
-            <div class="card">
-                <h3>💎 Staking FTA</h3>
-                <input type="number" id="st-amount" placeholder="Montant FTA">
-                <button class="btn-primary" onclick="stake(0)">STAKER</button>
+        <!-- SECTION LENDING (PRETS) -->
+        <section id="section-lending" class="content-section">
+            <h2>Lending (Prêts)</h2>
+            <p class="subtitle">Déposez du USDT en collatéral pour emprunter du FTA.</p>
+            
+            <div class="cards-container">
+                <!-- Mon Prêt Actuel -->
+                <div class="card">
+                    <h3><i class="fas fa-file-invoice-dollar"></i> Mon Prêt Actuel</h3>
+                    <div class="loan-info">
+                        <div class="loan-item">
+                            <span>Collatéral (USDT):</span>
+                            <strong id="loan-collateral">0.00</strong>
+                        </div>
+                        <div class="loan-item">
+                            <span>Emprunté (FTA):</span>
+                            <strong id="loan-borrowed">0.00</strong>
+                        </div>
+                    </div>
+                    <button onclick="repayMyLoan()" class="btn-primary btn-block" style="margin-top:15px; background: var(--primary); color:#000;">
+                        Rembourser & Récupérer
+                    </button>
+                </div>
+
+                <!-- Emprunter -->
+                <div class="card">
+                    <h3><i class="fas fa-hand-holding-usd"></i> Emprunter</h3>
+                    <label>Déposer du Collatéral (USDT) :</label>
+                    <input type="number" id="collateral-amount" placeholder="Montant USDT" />
+                    <button onclick="depositCollateral()" class="btn-green btn-block">Déposer Collatéral</button>
+                    
+                    <hr style="border-color:#333; margin: 20px 0;">
+
+                    <label>Emprunter du FTA :</label>
+                    <input type="number" id="borrow-amount" placeholder="Montant FTA" />
+                    <p><small>Ratio requis: 150%</small></p>
+                    <button onclick="borrowFTA()" class="btn-primary btn-block">Emprunter</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION STAKING -->
+        <section id="section-staking" class="content-section">
+            <h2>Staking</h2>
+            <div id="pools-container" class="cards-container">
+                <p>Chargement des pools...</p>
+            </div>
+        </section>
+
+        <!-- SECTION AVIATOR -->
+        <section id="section-aviator" class="content-section">
+            <h2>Aviator Game</h2>
+            <div class="aviator-container">
+                <div class="aviator-screen" id="aviator-screen">
+                    <div class="runway"></div>
+                    <div class="plane" id="plane-icon">✈️</div>
+                    <h1 id="multiplier-display">1.00x</h1>
+                </div>
+                <div class="aviator-controls">
+                    <div class="control-group">
+                        <label>Mise (FTA)</label>
+                        <input type="number" id="bet-amount" placeholder="Ex: 100" />
+                    </div>
+                    <div class="control-group">
+                        <label>Cible (Multiplicateur)</label>
+                        <input type="number" id="target-mult" placeholder="Ex: 2.00" step="0.1" />
+                    </div>
+                    <button onclick="playAviator()" class="btn-play" id="btn-play-aviator">
+                        <i class="fas fa-play"></i> JOUER
+                    </button>
+                </div>
             </div>
         </section>
     </main>
 
-    <nav class="bottom-nav">
-        <div class="nav-item active" onclick="switchTab('dash', this)">🏦<span>Wallet</span></div>
-        <div class="nav-item" onclick="switchTab('trade', this)">📈<span>Trade</span></div>
-        <div class="nav-item" onclick="switchTab('game', this)">🚀<span>Aviator</span></div>
-        <div class="nav-item" onclick="switchTab('earn', this)">💎<span>Earn</span></div>
-    </nav>
+    <footer>
+        <p>© 2024 Fitia Finance - Powered by Polygon</p>
+    </footer>
 
-    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
