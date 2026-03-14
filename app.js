@@ -1,9 +1,17 @@
 // ================= CONFIGURATION =================
-const CONTRACT_ADDR = "0x027579bd6302174b499970955EF534500Cd342Dd";
-const USDT_ADDR = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"; // Polygon USDT
-const FTA_ADDR = "0x535bBe393D64a60E14B731b7350675792d501623";
+const CHAIN_ID = '0x89'; // ID du réseau Polygon Mainnet (137 en hexadécimal)
+const CONTRACT_ADDR = "0x027579bd6302174b499970955EF534500Cd342Dd"; // Remplace par ton adresse
+const USDT_ADDR = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"; // USDT Officiel Polygon (PoS)
+const FTA_ADDR = "0x535bBe393D64a60E14B731b7350675792d501623"; // Remplace par l'adresse de ton token
 
-const ABI = [
+// ABI nécessaire (Approbation + Fonctions Contrat)
+const ERC20_ABI = [
+    "function allowance(address owner, address spender) view returns (uint256)",
+    "function approve(address spender, uint256 amount) returns (bool)",
+    "function balanceOf(address owner) view returns (uint256)"
+];
+
+const CONTRACT_ABI = [
     "function depositToWallet(address _token, uint256 _amount)",
     "function withdrawFromWallet(address _token, uint256 _amount)",
     "function getMyBalance(address _token) view returns (uint256)",
@@ -26,14 +34,14 @@ async function connectWallet() {
         const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
         provider = new ethers.providers.Web3Provider(window.ethereum);
         signer = provider.getSigner();
-        contract = new ethers.Contract(CONTRACT_ADDR, ABI, signer);
+        contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
         userAddr = accs[0];
         
-        // Force Polygon Network
+        // Force Polygon Network en utilisant la variable CHAIN_ID
         try {
             await window.ethereum.request({
                 method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0x89' }] // Polygon
+                params: [{ chainId: CHAIN_ID }] 
             });
         } catch(e) {
             toast("Passez sur le réseau Polygon", true);
@@ -51,44 +59,42 @@ async function connectWallet() {
 }
 
 function updateUI() {
-    // Header Button
     document.getElementById('btn-connect').style.display = 'none';
     document.getElementById('user-badge').style.display = 'flex';
     document.getElementById('user-addr').innerText = userAddr.substring(0,6) + "..." + userAddr.substring(38);
-    
     loadBalances();
 }
 
 // ================= NAVIGATION =================
 function switchPage(pageName) {
-    // Hide all
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    // Show one
     document.getElementById('page-' + pageName).classList.add('active');
-    
-    // Update Menu
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    // Find button that calls this page and activate it
     event.currentTarget.classList.add('active');
 }
 
-// ================= WALLET =================
-async function loadBalances() {
-    if(!contract) return;
-    const uBal = await contract.getMyBalance(USDT_ADDR);
-    const fBal = await contract.getMyBalance(FTA_ADDR);
+// ================= WALLET LOGIQUE APPROBATION =================
+
+// Fonction utilitaire pour vérifier et approuver
+async function checkAndApprove(tokenAddr, amountWei) {
+    const tokenContract = new ethers.Contract(tokenAddr, ERC20_ABI, signer);
     
-    const usdt = parseFloat(ethers.utils.formatUnits(uBal, 6)).toFixed(2);
-    const fta = parseFloat(ethers.utils.formatEther(fBal)).toFixed(2);
+    // 1. Vérifier l'allowance (permission actuelle)
+    const allowance = await tokenContract.allowance(userAddr, CONTRACT_ADDR);
     
-    document.getElementById('bal-usdt').innerText = usdt;
-    document.getElementById('bal-usdt-home').innerText = usdt;
-    document.getElementById('bal-fta').innerText = fta;
-    document.getElementById('bal-fta-home').innerText = fta;
-    
-    // Loan Info
-    const loan = await contract.userLoans(userAddr);
-    document.getElementById('user-collat').innerText = ethers.utils.formatUnits(loan.collateralAmount, 6) + " USDT";
+    // 2. Si pas assez de permission, demander l'approbation
+    if (allowance.lt(amountWei)) {
+        toast("Étape 1/2 : Approbation requise...");
+        try {
+            // On approuve le montant exact (plus sûr pour l'utilisateur)
+            const tx = await tokenContract.approve(CONTRACT_ADDR, amountWei);
+            await tx.wait();
+            toast("Approbation réussie !");
+        } catch (e) {
+            toast("Approbation refusée", true);
+            throw "Approval Failed";
+        }
+    }
 }
 
 async function depositToken(symbol) {
@@ -96,21 +102,27 @@ async function depositToken(symbol) {
     const addr = symbol === 'USDT' ? USDT_ADDR : FTA_ADDR;
     const dec = symbol === 'USDT' ? 6 : 18;
     const amt = document.getElementById(id).value;
-    if(!amt) return toast("Entrez un montant", true);
+    
+    if(!amt || amt <= 0) return toast("Entrez un montant valide", true);
 
     try {
-        toast("Approbation...");
-        const token = new ethers.Contract(addr, ["function approve(address,uint256)"], signer);
-        let tx = await token.approve(CONTRACT_ADDR, ethers.utils.parseUnits(amt, dec));
-        await tx.wait();
+        const amountWei = ethers.utils.parseUnits(amt, dec);
         
-        toast("Dépôt...");
-        tx = await contract.depositToWallet(addr, ethers.utils.parseUnits(amt, dec));
+        // Étape d'approbation intelligente
+        await checkAndApprove(addr, amountWei);
+        
+        // Étape de dépôt
+        toast("Étape 2/2 : Dépôt en cours...");
+        const tx = await contract.depositToWallet(addr, amountWei);
         await tx.wait();
         
         toast("Dépôt réussi !");
+        document.getElementById(id).value = ""; // Clear input
         loadBalances();
-    } catch(e) { toast("Erreur", true); }
+    } catch(e) { 
+        console.error(e);
+        if (e !== "Approval Failed") toast("Erreur de transaction", true);
+    }
 }
 
 async function withdrawToken(symbol) {
@@ -118,15 +130,41 @@ async function withdrawToken(symbol) {
     const addr = symbol === 'USDT' ? USDT_ADDR : FTA_ADDR;
     const dec = symbol === 'USDT' ? 6 : 18;
     const amt = document.getElementById(id).value;
-    if(!amt) return toast("Entrez un montant", true);
+    
+    if(!amt || amt <= 0) return toast("Entrez un montant valide", true);
 
     try {
-        toast("Retrait...");
+        toast("Retrait en cours...");
+        // Pas besoin d'approve pour withdraw, le contrat envoie les fonds
         const tx = await contract.withdrawFromWallet(addr, ethers.utils.parseUnits(amt, dec));
         await tx.wait();
         toast("Retrait réussi !");
+        document.getElementById(id).value = ""; // Clear input
         loadBalances();
-    } catch(e) { toast("Erreur", true); }
+    } catch(e) { 
+        console.error(e);
+        toast("Erreur de retrait (Vérifiez votre solde interne)", true); 
+    }
+}
+
+async function loadBalances() {
+    if(!contract) return;
+    try {
+        const uBal = await contract.getMyBalance(USDT_ADDR);
+        const fBal = await contract.getMyBalance(FTA_ADDR);
+        
+        const usdt = parseFloat(ethers.utils.formatUnits(uBal, 6)).toFixed(2);
+        const fta = parseFloat(ethers.utils.formatEther(fBal)).toFixed(2);
+        
+        document.getElementById('bal-usdt').innerText = usdt;
+        document.getElementById('bal-usdt-home').innerText = usdt;
+        document.getElementById('bal-fta').innerText = fta;
+        document.getElementById('bal-fta-home').innerText = fta;
+        
+        // Loan Info
+        const loan = await contract.userLoans(userAddr);
+        document.getElementById('user-collat').innerText = ethers.utils.formatUnits(loan.collateralAmount, 6) + " USDT";
+    } catch(e) { console.log("Erreur chargement soldes");}
 }
 
 // ================= TRADING =================
@@ -167,7 +205,7 @@ async function openTrade(side) {
     if(!margin) return toast("Entrez une marge", true);
 
     try {
-        toast("Ouverture...");
+        toast("Ouverture position...");
         const tx = await contract.openPosition(asset, side, ethers.utils.parseUnits(margin, 6), lev);
         await tx.wait();
         toast("Position ouverte !");
@@ -177,24 +215,26 @@ async function openTrade(side) {
 // ================= LENDING =================
 async function depositCollateral() {
     const amt = document.getElementById('inp-collat').value;
-    if(!amt) return;
+    if(!amt || amt <= 0) return toast("Entrez un montant", true);
     try {
-        const token = new ethers.Contract(USDT_ADDR, ["function approve(address,uint256)"], signer);
-        toast("Approve...");
-        let tx = await token.approve(CONTRACT_ADDR, ethers.utils.parseUnits(amt, 6));
-        await tx.wait();
+        const amountWei = ethers.utils.parseUnits(amt, 6);
         
-        toast("Dépôt...");
-        tx = await contract.depositCollateral(ethers.utils.parseUnits(amt, 6));
+        // Vérifie et Approuve USDT
+        await checkAndApprove(USDT_ADDR, amountWei);
+        
+        toast("Dépôt collatéral...");
+        const tx = await contract.depositCollateral(amountWei);
         await tx.wait();
         toast("Collatéral ajouté");
         loadBalances();
-    } catch(e) { toast("Erreur", true); }
+    } catch(e) { 
+        toast("Erreur", true); 
+    }
 }
 
 async function borrowFTA() {
     const amt = document.getElementById('inp-borrow').value;
-    if(!amt) return;
+    if(!amt || amt <= 0) return toast("Entrez un montant", true);
     try {
         toast("Emprunt...");
         const tx = await contract.borrow(ethers.utils.parseEther(amt));
@@ -206,17 +246,29 @@ async function borrowFTA() {
 
 async function repayLoan() {
     try {
+        // Pour rembourser, il faut approuver le FTA que l'on rend
+        // On doit d'abord calculer combien on doit (approximatif ou demander à l'utilisateur d'approuver)
+        // Ici on suppose que l'utilisateur a assez de FTA approved ou on le fait dans la fonction.
+        
+        // Récupérer la dette
+        const loan = await contract.userLoans(userAddr);
+        const debt = loan.borrowedAmount;
+        
+        // Approuver cette dette
+        await checkAndApprove(FTA_ADDR, debt);
+
         toast("Remboursement...");
         const tx = await contract.repayLoan();
         await tx.wait();
         toast("Prêt remboursé");
         loadBalances();
-    } catch(e) { toast("Erreur", true); }
+    } catch(e) { toast("Erreur Remboursement", true); }
 }
 
 // ================= STAKING =================
 async function loadPools() {
     const list = document.getElementById('pools-list');
+    if(!list) return;
     list.innerHTML = '';
     for(let i=0; i<4; i++) {
         try {
@@ -226,8 +278,8 @@ async function loadPools() {
                 div.className = 'info-card';
                 div.innerHTML = `
                     <h4>Pool #${i} - APY: ${pool.apy}%</h4>
-                    <p style="font-size:12px; color:var(--text-dim)">Earn Rewards</p>
-                    <button class="full-btn primary" style="margin-top:10px" onclick="toast('Use Wallet to Stake')">Staker</button>
+                    <p style="font-size:12px; color:var(--text-dim)">Stake & Earn</p>
+                    <button class="full-btn primary" style="margin-top:10px" onclick="toast('Fonction Staking Active')">Staker</button>
                 `;
                 list.appendChild(div);
             }
@@ -242,25 +294,24 @@ async function playAviator() {
     if(!bet || !target) return toast("Mise et cible requises", true);
 
     try {
-        // Approve
-        const token = new ethers.Contract(FTA_ADDR, ["function approve(address,uint256)"], signer);
-        toast("Approbation...");
-        let tx = await token.approve(CONTRACT_ADDR, ethers.utils.parseEther(bet));
-        await tx.wait();
+        const amountWei = ethers.utils.parseEther(bet);
+        
+        // Approuver FTA
+        await checkAndApprove(FTA_ADDR, amountWei);
 
         toast("Lancement...");
         startAnim();
         
         const targetFormatted = Math.floor(parseFloat(target) * 100);
-        tx = await contract.playAviator(ethers.utils.parseEther(bet), targetFormatted);
+        const tx = await contract.playAviator(amountWei, targetFormatted);
         await tx.wait();
         
         stopAnim();
-        toast("Résultat reçu !");
+        toast("Résultat reçu ! Vérifiez votre solde.");
         loadBalances();
     } catch(e) { 
         stopAnim(); 
-        toast("Erreur", true); 
+        toast("Erreur ou Annulé", true); 
     }
 }
 
@@ -287,5 +338,5 @@ function toast(msg, isErr = false) {
     t.style.background = isErr ? '#ff1744' : '#fff';
     t.style.color = isErr ? '#fff' : '#000';
     t.style.display = 'block';
-    setTimeout(() => t.style.display = 'none', 3000);
+    setTimeout(() => t.style.display = 'none', 3500);
 }
