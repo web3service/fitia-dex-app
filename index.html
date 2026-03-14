@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FITIA Finance | Web3 Hub</title>
+    <title>FITIA Finance | Web3</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" type="text/javascript"></script>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
-    <link rel="manifest" href="manifest.json">
 </head>
 <body>
     <header class="app-header">
@@ -24,23 +23,19 @@
 
     <main class="content">
         <section id="dash" class="tab-content active">
-            <h2>Gestion du Portefeuille</h2>
             <div class="card">
-                <h3>📥 Dépôt vers FITIA Hub</h3>
+                <h3>📥 Dépôt Hub</h3>
                 <select id="in-token">
                     <option value="FTA">FTA Token</option>
-                    <option value="USDT">USDT Stablecoin</option>
+                    <option value="USDT">USDT</option>
                 </select>
-                <input type="number" id="in-amount" placeholder="Montant à déposer">
+                <input type="number" id="in-amount" placeholder="0.00">
                 <button class="btn-primary" onclick="deposit()">DÉPOSER</button>
             </div>
             <div class="card">
-                <h3>📤 Retrait vers Wallet</h3>
-                <select id="out-token">
-                    <option value="FTA">FTA Token</option>
-                    <option value="USDT">USDT Stablecoin</option>
-                </select>
-                <input type="number" id="out-amount" placeholder="Montant à retirer">
+                <h3>📤 Retrait Wallet</h3>
+                <select id="out-token"><option value="FTA">FTA</option><option value="USDT">USDT</option></select>
+                <input type="number" id="out-amount" placeholder="0.00">
                 <button class="btn-primary" onclick="withdraw()">RETIRER</button>
             </div>
         </section>
@@ -48,11 +43,9 @@
         <section id="trade" class="tab-content">
             <div id="tradingview_chart" class="chart-container"></div>
             <div class="card trade-form">
-                <div class="trade-inputs">
-                    <input type="number" id="tr-marge" placeholder="Marge USDT">
-                    <div class="lev-display">Levier: <span id="lev-ui">10</span>x</div>
-                    <input type="range" min="1" max="50" value="10" id="tr-lev" oninput="document.getElementById('lev-ui').innerText=this.value">
-                </div>
+                <input type="number" id="tr-marge" placeholder="Marge USDT">
+                <div class="lev-display">Levier: <span id="lev-ui">10</span>x</div>
+                <input type="range" min="1" max="50" value="10" id="tr-lev" oninput="document.getElementById('lev-ui').innerText=this.value">
                 <div class="btn-group">
                     <button class="btn-long" onclick="trade(0)">LONG</button>
                     <button class="btn-short" onclick="trade(1)">SHORT</button>
@@ -61,31 +54,19 @@
         </section>
 
         <section id="game" class="tab-content">
-            <div class="game-display">
-                <div id="aviator-screen">1.00x</div>
-            </div>
+            <div id="aviator-screen">1.00x</div>
             <div class="card">
-                <div class="input-row">
-                    <input type="number" id="av-mise" placeholder="Mise FTA">
-                    <input type="number" id="av-target" placeholder="Auto Cashout (ex: 2.0)">
-                </div>
-                <button class="btn-play" onclick="playAviator()">PLACER LE PARI</button>
+                <input type="number" id="av-mise" placeholder="Mise FTA">
+                <input type="number" id="av-target" placeholder="Cible (ex: 2.0)">
+                <button class="btn-play" onclick="playAviator()">PARIER</button>
             </div>
         </section>
 
         <section id="earn" class="tab-content">
             <div class="card">
-                <h2>💎 Staking FTA</h2>
-                <p>Gagnez 15% APY sur vos FTA.</p>
-                <input type="number" id="st-amount" placeholder="FTA à staker">
-                <button class="btn-primary" onclick="stake(0)">DÉMARRER LE STAKING</button>
-            </div>
-            <div class="card">
-                <h2>🏦 Prêts (Lending)</h2>
-                <input type="number" id="ln-col" placeholder="USDT (Collatéral)">
-                <button class="btn-long" onclick="depositCollateral()">DÉPOSER GARANTIE</button>
-                <input type="number" id="ln-bor" placeholder="FTA à emprunter" style="margin-top:15px">
-                <button class="btn-primary" onclick="borrow()">EMPRUNTER</button>
+                <h3>💎 Staking FTA</h3>
+                <input type="number" id="st-amount" placeholder="Montant FTA">
+                <button class="btn-primary" onclick="stake(0)">STAKER</button>
             </div>
         </section>
     </main>
