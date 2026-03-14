@@ -19,79 +19,122 @@ const HUB_ABI = [
 
 let provider, signer, hubContract, account;
 
-// Connexion Wallet
-async function connect() {
-    if (window.ethereum) {
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        await provider.send("eth_requestAccounts", []);
-        signer = provider.getSigner();
-        account = await signer.getAddress();
-        hubContract = new ethers.Contract(ADDRESSES.HUB, HUB_ABI, signer);
-        
-        document.getElementById('user-addr').innerText = account.slice(0,6) + "..." + account.slice(-4);
-        document.getElementById('connectBtn').style.display = 'none';
-        updateUI();
-        initTradingView();
+// --- FONCTION DE CONNEXION ---
+async function connectWallet() {
+    console.log("Tentative de connexion..."); // Pour le debug
+
+    if (typeof window.ethereum !== 'undefined') {
+        try {
+            // Demander l'accès aux comptes
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            
+            signer = provider.getSigner();
+            account = await signer.getAddress();
+            hubContract = new ethers.Contract(ADDRESSES.HUB, HUB_ABI, signer);
+            
+            // Mise à jour de l'interface
+            document.getElementById('user-addr').innerText = account.slice(0,6) + "..." + account.slice(-4);
+            document.getElementById('connectBtn').innerText = "Connecté ✅";
+            document.getElementById('connectBtn').style.background = "#0ecb81";
+            
+            // Charger les données
+            updateUI();
+            initTradingView();
+            
+            console.log("Connecté avec succès :", account);
+        } catch (error) {
+            console.error("Erreur de connexion :", error);
+            alert("Connexion annulée ou erreur : " + error.message);
+        }
     } else {
-        alert("Veuillez ouvrir cette application dans le navigateur de MetaMask ou TrustWallet.");
+        alert("MetaMask ou un navigateur Web3 n'est pas détecté. Veuillez utiliser l'application MetaMask ou Trust Wallet.");
     }
 }
 
+// --- INITIALISATION AU CHARGEMENT ---
+window.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('connectBtn');
+    if (btn) {
+        btn.onclick = connectWallet; // Lie la fonction au bouton
+        console.log("Bouton Connect prêt.");
+    } else {
+        console.error("Bouton connectBtn introuvable dans le HTML !");
+    }
+});
+
+// --- AUTRES FONCTIONS (GARDER TEL QUEL) ---
+
 async function updateUI() {
-    const ftaBal = await hubContract.internalBalances(account, ADDRESSES.FTA);
-    const usdtBal = await hubContract.internalBalances(account, ADDRESSES.USDT);
-    document.getElementById('ui-fta').innerText = ethers.utils.formatUnits(ftaBal, 18);
-    document.getElementById('ui-usdt').innerText = ethers.utils.formatUnits(usdtBal, 6);
+    try {
+        const ftaBal = await hubContract.internalBalances(account, ADDRESSES.FTA);
+        const usdtBal = await hubContract.internalBalances(account, ADDRESSES.USDT);
+        document.getElementById('ui-fta').innerText = ethers.utils.formatUnits(ftaBal, 18);
+        document.getElementById('ui-usdt').innerText = ethers.utils.formatUnits(usdtBal, 6);
+    } catch (e) {
+        console.error("Erreur de mise à jour solde:", e);
+    }
 }
 
-// Navigation
 function switchTab(tabId, el) {
     document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
     el.classList.add('active');
+    
+    // Recharge le graphique si onglet Trade activé
+    if(tabId === 'trade') {
+        setTimeout(initTradingView, 200);
+    }
 }
 
-// Modules Logic
 async function deposit() {
     const token = document.getElementById('in-token').value === 'FTA' ? ADDRESSES.FTA : ADDRESSES.USDT;
-    const amount = ethers.utils.parseUnits(document.getElementById('in-amount').value, token === ADDRESSES.FTA ? 18 : 6);
+    const amountVal = document.getElementById('in-amount').value;
+    if(!amountVal) return alert("Entrez un montant");
+    
+    const amount = ethers.utils.parseUnits(amountVal, token === ADDRESSES.FTA ? 18 : 6);
     try {
         const tx = await hubContract.depositToWallet(token, amount);
-        await tx.wait(); updateUI();
-    } catch (e) { alert("Erreur: Vérifiez l'approbation du token."); }
-}
-
-async function trade(side) {
-    const margin = ethers.utils.parseUnits(document.getElementById('tr-marge').value, 6);
-    const lev = document.getElementById('tr-lev').value;
-    const tx = await hubContract.openPosition(0, side, margin, lev);
-    await tx.wait(); alert("Position ouverte !");
+        await tx.wait(); 
+        updateUI();
+        alert("Dépôt validé !");
+    } catch (e) { 
+        alert("Erreur de dépôt. Avez-vous approuvé le token ?"); 
+    }
 }
 
 async function playAviator() {
-    const mise = ethers.utils.parseUnits(document.getElementById('av-mise').value, 18);
-    const target = Math.floor(document.getElementById('av-target').value * 100);
-    const tx = await hubContract.playAviator(mise, target);
-    
-    let screen = document.getElementById('aviator-screen');
-    let val = 1.00;
-    let timer = setInterval(() => { val += 0.09; screen.innerText = val.toFixed(2) + "x"; }, 100);
+    const miseVal = document.getElementById('av-mise').value;
+    const targetVal = document.getElementById('av-target').value;
+    if(!miseVal || !targetVal) return alert("Remplissez les champs");
 
-    const receipt = await tx.wait();
-    clearInterval(timer);
-    const event = receipt.events.find(e => e.event === "AviatorResolved");
-    screen.innerText = (event.args.crashPoint / 100).toFixed(2) + "x";
-    alert(event.args.won ? "GAGNÉ !" : "CRASH !");
-    updateUI();
+    const mise = ethers.utils.parseUnits(miseVal, 18);
+    const target = Math.floor(targetVal * 100);
+    
+    try {
+        const tx = await hubContract.playAviator(mise, target);
+        let screen = document.getElementById('aviator-screen');
+        let val = 1.00;
+        let timer = setInterval(() => { val += 0.09; screen.innerText = val.toFixed(2) + "x"; }, 100);
+
+        const receipt = await tx.wait();
+        clearInterval(timer);
+        const event = receipt.events.find(e => e.event === "AviatorResolved");
+        screen.innerText = (event.args.crashPoint / 100).toFixed(2) + "x";
+        alert(event.args.won ? "GAGNÉ !" : "CRASH !");
+        updateUI();
+    } catch (e) { 
+        alert("Erreur Aviator : " + e.message); 
+    }
 }
 
 function initTradingView() {
-    new TradingView.widget({
-        "autosize": true, "symbol": "BINANCE:BTCUSDT", "interval": "15",
-        "theme": "dark", "style": "1", "container_id": "tradingview_chart",
-        "hide_top_toolbar": true, "locale": "fr"
-    });
+    if(document.getElementById('tradingview_chart').innerHTML === "") {
+        new TradingView.widget({
+            "autosize": true, "symbol": "BINANCE:BTCUSDT", "interval": "15",
+            "theme": "dark", "style": "1", "container_id": "tradingview_chart",
+            "hide_top_toolbar": true, "locale": "fr"
+        });
+    }
 }
-
-document.getElementById('connectBtn').onclick = connect;
