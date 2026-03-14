@@ -1,0 +1,68 @@
+:root {
+    --bg: #0b0e11;
+    --card: #181a20;
+    --primary: #fcd535;
+    --text: #eaecef;
+    --dim: #848e9c;
+    --green: #0ecb81;
+    --red: #f6465d;
+}
+
+body {
+    background-color: var(--bg); color: var(--text);
+    font-family: 'Inter', sans-serif; margin: 0; padding-bottom: 75px;
+    overflow-x: hidden;
+}
+
+/* Header */
+.app-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 15px; background: var(--card); border-bottom: 1px solid #2b3139;
+}
+.logo { font-size: 20px; font-weight: bold; color: var(--primary); }
+.logo span { color: white; }
+.addr-tag { font-size: 10px; color: var(--dim); margin-bottom: 5px; text-align: right; }
+.btn-connect { background: var(--primary); border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; }
+
+/* Soldes */
+.top-balances {
+    display: flex; background: #2b3139; padding: 10px; justify-content: space-around;
+    font-size: 13px; font-weight: bold; position: sticky; top: 0; z-index: 100;
+}
+.bal-box span { color: var(--primary); }
+
+/* Cartes et Formulaires */
+.content { padding: 15px; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #2b3139; }
+
+input, select {
+    width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px;
+    background: #1e2329; border: 1px solid #474d57; color: white; box-sizing: border-box;
+}
+
+button { cursor: pointer; border: none; transition: 0.2s; }
+.btn-primary { width: 100%; background: var(--primary); padding: 15px; border-radius: 8px; font-weight: bold; }
+.btn-long { background: var(--green); color: white; width: 100%; padding: 15px; border-radius: 8px; font-weight: bold; }
+.btn-short { background: var(--red); color: white; width: 100%; padding: 15px; border-radius: 8px; font-weight: bold; }
+.btn-group { display: flex; gap: 10px; margin-top: 15px; }
+
+/* Chart & Aviator UI */
+.chart-container { height: 350px; border-radius: 12px; overflow: hidden; margin-bottom: 15px; }
+#aviator-screen {
+    height: 250px; background: radial-gradient(circle, #2b3139 0%, #000 100%);
+    border-radius: 15px; display: flex; align-items: center; justify-content: center;
+    font-size: 60px; font-weight: 800; color: var(--primary); border: 2px solid #2b3139;
+}
+.btn-play { width: 100%; background: #f39c12; padding: 18px; border-radius: 8px; font-weight: bold; font-size: 16px; color: white; }
+
+/* Bottom Nav */
+.bottom-nav {
+    position: fixed; bottom: 0; width: 100%; height: 70px;
+    background: var(--card); display: flex; justify-content: space-around; align-items: center;
+    border-top: 1px solid #2b3139; z-index: 1000;
+}
+.nav-item { display: flex; flex-direction: column; align-items: center; font-size: 11px; color: var(--dim); }
+.nav-item.active { color: var(--primary); }
+.nav-item span { margin-top: 5px; }
