@@ -50,7 +50,8 @@ async function connectWallet() {
 
         updateUI();
         loadPools();
-        initChart();
+        // Initialisation du Graphique Pro
+        initTradingChart();
         
     } catch(e) {
         console.error(e);
@@ -78,17 +79,11 @@ function switchPage(pageName) {
 // Fonction utilitaire pour vérifier et approuver
 async function checkAndApprove(tokenAddr, amountWei) {
     const tokenContract = new ethers.Contract(tokenAddr, ERC20_ABI, signer);
-    
-    // 1. Vérifier l'allowance (permission actuelle)
     const allowance = await tokenContract.allowance(userAddr, CONTRACT_ADDR);
     
-    // 2. Si pas assez de permission, demander l'approbation
     if (allowance.lt(amountWei)) {
-        // MESSAGE CORRIGÉ ICI
         toast("Étape 1 : Veuillez confirmer l'autorisation dans votre Wallet...", false);
-        
         try {
-            // On approuve le montant exact (plus sûr pour l'utilisateur)
             const tx = await tokenContract.approve(CONTRACT_ADDR, amountWei);
             await tx.wait();
             toast("Autorisation validée !");
@@ -109,17 +104,14 @@ async function depositToken(symbol) {
 
     try {
         const amountWei = ethers.utils.parseUnits(amt, dec);
-        
-        // Étape d'approbation intelligente
         await checkAndApprove(addr, amountWei);
         
-        // Étape de dépôt
         toast("Étape 2 : Dépôt en cours...");
         const tx = await contract.depositToWallet(addr, amountWei);
         await tx.wait();
         
         toast("Dépôt réussi !");
-        document.getElementById(id).value = ""; // Clear input
+        document.getElementById(id).value = ""; 
         loadBalances();
     } catch(e) { 
         console.error(e);
@@ -137,11 +129,10 @@ async function withdrawToken(symbol) {
 
     try {
         toast("Retrait en cours...");
-        // Pas besoin d'approve pour withdraw, le contrat envoie les fonds
         const tx = await contract.withdrawFromWallet(addr, ethers.utils.parseUnits(amt, dec));
         await tx.wait();
         toast("Retrait réussi !");
-        document.getElementById(id).value = ""; // Clear input
+        document.getElementById(id).value = ""; 
         loadBalances();
     } catch(e) { 
         console.error(e);
@@ -163,35 +154,84 @@ async function loadBalances() {
         document.getElementById('bal-fta').innerText = fta;
         document.getElementById('bal-fta-home').innerText = fta;
         
-        // Loan Info
         const loan = await contract.userLoans(userAddr);
         document.getElementById('user-collat').innerText = ethers.utils.formatUnits(loan.collateralAmount, 6) + " USDT";
     } catch(e) { console.log("Erreur chargement soldes");}
 }
 
-// ================= TRADING =================
-const ctx = document.getElementById('priceChart').getContext('2d');
-let chartData = [];
-const chart = new Chart(ctx, {
-    type: 'line',
-    data: { labels: [], datasets: [{ data: [], borderColor: '#f0b90b', borderWidth: 2, fill: false, tension: 0.4, pointRadius: 0 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
-});
+// ================= TRADING (GRAPHIQUE PRO) =================
+let chart, candleSeries;
 
-function initChart() {
-    setInterval(async () => {
-        try {
-            const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
-            const data = await res.json();
-            const price = parseFloat(data.price);
-            document.getElementById('live-price').innerText = "$" + price.toFixed(2);
+function initTradingChart() {
+    // 1. Création du graphique
+    const container = document.getElementById('tv-chart-container');
+    chart = LightweightCharts.createChart(container, {
+        layout: { background: { type: 'solid', color: '#13161c' }, textColor: '#d1d4dc' },
+        grid: { vertLines: { color: 'rgba(42, 46, 57, 0.5)' }, horzLines: { color: 'rgba(42, 46, 57, 0.5)' } },
+        crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+        rightPriceScale: { borderColor: 'rgba(197, 203, 206, 0.1)' },
+        timeScale: { borderColor: 'rgba(197, 203, 206, 0.1)', timeVisible: true, secondsVisible: false },
+    });
+
+    // 2. Ajout de la série Bougies
+    candleSeries = chart.addCandlestickSeries({
+        upColor: '#00c853', downColor: '#ff1744',
+        borderUpColor: '#00c853', borderDownColor: '#ff1744',
+        wickUpColor: '#00c853', wickDownColor: '#ff1744'
+    });
+
+    // 3. Adaptation mobile
+    chart.applyOptions({
+        width: container.clientWidth,
+        height: container.clientHeight
+    });
+
+    // 4. Récupération Historique (API Binance Futures)
+    fetch('https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=1m&limit=100')
+        .then(r => r.json())
+        .then(data => {
+            const candles = data.map(d => ({
+                time: d[0] / 1000,
+                open: parseFloat(d[1]),
+                high: parseFloat(d[2]),
+                low: parseFloat(d[3]),
+                close: parseFloat(d[4])
+            }));
+            candleSeries.setData(candles);
             
-            if (chartData.length > 20) chartData.shift();
-            chartData.push(price);
-            chart.data.datasets[0].data = chartData;
-            chart.update('none');
-        } catch(e) {}
-    }, 2000);
+            // Afficher le prix actuel
+            const last = candles[candles.length - 1];
+            updatePriceUI(last.close);
+        });
+
+    // 5. Connexion WebSocket Temps Réel
+    const ws = new WebSocket('wss://fstream.binance.com/ws/btcusdt@kline_1m');
+    
+    ws.onmessage = event => {
+        const message = JSON.parse(event.data);
+        const k = message.k;
+        
+        const candle = {
+            time: k.t / 1000,
+            open: parseFloat(k.o),
+            high: parseFloat(k.h),
+            low: parseFloat(k.l),
+            close: parseFloat(k.c)
+        };
+        
+        candleSeries.update(candle);
+        updatePriceUI(candle.close);
+    };
+}
+
+function updatePriceUI(price) {
+    const el = document.getElementById('live-price');
+    el.innerText = "$" + price.toFixed(2);
+    // Couleur dynamique
+    const prev = parseFloat(el.getAttribute('data-price') || price);
+    if (price > prev) el.style.color = '#00c853';
+    else if (price < prev) el.style.color = '#ff1744';
+    el.setAttribute('data-price', price);
 }
 
 function setLev(l) {
@@ -220,8 +260,6 @@ async function depositCollateral() {
     if(!amt || amt <= 0) return toast("Entrez un montant", true);
     try {
         const amountWei = ethers.utils.parseUnits(amt, 6);
-        
-        // Vérifie et Approuve USDT
         await checkAndApprove(USDT_ADDR, amountWei);
         
         toast("Dépôt collatéral...");
@@ -229,9 +267,7 @@ async function depositCollateral() {
         await tx.wait();
         toast("Collatéral ajouté");
         loadBalances();
-    } catch(e) { 
-        toast("Erreur", true); 
-    }
+    } catch(e) { toast("Erreur", true); }
 }
 
 async function borrowFTA() {
@@ -248,17 +284,9 @@ async function borrowFTA() {
 
 async function repayLoan() {
     try {
-        // Pour rembourser, il faut approuver le FTA que l'on rend
-        // On doit d'abord calculer combien on doit (approximatif ou demander à l'utilisateur d'approuver)
-        // Ici on suppose que l'utilisateur a assez de FTA approved ou on le fait dans la fonction.
-        
-        // Récupérer la dette
         const loan = await contract.userLoans(userAddr);
         const debt = loan.borrowedAmount;
-        
-        // Approuver cette dette
         await checkAndApprove(FTA_ADDR, debt);
-
         toast("Remboursement...");
         const tx = await contract.repayLoan();
         await tx.wait();
@@ -297,8 +325,6 @@ async function playAviator() {
 
     try {
         const amountWei = ethers.utils.parseEther(bet);
-        
-        // Approuver FTA
         await checkAndApprove(FTA_ADDR, amountWei);
 
         toast("Lancement...");
