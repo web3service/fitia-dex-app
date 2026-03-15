@@ -52,29 +52,47 @@
             <!-- SECTION WALLET -->
             <section id="page-wallet" class="page">
                 <h3 class="page-title">Mon Portefeuille</h3>
-                <div class="asset-item">
-                    <div class="asset-icon"><img src="https://cryptologos.cc/logos/tether-usdt-logo.png" alt=""></div>
-                    <div class="asset-info"><h4>USDT</h4><small>Tether USD</small></div>
-                    <div class="asset-val"><h4 id="bal-usdt">0.00</h4></div>
-                </div>
-                <div class="input-group">
-                    <input type="number" id="inp-usdt" placeholder="Montant USDT">
-                    <div class="btn-pair">
-                        <button onclick="depositToken('USDT')">Déposer</button>
-                        <button onclick="withdrawToken('USDT')" class="outline">Retirer</button>
+                
+                <!-- Carte USDT -->
+                <div class="token-card">
+                    <div class="token-header">
+                        <img src="https://i.ibb.co/BRGx1GN/IMG-20260228-134642-512-x-512-pixel.webp" alt="USDT" class="token-logo">
+                        <div class="token-details">
+                            <h4>Tether USD</h4>
+                            <span class="token-ticker">USDT</span>
+                        </div>
+                        <div class="token-balance-box">
+                            <h3 id="bal-usdt">0.00</h3>
+                        </div>
+                    </div>
+                    <div class="token-actions">
+                        <input type="number" id="inp-usdt" placeholder="Montant USDT">
+                        <div class="btn-pair">
+                            <button onclick="depositToken('USDT')">Déposer</button>
+                            <button onclick="withdrawToken('USDT')" class="outline">Retirer</button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="asset-item" style="margin-top:20px">
-                    <div class="asset-icon blue-bg"><i class="fas fa-cube"></i></div>
-                    <div class="asset-info"><h4>FTA</h4><small>Fitia Token</small></div>
-                    <div class="asset-val"><h4 id="bal-fta">0.00</h4></div>
-                </div>
-                <div class="input-group">
-                    <input type="number" id="inp-fta" placeholder="Montant FTA">
-                    <div class="btn-pair">
-                        <button onclick="depositToken('FTA')">Déposer</button>
-                        <button onclick="withdrawToken('FTA')" class="outline">Retirer</button>
+                <!-- Carte FTA -->
+                <div class="token-card">
+                    <div class="token-header">
+                        <!-- Logo FTA -->
+                        <img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" alt="FTA" class="token-logo">
+                        <div class="token-details">
+                            <h4>Fitia Token</h4>
+                            <span class="token-ticker">FTA</span>
+                        </div>
+                        <div class="token-balance-box">
+                            <h3 id="bal-fta">0.00</h3>
+                        </div>
+                    </div>
+                    <div class="token-actions">
+                        <input type="number" id="inp-fta" placeholder="Montant FTA">
+                        <div class="btn-pair">
+                            <button onclick="depositToken('FTA')">Déposer</button>
+                            <button onclick="withdrawToken('FTA')" class="outline">Retirer</button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -83,17 +101,13 @@
             <section id="page-trade" class="page">
                 <h3 class="page-title">Trading Futures</h3>
                 <div class="chart-header">
-                    <!-- Le nom de la paire sera mis à jour par JS -->
                     <span class="pair-name" id="pair-name-display">BTC/USDT</span>
                     <span id="live-price" class="price-display">---</span>
                 </div>
-                
                 <div class="chart-box-pro" id="tv-chart-container"></div>
-                
                 <div class="trade-form">
                     <div class="form-row">
                         <label>Actif</label>
-                        <!-- J'AI AJOUTÉ onchange ICI -->
                         <select id="trade-asset" onchange="changeTradingAsset(this.value)">
                             <option value="0">BTC</option>
                             <option value="1">ETH</option>

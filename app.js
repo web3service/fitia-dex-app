@@ -24,8 +24,6 @@ const CONTRACT_ABI = [
 ];
 
 let provider, signer, contract, userAddr;
-
-// VARIABLES GLOBALES POUR LE GRAPHIQUE
 let chart = null;
 let candleSeries = null;
 let activeWs = null;
@@ -77,7 +75,6 @@ function switchPage(pageName) {
 
     if(pageName === 'trade') {
         setTimeout(() => {
-            // Si le graphique n'existe pas, on l'init avec BTC par défaut
             if(!chartCreated) initTradingChart('BTCUSDT');
         }, 100);
     }
@@ -169,25 +166,23 @@ async function loadBalances() {
 
 // ================= TRADING =================
 
-// Fonction appelée quand on change le select dans HTML
 function changeTradingAsset(val) {
     let symbol = 'BTCUSDT';
     let name = 'BTC/USDT';
 
-    if(val == 1) { // ETH
+    if(val == 1) { 
         symbol = 'ETHUSDT';
         name = 'ETH/USDT';
     }
 
     document.getElementById('pair-name-display').innerText = name;
-    loadChartData(symbol); // Recharge les données
+    loadChartData(symbol);
 }
 
 function initTradingChart(symbol = 'BTCUSDT') {
     const container = document.getElementById('tv-chart-container');
     if (!container || typeof LightweightCharts === 'undefined') return;
 
-    // Création unique du graphique
     if(!chart) {
         chart = LightweightCharts.createChart(container, {
             layout: { background: { type: 'solid', color: '#13161c' }, textColor: '#d1d4dc' },
@@ -205,17 +200,14 @@ function initTradingChart(symbol = 'BTCUSDT') {
         chartCreated = true;
     }
     
-    // Charger les données
     loadChartData(symbol);
 }
 
 function loadChartData(symbol) {
     if(!candleSeries) return;
 
-    // 1. Fermer l'ancien WebSocket
     if(activeWs) activeWs.close();
 
-    // 2. Charger l'historique
     fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=1m&limit=50`)
         .then(r => r.json())
         .then(data => {
@@ -230,7 +222,6 @@ function loadChartData(symbol) {
             if(candles.length > 0) updatePriceUI(candles[candles.length-1].close);
         });
 
-    // 3. Ouvrir nouveau WebSocket
     activeWs = new WebSocket(`wss://fstream.binance.com/ws/${symbol.toLowerCase()}@kline_1m`);
     activeWs.onmessage = event => {
         const message = JSON.parse(event.data);
