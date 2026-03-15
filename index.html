@@ -49,7 +49,7 @@
                 </div>
             </section>
 
-            <!-- SECTION WALLET -->
+            <!-- SECTION WALLET (MODIFIÉ) -->
             <section id="page-wallet" class="page">
                 <h3 class="page-title">Mon Portefeuille</h3>
                 
@@ -68,8 +68,10 @@
                     <div class="token-actions">
                         <input type="number" id="inp-usdt" placeholder="Montant USDT">
                         <div class="btn-pair">
-                            <button onclick="depositToken('USDT')">Déposer</button>
-                            <button onclick="withdrawToken('USDT')" class="outline">Retirer</button>
+                            <!-- AJOUT DE buy-btn (VERT) -->
+                            <button onclick="depositToken('USDT')" class="buy-btn">Déposer</button>
+                            <!-- AJOUT DE sell-btn (ROUGE) -->
+                            <button onclick="withdrawToken('USDT')" class="sell-btn">Retirer</button>
                         </div>
                     </div>
                 </div>
@@ -77,7 +79,6 @@
                 <!-- Carte FTA -->
                 <div class="token-card">
                     <div class="token-header">
-                        <!-- Logo FTA -->
                         <img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" alt="FTA" class="token-logo">
                         <div class="token-details">
                             <h4>Fitia Token</h4>
@@ -90,8 +91,10 @@
                     <div class="token-actions">
                         <input type="number" id="inp-fta" placeholder="Montant FTA">
                         <div class="btn-pair">
-                            <button onclick="depositToken('FTA')">Déposer</button>
-                            <button onclick="withdrawToken('FTA')" class="outline">Retirer</button>
+                            <!-- AJOUT DE buy-btn (VERT) -->
+                            <button onclick="depositToken('FTA')" class="buy-btn">Déposer</button>
+                            <!-- AJOUT DE sell-btn (ROUGE) -->
+                            <button onclick="withdrawToken('FTA')" class="sell-btn">Retirer</button>
                         </div>
                     </div>
                 </div>

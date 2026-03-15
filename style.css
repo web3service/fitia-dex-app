@@ -67,7 +67,7 @@ input:focus { border-color: var(--primary); outline: none; }
 .outline { background: transparent; border: 1px solid var(--text-dim); color: var(--text-dim); }
 .outline-danger { background: transparent; border: 1px solid var(--red); color: var(--red); }
 
-/* --- STYLE WALLET (TOKEN CARDS) - CORRECTION FOND BLANC --- */
+/* --- STYLE WALLET (TOKEN CARDS) --- */
 .token-card {
     background: var(--bg-card);
     border-radius: 12px;
@@ -89,7 +89,6 @@ input:focus { border-color: var(--primary); outline: none; }
     height: 50px;
     border-radius: 50%;
     object-fit: cover;
-    /* J'AI ENLEVE BACKGROUND: WHITE ET BOX-SHADOW ICI */
     margin-right: 15px;
 }
 
@@ -125,6 +124,23 @@ input:focus { border-color: var(--primary); outline: none; }
     padding: 15px;
 }
 
+/* --- STYLES BOUTONS VERT / ROUGE (WALLET & TRADING) --- */
+/* Vert pour Déposer / Long */
+.buy-btn {
+    background: var(--green); 
+    color: white; 
+    border: none;
+    font-size: 16px;
+}
+
+/* Rouge pour Retirer / Short */
+.sell-btn {
+    background: var(--red); 
+    color: white; 
+    border: none;
+    font-size: 16px;
+}
+
 /* TRADING */
 .chart-header { display: flex; align-items: baseline; margin-bottom: 10px; }
 .pair-name { font-weight: bold; margin-right: 10px; }
@@ -135,8 +151,6 @@ input:focus { border-color: var(--primary); outline: none; }
 .leverage-btns button { flex: 1; padding: 10px; background: transparent; border: 1px solid var(--text-dim); color: var(--text-dim); border-radius: 6px; }
 .leverage-btns button.active { background: var(--primary); color: #000; border-color: var(--primary); }
 .big-btns button { padding: 18px; font-size: 16px; }
-.buy-btn { background: var(--green); color: white; }
-.sell-btn { background: var(--red); color: white; }
 
 /* AVIATOR */
 .game-area { text-align: center; }
