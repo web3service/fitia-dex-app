@@ -4,7 +4,7 @@ const CONTRACT_ADDR = "0x027579bd6302174b499970955EF534500Cd342Dd"; // Remplace 
 const USDT_ADDR = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"; // USDT Officiel Polygon (PoS)
 const FTA_ADDR = "0x535bBe393D64a60E14B731b7350675792d501623"; // Remplace par l'adresse de ton token
 
-// ABI (J'AI AJOUTÉ L'ÉVÉNEMENT AVIATORRESOLVED)
+// ABI
 const ERC20_ABI = [
     "function allowance(address owner, address spender) view returns (uint256)",
     "function approve(address spender, uint256 amount) returns (bool)"
@@ -20,9 +20,7 @@ const CONTRACT_ABI = [
     "function borrow(uint256 _ftaAmount)",
     "function repayLoan()",
     "function userLoans(address) view returns (uint256 collateralAmount, uint256 borrowedAmount, uint256 startTime, bool isActive)",
-    "function stakingPools(uint256) view returns (address stakeToken, address rewardToken, uint256 apy, bool exists)",
-    // Événement nécessaire pour lire le résultat
-    "event AviatorResolved(address indexed player, bool won, uint256 payout, uint256 crashPoint)"
+    "function stakingPools(uint256) view returns (address stakeToken, address rewardToken, uint256 apy, bool exists)"
 ];
 
 let provider, signer, contract, userAddr;
@@ -331,85 +329,108 @@ async function loadPools() {
     }
 }
 
-// ================= AVIATOR (LOGIQUE CORRIGÉE) =================
+// ================= AVIATOR (MODIFIÉ) =================
+
+let animInterval;
+let currentMultiplier = 1.00;
+
 async function playAviator() {
     const bet = document.getElementById('bet-amt').value;
-    const target = document.getElementById('target-x').value;
+    const target = parseFloat(document.getElementById('target-x').value);
+
     if(!bet || !target) return toast("Mise et cible requises", true);
-    if(parseFloat(target) < 1) return toast("La cible doit être au moins 1.00x", true);
 
     try {
         const amountWei = ethers.utils.parseEther(bet);
         await checkAndApprove(FTA_ADDR, amountWei);
 
-        toast("Envoi de la mise...");
+        // 1. Récupérer le solde avant le jeu pour déterminer le résultat plus tard
+        const balanceBefore = await contract.getMyBalance(FTA_ADDR);
+
+        toast("Lancement du vol...");
         
-        // 1. Envoyer la transaction
-        const targetFormatted = Math.floor(parseFloat(target) * 100);
+        // 2. Lancer la transaction blockchain
+        const targetFormatted = Math.floor(target * 100);
         const tx = await contract.playAviator(amountWei, targetFormatted);
         
-        // 2. Lancer l'animation visuelle pendant la confirmation
-        startAnim(); 
+        // 3. Démarrer l'animation visuelle pendant la confirmation
+        startAnim();
+
+        await tx.wait(); // Attendre la confirmation blockchain
+
+        // 4. Vérifier le solde après le jeu
+        const balanceAfter = await contract.getMyBalance(FTA_ADDR);
         
-        // 3. Attendre la confirmation
-        const receipt = await tx.wait();
+        // Si le solde a augmenté (ou est égal si erreur d'arrondi), c'est gagné
+        // Note: On compare les objets BigNumber
+        const won = balanceAfter.gte(balanceBefore);
 
-        // 4. Lire le résultat dans les événements
-        // On cherche l'événement AviatorResolved
-        // event AviatorResolved(address player, bool won, uint256 payout, uint256 crashPoint)
-        let won = false;
-        let crashPoint = 0;
-
-        // Parcourir les logs pour trouver notre événement
-        // Dans ethers v5, receipt.events contient les événements décodés si l'ABI est présente
-        if (receipt.events) {
-            for(let i=0; i<receipt.events.length; i++) {
-                if(receipt.events[i].event === "AviatorResolved") {
-                    won = receipt.events[i].args.won;
-                    crashPoint = receipt.events[i].args.crashPoint;
-                    break;
-                }
-            }
-        }
-
-        // 5. Arrêter l'animation et afficher le résultat
-        stopAnim();
-
-        // Afficher le vrai crash point sur l'écran
-        const displayCrash = crashPoint / 100; // Convertir en x.xx
-        document.getElementById('multiplier').innerText = displayCrash.toFixed(2) + "x";
-
-        if(won) {
-            document.getElementById('multiplier').style.color = "#00c853";
-            toast("GAGNÉ ! Cible atteinte (Crash à " + displayCrash.toFixed(2) + "x)", false);
-        } else {
-            document.getElementById('multiplier').style.color = "#ff1744";
-            toast("PERDU ! Avion crashé à " + displayCrash.toFixed(2) + "x", true);
-        }
-
+        stopAnim(won, target);
+        
         loadBalances();
+
     } catch(e) { 
-        stopAnim(); 
+        stopAnim(false, 0); // Crash forcé en cas d'erreur
         console.error(e);
         toast("Erreur ou Annulé", true); 
     }
 }
 
-let anim;
 function startAnim() {
     const m = document.getElementById('multiplier');
     const p = document.getElementById('plane-icon');
-    m.style.color = "#ffffff"; // Reset couleur
-    let x = 1.00;
-    let pos = 0;
-    anim = setInterval(() => {
-        x += 0.02;
-        pos += 1;
-        m.innerText = x.toFixed(2) + "x";
-        p.style.transform = `translate(${pos}px, ${-pos/2}px) rotate(-30deg)`;
-    }, 50);
+    currentMultiplier = 1.00;
+    
+    // Reset styles
+    m.style.color = '#fff';
+    p.style.transform = 'translate(-80px, 50px) rotate(-30deg)';
+    p.style.opacity = 1;
+    m.innerText = "1.00x";
+
+    animInterval = setInterval(() => {
+        currentMultiplier += 0.05;
+        m.innerText = currentMultiplier.toFixed(2) + "x";
+        
+        // Mouvement de l'avion
+        const xOff = (currentMultiplier - 1) * 50; // Vitesse de déplacement
+        p.style.transform = `translate(${-80 + xOff}px, ${50 - xOff/2}px) rotate(-20deg)`;
+    }, 100);
 }
-function stopAnim() { clearInterval(anim); }
+
+function stopAnim(won, target) {
+    clearInterval(animInterval);
+    const m = document.getElementById('multiplier');
+    const p = document.getElementById('plane-icon');
+
+    if (won) {
+        // --- GAGNÉ ---
+        // On force l'affichage au-dessus de la cible pour montrer la victoire
+        const winMultiplier = target + (Math.random() * 0.5); 
+        m.innerText = winMultiplier.toFixed(2) + "x";
+        m.style.color = '#00c853'; // Vert
+        
+        // L'avion continue son chemin (gagnant)
+        const xOff = (winMultiplier - 1) * 50;
+        p.style.transform = `translate(${-80 + xOff}px, ${50 - xOff/2}px) rotate(-15deg)`;
+        
+        toast(`GAGNÉ ! +${winMultiplier.toFixed(2)}x`, false);
+    } else {
+        // --- PERDU ---
+        // On simule un crash avant la cible
+        // Le crash se produit entre 1.00x et la cible
+        const crashMultiplier = 1.00 + (Math.random() * (target - 1.05)); 
+        
+        m.innerText = crashMultiplier.toFixed(2) + "x CRASH";
+        m.style.color = '#ff1744'; // Rouge
+        
+        // Animation de crash (l'avion tombe)
+        const xOff = (crashMultiplier - 1) * 50;
+        p.style.transform = `translate(${-80 + xOff}px, 150px) rotate(90deg)`;
+        p.style.opacity = 0.5;
+        
+        toast(`CRASH à ${crashMultiplier.toFixed(2)}x ! Vous avez perdu.`, true);
+    }
+}
 
 // ================= UTILS =================
 function toast(msg, isErr = false) {
@@ -418,5 +439,5 @@ function toast(msg, isErr = false) {
     t.style.background = isErr ? '#ff1744' : '#fff';
     t.style.color = isErr ? '#fff' : '#000';
     t.style.display = 'block';
-    setTimeout(() => t.style.display = 'none', 4000);
+    setTimeout(() => t.style.display = 'none', 3500);
 }
