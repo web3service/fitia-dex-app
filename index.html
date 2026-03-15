@@ -7,9 +7,7 @@
     <title>Fitia Finance App</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Ethers pour Blockchain -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-    <!-- Librairie Graphique PRO (Version fixe stable) -->
     <script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
@@ -85,17 +83,18 @@
             <section id="page-trade" class="page">
                 <h3 class="page-title">Trading Futures</h3>
                 <div class="chart-header">
-                    <span class="pair-name">BTC/USDT</span>
+                    <!-- Le nom de la paire sera mis à jour par JS -->
+                    <span class="pair-name" id="pair-name-display">BTC/USDT</span>
                     <span id="live-price" class="price-display">---</span>
                 </div>
                 
-                <!-- ID unique pour le graphique -->
                 <div class="chart-box-pro" id="tv-chart-container"></div>
                 
                 <div class="trade-form">
                     <div class="form-row">
                         <label>Actif</label>
-                        <select id="trade-asset">
+                        <!-- J'AI AJOUTÉ onchange ICI -->
+                        <select id="trade-asset" onchange="changeTradingAsset(this.value)">
                             <option value="0">BTC</option>
                             <option value="1">ETH</option>
                         </select>

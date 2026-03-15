@@ -24,7 +24,12 @@ const CONTRACT_ABI = [
 ];
 
 let provider, signer, contract, userAddr;
-let chartCreated = false; // Drapeau pour savoir si le graphique est fait
+
+// VARIABLES GLOBALES POUR LE GRAPHIQUE
+let chart = null;
+let candleSeries = null;
+let activeWs = null;
+let chartCreated = false;
 
 // ================= CORE FUNCTIONS =================
 
@@ -65,22 +70,16 @@ function updateUI() {
 
 // ================= NAVIGATION =================
 function switchPage(pageName) {
-    // Masquer toutes les pages
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    // Afficher la cible
     document.getElementById('page-' + pageName).classList.add('active');
-    
-    // Mettre à jour le menu
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     event.currentTarget.classList.add('active');
 
-    // CORRECTION GRAPHIQUE :
-    // On utilise un petit délai (timeout) pour laisser le temps à la page de s'afficher
-    // avant de calculer la taille du graphique.
     if(pageName === 'trade') {
         setTimeout(() => {
-            if(!chartCreated) initTradingChart();
-        }, 100); // 100ms de délai
+            // Si le graphique n'existe pas, on l'init avec BTC par défaut
+            if(!chartCreated) initTradingChart('BTCUSDT');
+        }, 100);
     }
 }
 
@@ -170,40 +169,54 @@ async function loadBalances() {
 
 // ================= TRADING =================
 
-function initTradingChart() {
-    // Vérification de sécurité
-    const container = document.getElementById('tv-chart-container');
-    if (!container || typeof LightweightCharts === 'undefined') {
-        console.error("Graphique impossible à initialiser");
-        return;
+// Fonction appelée quand on change le select dans HTML
+function changeTradingAsset(val) {
+    let symbol = 'BTCUSDT';
+    let name = 'BTC/USDT';
+
+    if(val == 1) { // ETH
+        symbol = 'ETHUSDT';
+        name = 'ETH/USDT';
     }
 
-    // Création du graphique
-    const chart = LightweightCharts.createChart(container, {
-        layout: { 
-            background: { type: 'solid', color: '#13161c' }, 
-            textColor: '#d1d4dc' 
-        },
-        grid: { 
-            vertLines: { color: 'rgba(42, 46, 57, 0.5)' }, 
-            horzLines: { color: 'rgba(42, 46, 57, 0.5)' } 
-        },
-        width: container.clientWidth,
-        height: container.clientHeight,
-        timeScale: {
-            timeVisible: true,
-            secondsVisible: false,
-        }
-    });
+    document.getElementById('pair-name-display').innerText = name;
+    loadChartData(symbol); // Recharge les données
+}
 
-    const candleSeries = chart.addCandlestickSeries({
-        upColor: '#00c853', downColor: '#ff1744',
-        borderUpColor: '#00c853', borderDownColor: '#ff1744',
-        wickUpColor: '#00c853', wickDownColor: '#ff1744'
-    });
+function initTradingChart(symbol = 'BTCUSDT') {
+    const container = document.getElementById('tv-chart-container');
+    if (!container || typeof LightweightCharts === 'undefined') return;
 
-    // 1. Récupérer l'historique
-    fetch('https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=1m&limit=50')
+    // Création unique du graphique
+    if(!chart) {
+        chart = LightweightCharts.createChart(container, {
+            layout: { background: { type: 'solid', color: '#13161c' }, textColor: '#d1d4dc' },
+            grid: { vertLines: { color: 'rgba(42, 46, 57, 0.5)' }, horzLines: { color: 'rgba(42, 46, 57, 0.5)' } },
+            width: container.clientWidth,
+            height: container.clientHeight,
+            timeScale: { timeVisible: true, secondsVisible: false }
+        });
+
+        candleSeries = chart.addCandlestickSeries({
+            upColor: '#00c853', downColor: '#ff1744',
+            borderUpColor: '#00c853', borderDownColor: '#ff1744',
+            wickUpColor: '#00c853', wickDownColor: '#ff1744'
+        });
+        chartCreated = true;
+    }
+    
+    // Charger les données
+    loadChartData(symbol);
+}
+
+function loadChartData(symbol) {
+    if(!candleSeries) return;
+
+    // 1. Fermer l'ancien WebSocket
+    if(activeWs) activeWs.close();
+
+    // 2. Charger l'historique
+    fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=1m&limit=50`)
         .then(r => r.json())
         .then(data => {
             const candles = data.map(d => ({
@@ -215,12 +228,11 @@ function initTradingChart() {
             }));
             candleSeries.setData(candles);
             if(candles.length > 0) updatePriceUI(candles[candles.length-1].close);
-        })
-        .catch(err => console.error("Erreur API Binance", err));
+        });
 
-    // 2. Temps réel
-    const ws = new WebSocket('wss://fstream.binance.com/ws/btcusdt@kline_1m');
-    ws.onmessage = event => {
+    // 3. Ouvrir nouveau WebSocket
+    activeWs = new WebSocket(`wss://fstream.binance.com/ws/${symbol.toLowerCase()}@kline_1m`);
+    activeWs.onmessage = event => {
         const message = JSON.parse(event.data);
         const k = message.k;
         const candle = {
@@ -233,9 +245,6 @@ function initTradingChart() {
         candleSeries.update(candle);
         updatePriceUI(candle.close);
     };
-    
-    // Valider que le graphique est créé
-    chartCreated = true;
 }
 
 function updatePriceUI(price) {
