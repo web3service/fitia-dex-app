@@ -102,7 +102,10 @@ async function checkAndApprove(tokenAddr, amountWei) {
 async function depositToken(symbol) {
     const id = symbol === 'USDT' ? 'inp-usdt' : 'inp-fta';
     const addr = symbol === 'USDT' ? USDT_ADDR : FTA_ADDR;
-    const dec = symbol === 'USDT' ? 6 : 18;
+    
+    // CORRECTION : USDT = 6 décimales, FTA = 8 décimales
+    const dec = symbol === 'USDT' ? 6 : 8;
+    
     const amt = document.getElementById(id).value;
     
     if(!amt || amt <= 0) return toast("Entrez un montant valide", true);
@@ -127,7 +130,10 @@ async function depositToken(symbol) {
 async function withdrawToken(symbol) {
     const id = symbol === 'USDT' ? 'inp-usdt' : 'inp-fta';
     const addr = symbol === 'USDT' ? USDT_ADDR : FTA_ADDR;
-    const dec = symbol === 'USDT' ? 6 : 18;
+    
+    // CORRECTION : USDT = 6 décimales, FTA = 8 décimales
+    const dec = symbol === 'USDT' ? 6 : 8;
+    
     const amt = document.getElementById(id).value;
     
     if(!amt || amt <= 0) return toast("Entrez un montant valide", true);
@@ -151,8 +157,9 @@ async function loadBalances() {
         const uBal = await contract.getMyBalance(USDT_ADDR);
         const fBal = await contract.getMyBalance(FTA_ADDR);
         
-        const usdt = parseFloat(ethers.utils.formatUnits(uBal, 6)).toFixed(2);
-        const fta = parseFloat(ethers.utils.formatEther(fBal)).toFixed(2);
+        // CORRECTION AFFICHAGE : 5 décimales et formatage correct
+        const usdt = parseFloat(ethers.utils.formatUnits(uBal, 6)).toFixed(5);
+        const fta = parseFloat(ethers.utils.formatUnits(fBal, 8)).toFixed(5); // FTA a 8 décimales
         
         document.getElementById('bal-usdt').innerText = usdt;
         document.getElementById('bal-usdt-home').innerText = usdt;
@@ -272,7 +279,7 @@ async function depositCollateral() {
     const amt = document.getElementById('inp-collat').value;
     if(!amt || amt <= 0) return toast("Entrez un montant", true);
     try {
-        const amountWei = ethers.utils.parseUnits(amt, 6);
+        const amountWei = ethers.utils.parseUnits(amt, 6); // USDT 6 dec
         await checkAndApprove(USDT_ADDR, amountWei);
         toast("Dépôt collatéral...");
         const tx = await contract.depositCollateral(amountWei);
@@ -287,7 +294,8 @@ async function borrowFTA() {
     if(!amt || amt <= 0) return toast("Entrez un montant", true);
     try {
         toast("Emprunt...");
-        const tx = await contract.borrow(ethers.utils.parseEther(amt));
+        // CORRECTION : FTA = 8 décimales
+        const tx = await contract.borrow(ethers.utils.parseUnits(amt, 8));
         await tx.wait();
         toast("Prêt reçu !");
         loadBalances();
@@ -298,6 +306,7 @@ async function repayLoan() {
     try {
         const loan = await contract.userLoans(userAddr);
         const debt = loan.borrowedAmount;
+        // CORRECTION : Utiliser l'adresse FTA et les 8 décimales pour l'approbation
         await checkAndApprove(FTA_ADDR, debt);
         toast("Remboursement...");
         const tx = await contract.repayLoan();
@@ -336,7 +345,8 @@ async function playAviator() {
     if(!bet || !target) return toast("Mise et cible requises", true);
 
     try {
-        const amountWei = ethers.utils.parseEther(bet);
+        // CORRECTION : FTA = 8 décimales
+        const amountWei = ethers.utils.parseUnits(bet, 8);
         await checkAndApprove(FTA_ADDR, amountWei);
 
         toast("Lancement...");
