@@ -49,11 +49,9 @@
                 </div>
             </section>
 
-            <!-- SECTION WALLET (CORRECTION COULEUR ICI) -->
+            <!-- SECTION WALLET -->
             <section id="page-wallet" class="page">
                 <h3 class="page-title">Mon Portefeuille</h3>
-                
-                <!-- Carte USDT -->
                 <div class="token-card">
                     <div class="token-header">
                         <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" alt="USDT" class="token-logo">
@@ -68,14 +66,11 @@
                     <div class="token-actions">
                         <input type="number" id="inp-usdt" placeholder="Montant USDT">
                         <div class="btn-pair">
-                            <!-- J'AI REMIS LA CLASSE 'primary' ICI -->
-                            <button onclick="depositToken('USDT')" class="primary">Déposer</button>
+                            <button onclick="depositToken('USDT')">Déposer</button>
                             <button onclick="withdrawToken('USDT')" class="outline">Retirer</button>
                         </div>
                     </div>
                 </div>
-
-                <!-- Carte FTA -->
                 <div class="token-card">
                     <div class="token-header">
                         <img src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png" alt="FTA" class="token-logo">
@@ -90,8 +85,7 @@
                     <div class="token-actions">
                         <input type="number" id="inp-fta" placeholder="Montant FTA">
                         <div class="btn-pair">
-                            <!-- J'AI REMIS LA CLASSE 'primary' ICI -->
-                            <button onclick="depositToken('FTA')" class="primary">Déposer</button>
+                            <button onclick="depositToken('FTA')">Déposer</button>
                             <button onclick="withdrawToken('FTA')" class="outline">Retirer</button>
                         </div>
                     </div>
@@ -166,16 +160,16 @@
             <section id="page-aviator" class="page">
                 <h3 class="page-title">Aviator Game</h3>
                 <div class="game-area">
-                    <div class="sky-bg" id="aviator-bg">
+                    <div class="sky-bg">
                         <div class="plane" id="plane-icon">✈️</div>
-                        <div class="multiplier" id="multiplier">EN ATTENTE</div>
+                        <div class="multiplier" id="multiplier">1.00x</div>
                     </div>
                     <div class="game-controls">
                         <div class="input-row-2">
                             <input type="number" id="bet-amt" placeholder="Mise FTA">
-                            <input type="number" id="target-x" placeholder="Cible (x)">
+                            <input type="number" id="target-x" placeholder="Cible (ex: 2.5)">
                         </div>
-                        <button onclick="playAviator()" id="aviator-btn" class="play-btn">LANCER LE VOL</button>
+                        <button onclick="playAviator()" class="play-btn">LANCER LE VOL</button>
                     </div>
                 </div>
             </section>

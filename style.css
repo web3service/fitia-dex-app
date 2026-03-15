@@ -62,15 +62,33 @@ input:focus { border-color: var(--primary); outline: none; }
 .btn-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .btn-pair button, .full-btn { padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
 .full-btn { width: 100%; font-size: 16px; }
-.primary { background: var(--primary); color: #000; } /* VOICI LA COULEUR JAUNE */
+.primary { background: var(--primary); color: #000; }
 .accent { background: var(--accent); color: white; }
 .outline { background: transparent; border: 1px solid var(--text-dim); color: var(--text-dim); }
 .outline-danger { background: transparent; border: 1px solid var(--red); color: var(--red); }
 
-/* WALLET */
-.token-card { background: var(--bg-card); border-radius: 12px; padding: 0; margin-bottom: 20px; overflow: hidden; border: 1px solid #2b3139; }
-.token-header { display: flex; align-items: center; padding: 15px; background: rgba(0,0,0,0.1); }
-.token-logo { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-right: 15px; }
+/* WALLET TOKEN CARDS */
+.token-card {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 0;
+    margin-bottom: 20px;
+    overflow: hidden;
+    border: 1px solid #2b3139;
+}
+.token-header {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background: rgba(0,0,0,0.1);
+}
+.token-logo {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 15px;
+}
 .token-details { flex: 1; }
 .token-details h4 { margin: 0; font-size: 18px; color: var(--text); }
 .token-ticker { font-size: 12px; color: var(--text-dim); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; }
@@ -93,21 +111,11 @@ input:focus { border-color: var(--primary); outline: none; }
 
 /* AVIATOR */
 .game-area { text-align: center; }
-.sky-bg { 
-    height: 250px; background: radial-gradient(circle at bottom, #1a237e, #000); 
-    border-radius: 15px; position: relative; overflow: hidden; display: flex; 
-    align-items: center; justify-content: center; margin-bottom: 20px; 
-    transition: background 0.5s;
-}
-.sky-bg.crash { background: radial-gradient(circle at center, #b71c1c, #000); }
-.multiplier { font-size: 40px; font-weight: bold; z-index: 2; text-shadow: 0 0 10px rgba(255,255,255,0.5); transition: color 0.2s; }
-.multiplier.win { color: var(--green); }
-.multiplier.lose { color: var(--red); }
-.plane { position: absolute; font-size: 40px; transform: translate(-80px, 50px) rotate(-30deg); transition: opacity 0.2s; }
-.plane.crash { opacity: 0.3; transform: translate(0px, 0px) rotate(90deg); }
+.sky-bg { height: 250px; background: radial-gradient(circle at bottom, #1a237e, #000); border-radius: 15px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+.multiplier { font-size: 40px; font-weight: bold; z-index: 2; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+.plane { position: absolute; font-size: 40px; transform: translate(-80px, 50px) rotate(-30deg); }
 .input-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .play-btn { width: 100%; padding: 18px; background: linear-gradient(45deg, var(--primary), #ffca28); border: none; color: #000; font-weight: 800; font-size: 18px; border-radius: 10px; margin-top: 15px; }
-.play-btn:disabled { background: #555; color: #888; cursor: not-allowed; }
 
 /* MENU DU BAS */
 .bottom-menu { position: fixed; bottom: 0; left: 0; width: 100%; background: #12141a; border-top: 1px solid #2b3139; display: flex; justify-content: space-around; padding: 8px 0; padding-bottom: env(safe-area-inset-bottom); z-index: 100; }
@@ -117,5 +125,6 @@ input:focus { border-color: var(--primary); outline: none; }
 
 /* TOAST */
 #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: white; color: #333; padding: 12px 25px; border-radius: 50px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: none; z-index: 999; }
+
 .info-card { background: var(--bg-card); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px; }
 .separator { height: 1px; background: var(--text-dim); margin: 25px 0; opacity: 0.3; }
