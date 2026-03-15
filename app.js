@@ -4,11 +4,10 @@ const CONTRACT_ADDR = "0x027579bd6302174b499970955EF534500Cd342Dd"; // Remplace 
 const USDT_ADDR = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"; // USDT Officiel Polygon (PoS)
 const FTA_ADDR = "0x535bBe393D64a60E14B731b7350675792d501623"; // Remplace par l'adresse de ton token
 
-// ABI nécessaire (Approbation + Fonctions Contrat)
+// ABI
 const ERC20_ABI = [
     "function allowance(address owner, address spender) view returns (uint256)",
-    "function approve(address spender, uint256 amount) returns (bool)",
-    "function balanceOf(address owner) view returns (uint256)"
+    "function approve(address spender, uint256 amount) returns (bool)"
 ];
 
 const CONTRACT_ABI = [
@@ -25,6 +24,7 @@ const CONTRACT_ABI = [
 ];
 
 let provider, signer, contract, userAddr;
+let chartCreated = false; // Variable pour ne créer le graphique qu'une fois
 
 // ================= CORE FUNCTIONS =================
 
@@ -37,7 +37,6 @@ async function connectWallet() {
         contract = new ethers.Contract(CONTRACT_ADDR, CONTRACT_ABI, signer);
         userAddr = accs[0];
         
-        // Force Polygon Network en utilisant la variable CHAIN_ID
         try {
             await window.ethereum.request({
                 method: 'wallet_switchEthereumChain',
@@ -50,8 +49,7 @@ async function connectWallet() {
 
         updateUI();
         loadPools();
-        // Initialisation du Graphique Pro
-        initTradingChart();
+        // On ne charge pas le graphique ici, on attend que l'utilisateur clique sur Trade
         
     } catch(e) {
         console.error(e);
@@ -72,11 +70,15 @@ function switchPage(pageName) {
     document.getElementById('page-' + pageName).classList.add('active');
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     event.currentTarget.classList.add('active');
+
+    // CORRECTION BUG GRAPHIQUE : On charge le graphique seulement si on va sur Trade
+    if(pageName === 'trade' && !chartCreated) {
+        initTradingChart();
+    }
 }
 
-// ================= WALLET LOGIQUE APPROBATION =================
+// ================= WALLET LOGIQUE =================
 
-// Fonction utilitaire pour vérifier et approuver
 async function checkAndApprove(tokenAddr, amountWei) {
     const tokenContract = new ethers.Contract(tokenAddr, ERC20_ABI, signer);
     const allowance = await tokenContract.allowance(userAddr, CONTRACT_ADDR);
@@ -136,7 +138,7 @@ async function withdrawToken(symbol) {
         loadBalances();
     } catch(e) { 
         console.error(e);
-        toast("Erreur de retrait (Vérifiez votre solde interne)", true); 
+        toast("Erreur de retrait", true); 
     }
 }
 
@@ -159,35 +161,33 @@ async function loadBalances() {
     } catch(e) { console.log("Erreur chargement soldes");}
 }
 
-// ================= TRADING (GRAPHIQUE PRO) =================
-let chart, candleSeries;
+// ================= TRADING GRAPHIQUE =================
 
 function initTradingChart() {
-    // 1. Création du graphique
+    // Vérifie si la librairie est chargée
+    if(typeof LightweightCharts === 'undefined') {
+        console.error("Librairie graphique non chargée");
+        return;
+    }
+
     const container = document.getElementById('tv-chart-container');
-    chart = LightweightCharts.createChart(container, {
+    
+    // Création du graphique
+    const chart = LightweightCharts.createChart(container, {
         layout: { background: { type: 'solid', color: '#13161c' }, textColor: '#d1d4dc' },
         grid: { vertLines: { color: 'rgba(42, 46, 57, 0.5)' }, horzLines: { color: 'rgba(42, 46, 57, 0.5)' } },
-        crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-        rightPriceScale: { borderColor: 'rgba(197, 203, 206, 0.1)' },
-        timeScale: { borderColor: 'rgba(197, 203, 206, 0.1)', timeVisible: true, secondsVisible: false },
+        width: container.clientWidth,
+        height: container.clientHeight,
     });
 
-    // 2. Ajout de la série Bougies
-    candleSeries = chart.addCandlestickSeries({
+    const candleSeries = chart.addCandlestickSeries({
         upColor: '#00c853', downColor: '#ff1744',
         borderUpColor: '#00c853', borderDownColor: '#ff1744',
         wickUpColor: '#00c853', wickDownColor: '#ff1744'
     });
 
-    // 3. Adaptation mobile
-    chart.applyOptions({
-        width: container.clientWidth,
-        height: container.clientHeight
-    });
-
-    // 4. Récupération Historique (API Binance Futures)
-    fetch('https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=1m&limit=100')
+    // 1. Charger l'historique (Binance Futures API)
+    fetch('https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=1m&limit=50')
         .then(r => r.json())
         .then(data => {
             const candles = data.map(d => ({
@@ -198,19 +198,14 @@ function initTradingChart() {
                 close: parseFloat(d[4])
             }));
             candleSeries.setData(candles);
-            
-            // Afficher le prix actuel
-            const last = candles[candles.length - 1];
-            updatePriceUI(last.close);
+            if(candles.length > 0) updatePriceUI(candles[candles.length-1].close);
         });
 
-    // 5. Connexion WebSocket Temps Réel
+    // 2. Connexion WebSocket Temps Réel
     const ws = new WebSocket('wss://fstream.binance.com/ws/btcusdt@kline_1m');
-    
     ws.onmessage = event => {
         const message = JSON.parse(event.data);
         const k = message.k;
-        
         const candle = {
             time: k.t / 1000,
             open: parseFloat(k.o),
@@ -218,16 +213,16 @@ function initTradingChart() {
             low: parseFloat(k.l),
             close: parseFloat(k.c)
         };
-        
         candleSeries.update(candle);
         updatePriceUI(candle.close);
     };
+    
+    chartCreated = true;
 }
 
 function updatePriceUI(price) {
     const el = document.getElementById('live-price');
     el.innerText = "$" + price.toFixed(2);
-    // Couleur dynamique
     const prev = parseFloat(el.getAttribute('data-price') || price);
     if (price > prev) el.style.color = '#00c853';
     else if (price < prev) el.style.color = '#ff1744';
@@ -261,7 +256,6 @@ async function depositCollateral() {
     try {
         const amountWei = ethers.utils.parseUnits(amt, 6);
         await checkAndApprove(USDT_ADDR, amountWei);
-        
         toast("Dépôt collatéral...");
         const tx = await contract.depositCollateral(amountWei);
         await tx.wait();
@@ -343,7 +337,6 @@ async function playAviator() {
     }
 }
 
-// Animation
 let anim;
 function startAnim() {
     const m = document.getElementById('multiplier');
