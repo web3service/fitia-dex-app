@@ -7,15 +7,14 @@
     <title>Fitia Finance App</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Librairie Ethers -->
+    <!-- Ethers pour Blockchain -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-    <!-- Librairie Graphique TradingView (Lightweight Charts) -->
-    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <!-- Librairie Graphique PRO (Version fixe stable) -->
+    <script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
 
     <div class="app-screen">
-        <!-- HEADER -->
         <header class="app-header">
             <div class="logo">Fitia</div>
             <button id="btn-connect" onclick="connectWallet()" class="btn-connect-header">
@@ -27,7 +26,6 @@
             </div>
         </header>
 
-        <!-- CONTENU -->
         <main class="app-content">
             <div id="toast"></div>
 
@@ -91,7 +89,7 @@
                     <span id="live-price" class="price-display">---</span>
                 </div>
                 
-                <!-- Conteneur Graphique -->
+                <!-- ID unique pour le graphique -->
                 <div class="chart-box-pro" id="tv-chart-container"></div>
                 
                 <div class="trade-form">
@@ -169,7 +167,6 @@
             </section>
         </main>
 
-        <!-- MENU BAS -->
         <nav class="bottom-menu">
             <button class="nav-btn active" onclick="switchPage('home')"><i class="fas fa-home"></i><span>Accueil</span></button>
             <button class="nav-btn" onclick="switchPage('trade')"><i class="fas fa-exchange-alt"></i><span>Trade</span></button>

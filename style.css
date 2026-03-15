@@ -72,6 +72,7 @@ input:focus { border-color: var(--primary); outline: none; }
 .pair-name { font-weight: bold; margin-right: 10px; }
 .price-display { font-size: 22px; font-weight: bold; }
 
+/* IMPORTANT : Hauteur fixe pour le graphique */
 .chart-box-pro {
     background: #13161c;
     border-radius: 12px;

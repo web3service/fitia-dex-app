@@ -24,7 +24,7 @@ const CONTRACT_ABI = [
 ];
 
 let provider, signer, contract, userAddr;
-let chartCreated = false; // Variable pour ne créer le graphique qu'une fois
+let chartCreated = false; // Drapeau pour savoir si le graphique est fait
 
 // ================= CORE FUNCTIONS =================
 
@@ -49,7 +49,6 @@ async function connectWallet() {
 
         updateUI();
         loadPools();
-        // On ne charge pas le graphique ici, on attend que l'utilisateur clique sur Trade
         
     } catch(e) {
         console.error(e);
@@ -66,14 +65,22 @@ function updateUI() {
 
 // ================= NAVIGATION =================
 function switchPage(pageName) {
+    // Masquer toutes les pages
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    // Afficher la cible
     document.getElementById('page-' + pageName).classList.add('active');
+    
+    // Mettre à jour le menu
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     event.currentTarget.classList.add('active');
 
-    // CORRECTION BUG GRAPHIQUE : On charge le graphique seulement si on va sur Trade
-    if(pageName === 'trade' && !chartCreated) {
-        initTradingChart();
+    // CORRECTION GRAPHIQUE :
+    // On utilise un petit délai (timeout) pour laisser le temps à la page de s'afficher
+    // avant de calculer la taille du graphique.
+    if(pageName === 'trade') {
+        setTimeout(() => {
+            if(!chartCreated) initTradingChart();
+        }, 100); // 100ms de délai
     }
 }
 
@@ -161,23 +168,32 @@ async function loadBalances() {
     } catch(e) { console.log("Erreur chargement soldes");}
 }
 
-// ================= TRADING GRAPHIQUE =================
+// ================= TRADING =================
 
 function initTradingChart() {
-    // Vérifie si la librairie est chargée
-    if(typeof LightweightCharts === 'undefined') {
-        console.error("Librairie graphique non chargée");
+    // Vérification de sécurité
+    const container = document.getElementById('tv-chart-container');
+    if (!container || typeof LightweightCharts === 'undefined') {
+        console.error("Graphique impossible à initialiser");
         return;
     }
 
-    const container = document.getElementById('tv-chart-container');
-    
     // Création du graphique
     const chart = LightweightCharts.createChart(container, {
-        layout: { background: { type: 'solid', color: '#13161c' }, textColor: '#d1d4dc' },
-        grid: { vertLines: { color: 'rgba(42, 46, 57, 0.5)' }, horzLines: { color: 'rgba(42, 46, 57, 0.5)' } },
+        layout: { 
+            background: { type: 'solid', color: '#13161c' }, 
+            textColor: '#d1d4dc' 
+        },
+        grid: { 
+            vertLines: { color: 'rgba(42, 46, 57, 0.5)' }, 
+            horzLines: { color: 'rgba(42, 46, 57, 0.5)' } 
+        },
         width: container.clientWidth,
         height: container.clientHeight,
+        timeScale: {
+            timeVisible: true,
+            secondsVisible: false,
+        }
     });
 
     const candleSeries = chart.addCandlestickSeries({
@@ -186,7 +202,7 @@ function initTradingChart() {
         wickUpColor: '#00c853', wickDownColor: '#ff1744'
     });
 
-    // 1. Charger l'historique (Binance Futures API)
+    // 1. Récupérer l'historique
     fetch('https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=1m&limit=50')
         .then(r => r.json())
         .then(data => {
@@ -199,9 +215,10 @@ function initTradingChart() {
             }));
             candleSeries.setData(candles);
             if(candles.length > 0) updatePriceUI(candles[candles.length-1].close);
-        });
+        })
+        .catch(err => console.error("Erreur API Binance", err));
 
-    // 2. Connexion WebSocket Temps Réel
+    // 2. Temps réel
     const ws = new WebSocket('wss://fstream.binance.com/ws/btcusdt@kline_1m');
     ws.onmessage = event => {
         const message = JSON.parse(event.data);
@@ -217,6 +234,7 @@ function initTradingChart() {
         updatePriceUI(candle.close);
     };
     
+    // Valider que le graphique est créé
     chartCreated = true;
 }
 
