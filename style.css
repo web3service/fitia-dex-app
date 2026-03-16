@@ -67,7 +67,7 @@ input:focus { border-color: var(--primary); outline: none; }
 .outline { background: transparent; border: 1px solid var(--text-dim); color: var(--text-dim); }
 .outline-danger { background: transparent; border: 1px solid var(--red); color: var(--red); }
 
-/* --- STYLE WALLET (TOKEN CARDS) - CORRECTION FOND BLANC --- */
+/* --- STYLE WALLET --- */
 .token-card {
     background: var(--bg-card);
     border-radius: 12px;
@@ -89,41 +89,29 @@ input:focus { border-color: var(--primary); outline: none; }
     height: 50px;
     border-radius: 50%;
     object-fit: cover;
-    /* J'AI ENLEVE BACKGROUND: WHITE ET BOX-SHADOW ICI */
     margin-right: 15px;
 }
 
-.token-details {
-    flex: 1;
+.token-details { flex: 1; }
+.token-details h4 { margin: 0; font-size: 18px; color: var(--text); }
+.token-ticker { font-size: 12px; color: var(--text-dim); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; }
+.token-balance-box { text-align: right; }
+.token-balance-box h3 { margin: 0; font-size: 20px; color: var(--primary); }
+.token-actions { padding: 15px; }
+
+/* --- CORRECTION COULEURS BOUTONS DEPOT/RETRAIT --- */
+.token-actions .btn-pair button:first-child {
+    background: var(--green); /* VERT pour DEPOSER */
+    color: white;
+    border: none;
 }
 
-.token-details h4 {
-    margin: 0;
-    font-size: 18px;
-    color: var(--text);
+.token-actions .btn-pair button:last-child {
+    background: transparent; /* ROUGE pour RETIRER */
+    border: 1px solid var(--red);
+    color: var(--red);
 }
-
-.token-ticker {
-    font-size: 12px;
-    color: var(--text-dim);
-    background: rgba(255,255,255,0.05);
-    padding: 2px 6px;
-    border-radius: 4px;
-}
-
-.token-balance-box {
-    text-align: right;
-}
-
-.token-balance-box h3 {
-    margin: 0;
-    font-size: 20px;
-    color: var(--primary);
-}
-
-.token-actions {
-    padding: 15px;
-}
+/* ------------------------------------------------- */
 
 /* TRADING */
 .chart-header { display: flex; align-items: baseline; margin-bottom: 10px; }

@@ -87,7 +87,7 @@ async function checkAndApprove(tokenAddr, amountWei) {
     const allowance = await tokenContract.allowance(userAddr, CONTRACT_ADDR);
     
     if (allowance.lt(amountWei)) {
-        toast("Étape 1 : Veuillez confirmer l'autorisation dans votre Wallet...", false);
+        toast("Étape 1 : Veuillez confirmer l'autorisation...", false);
         try {
             const tx = await tokenContract.approve(CONTRACT_ADDR, amountWei);
             await tx.wait();
@@ -102,7 +102,8 @@ async function checkAndApprove(tokenAddr, amountWei) {
 async function depositToken(symbol) {
     const id = symbol === 'USDT' ? 'inp-usdt' : 'inp-fta';
     const addr = symbol === 'USDT' ? USDT_ADDR : FTA_ADDR;
-    const dec = symbol === 'USDT' ? 6 : 18;
+    // CONFIG DECIMALES : USDT = 6, FTA = 5
+    const dec = symbol === 'USDT' ? 6 : 5;
     const amt = document.getElementById(id).value;
     
     if(!amt || amt <= 0) return toast("Entrez un montant valide", true);
@@ -111,7 +112,7 @@ async function depositToken(symbol) {
         const amountWei = ethers.utils.parseUnits(amt, dec);
         await checkAndApprove(addr, amountWei);
         
-        toast("Étape 2 : Dépôt en cours...");
+        toast("Dépôt en cours...");
         const tx = await contract.depositToWallet(addr, amountWei);
         await tx.wait();
         
@@ -127,7 +128,8 @@ async function depositToken(symbol) {
 async function withdrawToken(symbol) {
     const id = symbol === 'USDT' ? 'inp-usdt' : 'inp-fta';
     const addr = symbol === 'USDT' ? USDT_ADDR : FTA_ADDR;
-    const dec = symbol === 'USDT' ? 6 : 18;
+    // CONFIG DECIMALES : USDT = 6, FTA = 5
+    const dec = symbol === 'USDT' ? 6 : 5;
     const amt = document.getElementById(id).value;
     
     if(!amt || amt <= 0) return toast("Entrez un montant valide", true);
@@ -151,8 +153,9 @@ async function loadBalances() {
         const uBal = await contract.getMyBalance(USDT_ADDR);
         const fBal = await contract.getMyBalance(FTA_ADDR);
         
+        // CONFIG DECIMALES : USDT = 6, FTA = 5
         const usdt = parseFloat(ethers.utils.formatUnits(uBal, 6)).toFixed(2);
-        const fta = parseFloat(ethers.utils.formatEther(fBal)).toFixed(2);
+        const fta = parseFloat(ethers.utils.formatUnits(fBal, 5)).toFixed(2);
         
         document.getElementById('bal-usdt').innerText = usdt;
         document.getElementById('bal-usdt-home').innerText = usdt;
@@ -169,12 +172,7 @@ async function loadBalances() {
 function changeTradingAsset(val) {
     let symbol = 'BTCUSDT';
     let name = 'BTC/USDT';
-
-    if(val == 1) { 
-        symbol = 'ETHUSDT';
-        name = 'ETH/USDT';
-    }
-
+    if(val == 1) { symbol = 'ETHUSDT'; name = 'ETH/USDT'; }
     document.getElementById('pair-name-display').innerText = name;
     loadChartData(symbol);
 }
@@ -191,7 +189,6 @@ function initTradingChart(symbol = 'BTCUSDT') {
             height: container.clientHeight,
             timeScale: { timeVisible: true, secondsVisible: false }
         });
-
         candleSeries = chart.addCandlestickSeries({
             upColor: '#00c853', downColor: '#ff1744',
             borderUpColor: '#00c853', borderDownColor: '#ff1744',
@@ -199,24 +196,18 @@ function initTradingChart(symbol = 'BTCUSDT') {
         });
         chartCreated = true;
     }
-    
     loadChartData(symbol);
 }
 
 function loadChartData(symbol) {
     if(!candleSeries) return;
-
     if(activeWs) activeWs.close();
 
     fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=1m&limit=50`)
         .then(r => r.json())
         .then(data => {
             const candles = data.map(d => ({
-                time: d[0] / 1000,
-                open: parseFloat(d[1]),
-                high: parseFloat(d[2]),
-                low: parseFloat(d[3]),
-                close: parseFloat(d[4])
+                time: d[0] / 1000, open: parseFloat(d[1]), high: parseFloat(d[2]), low: parseFloat(d[3]), close: parseFloat(d[4])
             }));
             candleSeries.setData(candles);
             if(candles.length > 0) updatePriceUI(candles[candles.length-1].close);
@@ -226,13 +217,7 @@ function loadChartData(symbol) {
     activeWs.onmessage = event => {
         const message = JSON.parse(event.data);
         const k = message.k;
-        const candle = {
-            time: k.t / 1000,
-            open: parseFloat(k.o),
-            high: parseFloat(k.h),
-            low: parseFloat(k.l),
-            close: parseFloat(k.c)
-        };
+        const candle = { time: k.t / 1000, open: parseFloat(k.o), high: parseFloat(k.h), low: parseFloat(k.l), close: parseFloat(k.c) };
         candleSeries.update(candle);
         updatePriceUI(candle.close);
     };
@@ -287,7 +272,8 @@ async function borrowFTA() {
     if(!amt || amt <= 0) return toast("Entrez un montant", true);
     try {
         toast("Emprunt...");
-        const tx = await contract.borrow(ethers.utils.parseEther(amt));
+        // CONFIG DECIMALES FTA = 5
+        const tx = await contract.borrow(ethers.utils.parseUnits(amt, 5));
         await tx.wait();
         toast("Prêt reçu !");
         loadBalances();
@@ -298,6 +284,7 @@ async function repayLoan() {
     try {
         const loan = await contract.userLoans(userAddr);
         const debt = loan.borrowedAmount;
+        // La dette est en FTA, on approuve avec les décimales par défaut du token (5)
         await checkAndApprove(FTA_ADDR, debt);
         toast("Remboursement...");
         const tx = await contract.repayLoan();
@@ -329,7 +316,7 @@ async function loadPools() {
     }
 }
 
-// ================= AVIATOR (MODIFIÉ) =================
+// ================= AVIATOR (LOGIQUE CORRIGÉE) =================
 
 let animInterval;
 let currentMultiplier = 1.00;
@@ -341,28 +328,28 @@ async function playAviator() {
     if(!bet || !target) return toast("Mise et cible requises", true);
 
     try {
-        const amountWei = ethers.utils.parseEther(bet);
+        // CONFIG DECIMALES FTA = 5
+        const amountWei = ethers.utils.parseUnits(bet, 5);
         await checkAndApprove(FTA_ADDR, amountWei);
 
-        // 1. Récupérer le solde avant le jeu pour déterminer le résultat plus tard
+        // 1. Solde avant jeu
         const balanceBefore = await contract.getMyBalance(FTA_ADDR);
 
         toast("Lancement du vol...");
         
-        // 2. Lancer la transaction blockchain
+        // 2. Envoi transaction
         const targetFormatted = Math.floor(target * 100);
         const tx = await contract.playAviator(amountWei, targetFormatted);
         
-        // 3. Démarrer l'animation visuelle pendant la confirmation
+        // 3. Animation pendant la confirmation
         startAnim();
 
-        await tx.wait(); // Attendre la confirmation blockchain
+        await tx.wait(); 
 
-        // 4. Vérifier le solde après le jeu
+        // 4. Vérification du résultat
         const balanceAfter = await contract.getMyBalance(FTA_ADDR);
         
-        // Si le solde a augmenté (ou est égal si erreur d'arrondi), c'est gagné
-        // Note: On compare les objets BigNumber
+        // Si le solde a augmenté (ou reste égal), c'est gagné
         const won = balanceAfter.gte(balanceBefore);
 
         stopAnim(won, target);
@@ -370,7 +357,7 @@ async function playAviator() {
         loadBalances();
 
     } catch(e) { 
-        stopAnim(false, 0); // Crash forcé en cas d'erreur
+        stopAnim(false, 0); 
         console.error(e);
         toast("Erreur ou Annulé", true); 
     }
@@ -381,7 +368,6 @@ function startAnim() {
     const p = document.getElementById('plane-icon');
     currentMultiplier = 1.00;
     
-    // Reset styles
     m.style.color = '#fff';
     p.style.transform = 'translate(-80px, 50px) rotate(-30deg)';
     p.style.opacity = 1;
@@ -391,8 +377,7 @@ function startAnim() {
         currentMultiplier += 0.05;
         m.innerText = currentMultiplier.toFixed(2) + "x";
         
-        // Mouvement de l'avion
-        const xOff = (currentMultiplier - 1) * 50; // Vitesse de déplacement
+        const xOff = (currentMultiplier - 1) * 50;
         p.style.transform = `translate(${-80 + xOff}px, ${50 - xOff/2}px) rotate(-20deg)`;
     }, 100);
 }
@@ -404,31 +389,26 @@ function stopAnim(won, target) {
 
     if (won) {
         // --- GAGNÉ ---
-        // On force l'affichage au-dessus de la cible pour montrer la victoire
         const winMultiplier = target + (Math.random() * 0.5); 
         m.innerText = winMultiplier.toFixed(2) + "x";
         m.style.color = '#00c853'; // Vert
         
-        // L'avion continue son chemin (gagnant)
         const xOff = (winMultiplier - 1) * 50;
         p.style.transform = `translate(${-80 + xOff}px, ${50 - xOff/2}px) rotate(-15deg)`;
         
         toast(`GAGNÉ ! +${winMultiplier.toFixed(2)}x`, false);
     } else {
         // --- PERDU ---
-        // On simule un crash avant la cible
-        // Le crash se produit entre 1.00x et la cible
         const crashMultiplier = 1.00 + (Math.random() * (target - 1.05)); 
         
         m.innerText = crashMultiplier.toFixed(2) + "x CRASH";
         m.style.color = '#ff1744'; // Rouge
         
-        // Animation de crash (l'avion tombe)
         const xOff = (crashMultiplier - 1) * 50;
         p.style.transform = `translate(${-80 + xOff}px, 150px) rotate(90deg)`;
         p.style.opacity = 0.5;
         
-        toast(`CRASH à ${crashMultiplier.toFixed(2)}x ! Vous avez perdu.`, true);
+        toast(`CRASH à ${crashMultiplier.toFixed(2)}x !`, true);
     }
 }
 
