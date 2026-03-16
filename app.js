@@ -102,8 +102,8 @@ async function checkAndApprove(tokenAddr, amountWei) {
 async function depositToken(symbol) {
     const id = symbol === 'USDT' ? 'inp-usdt' : 'inp-fta';
     const addr = symbol === 'USDT' ? USDT_ADDR : FTA_ADDR;
-    // CONFIG DECIMALES : USDT = 6, FTA = 5
-    const dec = symbol === 'USDT' ? 6 : 5;
+    // CONFIG : USDT = 6 dec, FTA = 8 dec (Blockhain)
+    const dec = symbol === 'USDT' ? 6 : 8;
     const amt = document.getElementById(id).value;
     
     if(!amt || amt <= 0) return toast("Entrez un montant valide", true);
@@ -128,8 +128,8 @@ async function depositToken(symbol) {
 async function withdrawToken(symbol) {
     const id = symbol === 'USDT' ? 'inp-usdt' : 'inp-fta';
     const addr = symbol === 'USDT' ? USDT_ADDR : FTA_ADDR;
-    // CONFIG DECIMALES : USDT = 6, FTA = 5
-    const dec = symbol === 'USDT' ? 6 : 5;
+    // CONFIG : USDT = 6 dec, FTA = 8 dec (Blockhain)
+    const dec = symbol === 'USDT' ? 6 : 8;
     const amt = document.getElementById(id).value;
     
     if(!amt || amt <= 0) return toast("Entrez un montant valide", true);
@@ -153,9 +153,9 @@ async function loadBalances() {
         const uBal = await contract.getMyBalance(USDT_ADDR);
         const fBal = await contract.getMyBalance(FTA_ADDR);
         
-        // CONFIG DECIMALES : USDT = 6, FTA = 5
-        const usdt = parseFloat(ethers.utils.formatUnits(uBal, 6)).toFixed(2);
-        const fta = parseFloat(ethers.utils.formatUnits(fBal, 5)).toFixed(2);
+        // CONFIG : Affichage forcé à 5 décimales (UI)
+        const usdt = parseFloat(ethers.utils.formatUnits(uBal, 6)).toFixed(5);
+        const fta = parseFloat(ethers.utils.formatUnits(fBal, 8)).toFixed(5);
         
         document.getElementById('bal-usdt').innerText = usdt;
         document.getElementById('bal-usdt-home').innerText = usdt;
@@ -163,7 +163,8 @@ async function loadBalances() {
         document.getElementById('bal-fta-home').innerText = fta;
         
         const loan = await contract.userLoans(userAddr);
-        document.getElementById('user-collat').innerText = ethers.utils.formatUnits(loan.collateralAmount, 6) + " USDT";
+        // Affichage collatéral en 5 décimales
+        document.getElementById('user-collat').innerText = parseFloat(ethers.utils.formatUnits(loan.collateralAmount, 6)).toFixed(5) + " USDT";
     } catch(e) { console.log("Erreur chargement soldes");}
 }
 
@@ -272,8 +273,8 @@ async function borrowFTA() {
     if(!amt || amt <= 0) return toast("Entrez un montant", true);
     try {
         toast("Emprunt...");
-        // CONFIG DECIMALES FTA = 5
-        const tx = await contract.borrow(ethers.utils.parseUnits(amt, 5));
+        // CONFIG : FTA = 8 dec
+        const tx = await contract.borrow(ethers.utils.parseUnits(amt, 8));
         await tx.wait();
         toast("Prêt reçu !");
         loadBalances();
@@ -284,7 +285,7 @@ async function repayLoan() {
     try {
         const loan = await contract.userLoans(userAddr);
         const debt = loan.borrowedAmount;
-        // La dette est en FTA, on approuve avec les décimales par défaut du token (5)
+        // La dette est en FTA (8 dec), on approuve le montant brut
         await checkAndApprove(FTA_ADDR, debt);
         toast("Remboursement...");
         const tx = await contract.repayLoan();
@@ -328,8 +329,8 @@ async function playAviator() {
     if(!bet || !target) return toast("Mise et cible requises", true);
 
     try {
-        // CONFIG DECIMALES FTA = 5
-        const amountWei = ethers.utils.parseUnits(bet, 5);
+        // CONFIG : FTA = 8 dec
+        const amountWei = ethers.utils.parseUnits(bet, 8);
         await checkAndApprove(FTA_ADDR, amountWei);
 
         // 1. Solde avant jeu

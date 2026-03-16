@@ -99,7 +99,7 @@ input:focus { border-color: var(--primary); outline: none; }
 .token-balance-box h3 { margin: 0; font-size: 20px; color: var(--primary); }
 .token-actions { padding: 15px; }
 
-/* --- CORRECTION COULEURS BOUTONS DEPOT/RETRAIT --- */
+/* --- CORRECTION COULEURS BOUTONS --- */
 .token-actions .btn-pair button:first-child {
     background: var(--green); /* VERT pour DEPOSER */
     color: white;
@@ -111,7 +111,6 @@ input:focus { border-color: var(--primary); outline: none; }
     border: 1px solid var(--red);
     color: var(--red);
 }
-/* ------------------------------------------------- */
 
 /* TRADING */
 .chart-header { display: flex; align-items: baseline; margin-bottom: 10px; }
