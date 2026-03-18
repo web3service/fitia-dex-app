@@ -6,8 +6,6 @@
 const CONTRACT_ADDRESS = "0xAfdFb346F819ffF3DdEF77e23E25a34E19c7Cab2"; // REMPLACEZ CECI
 const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"; 
 const FTA_ADDRESS = "0x535bBe393D64a60E14B731b7350675792d501623"; // REMPLACEZ CECI
-// Ajout des constantes Réseau
-const POLYGON_CHAIN_ID = 137;        // ID Polygon (Nombre)
 const POLYGON_CHAIN_ID_HEX = '0x89'; // ID Polygon (Hexadécimal pour MetaMask/TrustWallet)
 
 // ABI Minimale (Remplacez par l'ABI complète de PolygonScan pour toutes les fonctions)
