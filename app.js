@@ -6,8 +6,9 @@
 const CONTRACT_ADDRESS = "0xAfdFb346F819ffF3DdEF77e23E25a34E19c7Cab2"; // REMPLACEZ CECI
 const USDT_ADDRESS = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"; 
 const FTA_ADDRESS = "0x535bBe393D64a60E14B731b7350675792d501623"; // REMPLACEZ CECI
+const POLYGON_CHAIN_ID = 137; // ID du réseau Polygon
 
-// Collez votre ABI complète ici (depuis PolygonScan -> Contract -> ABI)
+// ABI MINIMALE (Copiez l'ABI complète depuis PolygonScan pour toutes les fonctions)
 const ABI = [
     "function depositToWallet(address _token, uint256 _amount) external",
     "function withdrawFromWallet(address _token, uint256 _amount) external",
@@ -16,83 +17,132 @@ const ABI = [
     "function buyFTA(uint256 _usdtAmount) external",
     "function sellFTA(uint256 _ftaAmount) external",
     "function openPosition(uint8 _asset, uint8 _side, uint256 _marginUSDT, uint256 _leverage) external",
-    "function closePosition(uint256 _posId) external",
     "function buyMachine(uint256 _typeId) external",
     "function buyBattery(uint256 _tokenId, uint256 _packId) external",
-    "function claimMiningRewards(uint256 _tokenId) external",
-    "function addLiquidity(uint256 _amountUSDT, uint256 _amountFTA) external",
-    "function removeLiquidity(uint256 _lpAmount) external",
     "function playAviator(uint256 _ftaBetAmount, uint256 _targetMultiplier) external",
-    "function stake(uint256 _poolId, uint256 _amount) external",
-    "function unstake(uint256 _poolId) external",
-    "function borrow(uint256 _ftaAmount) external",
-    "function repayLoan() external",
-    "function depositCollateral(uint256 _usdtAmount) external"
+    // Ajoutez ici les autres fonctions que vous utilisez...
 ];
 
-let provider, signer, contract;
-let userAddress = null;
+let provider, signer, contract, userAddress;
 
 // =================================================================
 // 2. INITIALISATION
 // =================================================================
-document.addEventListener('DOMContentLoaded', () => {
-    // Vérifier si MetaMask est installé
-    if (window.ethereum) {
-        setupEventListeners();
+window.addEventListener('load', () => {
+    // Vérifier si MetaMask existe
+    if (typeof window.ethereum !== 'undefined') {
+        setupButtons();
+        // Écouter les changements de compte
+        window.ethereum.on('accountsChanged', (accounts) => {
+            if (accounts.length > 0) {
+                connectWallet(); // Reconnecter automatiquement
+            } else {
+                resetApp(); // Déconnecter
+            }
+        });
+        // Écouter les changements de réseau
+        window.ethereum.on('chainChanged', () => {
+            window.location.reload();
+        });
     } else {
-        showToast("MetaMask non détecté !", "error");
+        document.getElementById('btn-connect').innerText = "Installez MetaMask";
+        document.getElementById('btn-connect').disabled = true;
     }
 });
 
-function setupEventListeners() {
-    // Boutons principaux
-    document.getElementById('btn-connect').addEventListener('click', connectWallet);
-    
-    // Navigation Mobile
+function setupButtons() {
+    // Boutons navigation
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const section = e.currentTarget.getAttribute('data-section');
             if(section) showSection(section);
         });
     });
-
-    // Forms (Ajoutez vos ID dans le HTML pour chaque bouton)
-    // Exemple : document.getElementById('btn-deposit').addEventListener('click', deposit);
-    // Pour simplifier, nous allons utiliser des appels 'onclick' directs dans le HTML pour cet exemple.
 }
 
+// =================================================================
+// 3. CONNEXION WALLET (CORRIGÉE)
+// =================================================================
 async function connectWallet() {
     try {
+        showLoader(true);
+        
+        // 1. Initialiser Provider
         provider = new ethers.providers.Web3Provider(window.ethereum);
+        
+        // 2. Vérifier le réseau
+        const network = await provider.getNetwork();
+        if (network.chainId !== POLYGON_CHAIN_ID) {
+            showLoader(false);
+            showToast("Veuillez basculer sur le réseau Polygon!", "error");
+            await switchToPolygon();
+            return;
+        }
+
+        // 3. Demander la connexion
         await provider.send("eth_requestAccounts", []);
+        
+        // 4. Initialiser Signer et Contract
         signer = provider.getSigner();
         contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
         
         userAddress = await signer.getAddress();
         
-        // Mise à jour UI
+        // 5. Mise à jour UI
         document.getElementById('btn-connect').classList.add('hidden');
-        document.getElementById('user-info').classList.remove('hidden');
-        document.getElementById('user-address').innerText = `${userAddress.substring(0,6)}...${userAddress.slice(-4)}`;
+        document.getElementById('user-btn').classList.remove('hidden');
+        document.getElementById('user-btn').innerHTML = `<i class="fas fa-check-circle text-brand mr-2"></i>${userAddress.substring(0,6)}...${userAddress.slice(-4)}`;
         
         showSection('dashboard');
-        loadDashboard();
-        showToast("Wallet connecté !", "success");
-    } catch (err) {
-        console.error(err);
-        showToast("Échec de la connexion", "error");
+        await loadDashboard();
+        showToast("Connecté avec succès !", "success");
+
+    } catch (error) {
+        console.error(error);
+        showToast("Erreur de connexion: " + error.message, "error");
+    } finally {
+        showLoader(false);
     }
 }
 
+async function switchToPolygon() {
+    try {
+        await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x89' }], // 137 en hex
+        });
+    } catch (switchError) {
+        // Si le réseau n'est pas ajouté
+        if (switchError.code === 4902) {
+            await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                    chainId: '0x89',
+                    chainName: 'Polygon Mainnet',
+                    nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+                    rpcUrls: ['https://polygon-rpc.com/'],
+                    blockExplorerUrls: ['https://polygonscan.com/'],
+                }],
+            });
+        }
+    }
+}
+
+function resetApp() {
+    userAddress = null;
+    document.getElementById('btn-connect').classList.remove('hidden');
+    document.getElementById('user-btn').classList.add('hidden');
+    showSection('welcome');
+}
+
 // =================================================================
-// 3. CHARGEMENT DES DONNÉES (DASHBOARD)
+// 4. DASHBOARD DATA
 // =================================================================
 async function loadDashboard() {
     if (!contract) return;
     try {
-        // Prix FTA
-        const price = await contract.getAssetPrice(2); // 2 = FTA
+        // Prix FTA (ID 2)
+        const price = await contract.getAssetPrice(2);
         document.getElementById('fta-price').innerText = parseFloat(ethers.utils.formatUnits(price, 8)).toFixed(2);
 
         // Soldes
@@ -100,90 +150,95 @@ async function loadDashboard() {
         const balFta = await contract.internalBalances(userAddress, FTA_ADDRESS);
 
         document.getElementById('bal-usdt').innerText = parseFloat(ethers.utils.formatUnits(balUsdt, 6)).toFixed(2);
-        document.getElementById('bal-fta').innerText = parseFloat(ethers.utils.formatUnits(balFta, 8)).toFixed(2);
+        document.getElementById('bal-fta').innerText = parseFloat(ethers.utils.formatUnits(balFta, 8)).toFixed(4);
 
-    } catch (e) { console.error("Erreur chargement data", e); }
+    } catch (e) { 
+        console.error("Erreur chargement data", e); 
+        showToast("Erreur de chargement des données", "error");
+    }
 }
 
 // =================================================================
-// 4. FONCTIONS UTILISATEUR (ACTIONS)
+// 5. FONCTIONS TRANSACTIONS
 // =================================================================
+
+// Helper pour les transactions
+async function runTransaction(callback, onSuccess) {
+    if(!contract) return showToast("Veuillez connecter votre wallet", "error");
+    
+    showLoader(true);
+    try {
+        const tx = await callback();
+        showToast("Transaction envoyée...", "info");
+        await tx.wait();
+        showToast("Transaction réussie !", "success");
+        if(onSuccess) await onSuccess();
+    } catch (err) {
+        console.error(err);
+        // Essayer d'extraire le message d'erreur lisible
+        const msg = err.reason || err.message || "Transaction échouée";
+        showToast(msg, "error");
+    } finally {
+        showLoader(false);
+    }
+}
 
 // --- WALLET ---
 async function deposit() {
     const token = document.getElementById('dep-token').value;
     const amount = document.getElementById('dep-amount').value;
-    if(!amount) return;
+    if(!amount) return showToast("Entrez un montant", "error");
     
-    const tokenAddr = token === 'usdt' ? USDT_ADDRESS : FTA_ADDRESS;
-    const decimals = token === 'usdt' ? 6 : 8;
+    const addr = token === 'usdt' ? USDT_ADDRESS : FTA_ADDRESS;
+    const dec = token === 'usdt' ? 6 : 8;
 
     await runTransaction(async () => {
-        // 1. Approve
-        showToast("1. Approbation en cours...", "info");
-        const tokenContract = new ethers.Contract(tokenAddr, ["function approve(address,uint256)"], signer);
-        let tx = await tokenContract.approve(CONTRACT_ADDRESS, ethers.utils.parseUnits(amount, decimals));
+        showToast("Approbation...", "info");
+        const tokenContract = new ethers.Contract(addr, ["function approve(address,uint256)"], signer);
+        let tx = await tokenContract.approve(CONTRACT_ADDRESS, ethers.utils.parseUnits(amount, dec));
         await tx.wait();
         
-        // 2. Deposit
-        showToast("2. Dépôt...", "info");
-        tx = await contract.depositToWallet(tokenAddr, ethers.utils.parseUnits(amount, decimals));
-        return tx;
+        return await contract.depositToWallet(addr, ethers.utils.parseUnits(amount, dec));
     }, loadDashboard);
 }
 
 async function withdraw() {
     const token = document.getElementById('wit-token').value;
     const amount = document.getElementById('wit-amount').value;
-    if(!amount) return;
+    if(!amount) return showToast("Entrez un montant", "error");
 
-    const tokenAddr = token === 'usdt' ? USDT_ADDRESS : FTA_ADDRESS;
-    const decimals = token === 'usdt' ? 6 : 8;
+    const addr = token === 'usdt' ? USDT_ADDRESS : FTA_ADDRESS;
+    const dec = token === 'usdt' ? 6 : 8;
 
     await runTransaction(async () => {
-        return await contract.withdrawFromWallet(tokenAddr, ethers.utils.parseUnits(amount, decimals));
+        return await contract.withdrawFromWallet(addr, ethers.utils.parseUnits(amount, dec));
     }, loadDashboard);
 }
 
 // --- MARKET ---
 async function buyFTA() {
     const amount = document.getElementById('buy-amt').value;
-    if(!amount) return;
-    await runTransaction(async () => {
-        return await contract.buyFTA(ethers.utils.parseUnits(amount, 6));
-    }, loadDashboard);
+    if(!amount) return showToast("Entrez un montant", "error");
+    await runTransaction(async () => contract.buyFTA(ethers.utils.parseUnits(amount, 6)), loadDashboard);
 }
 
 async function sellFTA() {
     const amount = document.getElementById('sell-amt').value;
-    if(!amount) return;
-    await runTransaction(async () => {
-        return await contract.sellFTA(ethers.utils.parseUnits(amount, 8));
-    }, loadDashboard);
+    if(!amount) return showToast("Entrez un montant", "error");
+    await runTransaction(async () => contract.sellFTA(ethers.utils.parseUnits(amount, 8)), loadDashboard);
 }
 
 // --- MINING ---
 async function buyMachine() {
-    const typeId = document.getElementById('machine-type').value;
-    await runTransaction(async () => {
-        return await contract.buyMachine(typeId);
-    });
+    const type = document.getElementById('machine-type').value;
+    await runTransaction(async () => contract.buyMachine(type), loadDashboard);
 }
 
 async function buyBattery() {
-    const tokenId = document.getElementById('bat-token').value;
-    const packId = document.getElementById('bat-pack').value;
-    if(!tokenId) return showToast("Entrez l'ID de votre machine", "error");
-    
-    await runTransaction(async () => {
-        return await contract.buyBattery(tokenId, packId);
-    });
-}
-
-async function claimMining(tokenId) {
-    await runTransaction(async () => {
-        return await contract.claimMiningRewards(tokenId);
-    }, loadDashboard);
+    const token = document.getElementById('bat-token').value;
+    const pack = document.getElementById('bat-pack').value;
+    if(!token) return showToast("Entrez l'ID de la machine", "error");
+    await runTransaction(async () => contract.buyBattery(token, pack), loadDashboard);
 }
 
 // --- TRADING ---
@@ -193,71 +248,32 @@ async function openPosition(side) {
     const leverage = document.getElementById('trade-lev').value;
     
     if(!margin || !leverage) return showToast("Remplissez tous les champs", "error");
-
-    await runTransaction(async () => {
-        return await contract.openPosition(asset, side, ethers.utils.parseUnits(margin, 6), leverage);
-    });
+    await runTransaction(async () => contract.openPosition(asset, side, ethers.utils.parseUnits(margin, 6), leverage));
 }
 
-// --- FARMING ---
-async function addLiquidity() {
-    const amtU = document.getElementById('farm-usdt').value;
-    const amtF = document.getElementById('farm-fta').value;
-    if(!amtU || !amtF) return;
-
-    await runTransaction(async () => {
-        // Approves nécessaires avant...
-        return await contract.addLiquidity(ethers.utils.parseUnits(amtU, 6), ethers.utils.parseUnits(amtF, 8));
-    });
-}
-
-// --- AVIATOR ---
+// --- GAMES ---
 async function playAviator() {
     const bet = document.getElementById('aviator-bet').value;
     const mult = document.getElementById('aviator-mult').value;
-    if(!bet || !mult) return;
-
-    await runTransaction(async () => {
-        return await contract.playAviator(ethers.utils.parseUnits(bet, 8), mult);
-    });
+    if(!bet || !mult) return showToast("Remplissez mise et multiplicateur", "error");
+    await runTransaction(async () => contract.playAviator(ethers.utils.parseUnits(bet, 8), mult), loadDashboard);
 }
 
 // =================================================================
-// 5. UTILITAIRES UI
+// 6. UTILITAIRES UI
 // =================================================================
-
-// Gestionnaire de transaction générique (Gère le loading et les erreurs)
-async function runTransaction(callback, onSuccess) {
-    const loader = document.getElementById('global-loader');
-    try {
-        loader.classList.remove('hidden');
-        const tx = await callback();
-        showToast("Transaction envoyée...", "info");
-        await tx.wait();
-        showToast("Transaction réussie !", "success");
-        if(onSuccess) onSuccess();
-    } catch (err) {
-        console.error(err);
-        showToast("Erreur : " + (err.reason || "Transaction rejetée"), "error");
-    } finally {
-        loader.classList.add('hidden');
-    }
-}
-
-function showSection(sectionId) {
-    // Cacher tout
+function showSection(id) {
     document.querySelectorAll('main > section').forEach(el => el.classList.add('hidden'));
-    // Afficher la section
-    const sec = document.getElementById('section-' + sectionId);
-    if (sec) sec.classList.remove('hidden');
+    const section = document.getElementById('section-' + id);
+    if (section) section.classList.remove('hidden');
 
-    // Gérer la navigation active
+    // Nav Active State
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active-nav');
-        if(btn.getAttribute('data-section') === sectionId) btn.classList.add('active-nav');
+        if(btn.getAttribute('data-section') === id) btn.classList.add('active-nav');
     });
-
-    // Fermer le menu mobile si ouvert
+    
+    // Close mobile menu if open
     document.getElementById('mobile-menu').classList.add('hidden');
 }
 
@@ -268,12 +284,21 @@ function toggleMobileMenu() {
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
-    toast.className = `p-4 rounded-lg shadow-lg flex items-center space-x-2 animate-fade-in;
-        ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'}`;
-    toast.innerHTML = `<span class="text-white font-medium">${message}</span>`;
+    
+    let bgColor = 'bg-gray-700'; // default
+    if(type === 'success') bgColor = 'bg-green-600';
+    if(type === 'error') bgColor = 'bg-red-600';
+    if(type === 'info') bgColor = 'bg-blue-600';
+
+    toast.className = `p-4 rounded-lg shadow-lg text-white text-sm font-medium mb-2 ${bgColor}`;
+    toast.innerText = message;
     container.appendChild(toast);
     
-    setTimeout(() => {
-        toast.remove();
-    }, 4000);
+    setTimeout(() => { toast.remove(); }, 5000);
+}
+
+function showLoader(show) {
+    const loader = document.getElementById('global-loader');
+    if(show) loader.classList.remove('hidden');
+    else loader.classList.add('hidden');
 }
