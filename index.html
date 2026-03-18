@@ -2,7 +2,6 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <!-- Meta Viewport Critique pour les téléphones -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0B0E11">
     <title>Fitia Ecosystem</title>
@@ -13,8 +12,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
-    <!-- Ethers.js -->
-    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
 </head>
 <body class="bg-[#0B0E11] text-white">
 
@@ -27,25 +24,25 @@
     <!-- TOAST NOTIFICATIONS -->
     <div id="toast" class="fixed top-4 left-4 right-4 z-50 flex flex-col items-center pointer-events-none"></div>
 
-    <!-- ================= ÉCRAN DE CONNEXION ================= -->
+    <!-- ECRAN DE CONNEXION -->
     <div id="connect-screen" class="fixed inset-0 flex flex-col items-center justify-center p-8 bg-[#0B0E11] z-10">
         <div class="w-20 h-20 bg-brand rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-yellow-500/20">
             <i class="fas fa-gem text-4xl text-black"></i>
         </div>
         <h1 class="text-3xl font-bold mb-2">Fitia</h1>
-        <p class="text-gray-400 mb-10 text-center">L'écosystème DéFi nouvelle génération.</p>
+        <p class="text-gray-400 mb-10 text-center text-sm px-4">L'écosystème DéFi nouvelle génération.</p>
         
         <button onclick="connectWallet()" class="btn-primary text-lg shadow-lg shadow-yellow-500/30">
             <i class="fas fa-wallet mr-2"></i> Connecter Wallet
         </button>
         
-        <p class="text-gray-600 text-xs mt-8">En vous connectant, vous acceptez les conditions d'utilisation.</p>
+        <p class="text-gray-600 text-xs mt-8">En vous connectant, vous acceptez les conditions.</p>
     </div>
 
-    <!-- ================= APPLICATION PRINCIPALE ================= -->
+    <!-- APPLICATION PRINCIPALE -->
     <div id="app-screen" class="hidden pb-24">
 
-        <!-- HEADER FIXE MOBILE -->
+        <!-- HEADER -->
         <header class="sticky top-0 z-40 bg-[#0B0E11]/90 backdrop-blur-sm border-b border-gray-800 p-4 flex justify-between items-center">
             <div class="flex items-center space-x-2">
                 <i class="fas fa-gem text-brand"></i>
@@ -54,35 +51,32 @@
             <div id="user-address" class="bg-gray-800 px-3 py-1 rounded-full text-xs font-medium text-gray-300"></div>
         </header>
 
-        <!-- CONTENU PRINCIPAL -->
+        <!-- CONTENU -->
         <main class="p-4">
             
             <!-- DASHBOARD -->
             <section id="sec-dashboard" class="app-section space-y-4">
-                <!-- Stats Grille -->
                 <div class="grid grid-cols-1 gap-3">
                     <div class="card flex justify-between items-center">
                         <div>
-                            <p class="text-xs text-gray-400">Prix FTA</p>
+                            <p class="text-xs text-gray-400">Prix FTA (Pegged BTC)</p>
                             <h2 id="fta-price" class="text-2xl font-bold text-brand">$0.00</h2>
                         </div>
                         <i class="fas fa-chart-line text-2xl text-gray-700"></i>
                     </div>
                 </div>
                 
-                <!-- Solde Grid 2x2 -->
                 <div class="grid grid-cols-2 gap-3">
                     <div class="card text-center">
-                        <p class="text-xs text-gray-500">USDT</p>
+                        <p class="text-xs text-gray-500">USDT (Interne)</p>
                         <h3 id="bal-usdt" class="text-xl font-bold">0.00</h3>
                     </div>
                     <div class="card text-center bg-brand/10 border-brand/30">
-                        <p class="text-xs text-brand">FTA</p>
+                        <p class="text-xs text-brand">FTA (Interne)</p>
                         <h3 id="bal-fta" class="text-xl font-bold text-brand">0.00</h3>
                     </div>
                 </div>
 
-                <!-- Quick Actions -->
                 <div class="grid grid-cols-4 gap-2 mt-2">
                     <button onclick="showSection('wallet')" class="bg-gray-800 p-3 rounded-xl text-center active:bg-gray-700">
                         <i class="fas fa-plus text-brand text-lg"></i>
@@ -125,12 +119,12 @@
                 <h2 class="font-bold text-lg text-brand">Marketplace</h2>
                 <div class="card">
                     <p class="text-xs text-green-400 mb-1">ACHETER FTA</p>
-                    <input type="number" id="buy-amt" placeholder="Montant USDT à dépenser" class="mb-2">
+                    <input type="number" id="buy-amt" placeholder="Montant USDT" class="mb-2">
                     <button onclick="buyFTA()" class="btn-success">Acheter</button>
                 </div>
                 <div class="card">
                     <p class="text-xs text-red-400 mb-1">VENDRE FTA</p>
-                    <input type="number" id="sell-amt" placeholder="Montant FTA à vendre" class="mb-2">
+                    <input type="number" id="sell-amt" placeholder="Montant FTA" class="mb-2">
                     <button onclick="sellFTA()" class="btn-danger">Vendre</button>
                 </div>
             </section>
@@ -140,17 +134,13 @@
                 <h2 class="font-bold text-lg text-brand">Mining</h2>
                 <div class="card">
                     <p class="font-semibold mb-3">Acheter une Machine</p>
-                    <select id="machine-type" class="mb-2">
-                        <option value="0">Starter (10$)</option>
-                    </select>
+                    <select id="machine-type" class="mb-2"><option value="0">Starter (10$)</option></select>
                     <button onclick="buyMachine()" class="btn-primary">Acheter</button>
                 </div>
                 <div class="card">
                     <p class="font-semibold mb-3">Acheter Batterie</p>
-                    <input type="number" id="bat-token" placeholder="ID de la machine" class="mb-2">
-                    <select id="bat-pack" class="mb-2">
-                        <option value="0">Pack 24h (0.50$)</option>
-                    </select>
+                    <input type="number" id="bat-token" placeholder="ID Machine" class="mb-2">
+                    <select id="bat-pack" class="mb-2"><option value="0">Pack 24h (0.50$)</option></select>
                     <button onclick="buyBattery()" class="btn-secondary">Charger</button>
                 </div>
             </section>
@@ -163,8 +153,7 @@
                         <option value="0">BTC</option><option value="1">ETH</option><option value="2">FTA</option>
                     </select>
                     <input type="number" id="trade-margin" placeholder="Marge USDT" class="mb-2">
-                    <input type="number" id="trade-lev" placeholder="Levier (ex: 10)" class="mb-2">
-                    
+                    <input type="number" id="trade-lev" placeholder="Levier" class="mb-2">
                     <div class="grid grid-cols-2 gap-2 mt-2">
                         <button onclick="openPosition(0)" class="btn-success text-sm py-3">LONG</button>
                         <button onclick="openPosition(1)" class="btn-danger text-sm py-3">SHORT</button>
@@ -174,11 +163,11 @@
 
             <!-- GAMES -->
             <section id="sec-games" class="app-section hidden space-y-4">
-                <h2 class="font-bold text-lg text-brand">Aviator Game</h2>
+                <h2 class="font-bold text-lg text-brand">Aviator</h2>
                 <div class="card text-center">
                     <i class="fas fa-plane text-4xl text-brand mb-4"></i>
                     <input type="number" id="aviator-bet" placeholder="Mise FTA" class="mb-2">
-                    <input type="number" id="aviator-mult" placeholder="Cible (ex: 200)" class="mb-2">
+                    <input type="number" id="aviator-mult" placeholder="Cible (200=x2)" class="mb-2">
                     <button onclick="playAviator()" class="btn-primary">JOUER</button>
                 </div>
             </section>
@@ -186,7 +175,7 @@
         </main>
     </div>
 
-    <!-- ================= BARRE DE NAVIGATION BAS (MOBILE) ================= -->
+    <!-- BARRE DE NAVIGATION BAS -->
     <nav class="bottom-nav md:hidden">
         <div class="flex justify-around h-16">
             <button data-section="dashboard" class="nav-item flex-1 flex flex-col items-center justify-center text-brand">
@@ -207,6 +196,8 @@
         </div>
     </nav>
 
+    <!-- SCRIPTS CHARGÉS À LA FIN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
