@@ -2,333 +2,211 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Meta Viewport Critique pour les téléphones -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0B0E11">
     <title>Fitia Ecosystem</title>
     
-    <!-- Tailwind CSS (Framework professionnel) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
-    
     <!-- Ethers.js -->
     <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
 </head>
-<body class="bg-slate-900 text-gray-100 min-h-screen pb-20 md:pb-0">
+<body class="bg-[#0B0E11] text-white">
 
     <!-- LOADER GLOBAL -->
-    <div id="global-loader" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-        <div class="text-center">
-            <div class="spinner mx-auto mb-4"></div>
-            <p>Traitement en cours...</p>
-        </div>
+    <div id="loader" class="hidden fixed inset-0 bg-black/90 z-[999] flex flex-col items-center justify-center">
+        <div class="spinner"></div>
+        <p id="loader-text" class="mt-4 text-brand font-bold">Chargement...</p>
     </div>
 
-    <!-- CONTAINER TOAST (Notifications) -->
-    <div id="toast-container" class="fixed top-5 right-5 z-50 space-y-2 w-72"></div>
+    <!-- TOAST NOTIFICATIONS -->
+    <div id="toast" class="fixed top-4 left-4 right-4 z-50 flex flex-col items-center pointer-events-none"></div>
 
-    <!-- NAVIGATION DESKTOP (Sidebar) -->
-    <aside class="hidden md:flex flex-col w-64 bg-slate-800 h-screen fixed left-0 top-0 border-r border-slate-700">
-        <div class="p-6 border-b border-slate-700">
-            <h1 class="text-2xl font-bold text-blue-400">Fitia</h1>
-            <p class="text-xs text-gray-400">Ecosystem Hub</p>
+    <!-- ================= ÉCRAN DE CONNEXION ================= -->
+    <div id="connect-screen" class="fixed inset-0 flex flex-col items-center justify-center p-8 bg-[#0B0E11] z-10">
+        <div class="w-20 h-20 bg-brand rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-yellow-500/20">
+            <i class="fas fa-gem text-4xl text-black"></i>
         </div>
-        <nav class="flex-1 p-4 space-y-2">
-            <button onclick="showSection('dashboard')" class="nav-btn active-nav w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700 transition flex items-center space-x-3">
-                <i class="fas fa-chart-pie w-5"></i><span>Dashboard</span>
-            </button>
-            <button onclick="showSection('wallet')" class="nav-btn w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700 transition flex items-center space-x-3">
-                <i class="fas fa-wallet w-5"></i><span>Wallet</span>
-            </button>
-            <button onclick="showSection('market')" class="nav-btn w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700 transition flex items-center space-x-3">
-                <i class="fas fa-exchange-alt w-5"></i><span>Market FTA</span>
-            </button>
-            <button onclick="showSection('mining')" class="nav-btn w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700 transition flex items-center space-x-3">
-                <i class="fas fa-gem w-5"></i><span>Mining</span>
-            </button>
-            <button onclick="showSection('trading')" class="nav-btn w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700 transition flex items-center space-x-3">
-                <i class="fas fa-chart-line w-5"></i><span>Trading</span>
-            </button>
-            <button onclick="showSection('farming')" class="nav-btn w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700 transition flex items-center space-x-3">
-                <i class="fas fa-seedling w-5"></i><span>Farming</span>
-            </button>
-            <button onclick="showSection('games')" class="nav-btn w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700 transition flex items-center space-x-3">
-                <i class="fas fa-dice w-5"></i><span>Games</span>
-            </button>
-            <button onclick="showSection('lending')" class="nav-btn w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700 transition flex items-center space-x-3">
-                <i class="fas fa-hand-holding-usd w-5"></i><span>Lending</span>
-            </button>
-        </nav>
-    </aside>
-
-    <!-- CONTENU PRINCIPAL -->
-    <main class="md:ml-64 p-4 md:p-8 min-h-screen">
+        <h1 class="text-3xl font-bold mb-2">Fitia</h1>
+        <p class="text-gray-400 mb-10 text-center">L'écosystème DéFi nouvelle génération.</p>
         
-        <!-- HEADER MOBILE -->
-        <header class="flex justify-between items-center mb-6 md:hidden">
-            <h1 class="text-xl font-bold text-blue-400">Fitia <span class="text-xs bg-blue-500/20 px-2 py-1 rounded-full">PRO</span></h1>
-            <div id="user-info" class="hidden text-sm bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
-                <span id="user-address">0x...</span>
+        <button onclick="connectWallet()" class="btn-primary text-lg shadow-lg shadow-yellow-500/30">
+            <i class="fas fa-wallet mr-2"></i> Connecter Wallet
+        </button>
+        
+        <p class="text-gray-600 text-xs mt-8">En vous connectant, vous acceptez les conditions d'utilisation.</p>
+    </div>
+
+    <!-- ================= APPLICATION PRINCIPALE ================= -->
+    <div id="app-screen" class="hidden pb-24">
+
+        <!-- HEADER FIXE MOBILE -->
+        <header class="sticky top-0 z-40 bg-[#0B0E11]/90 backdrop-blur-sm border-b border-gray-800 p-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-gem text-brand"></i>
+                <span class="font-bold text-lg">Fitia</span>
             </div>
-            <button id="btn-connect" class="bg-blue-500 px-4 py-2 rounded-lg text-sm font-bold">
-                Connecter
-            </button>
+            <div id="user-address" class="bg-gray-800 px-3 py-1 rounded-full text-xs font-medium text-gray-300"></div>
         </header>
 
-        <!-- SECTION DASHBOARD -->
-        <section id="section-dashboard">
-            <h2 class="text-2xl font-bold mb-6 hidden md:block">Tableau de Bord</h2>
+        <!-- CONTENU PRINCIPAL -->
+        <main class="p-4">
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <!-- Prix FTA -->
-                <div class="glass-card rounded-2xl p-6 flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-400 text-sm">Prix FTA</p>
-                        <h3 id="fta-price" class="text-3xl font-bold mt-1">$0.00</h3>
-                        <span class="text-xs text-green-400 mt-1 inline-block"><i class="fas fa-link mr-1"></i>Pegged to BTC</span>
-                    </div>
-                    <div class="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-400 text-xl">
-                        <i class="fas fa-gem"></i>
-                    </div>
-                </div>
-                <!-- Solde USDT -->
-                <div class="glass-card rounded-2xl p-6 flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-400 text-sm">Solde USDT (Interne)</p>
-                        <h3 id="bal-usdt" class="text-3xl font-bold mt-1">0.00</h3>
-                    </div>
-                    <div class="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center text-green-400 text-xl">
-                        <i class="fas fa-dollar-sign"></i>
+            <!-- DASHBOARD -->
+            <section id="sec-dashboard" class="app-section space-y-4">
+                <!-- Stats Grille -->
+                <div class="grid grid-cols-1 gap-3">
+                    <div class="card flex justify-between items-center">
+                        <div>
+                            <p class="text-xs text-gray-400">Prix FTA</p>
+                            <h2 id="fta-price" class="text-2xl font-bold text-brand">$0.00</h2>
+                        </div>
+                        <i class="fas fa-chart-line text-2xl text-gray-700"></i>
                     </div>
                 </div>
-                <!-- Solde FTA -->
-                <div class="glass-card rounded-2xl p-6 flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-400 text-sm">Solde FTA (Interne)</p>
-                        <h3 id="bal-fta" class="text-3xl font-bold mt-1">0.00</h3>
+                
+                <!-- Solde Grid 2x2 -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="card text-center">
+                        <p class="text-xs text-gray-500">USDT</p>
+                        <h3 id="bal-usdt" class="text-xl font-bold">0.00</h3>
                     </div>
-                    <div class="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center text-purple-400 text-xl">
-                        <i class="fas fa-coins"></i>
+                    <div class="card text-center bg-brand/10 border-brand/30">
+                        <p class="text-xs text-brand">FTA</p>
+                        <h3 id="bal-fta" class="text-xl font-bold text-brand">0.00</h3>
                     </div>
                 </div>
-            </div>
 
-            <!-- Quick Actions -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <button onclick="showSection('wallet')" class="bg-slate-800 hover:bg-slate-700 p-4 rounded-xl text-center transition">
-                    <i class="fas fa-arrow-down text-blue-400 text-xl mb-2"></i>
-                    <p class="text-sm">Déposer</p>
-                </button>
-                <button onclick="showSection('mining')" class="bg-slate-800 hover:bg-slate-700 p-4 rounded-xl text-center transition">
-                    <i class="fas fa-hard-hat text-yellow-400 text-xl mb-2"></i>
-                    <p class="text-sm">Miner</p>
-                </button>
-                <button onclick="showSection('trading')" class="bg-slate-800 hover:bg-slate-700 p-4 rounded-xl text-center transition">
-                    <i class="fas fa-chart-line text-green-400 text-xl mb-2"></i>
-                    <p class="text-sm">Trader</p>
-                </button>
-                <button onclick="showSection('games')" class="bg-slate-800 hover:bg-slate-700 p-4 rounded-xl text-center transition">
-                    <i class="fas fa-plane text-red-400 text-xl mb-2"></i>
-                    <p class="text-sm">Aviator</p>
-                </button>
-            </div>
-        </section>
+                <!-- Quick Actions -->
+                <div class="grid grid-cols-4 gap-2 mt-2">
+                    <button onclick="showSection('wallet')" class="bg-gray-800 p-3 rounded-xl text-center active:bg-gray-700">
+                        <i class="fas fa-plus text-brand text-lg"></i>
+                        <span class="block text-[10px] mt-1 text-gray-400">Déposer</span>
+                    </button>
+                    <button onclick="showSection('trading')" class="bg-gray-800 p-3 rounded-xl text-center active:bg-gray-700">
+                        <i class="fas fa-chart-simple text-brand text-lg"></i>
+                        <span class="block text-[10px] mt-1 text-gray-400">Trader</span>
+                    </button>
+                    <button onclick="showSection('mining')" class="bg-gray-800 p-3 rounded-xl text-center active:bg-gray-700">
+                        <i class="fas fa-pickaxe text-brand text-lg"></i>
+                        <span class="block text-[10px] mt-1 text-gray-400">Miner</span>
+                    </button>
+                    <button onclick="showSection('games')" class="bg-gray-800 p-3 rounded-xl text-center active:bg-gray-700">
+                        <i class="fas fa-gamepad text-brand text-lg"></i>
+                        <span class="block text-[10px] mt-1 text-gray-400">Jouer</span>
+                    </button>
+                </div>
+            </section>
 
-        <!-- SECTION WALLET -->
-        <section id="section-wallet" class="hidden">
-            <h2 class="text-2xl font-bold mb-6">Gestion des Fonds</h2>
-            <div class="grid md:grid-cols-2 gap-6">
-                <!-- Déposer -->
-                <div class="glass-card rounded-2xl p-6">
-                    <div class="flex items-center mb-4"><i class="fas fa-arrow-down text-green-400 mr-3 text-xl"></i><h3 class="text-lg font-semibold">Déposer</h3></div>
-                    <select id="dep-token" class="w-full mb-3 p-3 rounded-lg bg-slate-900 border-slate-700">
-                        <option value="usdt">USDT (Polygon)</option>
-                        <option value="fta">FTA Token</option>
+            <!-- WALLET -->
+            <section id="sec-wallet" class="app-section hidden space-y-4">
+                <h2 class="font-bold text-lg text-brand">Déposer / Retirer</h2>
+                <div class="card">
+                    <p class="text-sm text-gray-400 mb-2">Déposer des fonds</p>
+                    <select id="dep-token" class="mb-2"><option value="usdt">USDT</option><option value="fta">FTA</option></select>
+                    <input type="number" id="dep-amount" placeholder="Montant">
+                    <button onclick="deposit()" class="btn-primary mt-1">Déposer</button>
+                </div>
+                <div class="card">
+                    <p class="text-sm text-gray-400 mb-2">Retirer vers mon wallet</p>
+                    <select id="wit-token" class="mb-2"><option value="usdt">USDT</option><option value="fta">FTA</option></select>
+                    <input type="number" id="wit-amount" placeholder="Montant">
+                    <button onclick="withdraw()" class="btn-danger mt-1">Retirer</button>
+                </div>
+            </section>
+
+            <!-- MARKET -->
+            <section id="sec-market" class="app-section hidden space-y-4">
+                <h2 class="font-bold text-lg text-brand">Marketplace</h2>
+                <div class="card">
+                    <p class="text-xs text-green-400 mb-1">ACHETER FTA</p>
+                    <input type="number" id="buy-amt" placeholder="Montant USDT à dépenser" class="mb-2">
+                    <button onclick="buyFTA()" class="btn-success">Acheter</button>
+                </div>
+                <div class="card">
+                    <p class="text-xs text-red-400 mb-1">VENDRE FTA</p>
+                    <input type="number" id="sell-amt" placeholder="Montant FTA à vendre" class="mb-2">
+                    <button onclick="sellFTA()" class="btn-danger">Vendre</button>
+                </div>
+            </section>
+
+            <!-- MINING -->
+            <section id="sec-mining" class="app-section hidden space-y-4">
+                <h2 class="font-bold text-lg text-brand">Mining</h2>
+                <div class="card">
+                    <p class="font-semibold mb-3">Acheter une Machine</p>
+                    <select id="machine-type" class="mb-2">
+                        <option value="0">Starter (10$)</option>
                     </select>
-                    <input type="number" id="dep-amount" placeholder="Montant à déposer" class="w-full mb-4 p-3">
-                    <button onclick="deposit()" class="w-full bg-blue-500 hover:bg-blue-600 p-3 rounded-lg font-bold transition">Déposer</button>
+                    <button onclick="buyMachine()" class="btn-primary">Acheter</button>
                 </div>
-                <!-- Retirer -->
-                <div class="glass-card rounded-2xl p-6">
-                    <div class="flex items-center mb-4"><i class="fas fa-arrow-up text-red-400 mr-3 text-xl"></i><h3 class="text-lg font-semibold">Retirer</h3></div>
-                    <select id="wit-token" class="w-full mb-3 p-3 rounded-lg bg-slate-900 border-slate-700">
-                        <option value="usdt">USDT (Polygon)</option>
-                        <option value="fta">FTA Token</option>
+                <div class="card">
+                    <p class="font-semibold mb-3">Acheter Batterie</p>
+                    <input type="number" id="bat-token" placeholder="ID de la machine" class="mb-2">
+                    <select id="bat-pack" class="mb-2">
+                        <option value="0">Pack 24h (0.50$)</option>
                     </select>
-                    <input type="number" id="wit-amount" placeholder="Montant à retirer" class="w-full mb-4 p-3">
-                    <button onclick="withdraw()" class="w-full bg-red-500 hover:bg-red-600 p-3 rounded-lg font-bold transition">Retirer vers Wallet</button>
+                    <button onclick="buyBattery()" class="btn-secondary">Charger</button>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- SECTION MARKET -->
-        <section id="section-market" class="hidden">
-            <h2 class="text-2xl font-bold mb-6">Marketplace FTA</h2>
-            <div class="glass-card rounded-2xl p-6 max-w-xl mx-auto">
-                <div class="flex justify-around mb-6">
-                    <button onclick="showBuySell('buy')" class="px-6 py-2 rounded-lg bg-blue-500 text-white font-bold">ACHETER</button>
-                    <button onclick="showBuySell('sell')" class="px-6 py-2 rounded-lg bg-slate-700 hover:bg-slate-600">VENDRE</button>
-                </div>
-                <!-- Buy Form -->
-                <div id="form-buy">
-                    <p class="text-sm text-gray-400 mb-2">Vous payez en USDT</p>
-                    <input type="number" id="buy-amt" placeholder="Montant USDT" class="w-full mb-4 p-3 text-lg">
-                    <button onclick="buyFTA()" class="w-full bg-green-500 hover:bg-green-600 p-4 rounded-lg font-bold text-lg transition">Acheter FTA</button>
-                </div>
-                <!-- Sell Form -->
-                <div id="form-sell" class="hidden">
-                    <p class="text-sm text-gray-400 mb-2">Vous vendez en FTA</p>
-                    <input type="number" id="sell-amt" placeholder="Montant FTA" class="w-full mb-4 p-3 text-lg">
-                    <button onclick="sellFTA()" class="w-full bg-red-500 hover:bg-red-600 p-4 rounded-lg font-bold text-lg transition">Vendre FTA</button>
-                </div>
-            </div>
-        </section>
-
-        <!-- SECTION MINING -->
-        <section id="section-mining" class="hidden">
-            <h2 class="text-2xl font-bold mb-6">⛏️ Centre de Minage</h2>
-            
-            <div class="grid md:grid-cols-2 gap-6">
-                <!-- Shop -->
-                <div class="glass-card rounded-2xl p-6">
-                    <h3 class="font-bold text-lg mb-4"><i class="fas fa-store mr-2"></i>Boutique</h3>
+            <!-- TRADING -->
+            <section id="sec-trading" class="app-section hidden space-y-4">
+                <h2 class="font-bold text-lg text-brand">Trading</h2>
+                <div class="card">
+                    <select id="trade-asset" class="mb-2">
+                        <option value="0">BTC</option><option value="1">ETH</option><option value="2">FTA</option>
+                    </select>
+                    <input type="number" id="trade-margin" placeholder="Marge USDT" class="mb-2">
+                    <input type="number" id="trade-lev" placeholder="Levier (ex: 10)" class="mb-2">
                     
-                    <div class="bg-slate-900 p-4 rounded-lg mb-4">
-                        <p class="text-gray-400 text-sm">Acheter une Machine</p>
-                        <select id="machine-type" class="w-full mt-2 p-2 rounded bg-slate-800 border-slate-700 text-sm">
-                            <option value="0">Machine Starter - 10$</option>
-                            <!-- Ajoutez d'autres options dynamiquement si nécessaire -->
-                        </select>
-                        <button onclick="buyMachine()" class="w-full bg-blue-500 mt-3 p-2 rounded font-bold text-sm">Acheter</button>
-                    </div>
-
-                    <div class="bg-slate-900 p-4 rounded-lg">
-                        <p class="text-gray-400 text-sm">Acheter Batterie</p>
-                        <input type="number" id="bat-token" placeholder="ID de la machine" class="w-full mt-2 p-2 rounded bg-slate-800 border-slate-700 text-sm mb-2">
-                        <select id="bat-pack" class="w-full p-2 rounded bg-slate-800 border-slate-700 text-sm">
-                            <option value="0">Pack 24h - 0.50$</option>
-                        </select>
-                        <button onclick="buyBattery()" class="w-full bg-yellow-500 mt-3 p-2 rounded font-bold text-sm text-black">Recharger</button>
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        <button onclick="openPosition(0)" class="btn-success text-sm py-3">LONG</button>
+                        <button onclick="openPosition(1)" class="btn-danger text-sm py-3">SHORT</button>
                     </div>
                 </div>
+            </section>
 
-                <!-- Mes Machines -->
-                <div class="glass-card rounded-2xl p-6">
-                    <h3 class="font-bold text-lg mb-4"><i class="fas fa-cubes mr-2"></i>Mes Machines</h3>
-                    <div class="text-center text-gray-500 py-8">
-                        <i class="fas fa-hdd text-4xl mb-3"></i>
-                        <p>Connectez-vous pour voir vos machines.</p>
-                        <p class="text-xs mt-2">(Fonction liste NFT à implémenter avec l'API TheGraph ou loop simple)</p>
-                    </div>
+            <!-- GAMES -->
+            <section id="sec-games" class="app-section hidden space-y-4">
+                <h2 class="font-bold text-lg text-brand">Aviator Game</h2>
+                <div class="card text-center">
+                    <i class="fas fa-plane text-4xl text-brand mb-4"></i>
+                    <input type="number" id="aviator-bet" placeholder="Mise FTA" class="mb-2">
+                    <input type="number" id="aviator-mult" placeholder="Cible (ex: 200)" class="mb-2">
+                    <button onclick="playAviator()" class="btn-primary">JOUER</button>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- SECTION TRADING -->
-        <section id="section-trading" class="hidden">
-            <h2 class="text-2xl font-bold mb-6">Trading Futures</h2>
-            <div class="glass-card rounded-2xl p-6 max-w-xl mx-auto">
-                <div class="mb-4">
-                    <label class="text-sm text-gray-400">Actif</label>
-                    <select id="trade-asset" class="w-full mt-1 p-3 rounded-lg">
-                        <option value="0">BTC/USD</option>
-                        <option value="1">ETH/USD</option>
-                        <option value="2">FTA/USD</option>
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label class="text-sm text-gray-400">Marge (USDT)</label>
-                    <input type="number" id="trade-margin" placeholder="100" class="w-full mt-1 p-3 rounded-lg">
-                </div>
-                <div class="mb-6">
-                    <label class="text-sm text-gray-400">Levier</label>
-                    <input type="range" id="trade-lev" min="1" max="50" value="10" class="w-full mt-1 accent-blue-500">
-                    <div class="flex justify-between text-xs text-gray-500 mt-1">
-                        <span>1x</span>
-                        <span id="lev-display" class="text-blue-400 font-bold">10x</span>
-                        <span>50x</span>
-                    </div>
-                </div>
-                <script>document.getElementById('trade-lev').oninput = (e) => document.getElementById('lev-display').innerText = e.target.value + 'x';</script>
+        </main>
+    </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <button onclick="openPosition(0)" class="bg-green-500 hover:bg-green-600 p-4 rounded-xl font-bold text-lg flex flex-col items-center">
-                        <span>LONG</span>
-                        <i class="fas fa-arrow-up mt-1"></i>
-                    </button>
-                    <button onclick="openPosition(1)" class="bg-red-500 hover:bg-red-600 p-4 rounded-xl font-bold text-lg flex flex-col items-center">
-                        <span>SHORT</span>
-                        <i class="fas fa-arrow-down mt-1"></i>
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- SECTION FARMING -->
-        <section id="section-farming" class="hidden">
-            <h2 class="text-2xl font-bold mb-6">Yield Farming</h2>
-            <div class="glass-card rounded-2xl p-6">
-                <h3 class="font-bold mb-4">Ajouter de la Liquidité (USDT + FTA)</h3>
-                <div class="grid md:grid-cols-2 gap-4">
-                    <input type="number" id="farm-usdt" placeholder="Montant USDT" class="p-3 rounded-lg">
-                    <input type="number" id="farm-fta" placeholder="Montant FTA" class="p-3 rounded-lg">
-                </div>
-                <button onclick="addLiquidity()" class="bg-purple-500 hover:bg-purple-600 w-full mt-4 p-3 rounded-lg font-bold">Fournir Liquidité</button>
-            </div>
-        </section>
-
-        <!-- SECTION GAMES -->
-        <section id="section-games" class="hidden">
-            <h2 class="text-2xl font-bold mb-6">Aviator Game</h2>
-            <div class="glass-card rounded-2xl p-6 max-w-md mx-auto text-center">
-                <i class="fas fa-plane text-6xl text-red-400 mb-4 transform -rotate-45"></i>
-                <p class="text-gray-400 mb-4">Pariez sur le multiplicateur !</p>
-                <input type="number" id="aviator-bet" placeholder="Mise FTA" class="w-full mb-3 p-3 rounded-lg">
-                <input type="number" id="aviator-mult" placeholder="Cible (ex: 200 pour x2)" class="w-full mb-4 p-3 rounded-lg">
-                <button onclick="playAviator()" class="bg-red-500 hover:bg-red-600 w-full p-4 rounded-lg font-bold">Jouer</button>
-            </div>
-        </section>
-
-        <!-- SECTION LENDING -->
-        <section id="section-lending" class="hidden">
-            <h2 class="text-2xl font-bold mb-6">Lending (Prêts)</h2>
-            <div class="grid md:grid-cols-2 gap-6">
-                <div class="glass-card rounded-2xl p-6">
-                    <h3 class="font-bold mb-3">Déposer Collatéral</h3>
-                    <input type="number" id="lend-coll" placeholder="Montant USDT" class="w-full mb-3 p-3 rounded-lg">
-                    <button onclick="depositCollateral()" class="bg-blue-500 w-full p-3 rounded-lg">Déposer</button>
-                </div>
-                <div class="glass-card rounded-2xl p-6">
-                    <h3 class="font-bold mb-3">Emprunter FTA</h3>
-                    <input type="number" id="lend-borrow" placeholder="Montant FTA" class="w-full mb-3 p-3 rounded-lg">
-                    <button onclick="borrow()" class="bg-green-500 w-full p-3 rounded-lg">Emprunter</button>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- NAVIGATION MOBILE (Bottom Bar) -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 z-40">
-        <div class="flex justify-around py-2">
-            <button onclick="showSection('dashboard')" class="nav-btn active-nav p-3 text-center"><i class="fas fa-home text-xl"></i><span class="block text-xs mt-1">Home</span></button>
-            <button onclick="showSection('market')" class="nav-btn p-3 text-center"><i class="fas fa-exchange-alt text-xl"></i><span class="block text-xs mt-1">Market</span></button>
-            <button onclick="showSection('trading')" class="nav-btn p-3 text-center bg-blue-500 rounded-full -mt-6 w-14 h-14 flex items-center justify-center shadow-lg border-4 border-slate-900"><i class="fas fa-chart-line text-xl"></i></button>
-            <button onclick="showSection('mining')" class="nav-btn p-3 text-center"><i class="fas fa-gem text-xl"></i><span class="block text-xs mt-1">Mine</span></button>
-            <button onclick="showSection('wallet')" class="nav-btn p-3 text-center"><i class="fas fa-wallet text-xl"></i><span class="block text-xs mt-1">Wallet</span></button>
+    <!-- ================= BARRE DE NAVIGATION BAS (MOBILE) ================= -->
+    <nav class="bottom-nav md:hidden">
+        <div class="flex justify-around h-16">
+            <button data-section="dashboard" class="nav-item flex-1 flex flex-col items-center justify-center text-brand">
+                <i class="fas fa-home text-xl"></i>
+            </button>
+            <button data-section="market" class="nav-item flex-1 flex flex-col items-center justify-center text-gray-500">
+                <i class="fas fa-exchange-alt text-xl"></i>
+            </button>
+            <button data-section="trading" class="nav-item flex-1 flex flex-col items-center justify-center text-gray-500">
+                <i class="fas fa-chart-line text-xl"></i>
+            </button>
+            <button data-section="mining" class="nav-item flex-1 flex flex-col items-center justify-center text-gray-500">
+                <i class="fas fa-gem text-xl"></i>
+            </button>
+            <button data-section="games" class="nav-item flex-1 flex flex-col items-center justify-center text-gray-500">
+                <i class="fas fa-gamepad text-xl"></i>
+            </button>
         </div>
     </nav>
 
-    <!-- SCRIPT -->
     <script src="app.js"></script>
-    <script>
-        // Helper pour switch Buy/Sell dans Market
-        function showBuySell(type) {
-            document.getElementById('form-buy').classList.add('hidden');
-            document.getElementById('form-sell').classList.add('hidden');
-            document.getElementById('form-' + type).classList.remove('hidden');
-        }
-    </script>
 </body>
 </html>
