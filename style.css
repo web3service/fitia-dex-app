@@ -1,4 +1,4 @@
-/* style.css */
+/* style.css - THEME BITGET PRO */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
@@ -6,106 +6,113 @@
     --bg-dark: #0B0E11;
     --card-bg: #121416;
     --border-color: #2B3139;
+    --text-main: #FFFFFF;
+    --text-muted: #848E9C;
+    --danger: #EA3943;
+    --success: #0ECB81;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body {
     font-family: 'Inter', sans-serif;
     background-color: var(--bg-dark);
-    color: #FFFFFF;
+    color: var(--text-main);
     margin: 0;
     padding: 0;
     overflow-x: hidden;
     -webkit-text-size-adjust: 100%;
 }
 
-input, select, textarea, button {
-    font-family: 'Inter', sans-serif;
-    font-size: 16px !important; 
-    outline: none;
-}
-
-input, select {
-    background-color: #1E2329;
-    border: 1px solid var(--border-color);
-    color: white;
-    padding: 14px 16px;
-    border-radius: 12px;
+/* Inputs optimisés pour mobile */
+input, select, textarea {
+    background-color: #1E2329 !important;
+    border: 1px solid var(--border-color) !important;
+    color: white !important;
+    border-radius: 12px !important;
+    padding: 16px !important; /* Plus grand pour les doigts */
     width: 100%;
+    font-size: 16px !important; /* Empêche le zoom sur iOS */
     margin-bottom: 12px;
+    outline: none;
     appearance: none;
+    transition: border-color 0.2s;
 }
+input:focus { border-color: var(--primary) !important; }
+input::placeholder { color: #5E6673; }
 
-.btn-primary {
-    background-color: var(--primary);
-    color: black;
+/* Boutons */
+.btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 12px;
+    border: none;
     font-weight: 700;
-    padding: 16px;
-    border-radius: 12px;
-    border: none;
-    width: 100%;
+    font-size: 16px;
     cursor: pointer;
+    text-align: center;
+    display: block;
+    transition: opacity 0.2s;
 }
-.btn-danger {
-    background-color: #EA3943;
-    color: white;
-    padding: 16px;
-    border-radius: 12px;
-    border: none;
-    width: 100%;
-    cursor: pointer;
-    font-weight: 600;
-}
-.btn-success {
-    background-color: #0ECB81;
-    color: white;
-    padding: 16px;
-    border-radius: 12px;
-    border: none;
-    width: 100%;
-    cursor: pointer;
-    font-weight: 600;
-}
-.btn-secondary {
-    background-color: #2B3139;
-    color: white;
-    padding: 16px;
-    border-radius: 12px;
-    border: none;
-    width: 100%;
-    cursor: pointer;
-    font-weight: 600;
-}
+.btn-primary { background: var(--primary); color: black; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-success { background: var(--success); color: white; }
+.btn-secondary { background: #2B3139; color: white; border: 1px solid #3A4556; }
+.btn-small { padding: 10px; font-size: 14px; }
 
+/* Cartes */
 .card {
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 16px;
     padding: 20px;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
+/* Titres */
+.section-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.section-title i { color: var(--primary); }
+
+/* Navigation Mobile */
 .bottom-nav {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    background-color: #0B0E11;
+    background: #0B0E11;
     border-top: 1px solid var(--border-color);
     padding-bottom: env(safe-area-inset-bottom);
     z-index: 1000;
 }
+.nav-item { 
+    display: flex; flex-direction: column; align-items: center; justify-content: center; 
+    padding: 8px 0; color: #5E6673; font-size: 10px; font-weight: 500;
+}
+.nav-item i { font-size: 20px; margin-bottom: 4px; }
+.nav-item.active { color: var(--primary); }
 
+/* Spinner */
 .spinner {
     border: 3px solid rgba(255,255,255,0.1);
     border-top: 3px solid var(--primary);
     border-radius: 50%;
-    width: 24px;
-    height: 24px;
+    width: 40px; height: 40px;
     animation: spin 0.8s linear infinite;
-    margin: 0 auto;
+    margin: 20px auto;
 }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
-.text-brand { color: var(--primary); }
+/* Utilitaires */
 .hidden { display: none !important; }
+.text-brand { color: var(--primary); }
+.flex-col { display: flex; flex-direction: column; gap: 12px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.label { font-size: 14px; color: var(--text-muted); margin-bottom: 6px; display: block; }
+.badge { background: var(--primary); color: black; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
