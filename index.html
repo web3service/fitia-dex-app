@@ -3,40 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fitia Ecosystem | DeFi Hub</title>
+    <title>Fitia Hub</title>
     <meta name="theme-color" content="#0e0e0e">
-    
-    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- CONTENEUR TOAST (Messages Pro) -->
+    <!-- TOAST CONTAINER -->
     <div id="toast-container"></div>
 
-    <!-- HEADER FIXE -->
+    <!-- HEADER -->
     <header class="app-header">
-        <div class="logo">
-            <i class="fa-solid fa-layer-group"></i> FITIA <span>HUB</span>
-        </div>
+        <div class="logo"><i class="fa-solid fa-layer-group"></i> FITIA <span>HUB</span></div>
         <div class="user-area">
-            <div id="walletAddress" class="btn-connect" onclick="connectWallet()">
-                <i class="fa-solid fa-wallet"></i> Connecter
-            </div>
+            <div id="walletAddress" class="btn-connect" onclick="connectWallet()"><i class="fa-solid fa-wallet"></i> Connecter</div>
             <div class="balance-mini" id="headerBalance">--</div>
         </div>
     </header>
 
-    <!-- CONTENU PRINCIPAL -->
+    <!-- MAIN CONTENT -->
     <main class="app-content">
-
-        <!-- ONGLET 1: DASHBOARD -->
+        <!-- DASHBOARD -->
         <section id="tab-dashboard" class="tab-content active">
             <div class="card market-card">
                 <div class="market-header">
@@ -44,228 +34,104 @@
                     <span class="badge-live"><i class="fa-solid fa-circle"></i> Polygon</span>
                 </div>
                 <div class="price-big" id="ftaPrice">--.-- $</div>
-                <div class="chart-container">
-                    <canvas id="marketChart"></canvas>
-                </div>
+                <div class="chart-container"><canvas id="marketChart"></canvas></div>
             </div>
-
             <div class="stats-grid">
-                <div class="stat-card">
-                    <span class="label">Solde FTA</span>
-                    <strong class="value" id="userFtaBalance">0.00</strong>
-                </div>
-                <div class="stat-card">
-                    <span class="label">Solde USDT</span>
-                    <strong class="value" id="userUsdtBalance">0.00</strong>
-                </div>
-                <div class="stat-card">
-                    <span class="label">Niveau</span>
-                    <strong class="value" id="userLevel">1</strong>
-                </div>
-                <div class="stat-card">
-                    <span class="label">Parrainés</span>
-                    <strong class="value" id="refCount">0</strong>
-                </div>
+                <div class="stat-card"><span class="label">Solde FTA</span><strong class="value" id="userFtaBalance">0.00</strong></div>
+                <div class="stat-card"><span class="label">Solde USDT</span><strong class="value" id="userUsdtBalance">0.00</strong></div>
+                <div class="stat-card"><span class="label">Niveau</span><strong class="value" id="userLevel">1</strong></div>
+                <div class="stat-card"><span class="label">Parrainés</span><strong class="value" id="refCount">0</strong></div>
             </div>
-
             <div class="quick-actions">
-                <button class="action-btn primary" onclick="showTab('tab-trade')">
-                    <i class="fa-solid fa-chart-line"></i> Trader
-                </button>
-                <button class="action-btn secondary" onclick="showTab('tab-mining')">
-                    <i class="fa-solid fa-helmet-safety"></i> Miner
-                </button>
-                <button class="action-btn secondary" onclick="showTab('tab-game')">
-                    <i class="fa-solid fa-gamepad"></i> Aviator
-                </button>
-                <button class="action-btn outline" onclick="showTab('tab-wallet')">
-                    <i class="fa-solid fa-piggy-bank"></i> Wallet
-                </button>
+                <button class="action-btn primary" onclick="showTab('tab-trade')"><i class="fa-solid fa-chart-line"></i> Trader</button>
+                <button class="action-btn secondary" onclick="showTab('tab-mining')"><i class="fa-solid fa-helmet-safety"></i> Miner</button>
+                <button class="action-btn secondary" onclick="showTab('tab-game')"><i class="fa-solid fa-gamepad"></i> Aviator</button>
+                <button class="action-btn outline" onclick="showTab('tab-wallet')"><i class="fa-solid fa-piggy-bank"></i> Wallet</button>
             </div>
         </section>
 
-        <!-- ONGLET 2: TRADING -->
+        <!-- TRADING -->
         <section id="tab-trade" class="tab-content">
             <div class="card trade-card">
-                <!-- Sélecteur d'actif (Correction) -->
                 <div class="input-group">
-                    <label>Actif à Trader</label>
+                    <label>Actif</label>
                     <select id="tradeAsset" onchange="updateTradeUI()">
                         <option value="2">FTA / USD</option>
                         <option value="0">BTC / USD</option>
                         <option value="1">ETH / USD</option>
                     </select>
                 </div>
-
                 <div class="trade-tabs">
                     <button class="t-tab active" onclick="setTradeSide(0)">Long 🟢</button>
                     <button class="t-tab" onclick="setTradeSide(1)">Short 🔴</button>
                 </div>
-                
-                <div class="input-group">
-                    <label>Marge (USDT)</label>
-                    <input type="number" id="tradeMargin" placeholder="Ex: 10">
-                </div>
-
+                <div class="input-group"><label>Marge (USDT)</label><input type="number" id="tradeMargin" placeholder="Ex: 10"></div>
                 <div class="input-group">
                     <label>Levier: <span id="levVal" class="highlight">10x</span></label>
                     <input type="range" id="tradeLeverage" min="1" max="50" value="10" oninput="document.getElementById('levVal').innerText = this.value + 'x'">
                 </div>
-
                 <div class="row-inputs">
-                    <div class="input-group">
-                        <label>Stop Loss ($)</label>
-                        <input type="number" id="tradeSL" placeholder="Optionnel">
-                    </div>
-                    <div class="input-group">
-                        <label>Take Profit ($)</label>
-                        <input type="number" id="tradeTP" placeholder="Optionnel">
-                    </div>
+                    <div class="input-group"><label>Stop Loss ($)</label><input type="number" id="tradeSL" placeholder="Optionnel"></div>
+                    <div class="input-group"><label>Take Profit ($)</label><input type="number" id="tradeTP" placeholder="Optionnel"></div>
                 </div>
-
                 <button class="btn-main full-width" id="btnOpenPosition" onclick="executeTrade()">Ouvrir Position</button>
             </div>
-
-            <h3 class="section-title">Positions Ouvertes</h3>
-            <div id="positionsList" class="list-container">
-                <div class="empty-state">Aucune position</div>
-            </div>
+            <h3 class="section-title">Positions</h3>
+            <div id="positionsList" class="list-container"><div class="empty-state">Aucune position</div></div>
         </section>
 
-        <!-- ONGLET 3: MINING -->
+        <!-- MINING -->
         <section id="tab-mining" class="tab-content">
             <div class="card mining-card">
-                <div id="miningVisual" class="mining-visual">
-                    <i class="fa-solid fa-microchip"></i>
-                    <p>Connectez votre wallet pour miner.</p>
-                </div>
+                <div id="miningVisual" class="mining-visual"><i class="fa-solid fa-microchip"></i><p>Connectez votre wallet.</p></div>
                 <div class="mining-stats">
-                    <div class="m-stat"><span class="label">Puissance</span><span class="val" id="hashPower">0</span> H/s</div>
+                    <div class="m-stat"><span class="label">Puissance</span><span class="val" id="hashPower">0</span></div>
                     <div class="m-stat"><span class="label">Batterie</span><span class="val" id="batteryLevel">0%</span></div>
                 </div>
-                <div class="input-group">
-                    <label>ID Machine (NFT)</label>
-                    <input type="number" id="miningTokenId" placeholder="Entrez l'ID">
-                </div>
-                <button class="btn-secondary full-width" onclick="claimRewards()">
-                    <i class="fa-solid fa-coins"></i> Récolter FTA
-                </button>
+                <div class="input-group"><label>ID Machine</label><input type="number" id="miningTokenId" placeholder="ID du NFT"></div>
+                <button class="btn-secondary full-width" onclick="claimRewards()"><i class="fa-solid fa-coins"></i> Récolter</button>
             </div>
-
             <h3 class="section-title">Boutique</h3>
             <div class="shop-grid">
-                <div class="shop-item">
-                    <div class="s-icon"><i class="fa-solid fa-server"></i></div>
-                    <h4>Machine V1</h4>
-                    <p class="price">10 USDT</p>
-                    <button class="btn-sm" onclick="buyMachine(0)">Acheter</button>
-                </div>
-                <div class="shop-item">
-                    <div class="s-icon"><i class="fa-solid fa-battery-full"></i></div>
-                    <h4>Batterie</h4>
-                    <p class="price">0.50 USDT</p>
-                    <button class="btn-sm" onclick="buyBatteryUI()">Charger</button>
-                </div>
+                <div class="shop-item"><div class="s-icon"><i class="fa-solid fa-server"></i></div><h4>Machine</h4><p class="price">10 USDT</p><button class="btn-sm" onclick="buyMachine(0)">Acheter</button></div>
+                <div class="shop-item"><div class="s-icon"><i class="fa-solid fa-battery-full"></i></div><h4>Batterie</h4><p class="price">0.50 USDT</p><button class="btn-sm" onclick="buyBatteryUI()">Charger</button></div>
             </div>
         </section>
 
-        <!-- ONGLET 4: JEU AVIATOR -->
+        <!-- GAME -->
         <section id="tab-game" class="tab-content">
             <div class="card game-card">
-                <div class="game-screen" id="gameScreen">
-                    <div class="plane" id="gamePlane">✈️</div>
-                    <h1 id="gameMultiplier">1.00x</h1>
-                </div>
+                <div class="game-screen" id="gameScreen"><div class="plane" id="gamePlane">✈️</div><h1 id="gameMultiplier">1.00x</h1></div>
                 <div class="game-controls">
-                    <div class="input-group">
-                        <label>Mise (FTA)</label>
-                        <input type="number" id="gameBet" placeholder="Montant">
-                    </div>
-                    <div class="input-group">
-                        <label>Cible (x)</label>
-                        <input type="number" id="gameTarget" value="2.00" step="0.1">
-                    </div>
+                    <div class="input-group"><label>Mise (FTA)</label><input type="number" id="gameBet" placeholder="Montant"></div>
+                    <div class="input-group"><label>Cible (x)</label><input type="number" id="gameTarget" value="2.00"></div>
                     <button class="btn-main full-width" id="btnPlayAviator" onclick="playAviator()">PARIER</button>
                 </div>
                 <div id="gameResult" class="game-result"></div>
             </div>
         </section>
 
-        <!-- ONGLET 5: WALLET & FINANCE -->
+        <!-- WALLET -->
         <section id="tab-wallet" class="tab-content">
             <div class="card swap-card">
-                <h3>Échanger (Swap)</h3>
+                <h3>Swap & Gestion</h3>
                 <div class="swap-box">
-                    <div class="swap-input">
-                        <label>Vous donnez</label>
-                        <input type="number" id="swapAmountIn" placeholder="0.00" oninput="calcSwap()">
-                        <span>USDT</span>
-                    </div>
+                    <div class="swap-input"><label>Vous donnez</label><input type="number" id="swapAmountIn" placeholder="0.00"><span>USDT</span></div>
                     <div class="swap-icon"><i class="fa-solid fa-arrow-down"></i></div>
-                    <div class="swap-input">
-                        <label>Vous recevez (Estimé)</label>
-                        <input type="number" id="swapAmountOut" placeholder="0.00" readonly>
-                        <span>FTA</span>
-                    </div>
+                    <div class="swap-input"><label>Vous recevez</label><input type="number" id="swapAmountOut" placeholder="0.00" readonly><span>FTA</span></div>
                 </div>
                 <div class="row-btns">
                     <button class="btn-main flex-1" onclick="buyFTA()">Acheter</button>
                     <button class="btn-outline flex-1" onclick="sellFTAUI()">Vendre</button>
                 </div>
-            </div>
-
-            <div class="card">
-                <h3>Gestion des fonds</h3>
-                <div class="finance-row">
-                    <input type="number" id="depAmount" placeholder="Montant USDT">
-                    <button class="btn-sm-action" onclick="depositToHub()">Déposer</button>
-                </div>
-                <div class="finance-row">
-                    <input type="number" id="witAmount" placeholder="Montant USDT">
-                    <button class="btn-sm-action" onclick="withdrawFromHub()">Retirer</button>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3>Finance (Lending & Staking)</h3>
-                <div class="input-group">
-                    <label>Collatéral (USDT)</label>
-                    <input type="number" id="loanCollateral" placeholder="0.00">
-                    <button class="btn-sm" onclick="depositCollateral()">Déposer</button>
-                </div>
-                <div class="input-group">
-                    <label>Emprunter (FTA)</label>
-                    <input type="number" id="loanBorrow" placeholder="0.00">
-                    <button class="btn-sm" onclick="borrowFTA()">Emprunter</button>
-                </div>
-                <div class="info-box">
-                    Dette: <strong id="currentDebt">0.00</strong> FTA
-                    <button class="btn-link" onclick="repayLoan()">Rembourser</button>
-                </div>
-                <hr style="border-color:#333; margin:15px 0;">
-                <div class="input-group">
-                    <label>Staking FTA</label>
-                    <input type="number" id="stakeAmount" placeholder="Montant">
-                </div>
-                <div class="row-btns">
-                    <button class="btn-secondary flex-1" onclick="stakeTokens()">Staker</button>
-                    <button class="btn-outline flex-1" onclick="unstakeTokens()">Unstaker</button>
-                </div>
-            </div>
-            
-            <div class="card">
-                <h3>Parrainage</h3>
-                <div class="ref-code" id="myRefCode">--</div>
-                <div class="input-group" style="margin-top:10px;">
-                    <input type="text" id="referrerAddr" placeholder="Adresse parrain">
-                    <button class="btn-sm full-width" onclick="registerReferrer()">Enregistrer</button>
-                </div>
+                <hr style="border-color:#333; margin:20px 0;">
+                <div class="finance-row"><input type="number" id="depAmount" placeholder="Déposer USDT"><button class="btn-sm-action" onclick="depositToHub()">Déposer</button></div>
+                <div class="finance-row"><input type="number" id="witAmount" placeholder="Retirer USDT"><button class="btn-sm-action" onclick="withdrawFromHub()">Retirer</button></div>
             </div>
         </section>
-
     </main>
 
-    <!-- NAVIGATION -->
+    <!-- NAV -->
     <nav class="bottom-nav">
         <button class="nav-item active" onclick="showTab('tab-dashboard')"><i class="fa-solid fa-house"></i><span>Home</span></button>
         <button class="nav-item" onclick="showTab('tab-trade')"><i class="fa-solid fa-chart-simple"></i><span>Trade</span></button>
