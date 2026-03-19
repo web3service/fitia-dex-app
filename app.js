@@ -10,7 +10,7 @@ const FTA_ADDRESS = "0x535bBe393D64a60E14B731b7350675792d501623"; // REMPLACEZ C
 const POLYGON_CHAIN_ID = 137;
 const POLYGON_CHAIN_ID_HEX = '0x89';
 
-// ABI COMPLET
+// ABI : Liste des fonctions du contrat utilisées par le Frontend
 const ABI = [
     // Views
     "function internalBalances(address,address) view returns(uint256)",
@@ -53,10 +53,12 @@ const ABI = [
     "function registerReferrer(address)"
 ];
 
+// -------------------- 2. STATE --------------------
 let provider, signer, contract, userAddress;
 
-// ================= INITIALISATION =================
+// -------------------- 3. INITIALISATION --------------------
 window.onload = function() {
+    // Attachement des événements de navigation
     document.querySelectorAll('.nav-item[data-section]').forEach(item => {
         item.addEventListener('click', (e) => {
             const section = e.currentTarget.dataset.section;
@@ -65,7 +67,7 @@ window.onload = function() {
     });
 };
 
-// ================= CONNEXION =================
+// -------------------- 4. WALLET CONNECTION --------------------
 async function connectWallet() {
     showLoader(true, "Connexion...");
     try {
@@ -112,20 +114,22 @@ async function switchToPolygon() {
     }
 }
 
-// ================= DASHBOARD =================
+// -------------------- 5. DASHBOARD --------------------
 async function loadDashboard() {
     if (!contract) return;
     try {
         const price = await contract.getAssetPrice(2); 
         document.getElementById('fta-price').innerText = "$" + parseFloat(ethers.utils.formatUnits(price, 8)).toFixed(2);
+        
         const balUsdt = await contract.internalBalances(userAddress, USDT_ADDRESS);
         document.getElementById('bal-usdt').innerText = parseFloat(ethers.utils.formatUnits(balUsdt, 6)).toFixed(2);
+        
         const balFta = await contract.internalBalances(userAddress, FTA_ADDRESS);
         document.getElementById('bal-fta').innerText = parseFloat(ethers.utils.formatUnits(balFta, 8)).toFixed(2);
     } catch (e) { console.error(e); }
 }
 
-// ================= ACTIONS GLOBALES =================
+// -------------------- 6. TRANSACTION ENGINE --------------------
 async function runTx(callback, msg = "Succès") {
     if (!contract) return showToast("Non connecté", "error");
     showLoader(true, "Transaction...");
@@ -140,9 +144,7 @@ async function runTx(callback, msg = "Succès") {
     } finally { showLoader(false); }
 }
 
-// ================= FONCTIONS SPECIFIQUES =================
-
-// Wallet
+// -------------------- 7. ACTIONS : WALLET --------------------
 function deposit() { 
     const t = document.getElementById('dep-token').value, a = document.getElementById('dep-amount').value;
     if(!a) return; const addr = t==='usdt'?USDT_ADDRESS:FTA_ADDRESS; const d = t==='usdt'?6:8;
@@ -158,16 +160,16 @@ function withdraw() {
     runTx(() => contract.withdrawFromWallet(addr, ethers.utils.parseUnits(a, d)), "Retrait effectué");
 }
 
-// Market
+// -------------------- 8. ACTIONS : MARKET --------------------
 function buyFTA() { const a = document.getElementById('buy-amt').value; if(!a) return; runTx(() => contract.buyFTA(ethers.utils.parseUnits(a, 6)), "Achat réussi"); }
 function sellFTA() { const a = document.getElementById('sell-amt').value; if(!a) return; runTx(() => contract.sellFTA(ethers.utils.parseUnits(a, 8)), "Vente réussie"); }
 
-// Mining
+// -------------------- 9. ACTIONS : MINING --------------------
 function buyMachine() { runTx(() => contract.buyMachine(0), "Machine achetée"); }
 function buyBattery() { const t = document.getElementById('bat-token').value; if(!t) return; runTx(() => contract.buyBattery(t, 0), "Batterie activée"); }
 function claimMining() { const t = document.getElementById('bat-token').value; if(!t) return; runTx(() => contract.claimMiningRewards(t), "Récompenses réclamées"); }
 
-// Trading
+// -------------------- 10. ACTIONS : TRADING --------------------
 function openPosition(s) { 
     const a=document.getElementById('trade-asset').value,m=document.getElementById('trade-margin').value,l=document.getElementById('trade-lev').value;
     const sl=document.getElementById('trade-sl').value, tp=document.getElementById('trade-tp').value;
@@ -177,38 +179,38 @@ function openPosition(s) {
 function closePosition() { const p = document.getElementById('pos-id').value; if(!p) return; runTx(() => contract.closePosition(p), "Position fermée"); }
 function liquidatePosition() { const p = document.getElementById('pos-id').value; if(!p) return; runTx(() => contract.liquidatePosition(p), "Liquidité"); }
 
-// Insurance
+// -------------------- 11. ACTIONS : INSURANCE --------------------
 function buyInsurance() { 
     const p = document.getElementById('pos-id').value, c = document.getElementById('ins-cov').value;
     if(!p||!c) return; runTx(() => contract.buyInsurance(p, ethers.utils.parseUnits(c, 6)), "Assurance activée"); 
 }
 function claimInsurance() { const p = document.getElementById('pos-id').value; if(!p) return; runTx(() => contract.claimInsurance(p), "Assurance réclamée"); }
 
-// Farming
+// -------------------- 12. ACTIONS : FARMING --------------------
 function addLiquidity() { const u=document.getElementById('farm-usdt').value,f=document.getElementById('farm-fta').value; if(!u||!f) return; runTx(() => contract.addLiquidity(ethers.utils.parseUnits(u, 6), ethers.utils.parseUnits(f, 8)), "LP ajouté"); }
 function removeLiquidity() { const l=document.getElementById('rmv-lp').value; if(!l) return; runTx(() => contract.removeLiquidity(ethers.utils.parseUnits(l, 18)), "LP retiré"); }
 function claimFarmRewards() { runTx(() => contract.claimFarmRewards(), "Récompenses farming réclamées"); }
 
-// Staking
+// -------------------- 13. ACTIONS : STAKING --------------------
 function stakeTokens() { const p=document.getElementById('stake-pool').value,a=document.getElementById('stake-amt').value; if(!p||!a) return; runTx(() => contract.stake(p, ethers.utils.parseUnits(a, 18)), "Staké"); }
 function unstakeTokens() { const p=document.getElementById('stake-pool').value; if(!p) return; runTx(() => contract.unstake(p), "Unstaké"); }
 
-// Lending
+// -------------------- 14. ACTIONS : LENDING --------------------
 function depositCollateral() { const a=document.getElementById('lend-coll').value; if(!a) return; runTx(() => contract.depositCollateral(ethers.utils.parseUnits(a, 6)), "Collatéral déposé"); }
 function borrow() { const a=document.getElementById('lend-borrow').value; if(!a) return; runTx(() => contract.borrow(ethers.utils.parseUnits(a, 8)), "Emprunt effectué"); }
 function repayLoan() { runTx(() => contract.repayLoan(), "Prêt remboursé"); }
 
-// Games
+// -------------------- 15. ACTIONS : GAMES --------------------
 function playAviator() { const b=document.getElementById('aviator-bet').value,m=document.getElementById('aviator-mult').value; if(!b||!m) return; runTx(() => contract.playAviator(ethers.utils.parseUnits(b, 8), m), "Jeu lancé"); }
 
-// Governance
+// -------------------- 16. ACTIONS : GOVERNANCE --------------------
 function createProposal() { const d = document.getElementById('gov-desc').value; if(!d) return; runTx(() => contract.createProposal(d), "Proposition créée"); }
 function vote(support) { const id = document.getElementById('gov-id').value; if(!id) return; runTx(() => contract.vote(id, support), "Vote enregistré"); }
 
-// Referral
+// -------------------- 17. ACTIONS : REFERRAL --------------------
 function registerReferrer() { const a = document.getElementById('ref-addr').value; if(!a) return; runTx(() => contract.registerReferrer(a), "Parrain enregistré"); }
 
-// ================= UI TABS MANAGEMENT =================
+// -------------------- 18. UI MANAGEMENT --------------------
 function showSection(id) {
     document.querySelectorAll('.app-section').forEach(el => el.classList.add('hidden'));
     document.getElementById('sec-' + id).classList.remove('hidden');
@@ -216,36 +218,20 @@ function showSection(id) {
     document.querySelector(`.nav-item[data-section="${id}"]`)?.classList.add('active');
 }
 
-// Sous-menus Trade
-function showTradeTab(tab) {
-    document.querySelectorAll('#sec-trade > div').forEach(el => el.classList.add('hidden'));
-    document.getElementById('trade-' + tab).classList.remove('hidden');
-    document.querySelectorAll('#sec-trade .tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById('tab-' + tab).classList.add('active');
-}
-// Sous-menus Earn
-function showEarnTab(tab) {
-    document.querySelectorAll('#sec-earn > div').forEach(el => el.classList.add('hidden'));
-    document.getElementById('earn-' + tab).classList.remove('hidden');
-    document.querySelectorAll('#sec-earn .tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById('etab-' + tab).classList.add('active');
-}
-// Sous-menus Finance
-function showFinTab(tab) {
-    document.querySelectorAll('#sec-finance > div').forEach(el => el.classList.add('hidden'));
-    document.getElementById('fin-' + tab).classList.remove('hidden');
-    document.querySelectorAll('#sec-finance .tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById('ftab-' + tab).classList.add('active');
-}
-// Sous-menus DAO
-function showDaoTab(tab) {
-    document.querySelectorAll('#sec-dao > div').forEach(el => el.classList.add('hidden'));
-    document.getElementById('dao-' + tab).classList.remove('hidden');
-    document.querySelectorAll('#sec-dao .tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById('dtab-' + tab).classList.add('active');
+// Generic Tab Switcher
+function switchTab(group, tabId, prefix) {
+    document.querySelectorAll(`#${group} > div`).forEach(el => el.classList.add('hidden'));
+    document.getElementById(tabId).classList.remove('hidden');
+    document.querySelectorAll(`#${group} .tab-btn`).forEach(el => el.classList.remove('active'));
+    document.getElementById(prefix + tabId.split('-')[1])?.classList.add('active');
 }
 
-// ================= UTILS =================
+function showTradeTab(tab) { switchTab('sec-trade', 'trade-' + tab, 'tab-'); }
+function showEarnTab(tab) { switchTab('sec-earn', 'earn-' + tab, 'etab-'); }
+function showFinTab(tab) { switchTab('sec-finance', 'fin-' + tab, 'ftab-'); }
+function showDaoTab(tab) { switchTab('sec-dao', 'dao-' + tab, 'dtab-'); }
+
+// -------------------- 19. UTILITIES --------------------
 function showLoader(show, text = "Chargement") {
     const l = document.getElementById('loader'); const t = document.getElementById('loader-text');
     if (show) { l.classList.remove('hidden'); t.innerText = text; } else { l.classList.add('hidden'); }
