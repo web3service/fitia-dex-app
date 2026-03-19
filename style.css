@@ -50,6 +50,7 @@ body {
     transition: 0.2s;
 }
 .btn-connect:active { transform: scale(0.95); }
+.btn-connect.connected { border-color: var(--success); color: var(--success); }
 
 .balance-mini { font-size: 0.8rem; color: var(--text-sec); text-align: right; margin-top: 4px; }
 
@@ -98,9 +99,9 @@ body {
 
 .input-group { margin-bottom: 15px; }
 .input-group label { display: block; color: var(--text-sec); font-size: 0.85rem; margin-bottom: 8px; }
-.input-wrapper { position: relative; }
-.input-wrapper input { width: 100%; background: var(--input-bg); border: 1px solid #333; color: #fff; padding: 12px 15px; border-radius: 8px; font-size: 1rem; outline: none; }
-.input-wrapper .suffix { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--text-sec); font-weight: 600; }
+input[type="number"], input[type="text"] {
+    width: 100%; background: var(--input-bg); border: 1px solid #333; color: #fff; padding: 12px 15px; border-radius: 8px; font-size: 1rem; outline: none;
+}
 input:focus { border-color: var(--primary); }
 
 .row-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -112,6 +113,7 @@ input:focus { border-color: var(--primary); }
 .btn-secondary { background: #333; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; }
 .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; }
 .full-width { width: 100%; }
+.flex-1 { flex: 1; }
 
 /* POSITIONS LIST */
 .list-container { display: flex; flex-direction: column; gap: 10px; }
@@ -182,11 +184,9 @@ input:focus { border-color: var(--primary); }
 
 /* UTILS */
 .empty-state { text-align: center; color: var(--text-sec); padding: 30px 0; font-style: italic; }
-.flex-1 { flex: 1; }
 .row-btns { display: flex; gap: 10px; }
 
-@media (min-width: 768px) {
-    body { max-width: 480px; margin: 0 auto; border-left: 1px solid #333; border-right: 1px solid #333; min-height: 100vh; }
-    .bottom-nav { max-width: 480px; left: 50%; transform: translateX(-50%); }
-    .app-header { max-width: 480px; left: 50%; transform: translateX(-50%); }
-}
+/* Mobile Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #0e0e0e; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
