@@ -4,17 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0B0E11">
-    <title>Fitia Pro</title>
+    <title>Fitia Ecosystem</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- LOADER OVERLAY -->
+    <!-- LOADER -->
     <div id="loader" class="loader-overlay hidden">
         <div class="spinner"></div>
-        <p id="loader-text" class="text-brand font-bold text-lg">Chargement...</p>
+        <p id="loader-text" class="text-brand font-bold">Chargement...</p>
     </div>
 
     <!-- TOAST -->
@@ -26,139 +26,281 @@
             <i class="fas fa-gem text-5xl text-black"></i>
         </div>
         <h1 class="text-4xl font-bold mb-2">Fitia</h1>
-        <p class="text-gray-500 mb-12 text-center">L'écosystème DéFi nouvelle génération.</p>
+        <p class="text-gray-500 mb-12 text-center px-4">L'écosystème DéFi nouvelle génération.</p>
         <button onclick="connectWallet()" class="btn btn-primary text-lg shadow-lg shadow-yellow-500/30">
             <i class="fas fa-wallet mr-3"></i> Connecter Wallet
         </button>
     </div>
 
-    <!-- APP SCREEN -->
-    <div id="app-screen" class="hidden pb-24">
+    <!-- APPLICATION PRINCIPALE -->
+    <div id="app-screen" class="hidden pb-20">
         
         <header class="sticky top-0 z-40 bg-[#0B0E11]/95 backdrop-blur border-b border-gray-800 p-4 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <i class="fas fa-gem text-brand"></i>
                 <span class="font-bold text-xl">Fitia</span>
-                <span class="bg-brand text-black text-[10px] px-2 py-0.5 rounded-full ml-1">PRO</span>
             </div>
-            <div id="user-address" class="bg-gray-800 px-4 py-2 rounded-full text-xs font-medium text-gray-300"></div>
+            <div class="flex items-center gap-3">
+                <div id="user-address" class="bg-gray-800 px-3 py-1 rounded-full text-xs font-medium text-gray-300"></div>
+            </div>
         </header>
 
         <main class="p-4">
             
-            <!-- DASHBOARD -->
-            <section id="sec-dashboard" class="app-section space-y-4">
-                <div class="card bg-gradient-to-br from-gray-900 to-black border-yellow-500/30">
-                    <p class="text-sm text-gray-400">Prix FTA (Pegged BTC)</p>
-                    <div class="flex items-end justify-between">
-                        <h2 id="fta-price" class="text-4xl font-bold text-brand mt-1">$0.00</h2>
+            <!-- ========== HOME ========== -->
+            <section id="sec-home" class="app-section space-y-4">
+                <!-- Prix -->
+                <div class="card bg-gradient-to-br from-gray-900 to-black border-brand/20">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <p class="text-xs text-gray-400 mb-1">Prix FTA</p>
+                            <h2 id="fta-price" class="text-3xl font-bold text-brand">$0.00</h2>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-400 mb-1">Network</p>
+                            <span class="badge">POLYGON</span>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="card text-center">
+                <!-- Soldes -->
+                <div class="grid-2">
+                    <div class="card text-center py-4">
                         <p class="text-xs text-gray-500 mb-1">USDT Interne</p>
-                        <h3 id="bal-usdt" class="text-2xl font-bold">0.00</h3>
+                        <h3 id="bal-usdt" class="text-xl font-bold">0.00</h3>
                     </div>
-                    <div class="card text-center border-brand/20">
+                    <div class="card text-center py-4 border-brand/20">
                         <p class="text-xs text-brand mb-1">FTA Interne</p>
-                        <h3 id="bal-fta" class="text-2xl font-bold text-brand">0.00</h3>
+                        <h3 id="bal-fta" class="text-xl font-bold text-brand">0.00</h3>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-4 gap-2 mt-2">
-                    <button onclick="showSection('wallet')" class="bg-gray-800 p-4 rounded-xl text-center active:bg-gray-700 flex flex-col items-center">
-                        <i class="fas fa-wallet text-brand text-xl mb-1"></i>
-                        <span class="text-[10px] text-gray-400">Wallet</span>
-                    </button>
-                    <button onclick="showSection('trading')" class="bg-gray-800 p-4 rounded-xl text-center active:bg-gray-700 flex flex-col items-center">
-                        <i class="fas fa-chart-line text-brand text-xl mb-1"></i>
-                        <span class="text-[10px] text-gray-400">Trader</span>
-                    </button>
-                    <button onclick="showSection('mining')" class="bg-gray-800 p-4 rounded-xl text-center active:bg-gray-700 flex flex-col items-center">
-                        <i class="fas fa-hard-hat text-brand text-xl mb-1"></i>
-                        <span class="text-[10px] text-gray-400">Mining</span>
-                    </button>
-                    <button onclick="showSection('games')" class="bg-gray-800 p-4 rounded-xl text-center active:bg-gray-700 flex flex-col items-center">
-                        <i class="fas fa-gamepad text-brand text-xl mb-1"></i>
-                        <span class="text-[10px] text-gray-400">Games</span>
-                    </button>
-                </div>
-            </section>
-
-            <!-- WALLET -->
-            <section id="sec-wallet" class="app-section hidden">
-                <div class="section-title"><i class="fas fa-wallet"></i> Wallet Interne</div>
+                <!-- Quick Actions -->
                 <div class="card">
-                    <span class="label">Déposer des fonds</span>
-                    <select id="dep-token" class="mb-2"><option value="usdt">USDT</option><option value="fta">FTA</option></select>
-                    <input type="number" id="dep-amount" placeholder="Montant">
-                    <button onclick="deposit()" class="btn btn-primary">Déposer</button>
-                </div>
-                <div class="card">
-                    <span class="label">Retirer</span>
-                    <select id="wit-token" class="mb-2"><option value="usdt">USDT</option><option value="fta">FTA</option></select>
-                    <input type="number" id="wit-amount" placeholder="Montant">
-                    <button onclick="withdraw()" class="btn btn-danger">Retirer</button>
-                </div>
-            </section>
-
-            <!-- MARKET -->
-            <section id="sec-market" class="app-section hidden">
-                <div class="section-title"><i class="fas fa-exchange-alt"></i> Marché FTA</div>
-                <div class="card">
-                    <span class="label">Acheter FTA</span>
-                    <input type="number" id="buy-amt" placeholder="Montant USDT">
-                    <button onclick="buyFTA()" class="btn btn-success">Acheter</button>
-                </div>
-                <div class="card">
-                    <span class="label">Vendre FTA</span>
-                    <input type="number" id="sell-amt" placeholder="Montant FTA">
-                    <button onclick="sellFTA()" class="btn btn-danger">Vendre</button>
-                </div>
-            </section>
-
-            <!-- MINING -->
-            <section id="sec-mining" class="app-section hidden">
-                <div class="section-title"><i class="fas fa-gem"></i> Centre de Minage</div>
-                <div class="card">
-                    <span class="label">Acheter Machine</span>
-                    <select id="machine-type" class="mb-2"><option value="0">Starter - 10$</option></select>
-                    <button onclick="buyMachine()" class="btn btn-primary">Acheter</button>
-                </div>
-                <div class="card">
-                    <span class="label">Gérer Machine</span>
-                    <input type="number" id="bat-token" placeholder="ID Machine">
-                    <select id="bat-pack" class="mb-2"><option value="0">Pack 24h - 0.50$</option></select>
-                    <button onclick="buyBattery()" class="btn btn-secondary mb-2">Charger</button>
-                    <button onclick="claimMining()" class="btn btn-success">Réclamer</button>
-                </div>
-            </section>
-
-            <!-- TRADING -->
-            <section id="sec-trading" class="app-section hidden">
-                <div class="section-title"><i class="fas fa-chart-line"></i> Trading Futures</div>
-                <div class="card">
-                    <select id="trade-asset" class="mb-2"><option value="0">BTC</option><option value="1">ETH</option><option value="2">FTA</option></select>
-                    <input type="number" id="trade-margin" placeholder="Marge USDT">
-                    <input type="number" id="trade-lev" placeholder="Levier (1-50)">
-                    <div class="grid grid-cols-2 gap-2 mt-2">
-                        <button onclick="openPosition(0)" class="btn btn-success py-3">LONG</button>
-                        <button onclick="openPosition(1)" class="btn btn-danger py-3">SHORT</button>
+                    <p class="text-xs text-gray-400 mb-3 font-bold">ACTIONS RAPIDES</p>
+                    <div class="grid-3">
+                        <button onclick="showSection('wallet')" class="bg-gray-800 p-3 rounded-xl text-center active:bg-gray-700 flex flex-col items-center">
+                            <i class="fas fa-arrow-down text-brand text-lg mb-1"></i>
+                            <span class="text-[10px] text-gray-400">Déposer</span>
+                        </button>
+                        <button onclick="showSection('market')" class="bg-gray-800 p-3 rounded-xl text-center active:bg-gray-700 flex flex-col items-center">
+                            <i class="fas fa-exchange-alt text-brand text-lg mb-1"></i>
+                            <span class="text-[10px] text-gray-400">Acheter</span>
+                        </button>
+                        <button onclick="showSection('mining')" class="bg-gray-800 p-3 rounded-xl text-center active:bg-gray-700 flex flex-col items-center">
+                            <i class="fas fa-hard-hat text-brand text-lg mb-1"></i>
+                            <span class="text-[10px] text-gray-400">Miner</span>
+                        </button>
                     </div>
                 </div>
             </section>
 
-            <!-- GAMES -->
-            <section id="sec-games" class="app-section hidden">
-                <div class="section-title"><i class="fas fa-plane"></i> Aviator</div>
-                <div class="card text-center">
-                    <i class="fas fa-plane-departure text-5xl text-brand mb-4"></i>
-                    <span class="label">Mise (FTA)</span>
-                    <input type="number" id="aviator-bet" placeholder="Mise">
-                    <span class="label">Multiplicateur (200 = x2)</span>
-                    <input type="number" id="aviator-mult" placeholder="200">
-                    <button onclick="playAviator()" class="btn btn-danger mt-2">JOUER</button>
+            <!-- ========== TRADE (Market + Futures) ========== -->
+            <section id="sec-trade" class="app-section hidden space-y-4">
+                
+                <!-- Tabs -->
+                <div class="flex gap-2 mb-2">
+                    <button onclick="showTradeTab('market')" id="tab-market" class="tab-btn active flex-1">Market</button>
+                    <button onclick="showTradeTab('futures')" id="tab-futures" class="tab-btn flex-1">Futures</button>
+                    <button onclick="showTradeTab('manage')" id="tab-manage" class="tab-btn flex-1">Gestion</button>
+                </div>
+
+                <!-- Market Tab -->
+                <div id="trade-market" class="space-y-4">
+                    <div class="card">
+                        <span class="label">Acheter FTA (USDT)</span>
+                        <input type="number" id="buy-amt" placeholder="Montant USDT">
+                        <button onclick="buyFTA()" class="btn btn-success">Acheter</button>
+                    </div>
+                    <div class="card">
+                        <span class="label">Vendre FTA</span>
+                        <input type="number" id="sell-amt" placeholder="Montant FTA">
+                        <button onclick="sellFTA()" class="btn btn-danger">Vendre</button>
+                    </div>
+                </div>
+
+                <!-- Futures Tab -->
+                <div id="trade-futures" class="hidden">
+                    <div class="card">
+                        <span class="label">Ouvrir Position</span>
+                        <select id="trade-asset">
+                            <option value="0">BTC</option><option value="1">ETH</option><option value="2">FTA</option>
+                        </select>
+                        <div class="grid-2">
+                            <input type="number" id="trade-margin" placeholder="Marge USDT">
+                            <input type="number" id="trade-lev" placeholder="Levier">
+                        </div>
+                        <div class="grid-2 mt-2">
+                            <input type="number" id="trade-sl" placeholder="Stop Loss ($)">
+                            <input type="number" id="trade-tp" placeholder="Take Profit ($)">
+                        </div>
+                        <div class="grid-2 mt-3">
+                            <button onclick="openPosition(0)" class="btn btn-success py-3">LONG</button>
+                            <button onclick="openPosition(1)" class="btn btn-danger py-3">SHORT</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manage Tab -->
+                <div id="trade-manage" class="hidden">
+                    <div class="card">
+                        <span class="label">Fermer / Liquiditer</span>
+                        <input type="number" id="pos-id" placeholder="ID Position">
+                        <div class="grid-2">
+                            <button onclick="closePosition()" class="btn btn-secondary btn-small">Fermer</button>
+                            <button onclick="liquidatePosition()" class="btn btn-danger btn-small">Liquiditer</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <span class="label">Assurance</span>
+                        <input type="number" id="ins-cov" placeholder="Couverture USDT">
+                        <button onclick="buyInsurance()" class="btn btn-primary">Acheter Assurance</button>
+                        <button onclick="claimInsurance()" class="btn btn-outline mt-2">Réclamer</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========== EARN (Mining + Farm + Stake) ========== -->
+            <section id="sec-earn" class="app-section hidden space-y-4">
+                
+                <div class="flex gap-2 mb-2 overflow-x-auto pb-2">
+                    <button onclick="showEarnTab('mining')" id="etab-mining" class="tab-btn active whitespace-nowrap">Mining</button>
+                    <button onclick="showEarnTab('farm')" id="etab-farm" class="tab-btn whitespace-nowrap">Farming</button>
+                    <button onclick="showEarnTab('stake')" id="etab-stake" class="tab-btn whitespace-nowrap">Staking</button>
+                </div>
+
+                <!-- Mining -->
+                <div id="earn-mining">
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-server"></i> Machines (NFT)</div>
+                        <select id="machine-type" class="mb-2"><option value="0">Starter - 10$</option></select>
+                        <button onclick="buyMachine()" class="btn btn-primary">Acheter Machine</button>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-battery-full"></i> Énergie</div>
+                        <input type="number" id="bat-token" placeholder="ID Machine">
+                        <select id="bat-pack" class="mb-2"><option value="0">24h - 0.50$</option></select>
+                        <button onclick="buyBattery()" class="btn btn-secondary">Acheter Batterie</button>
+                        <button onclick="claimMining()" class="btn btn-success mt-2">Réclamer Mining</button>
+                    </div>
+                </div>
+
+                <!-- Farming -->
+                <div id="earn-farm" class="hidden">
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-water"></i> Liquidité</div>
+                        <input type="number" id="farm-usdt" placeholder="Montant USDT">
+                        <input type="number" id="farm-fta" placeholder="Montant FTA">
+                        <button onclick="addLiquidity()" class="btn btn-primary">Déposer LP</button>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-hand-holding-usd"></i> Retrait</div>
+                        <input type="number" id="rmv-lp" placeholder="Montant LP">
+                        <button onclick="removeLiquidity()" class="btn btn-secondary">Retirer LP</button>
+                        <button onclick="claimFarmRewards()" class="btn btn-success mt-2">Réclamer Récompenses</button>
+                    </div>
+                </div>
+
+                <!-- Staking -->
+                <div id="earn-stake" class="hidden">
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-lock"></i> Staking</div>
+                        <input type="number" id="stake-pool" placeholder="ID Pool">
+                        <input type="number" id="stake-amt" placeholder="Montant">
+                        <div class="grid-2 mt-2">
+                            <button onclick="stakeTokens()" class="btn btn-primary">Staker</button>
+                            <button onclick="unstakeTokens()" class="btn btn-danger">Unstake</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========== FINANCE (Wallet + Lend + Games) ========== -->
+            <section id="sec-finance" class="app-section hidden space-y-4">
+                
+                <div class="flex gap-2 mb-2 overflow-x-auto pb-2">
+                    <button onclick="showFinTab('wallet')" id="ftab-wallet" class="tab-btn active whitespace-nowrap">Wallet</button>
+                    <button onclick="showFinTab('lend')" id="ftab-lend" class="tab-btn whitespace-nowrap">Lending</button>
+                    <button onclick="showFinTab('game')" id="ftab-game" class="tab-btn whitespace-nowrap">Aviator</button>
+                </div>
+
+                <!-- Wallet -->
+                <div id="fin-wallet">
+                    <div class="card">
+                        <span class="label">Déposer</span>
+                        <select id="dep-token"><option value="usdt">USDT</option><option value="fta">FTA</option></select>
+                        <input type="number" id="dep-amount" placeholder="Montant">
+                        <button onclick="deposit()" class="btn btn-primary">Déposer</button>
+                    </div>
+                    <div class="card">
+                        <span class="label">Retirer</span>
+                        <select id="wit-token"><option value="usdt">USDT</option><option value="fta">FTA</option></select>
+                        <input type="number" id="wit-amount" placeholder="Montant">
+                        <button onclick="withdraw()" class="btn btn-danger">Retirer</button>
+                    </div>
+                </div>
+
+                <!-- Lending -->
+                <div id="fin-lend" class="hidden">
+                    <div class="card">
+                        <span class="label">Collatéral (USDT)</span>
+                        <input type="number" id="lend-coll" placeholder="Montant">
+                        <button onclick="depositCollateral()" class="btn btn-primary">Déposer</button>
+                    </div>
+                    <div class="card">
+                        <span class="label">Emprunter (FTA)</span>
+                        <input type="number" id="lend-borrow" placeholder="Montant FTA">
+                        <button onclick="borrow()" class="btn btn-secondary">Emprunter</button>
+                    </div>
+                    <button onclick="repayLoan()" class="btn btn-success w-full mt-2">Rembourser Prêt</button>
+                </div>
+
+                <!-- Aviator -->
+                <div id="fin-game" class="hidden">
+                    <div class="card text-center">
+                        <i class="fas fa-plane text-5xl text-brand mb-4"></i>
+                        <span class="label">Mise (FTA)</span>
+                        <input type="number" id="aviator-bet" placeholder="Mise">
+                        <span class="label">Cible (200 = x2)</span>
+                        <input type="number" id="aviator-mult" placeholder="200">
+                        <button onclick="playAviator()" class="btn btn-danger mt-2">JOUER</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========== DAO (Gov + Refer) ========== -->
+            <section id="sec-dao" class="app-section hidden space-y-4">
+                
+                <div class="flex gap-2 mb-2">
+                    <button onclick="showDaoTab('gov')" id="dtab-gov" class="tab-btn active flex-1">Gouvernance</button>
+                    <button onclick="showDaoTab('ref')" id="dtab-ref" class="tab-btn flex-1">Parrainage</button>
+                </div>
+
+                <!-- Governance -->
+                <div id="dao-gov">
+                    <div class="card">
+                        <span class="label">Créer Proposition</span>
+                        <input type="text" id="gov-desc" placeholder="Description">
+                        <button onclick="createProposal()" class="btn btn-primary">Proposer</button>
+                    </div>
+                    <div class="card">
+                        <span class="label">Voter</span>
+                        <input type="number" id="gov-id" placeholder="ID Proposition">
+                        <div class="grid-2 mt-2">
+                            <button onclick="vote(true)" class="btn btn-success">Pour</button>
+                            <button onclick="vote(false)" class="btn btn-danger">Contre</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Referral -->
+                <div id="dao-ref" class="hidden">
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-user-friends"></i> Programme Filleul</div>
+                        <span class="label">Adresse du parrain</span>
+                        <input type="text" id="ref-addr" placeholder="0x...">
+                        <button onclick="registerReferrer()" class="btn btn-primary">Enregistrer</button>
+                    </div>
                 </div>
             </section>
 
@@ -166,13 +308,13 @@
     </div>
 
     <!-- NAVIGATION BOTTOM -->
-    <nav class="bottom-nav md:hidden">
+    <nav class="bottom-nav">
         <div class="flex justify-around h-16">
-            <button data-section="dashboard" class="nav-item active flex-1"><i class="fas fa-home"></i><span>Home</span></button>
-            <button data-section="trading" class="nav-item flex-1"><i class="fas fa-chart-line"></i><span>Trade</span></button>
-            <button data-section="mining" class="nav-item flex-1"><i class="fas fa-gem"></i><span>Mine</span></button>
-            <button data-section="games" class="nav-item flex-1"><i class="fas fa-gamepad"></i><span>Games</span></button>
-            <button data-section="wallet" class="nav-item flex-1"><i class="fas fa-wallet"></i><span>Wallet</span></button>
+            <button data-section="home" class="nav-item active flex-1"><i class="fas fa-home"></i><span>Home</span></button>
+            <button data-section="trade" class="nav-item flex-1"><i class="fas fa-chart-line"></i><span>Trade</span></button>
+            <button data-section="earn" class="nav-item flex-1"><i class="fas fa-coins"></i><span>Earn</span></button>
+            <button data-section="finance" class="nav-item flex-1"><i class="fas fa-wallet"></i><span>Finance</span></button>
+            <button data-section="dao" class="nav-item flex-1"><i class="fas fa-vote-yea"></i><span>DAO</span></button>
         </div>
     </nav>
 

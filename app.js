@@ -10,25 +10,53 @@ const FTA_ADDRESS = "0x535bBe393D64a60E14B731b7350675792d501623"; // REMPLACEZ C
 const POLYGON_CHAIN_ID = 137;
 const POLYGON_CHAIN_ID_HEX = '0x89';
 
+// ABI COMPLET
 const ABI = [
+    // Views
     "function internalBalances(address,address) view returns(uint256)",
+    "function getAssetPrice(uint8) view returns(uint256)",
+    // Wallet
     "function depositToWallet(address,uint256)",
     "function withdrawFromWallet(address,uint256)",
-    "function getAssetPrice(uint8) view returns(uint256)",
+    // Market
     "function buyFTA(uint256)",
     "function sellFTA(uint256)",
-    "function openPosition(uint8,uint8,uint256,uint256)",
+    // Mining
     "function buyMachine(uint256)",
     "function buyBattery(uint256,uint256)",
+    "function claimMiningRewards(uint256)",
+    // Trading
+    "function openPosition(uint8,uint8,uint256,uint256)",
+    "function openPositionWithLimits(uint8,uint8,uint256,uint256,uint256,uint256)",
+    "function closePosition(uint256)",
+    "function liquidatePosition(uint256)",
+    // Insurance
+    "function buyInsurance(uint256,uint256)",
+    "function claimInsurance(uint256)",
+    // Farming
+    "function addLiquidity(uint256,uint256)",
+    "function removeLiquidity(uint256)",
+    "function claimFarmRewards()",
+    // Staking
+    "function stake(uint256,uint256)",
+    "function unstake(uint256)",
+    // Lending
+    "function depositCollateral(uint256)",
+    "function borrow(uint256)",
+    "function repayLoan()",
+    // Games
     "function playAviator(uint256,uint256)",
-    "function claimMiningRewards(uint256)"
+    // Governance
+    "function createProposal(string)",
+    "function vote(uint256,bool)",
+    // Referral
+    "function registerReferrer(address)"
 ];
 
 let provider, signer, contract, userAddress;
 
 // ================= INITIALISATION =================
 window.onload = function() {
-    console.log("Fitia Pro Loaded.");
     document.querySelectorAll('.nav-item[data-section]').forEach(item => {
         item.addEventListener('click', (e) => {
             const section = e.currentTarget.dataset.section;
@@ -39,83 +67,47 @@ window.onload = function() {
 
 // ================= CONNEXION =================
 async function connectWallet() {
-    // 1. Nettoyer l'état précédent
-    showLoader(false); 
     showLoader(true, "Connexion...");
-
     try {
-        // 2. Vérifier Wallet
         if (!window.ethereum) throw new Error("Aucun wallet détecté.");
         if (typeof ethers === 'undefined') throw new Error("Erreur librairie.");
 
         provider = new ethers.providers.Web3Provider(window.ethereum);
         
-        // 3. Vérifier Réseau Polygon
         const network = await provider.getNetwork();
         if (network.chainId !== POLYGON_CHAIN_ID) {
-            showToast("Passage sur Polygon requis", "info");
+            showLoader(true, "Switch Polygon...");
             await switchToPolygon();
-            // Après le switch, on arrête ici car la page va recharger ou l'utilisateur doit cliquer à nouveau.
-            // On laisse le loader visible pour indiquer l'attente.
             return;
         }
 
-        // 4. Connexion Compte
         await provider.send("eth_requestAccounts", []);
-        
         signer = provider.getSigner();
         userAddress = await signer.getAddress();
         contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
         
-        // 5. Succès - Masquer le loader AVANT d'afficher l'UI
-        showLoader(false); 
-
+        showLoader(false);
         document.getElementById('connect-screen').classList.add('hidden');
         document.getElementById('app-screen').classList.remove('hidden');
         document.getElementById('user-address').innerText = userAddress.substring(0,6) + "..." + userAddress.slice(-4);
         
-        showToast("Connecté !", "success");
-
-        // 6. Charger les données
         loadDashboard();
-
+        showToast("Connecté !", "success");
     } catch (err) {
-        showLoader(false); // Masquer le loader en cas d'erreur
-        const msg = err.message.includes("user rejected") ? "Connexion refusée." : (err.reason || err.message);
-        showToast(msg, "error");
+        showLoader(false);
+        showToast(err.reason || err.message, "error");
     }
 }
 
 async function switchToPolygon() {
     try {
-        await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: POLYGON_CHAIN_ID_HEX }],
-        });
-        // Souvent, le switch recharge pas la page sur Trust Wallet, on réessaie de connecter
-        // Mais pour être sûr, on peut juste recharger.
-        window.location.reload();
+        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: POLYGON_CHAIN_ID_HEX }] });
     } catch (switchError) {
         if (switchError.code === 4902) {
-            try {
-                await window.ethereum.request({
-                    method: 'wallet_addEthereumChain',
-                    params: [{
-                        chainId: POLYGON_CHAIN_ID_HEX,
-                        chainName: 'Polygon Mainnet',
-                        nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
-                        rpcUrls: ['https://polygon-rpc.com'],
-                        blockExplorerUrls: ['https://polygonscan.com'],
-                    }],
-                });
-                window.location.reload();
-            } catch (addError) {
-                showLoader(false);
-                showToast("Impossible d'ajouter Polygon", "error");
-            }
-        } else {
-            showLoader(false);
-            showToast("Erreur réseau", "error");
+            await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{ chainId: POLYGON_CHAIN_ID_HEX, chainName: 'Polygon', nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 }, rpcUrls: ['https://polygon-rpc.com'], blockExplorerUrls: ['https://polygonscan.com'] }],
+            });
         }
     }
 }
@@ -130,13 +122,11 @@ async function loadDashboard() {
         document.getElementById('bal-usdt').innerText = parseFloat(ethers.utils.formatUnits(balUsdt, 6)).toFixed(2);
         const balFta = await contract.internalBalances(userAddress, FTA_ADDRESS);
         document.getElementById('bal-fta').innerText = parseFloat(ethers.utils.formatUnits(balFta, 8)).toFixed(2);
-    } catch (e) { 
-        console.error("Erreur loadDashboard", e); 
-    }
+    } catch (e) { console.error(e); }
 }
 
-// ================= ACTIONS =================
-async function runTx(callback, msg = "OK") {
+// ================= ACTIONS GLOBALES =================
+async function runTx(callback, msg = "Succès") {
     if (!contract) return showToast("Non connecté", "error");
     showLoader(true, "Transaction...");
     try {
@@ -150,6 +140,9 @@ async function runTx(callback, msg = "OK") {
     } finally { showLoader(false); }
 }
 
+// ================= FONCTIONS SPECIFIQUES =================
+
+// Wallet
 function deposit() { 
     const t = document.getElementById('dep-token').value, a = document.getElementById('dep-amount').value;
     if(!a) return; const addr = t==='usdt'?USDT_ADDRESS:FTA_ADDRESS; const d = t==='usdt'?6:8;
@@ -165,15 +158,57 @@ function withdraw() {
     runTx(() => contract.withdrawFromWallet(addr, ethers.utils.parseUnits(a, d)), "Retrait effectué");
 }
 
+// Market
 function buyFTA() { const a = document.getElementById('buy-amt').value; if(!a) return; runTx(() => contract.buyFTA(ethers.utils.parseUnits(a, 6)), "Achat réussi"); }
 function sellFTA() { const a = document.getElementById('sell-amt').value; if(!a) return; runTx(() => contract.sellFTA(ethers.utils.parseUnits(a, 8)), "Vente réussie"); }
+
+// Mining
 function buyMachine() { runTx(() => contract.buyMachine(0), "Machine achetée"); }
 function buyBattery() { const t = document.getElementById('bat-token').value; if(!t) return; runTx(() => contract.buyBattery(t, 0), "Batterie activée"); }
 function claimMining() { const t = document.getElementById('bat-token').value; if(!t) return; runTx(() => contract.claimMiningRewards(t), "Récompenses réclamées"); }
-function openPosition(s) { const a=document.getElementById('trade-asset').value,m=document.getElementById('trade-margin').value,l=document.getElementById('trade-lev').value; if(!m||!l) return; runTx(() => contract.openPosition(a, s, ethers.utils.parseUnits(m, 6), l), "Position ouverte"); }
+
+// Trading
+function openPosition(s) { 
+    const a=document.getElementById('trade-asset').value,m=document.getElementById('trade-margin').value,l=document.getElementById('trade-lev').value;
+    const sl=document.getElementById('trade-sl').value, tp=document.getElementById('trade-tp').value;
+    if(!m||!l) return; 
+    runTx(() => contract.openPositionWithLimits(a, s, ethers.utils.parseUnits(m, 6), l, sl||0, tp||0), "Position ouverte"); 
+}
+function closePosition() { const p = document.getElementById('pos-id').value; if(!p) return; runTx(() => contract.closePosition(p), "Position fermée"); }
+function liquidatePosition() { const p = document.getElementById('pos-id').value; if(!p) return; runTx(() => contract.liquidatePosition(p), "Liquidité"); }
+
+// Insurance
+function buyInsurance() { 
+    const p = document.getElementById('pos-id').value, c = document.getElementById('ins-cov').value;
+    if(!p||!c) return; runTx(() => contract.buyInsurance(p, ethers.utils.parseUnits(c, 6)), "Assurance activée"); 
+}
+function claimInsurance() { const p = document.getElementById('pos-id').value; if(!p) return; runTx(() => contract.claimInsurance(p), "Assurance réclamée"); }
+
+// Farming
+function addLiquidity() { const u=document.getElementById('farm-usdt').value,f=document.getElementById('farm-fta').value; if(!u||!f) return; runTx(() => contract.addLiquidity(ethers.utils.parseUnits(u, 6), ethers.utils.parseUnits(f, 8)), "LP ajouté"); }
+function removeLiquidity() { const l=document.getElementById('rmv-lp').value; if(!l) return; runTx(() => contract.removeLiquidity(ethers.utils.parseUnits(l, 18)), "LP retiré"); }
+function claimFarmRewards() { runTx(() => contract.claimFarmRewards(), "Récompenses farming réclamées"); }
+
+// Staking
+function stakeTokens() { const p=document.getElementById('stake-pool').value,a=document.getElementById('stake-amt').value; if(!p||!a) return; runTx(() => contract.stake(p, ethers.utils.parseUnits(a, 18)), "Staké"); }
+function unstakeTokens() { const p=document.getElementById('stake-pool').value; if(!p) return; runTx(() => contract.unstake(p), "Unstaké"); }
+
+// Lending
+function depositCollateral() { const a=document.getElementById('lend-coll').value; if(!a) return; runTx(() => contract.depositCollateral(ethers.utils.parseUnits(a, 6)), "Collatéral déposé"); }
+function borrow() { const a=document.getElementById('lend-borrow').value; if(!a) return; runTx(() => contract.borrow(ethers.utils.parseUnits(a, 8)), "Emprunt effectué"); }
+function repayLoan() { runTx(() => contract.repayLoan(), "Prêt remboursé"); }
+
+// Games
 function playAviator() { const b=document.getElementById('aviator-bet').value,m=document.getElementById('aviator-mult').value; if(!b||!m) return; runTx(() => contract.playAviator(ethers.utils.parseUnits(b, 8), m), "Jeu lancé"); }
 
-// ================= UTILS =================
+// Governance
+function createProposal() { const d = document.getElementById('gov-desc').value; if(!d) return; runTx(() => contract.createProposal(d), "Proposition créée"); }
+function vote(support) { const id = document.getElementById('gov-id').value; if(!id) return; runTx(() => contract.vote(id, support), "Vote enregistré"); }
+
+// Referral
+function registerReferrer() { const a = document.getElementById('ref-addr').value; if(!a) return; runTx(() => contract.registerReferrer(a), "Parrain enregistré"); }
+
+// ================= UI TABS MANAGEMENT =================
 function showSection(id) {
     document.querySelectorAll('.app-section').forEach(el => el.classList.add('hidden'));
     document.getElementById('sec-' + id).classList.remove('hidden');
@@ -181,6 +216,36 @@ function showSection(id) {
     document.querySelector(`.nav-item[data-section="${id}"]`)?.classList.add('active');
 }
 
+// Sous-menus Trade
+function showTradeTab(tab) {
+    document.querySelectorAll('#sec-trade > div').forEach(el => el.classList.add('hidden'));
+    document.getElementById('trade-' + tab).classList.remove('hidden');
+    document.querySelectorAll('#sec-trade .tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+}
+// Sous-menus Earn
+function showEarnTab(tab) {
+    document.querySelectorAll('#sec-earn > div').forEach(el => el.classList.add('hidden'));
+    document.getElementById('earn-' + tab).classList.remove('hidden');
+    document.querySelectorAll('#sec-earn .tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('etab-' + tab).classList.add('active');
+}
+// Sous-menus Finance
+function showFinTab(tab) {
+    document.querySelectorAll('#sec-finance > div').forEach(el => el.classList.add('hidden'));
+    document.getElementById('fin-' + tab).classList.remove('hidden');
+    document.querySelectorAll('#sec-finance .tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('ftab-' + tab).classList.add('active');
+}
+// Sous-menus DAO
+function showDaoTab(tab) {
+    document.querySelectorAll('#sec-dao > div').forEach(el => el.classList.add('hidden'));
+    document.getElementById('dao-' + tab).classList.remove('hidden');
+    document.querySelectorAll('#sec-dao .tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('dtab-' + tab).classList.add('active');
+}
+
+// ================= UTILS =================
 function showLoader(show, text = "Chargement") {
     const l = document.getElementById('loader'); const t = document.getElementById('loader-text');
     if (show) { l.classList.remove('hidden'); t.innerText = text; } else { l.classList.add('hidden'); }
