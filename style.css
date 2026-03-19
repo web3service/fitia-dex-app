@@ -1,46 +1,38 @@
-/* style.css - THEME BITGET PRO */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* style.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
 :root {
     --primary: #F5B623;
     --bg-dark: #0B0E11;
     --card-bg: #121416;
     --border-color: #2B3139;
-    --text-main: #FFFFFF;
-    --text-muted: #848E9C;
-    --danger: #EA3943;
-    --success: #0ECB81;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body {
     font-family: 'Inter', sans-serif;
     background-color: var(--bg-dark);
-    color: var(--text-main);
+    color: #FFFFFF;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
     -webkit-text-size-adjust: 100%;
 }
 
-/* Inputs optimisés pour mobile */
 input, select, textarea {
     background-color: #1E2329 !important;
     border: 1px solid var(--border-color) !important;
     color: white !important;
     border-radius: 12px !important;
-    padding: 16px !important; /* Plus grand pour les doigts */
+    padding: 16px !important;
     width: 100%;
-    font-size: 16px !important; /* Empêche le zoom sur iOS */
+    font-size: 16px !important;
     margin-bottom: 12px;
     outline: none;
     appearance: none;
-    transition: border-color 0.2s;
 }
 input:focus { border-color: var(--primary) !important; }
-input::placeholder { color: #5E6673; }
 
-/* Boutons */
 .btn {
     width: 100%;
     padding: 16px;
@@ -51,25 +43,20 @@ input::placeholder { color: #5E6673; }
     cursor: pointer;
     text-align: center;
     display: block;
-    transition: opacity 0.2s;
 }
 .btn-primary { background: var(--primary); color: black; }
-.btn-danger { background: var(--danger); color: white; }
-.btn-success { background: var(--success); color: white; }
+.btn-danger { background: #EA3943; color: white; }
+.btn-success { background: #0ECB81; color: white; }
 .btn-secondary { background: #2B3139; color: white; border: 1px solid #3A4556; }
-.btn-small { padding: 10px; font-size: 14px; }
 
-/* Cartes */
 .card {
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 16px;
     padding: 20px;
     margin-bottom: 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-/* Titres */
 .section-title {
     font-size: 20px;
     font-weight: 700;
@@ -80,7 +67,32 @@ input::placeholder { color: #5E6673; }
 }
 .section-title i { color: var(--primary); }
 
-/* Navigation Mobile */
+/* LOADER FORCE HIDE */
+.loader-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 14, 17, 0.98);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.3s;
+}
+.loader-overlay.hidden {
+    display: none !important; /* Force le masquage */
+}
+
+.spinner {
+    border: 3px solid rgba(255,255,255,0.1);
+    border-top: 3px solid var(--primary);
+    border-radius: 50%;
+    width: 50px; height: 50px;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 15px;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
 .bottom-nav {
     position: fixed;
     bottom: 0;
@@ -93,26 +105,12 @@ input::placeholder { color: #5E6673; }
 }
 .nav-item { 
     display: flex; flex-direction: column; align-items: center; justify-content: center; 
-    padding: 8px 0; color: #5E6673; font-size: 10px; font-weight: 500;
+    padding: 10px 0; color: #5E6673; font-size: 10px; font-weight: 500;
 }
 .nav-item i { font-size: 20px; margin-bottom: 4px; }
 .nav-item.active { color: var(--primary); }
 
-/* Spinner */
-.spinner {
-    border: 3px solid rgba(255,255,255,0.1);
-    border-top: 3px solid var(--primary);
-    border-radius: 50%;
-    width: 40px; height: 40px;
-    animation: spin 0.8s linear infinite;
-    margin: 20px auto;
-}
-@keyframes spin { 100% { transform: rotate(360deg); } }
-
-/* Utilitaires */
 .hidden { display: none !important; }
 .text-brand { color: var(--primary); }
-.flex-col { display: flex; flex-direction: column; gap: 12px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.label { font-size: 14px; color: var(--text-muted); margin-bottom: 6px; display: block; }
-.badge { background: var(--primary); color: black; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+.label { font-size: 14px; color: #848E9C; margin-bottom: 6px; display: block; }
