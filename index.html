@@ -5,49 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fitia Pro Hub</title>
     <meta name="theme-color" content="#0B0E11">
-    
-    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Charting Library -->
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- TOAST NOTIFICATIONS -->
     <div id="toast-container"></div>
 
-    <!-- HEADER -->
     <header class="app-header">
         <div class="logo"><i class="fa-solid fa-gem"></i> FITIA <span>PRO</span></div>
         <div class="user-area">
-            <div id="walletAddress" class="btn-connect" onclick="connectWallet()">
-                <i class="fa-solid fa-wallet"></i> <span>Connecter</span>
-            </div>
-            <div class="balance-mini" id="headerBalance">-- USDT</div>
+            <div id="walletAddress" class="btn-connect" onclick="connectWallet()"><i class="fa-solid fa-wallet"></i> <span>Connecter</span></div>
+            <div class="balance-mini" id="headerBalance">--</div>
         </div>
     </header>
 
-    <!-- MAIN CONTENT -->
     <main class="app-content">
 
-        <!-- TAB: HOME -->
+        <!-- HOME -->
         <section id="tab-home" class="tab-content active">
             <div class="card price-card-center">
-                <span class="badge-live">POLYGON NETWORK</span>
+                <span class="badge-live">POLYGON</span>
                 <div class="price-big" id="ftaPrice">$0.00</div>
                 <p class="price-label">Prix Actuel FTA</p>
             </div>
-
             <div class="stats-grid">
-                <div class="stat-card"><span class="label">Solde USDT</span><strong class="value" id="balUsdt">0.00</strong></div>
-                <div class="stat-card highlight"><span class="label">Solde FTA</span><strong class="value" id="balFta">0.00</strong></div>
+                <div class="stat-card"><span class="label">USDT</span><strong class="value" id="balUsdt">0.00</strong></div>
+                <div class="stat-card highlight"><span class="label">FTA</span><strong class="value" id="balFta">0.00</strong></div>
             </div>
-
-            <!-- Section Échange Rapide -->
             <div class="card">
                 <h3><i class="fa-solid fa-right-left"></i> Échange Rapide</h3>
                 <div class="swap-box">
@@ -71,14 +58,15 @@
             </div>
         </section>
 
-        <!-- TAB: TRADING (Connecté à l'API Binance) -->
+        <!-- TRADING (Graphique Visible) -->
         <section id="tab-trade" class="tab-content">
             <div class="card chart-card">
                 <div class="chart-header">
                     <h3 id="chartTitle">FTA / USD</h3>
-                    <span class="badge-live" style="background:rgba(14,203,129,0.2); color:var(--succ);">LIVE API</span>
+                    <!-- Badge supprimé -->
                 </div>
                 <div class="price-live" id="tradePrice">$0.00</div>
+                <!-- Graphique -->
                 <div id="tvchart"></div>
             </div>
 
@@ -86,7 +74,8 @@
                 <div class="input-group">
                     <label>Actif à Trader</label>
                     <select id="tradeAsset" onchange="switchAsset()">
-                        <option value="2">FTA (Pegged BTC)</option>
+                        <!-- Texte corrigé -->
+                        <option value="2">FTA</option>
                         <option value="0">BTC</option>
                         <option value="1">ETH</option>
                     </select>
@@ -110,7 +99,7 @@
             <div id="posList" class="list-container"><div class="empty-state">Aucune position</div></div>
         </section>
 
-        <!-- TAB: MINING -->
+        <!-- MINING -->
         <section id="tab-mining" class="tab-content">
             <div class="card mining-card">
                 <div id="mVisual" class="mining-visual"><i class="fa-solid fa-microchip"></i><p>Connectez-vous</p></div>
@@ -130,7 +119,7 @@
             </div>
         </section>
 
-        <!-- TAB: GAME -->
+        <!-- GAME -->
         <section id="tab-game" class="tab-content">
             <div class="card game-card">
                 <div class="game-screen"><div class="plane" id="gPlane">✈️</div><h1 id="gMult">1.00x</h1></div>
@@ -141,7 +130,7 @@
             </div>
         </section>
 
-        <!-- TAB: WALLET -->
+        <!-- WALLET -->
         <section id="tab-wallet" class="tab-content">
             <div class="card">
                 <h3><i class="fa-solid fa-coins"></i> Mes Actifs</h3>
@@ -199,7 +188,6 @@
 
     </main>
 
-    <!-- BOTTOM NAV -->
     <nav class="bottom-nav">
         <button class="nav-item active" onclick="showTab('tab-home')"><i class="fa-solid fa-house"></i><span>Home</span></button>
         <button class="nav-item" onclick="showTab('tab-trade')"><i class="fa-solid fa-chart-simple"></i><span>Trade</span></button>
