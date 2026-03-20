@@ -7,6 +7,7 @@
     <meta name="theme-color" content="#0B0E11">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Charting Library -->
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -58,15 +59,14 @@
             </div>
         </section>
 
-        <!-- TRADING (Graphique Visible) -->
+        <!-- TRADING -->
         <section id="tab-trade" class="tab-content">
             <div class="card chart-card">
                 <div class="chart-header">
                     <h3 id="chartTitle">FTA / USD</h3>
-                    <!-- Badge supprimé -->
                 </div>
                 <div class="price-live" id="tradePrice">$0.00</div>
-                <!-- Graphique -->
+                <!-- IMPORTANT : Conteneur du graphique -->
                 <div id="tvchart"></div>
             </div>
 
@@ -74,7 +74,6 @@
                 <div class="input-group">
                     <label>Actif à Trader</label>
                     <select id="tradeAsset" onchange="switchAsset()">
-                        <!-- Texte corrigé -->
                         <option value="2">FTA</option>
                         <option value="0">BTC</option>
                         <option value="1">ETH</option>

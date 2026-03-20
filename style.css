@@ -4,7 +4,7 @@ body { background: var(--bg); color: var(--txt); padding-bottom: 70px; font-size
 
 /* Toast */
 #toast-container { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 9999; width: 90%; max-width: 400px; pointer-events: none; }
-.toast { padding: 12px; border-radius: 8px; color: #fff; text-align: center; margin-bottom: 8px; opacity: 0; transition: opacity 0.3s; }
+.toast { padding: 12px; border-radius: 8px; color: #fff; text-align: center; margin-bottom: 8px; opacity: 0; transition: opacity 0.3s; background: #333; }
 .toast.show { opacity: 1; }
 .toast.succ { background: var(--succ); } .toast.err { background: var(--dan); } .toast.inf { background: #2980b9; }
 
@@ -48,7 +48,8 @@ input:focus { border-color: var(--prim); }
 .chart-card { padding: 10px; }
 .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
 .price-live { font-size: 1.5rem; font-weight: 700; color: var(--prim); text-align: center; margin-bottom: 8px; }
-#tvchart { height: 300px; width: 100%; border-radius: 8px; background: #000; }
+/* FIX CHART HEIGHT */
+#tvchart { height: 300px; width: 100%; background: #000; border-radius: 8px; display: block; }
 .trade-tabs { display: flex; background: #000; padding: 3px; border-radius: 6px; margin-bottom: 10px; }
 .t-tab { flex: 1; background: none; border: none; color: var(--sec); padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
 .t-tab.active { background: var(--inp); color: #fff; }

@@ -52,9 +52,6 @@ window.onload = () => {
     }
 };
 
-// =================================================================================
-// TOAST
-// =================================================================================
 const toast = (msg, type='inf') => {
     const c = document.getElementById('toast-container');
     const d = document.createElement('div'); d.className = `toast ${type}`; d.innerText = msg;
@@ -109,8 +106,8 @@ window.showTab = (id) => {
     if(map[id] !== undefined) document.querySelectorAll('.nav-item')[map[id]].classList.add('active');
 
     if(id === 'tab-trade') {
-        initChart(); 
-        startChart();
+        // Petit délai pour le rendu mobile
+        setTimeout(() => { initChart(); startChart(); }, 100);
     } else {
         stopChart();
     }
@@ -123,44 +120,57 @@ window.setSide = (s) => {
 };
 
 // =================================================================================
-// CHART SYSTEM (Affichage Garanti)
+// CHART SYSTEM (REPARÉ ET FORCE)
 // =================================================================================
 function initChart() {
     const container = document.getElementById('tvchart');
     if(!container) return;
-    if(chart) { chart.remove(); chart = null; }
     
+    // DETRUIRE l'ancien graphique pour éviter les bugs de rafraîchissement
+    if(chart) { try { chart.remove(); } catch(e){} chart = null; }
+
+    // FORCER la largeur si le container est caché
+    let w = container.clientWidth;
+    if(w < 10) w = window.innerWidth - 40; // Force width
+
     chart = LightweightCharts.createChart(container, { 
-        width: container.clientWidth, height: 300, 
+        width: w, 
+        height: 300, 
         layout: { background: { color: 'transparent' }, textColor: '#848E9C' },
         grid: { vertLines: { color: 'rgba(42, 46, 57, 0.3)' }, horzLines: { color: 'rgba(42, 46, 57, 0.3)' } },
         timeScale: { timeVisible: true, secondsVisible: false }
     });
     candleSeries = chart.addCandlestickSeries({ 
-        upColor: 'rgba(14, 203, 129, 0.9)', downColor: 'rgba(246, 70, 93, 0.9)', 
+        upColor: 'rgba(14, 203, 129, 1)', downColor: 'rgba(246, 70, 93, 1)', 
         borderUpColor: 'rgba(14, 203, 129, 1)', borderDownColor: 'rgba(246, 70, 93, 1)', 
         wickUpColor: 'rgba(14, 203, 129, 1)', wickDownColor: 'rgba(246, 70, 93, 1)' 
     });
     
-    // Génère 60 bougies immédiatement pour remplir le graphique
+    generateInitialData(); // Toujours générer des données
+}
+
+function generateInitialData() {
     const now = Math.floor(Date.now()/1000);
     let data = [];
-    // Initial price based on asset
-    if(currentAsset == 0) lastClose = 60000; // BTC
-    else if(currentAsset == 1) lastClose = 3000; // ETH
+    
+    // Prix de départ selon l'actif
+    if(currentAsset == 0) lastClose = 67000; // BTC
+    else if(currentAsset == 1) lastClose = 3400; // ETH
     else lastClose = 1.25; // FTA
 
-    for(let i=0; i<60; i++) {
+    // Créer 50 bougies
+    for(let i=0; i<50; i++) {
         let o = lastClose;
-        let change = (Math.random() - 0.48) * lastClose * 0.005;
+        let change = (Math.random() - 0.5) * lastClose * 0.005;
         let c = o + change;
         let h = Math.max(o, c) + Math.random() * lastClose * 0.002;
         let l = Math.min(o, c) - Math.random() * lastClose * 0.002;
-        data.push({ time: now - (60-i)*60, open: o, high: h, low: l, close: c });
+        data.push({ time: now - (50-i)*60, open: o, high: h, low: l, close: c });
         lastClose = c;
     }
+    
     candleSeries.setData(data);
-    document.getElementById('tradePrice').innerText = "$" + lastClose.toFixed(4);
+    document.getElementById('tradePrice').innerText = "$" + lastClose.toFixed(2);
 }
 
 window.switchAsset = () => {
@@ -168,58 +178,52 @@ window.switchAsset = () => {
     const names = ["BTC", "ETH", "FTA"];
     document.getElementById('chartTitle').innerText = names[currentAsset] + " / USD";
     stopChart();
-    initChart(); // Reset with new base price
+    initChart();
     startChart();
 };
 
 function startChart() {
     chartInterval = setInterval(async () => {
-        // 1. Essayer de récupérer le vrai prix
+        // 1. Essayer API
         let price = 0;
         try {
-            if(currentAsset == 0) { // BTC
+            if(currentAsset == 0) {
                 const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT`);
-                const data = await res.json();
-                price = parseFloat(data.price);
-            } else if(currentAsset == 1) { // ETH
+                const d = await res.json(); price = parseFloat(d.price);
+            } else if(currentAsset == 1) {
                 const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT`);
-                const data = await res.json();
-                price = parseFloat(data.price);
-            } else { // FTA
+                const d = await res.json(); price = parseFloat(d.price);
+            } else {
                 const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT`);
-                const data = await res.json();
-                price = parseFloat(data.price) * ftaCorrelation * 0.00002;
+                const d = await res.json(); price = parseFloat(d.price) * ftaCorrelation * 0.00002;
             }
-        } catch(e) {
-            // Si erreur API, on garde lastClose pour simuler
-        }
+        } catch(e) { /* Erreur API, on garde lastClose */ }
 
-        // 2. Si prix > 0, on met à jour lastClose, sinon on simule un mouvement
+        // 2. Mise à jour
         if(price > 0) {
-            // Micro variation pour effet temps réel
-            lastClose = price * (1 + (Math.random()-0.5)*0.0005);
+            lastClose = price * (1 + (Math.random()-0.5)*0.0001);
         } else {
             lastClose = lastClose * (1 + (Math.random()-0.5)*0.001);
         }
 
-        document.getElementById('tradePrice').innerText = "$" + lastClose.toFixed(4);
+        document.getElementById('tradePrice').innerText = "$" + lastClose.toFixed(2);
         if(currentAsset == 2) document.getElementById('ftaPrice').innerText = "$" + lastClose.toFixed(4);
         
-        // 3. Mise à jour visuelle de la bougie
+        // 3. Update Bougie
         let o = lastClose;
-        let c = lastClose * (1 + (Math.random()-0.5)*0.0002);
+        let c = lastClose * (1 + (Math.random()-0.5)*0.0001);
         let h = Math.max(o, c) + Math.random()*o*0.0001;
         let l = Math.min(o, c) - Math.random()*o*0.0001;
         
         candleSeries.update({ time: Math.floor(Date.now()/1000), open: o, high: h, low: l, close: c });
 
-    }, 2000); // Refresh 2s
+    }, 2000);
 }
 
 function stopChart() { if(chartInterval) clearInterval(chartInterval); chartInterval = null; }
 
 // =================================================================================
-// HOME SWAP & WALLET (inchangés)
+// HOME SWAP & WALLET
 // =================================================================================
 window.calcHomeSwap = () => { const inTok = document.getElementById('hSwapInTok').value; const outTok = inTok === 'usdt' ? 'FTA' : 'USDT'; document.getElementById('hSwapOutTok').innerText = outTok; };
 window.execHomeSwap = async (isBuy) => {
@@ -247,7 +251,7 @@ async function loadUser() {
 }
 
 // =================================================================================
-// ACTIONS (Trading, Wallet, Mining, Game)
+// ACTIONS
 // =================================================================================
 async function appr(token, amount, dec) { const tk = new ethers.Contract(token, ERC20_ABI, signer); await (await tk.approve(ADDR, ethers.utils.parseUnits(amount, dec))).wait(); }
 
