@@ -37,7 +37,8 @@ let provider, signer, contract, user, usdtAddr, ftaAddr;
 let chart, candleSeries;
 let tradeSide = 0;
 let chartInterval;
-let currentAsset = 2; 
+let currentAsset = 2; // FTA by default
+let lastClose = 1.25; // For chart simulation
 
 // =================================================================================
 // INIT
@@ -108,8 +109,8 @@ window.showTab = (id) => {
 
     // Chart Logic
     if(id === 'tab-trade') {
-        initChart();
-        startChart(); 
+        initChart(); 
+        startChart();
     } else {
         stopChart();
     }
@@ -133,55 +134,52 @@ async function loadUser() {
             contract.userProfiles(user),
             contract.referrals(user)
         ]);
-        // Home & Wallet Balances
-        const uTxt = parseFloat(ethers.utils.formatUnits(uBal, 6)).toFixed(2);
-        const fTxt = parseFloat(ethers.utils.formatUnits(fBal, 8)).toFixed(2);
+        // Home
+        document.getElementById('balUsdt').innerText = parseFloat(ethers.utils.formatUnits(uBal, 6)).toFixed(2);
+        document.getElementById('balFta').innerText = parseFloat(ethers.utils.formatUnits(fBal, 8)).toFixed(2);
+        document.getElementById('headerBalance').innerText = parseFloat(ethers.utils.formatUnits(uBal, 6)).toFixed(2) + " USDT";
         
-        document.getElementById('balUsdt').innerText = uTxt;
-        document.getElementById('balFta').innerText = fTxt;
-        document.getElementById('headerBalance').innerText = uTxt + " USDT";
-        document.getElementById('userLvl').innerText = prof[0].toString();
-        document.getElementById('refCount').innerText = ref[2].toString();
+        // Wallet
+        document.getElementById('wBalUsdt').innerText = parseFloat(ethers.utils.formatUnits(uBal, 6)).toFixed(2);
+        document.getElementById('wBalFta').innerText = parseFloat(ethers.utils.formatUnits(fBal, 8)).toFixed(2);
         
-        document.getElementById('wBalUsdt').innerText = uTxt;
-        document.getElementById('wBalFta').innerText = fTxt;
-        
-        // Price in Home
-        const pRaw = await contract.getAssetPrice(2);
-        document.getElementById('ftaPrice').innerText = "$" + parseFloat(ethers.utils.formatUnits(pRaw, 8)).toFixed(4);
-
-        // Finance Debt
+        // Finance
         document.getElementById('lDebt').innerText = parseFloat(ethers.utils.formatUnits((await contract.userLoans(user))[1], 8)).toFixed(2);
     } catch(e) {}
 }
 
 // =================================================================================
-// CHART SYSTEM (Auto-Update)
+// CHART SYSTEM (Bougies + Auto Refresh)
 // =================================================================================
 function initChart() {
-    if(chart) return;
     const container = document.getElementById('tvchart');
     if(!container) return;
-    
-    // Force Dark Background
-    container.style.backgroundColor = '#131722';
+    if(chart) { chart.remove(); chart = null; } // Reset if exists
     
     chart = LightweightCharts.createChart(container, { 
         width: container.clientWidth, height: 300, 
-        layout: { background: { color: '#131722' }, textColor: '#848E9C' },
+        layout: { background: { color: 'transparent' }, textColor: '#848E9C' },
         grid: { vertLines: { color: 'rgba(42, 46, 57, 0.3)' }, horzLines: { color: 'rgba(42, 46, 57, 0.3)' } },
         timeScale: { timeVisible: true, secondsVisible: false }
     });
-    candleSeries = chart.addCandlestickSeries({ upColor: '#0ECB81', downColor: '#F6465D', borderUpColor: '#0ECB81', borderDownColor: '#F6465D', wickUpColor: '#0ECB81', wickDownColor: '#F6465D' });
+    candleSeries = chart.addCandlestickSeries({ 
+        upColor: 'rgba(14, 203, 129, 0.9)', downColor: 'rgba(246, 70, 93, 0.9)', 
+        borderUpColor: 'rgba(14, 203, 129, 1)', borderDownColor: 'rgba(246, 70, 93, 1)', 
+        wickUpColor: 'rgba(14, 203, 129, 1)', wickDownColor: 'rgba(246, 70, 93, 1)' 
+    });
     
-    // Generate random initial history to make it look populated immediately
+    // Generate initial history
     const now = Math.floor(Date.now()/1000);
     let data = [];
-    let base = 1.25;
-    for(let i=0; i<60; i++) { 
-        base += (Math.random()-0.5)*0.02;
-        let o = base; let c = o + (Math.random()-0.5)*0.01; let h = Math.max(o,c)+0.005; let l = Math.min(o,c)-0.005; 
-        data.push({ time: now - (60-i)*60, open: o, high: h, low: l, close: c }); 
+    lastClose = 1.25; // Reset base
+    for(let i=0; i<60; i++) {
+        let o = lastClose;
+        let change = (Math.random() - 0.48) * 0.005; // Slight upward bias
+        let c = o * (1 + change);
+        let h = Math.max(o, c) * (1 + Math.random()*0.002);
+        let l = Math.min(o, c) * (1 - Math.random()*0.002);
+        data.push({ time: now - (60-i)*60, open: o, high: h, low: l, close: c });
+        lastClose = c;
     }
     candleSeries.setData(data);
 }
@@ -190,69 +188,80 @@ window.switchAsset = async () => {
     currentAsset = document.getElementById('tradeAsset').value;
     const names = ["BTC", "ETH", "FTA"];
     document.getElementById('chartTitle').innerText = names[currentAsset] + " / USD";
-    // Reset Chart Data
-    candleSeries.setData([]);
-    initChart(); // Re-init with new random data for demo
+    stopChart();
+    initChart();
+    startChart();
 };
 
 function startChart() {
-    if(chartInterval) clearInterval(chartInterval);
-    
-    // Immediate update
-    updateChartLogic();
-
-    chartInterval = setInterval(updateChartLogic, 2000);
-}
-
-async function updateChartLogic() {
-    if(!contract) return;
-    try {
-        const pRaw = await contract.getAssetPrice(currentAsset);
-        const price = parseFloat(ethers.utils.formatUnits(pRaw, 8));
-        
-        // Update Price Text
-        document.getElementById('tradePrice').innerText = "$" + price.toFixed(4);
-        
-        // Update Chart
-        const time = Math.floor(Date.now()/1000);
-        // Simulate OHLC for visual effect (real app would fetch history)
-        const lastClose = price;
-        const open = lastClose + (Math.random()-0.5)*0.01;
-        const close = price;
-        const high = Math.max(open, close) + 0.005;
-        const low = Math.min(open, close) - 0.005;
-        
-        candleSeries.update({ time, open, high, low, close });
-    } catch(e) {}
+    chartInterval = setInterval(async () => {
+        if(!contract) return;
+        try {
+            // Fetch Price
+            const pRaw = await contract.getAssetPrice(currentAsset);
+            const price = parseFloat(ethers.utils.formatUnits(pRaw, 8));
+            
+            // Update Display
+            document.getElementById('tradePrice').innerText = "$" + price.toFixed(4);
+            document.getElementById('ftaPrice').innerText = "$" + price.toFixed(4);
+            
+            // Simulate OHLC for candlestick update
+            let o = lastClose;
+            let c = price;
+            // If price didn't change much, simulate small volatility for visual effect
+            if(Math.abs(c-o) < 0.0001) c = o * (1 + (Math.random()-0.5)*0.001);
+            
+            let h = Math.max(o, c) + Math.random()*0.002;
+            let l = Math.min(o, c) - Math.random()*0.002;
+            
+            candleSeries.update({ time: Math.floor(Date.now()/1000), open: o, high: h, low: l, close: c });
+            lastClose = c;
+            
+        } catch(e) {}
+    }, 2000); // Every 2 seconds
 }
 
 function stopChart() { if(chartInterval) clearInterval(chartInterval); chartInterval = null; }
 
 // =================================================================================
-// ACTIONS
+// HOME SWAP
 // =================================================================================
+window.calcHomeSwap = () => {
+    // Simple UI logic
+    const inTok = document.getElementById('hSwapInTok').value;
+    const outTok = inTok === 'usdt' ? 'FTA' : 'USDT';
+    document.getElementById('hSwapOutTok').innerText = outTok;
+};
+
+window.execHomeSwap = async (isBuy) => {
+    const amt = document.getElementById('hSwapIn').value;
+    if(!amt) return toast("Montant requis", 'err');
+    const inTok = document.getElementById('hSwapInTok').value;
+    
+    try {
+        if(isBuy && inTok === 'usdt') {
+            await (await contract.buyFTA(ethers.utils.parseUnits(amt, 6))).wait();
+        } else if(!isBuy && inTok === 'fta') {
+            // Selling FTA
+            await (await contract.sellFTA(ethers.utils.parseUnits(amt, 8))).wait();
+        } else {
+            // Need token approval logic for other combos, simplified for now
+            toast("Utilisez USDT pour acheter ou FTA pour vendre", 'inf');
+            return;
+        }
+        toast("Échange réussi", 'succ');
+        loadUser();
+    } catch(e) { toast(e.reason, 'err'); }
+};
+
+// =================================================================================
+// ACTIONS (Trading, Wallet, etc.)
+// =================================================================================
+// Helper Approve
 async function appr(token, amount, dec) {
     const tk = new ethers.Contract(token, ERC20_ABI, signer);
     await (await tk.approve(ADDR, ethers.utils.parseUnits(amount, dec))).wait();
 }
-
-// --- HOME ACTIONS ---
-window.buyFTA = async () => {
-    const v = document.getElementById('sIn').value; if(!v) return toast("Montant requis", 'err');
-    try { await (await contract.buyFTA(ethers.utils.parseUnits(v, 6))).wait(); toast("Achat effectué", 'succ'); loadUser(); } catch(e) { toast(e.reason, 'err'); }
-};
-window.sellFTAUI = async () => {
-    const v = prompt("Montant FTA à vendre"); if(!v) return;
-    try { await (await contract.sellFTA(ethers.utils.parseUnits(v, 8))).wait(); toast("Vente effectuée", 'succ'); loadUser(); } catch(e) { toast(e.reason, 'err'); }
-};
-window.depositUI_Home = async () => {
-    const v = document.getElementById('hDep').value; if(!v) return;
-    try { await appr(usdtAddr, v, 6); await (await contract.depositToWallet(usdtAddr, ethers.utils.parseUnits(v, 6))).wait(); toast("Dépôt réussi", 'succ'); document.getElementById('hDep').value=""; loadUser(); } catch(e) { toast(e.reason, 'err'); }
-};
-window.withdrawUI_Home = async () => {
-    const v = document.getElementById('hWit').value; if(!v) return;
-    try { await (await contract.withdrawFromWallet(usdtAddr, ethers.utils.parseUnits(v, 6))).wait(); toast("Retrait réussi", 'succ'); document.getElementById('hWit').value=""; loadUser(); } catch(e) { toast(e.reason, 'err'); }
-};
 
 // --- TRADING ---
 window.openTrade = async () => {
@@ -283,34 +292,34 @@ async function loadPos() {
     document.getElementById('posList').innerHTML = html || '<div class="empty-state">Aucune</div>';
 }
 
-// --- MINING ---
-window.buyMachine = async (id) => { try { await (await contract.buyMachine(id)).wait(); toast("Acheté", 'succ'); } catch(e) { toast(e.reason, 'err'); } };
-window.buyBatteryUI = async () => {
-    const id = document.getElementById('mId').value; if(!id) return toast("ID requis", 'err');
-    try { await (await contract.buyBattery(id, 0)).wait(); toast("Chargé", 'succ'); } catch(e) { toast(e.reason, 'err'); }
+// --- WALLET ---
+window.openDepositModal = (tk) => {
+    const amt = prompt("Montant à déposer ("+tk+")");
+    if(!amt) return;
+    if(tk==='usdt') depositUSDT(amt);
+    else depositFTA(amt);
 };
-window.claimMining = async () => {
-    const id = document.getElementById('mId').value; if(!id) return;
-    try { await (await contract.claimMiningRewards(id)).wait(); toast("Récolté", 'succ'); loadUser(); } catch(e) { toast(e.reason, 'err'); }
-};
-
-// --- GAME ---
-window.playGame = async () => {
-    const b = document.getElementById('gBet').value; const t = document.getElementById('gTarget').value;
-    if(!b) return toast("Mise requise", 'err');
-    const d = document.getElementById('gMult');
-    let m = 1.00;
-    const int = setInterval(()=>{ m+=0.1; d.innerText=m.toFixed(2)+"x"; }, 100);
-    try {
-        await (await contract.playAviator(ethers.utils.parseUnits(b,8), Math.floor(t*100))).wait();
-        clearInterval(int); d.innerText="GAGNÉ"; d.style.color="var(--succ)"; toast("Gagné!", 'succ');
-    } catch(e) {
-        clearInterval(int); d.innerText="CRASH"; d.style.color="var(--dan)"; toast("Perdu", 'err');
-    }
-    setTimeout(()=>{ d.innerText="1.00x"; d.style.color="#fff"; }, 2000);
+window.openWithdrawModal = (tk) => {
+    const amt = prompt("Montant à retirer ("+tk+")");
+    if(!amt) return;
+    if(tk==='usdt') withdrawUSDT(amt);
+    else withdrawFTA(amt);
 };
 
-// --- FINANCE ---
+async function depositUSDT(amt) {
+    try { await appr(usdtAddr, amt, 6); await (await contract.depositToWallet(usdtAddr, ethers.utils.parseUnits(amt, 6))).wait(); toast("USDT Déposé", 'succ'); loadUser(); } catch(e) { toast(e.reason, 'err'); }
+}
+async function withdrawUSDT(amt) {
+    try { await (await contract.withdrawFromWallet(usdtAddr, ethers.utils.parseUnits(amt, 6))).wait(); toast("USDT Retiré", 'succ'); loadUser(); } catch(e) { toast(e.reason, 'err'); }
+}
+async function depositFTA(amt) {
+    try { await appr(ftaAddr, amt, 8); await (await contract.depositToWallet(ftaAddr, ethers.utils.parseUnits(amt, 8))).wait(); toast("FTA Déposé", 'succ'); loadUser(); } catch(e) { toast(e.reason, 'err'); }
+}
+async function withdrawFTA(amt) {
+    try { await (await contract.withdrawFromWallet(ftaAddr, ethers.utils.parseUnits(amt, 8))).wait(); toast("FTA Retiré", 'succ'); loadUser(); } catch(e) { toast(e.reason, 'err'); }
+}
+
+// LENDING
 window.depositCollateralUI = async () => {
     const v = document.getElementById('lCol').value; if(!v) return;
     try { await appr(usdtAddr, v, 6); await (await contract.depositCollateral(ethers.utils.parseUnits(v, 6))).wait(); toast("Collatéral OK", 'succ'); } catch(e) { toast(e.reason, 'err'); }
@@ -320,11 +329,15 @@ window.borrowUI = async () => {
     try { await (await contract.borrow(ethers.utils.parseUnits(b, 8))).wait(); toast("Emprunt OK", 'succ'); loadUser(); } catch(e) { toast(e.reason, 'err'); }
 };
 window.repayUI = async () => { try { await (await contract.repayLoan()).wait(); toast("Remboursé", 'succ'); loadUser(); } catch(e) { toast(e.reason, 'err'); } };
+
+// STAKING
 window.stakeUI = async () => {
     const v = document.getElementById('stAmt').value; if(!v) return;
     try { await (await contract.stake(0, ethers.utils.parseUnits(v, 8))).wait(); toast("Staké", 'succ'); } catch(e) { toast(e.reason, 'err'); }
 };
 window.unstakeUI = async () => { try { await (await contract.unstake(0)).wait(); toast("Unstaké", 'succ'); loadUser(); } catch(e) { toast(e.reason, 'err'); } };
+
+// FARMING
 window.addLiquidityUI = async () => {
     const u = document.getElementById('fUsdt').value; const f = document.getElementById('fFta').value;
     if(!u || !f) return toast("Remplissez les 2", 'err');
@@ -338,7 +351,36 @@ window.removeLiquidityUI = async () => {
     const v = prompt("Montant LP à retirer"); if(!v) return;
     try { await (await contract.removeLiquidity(ethers.utils.parseUnits(v, 18))).wait(); toast("LP Retiré", 'succ'); } catch(e) { toast(e.reason, 'err'); }
 };
+
+// REF
 window.regRefUI = async () => {
     const a = document.getElementById('refIn').value; if(!a) return;
     try { await (await contract.registerReferrer(a)).wait(); toast("Parrain OK", 'succ'); } catch(e) { toast(e.reason, 'err'); }
+};
+
+// MINING
+window.buyMachine = async (id) => { try { await (await contract.buyMachine(id)).wait(); toast("Acheté", 'succ'); } catch(e) { toast(e.reason, 'err'); } };
+window.buyBatteryUI = async () => {
+    const id = document.getElementById('mId').value; if(!id) return toast("ID requis", 'err');
+    try { await (await contract.buyBattery(id, 0)).wait(); toast("Chargé", 'succ'); } catch(e) { toast(e.reason, 'err'); }
+};
+window.claimMining = async () => {
+    const id = document.getElementById('mId').value; if(!id) return;
+    try { await (await contract.claimMiningRewards(id)).wait(); toast("Récolté", 'succ'); loadUser(); } catch(e) { toast(e.reason, 'err'); }
+};
+
+// GAME
+window.playGame = async () => {
+    const b = document.getElementById('gBet').value; const t = document.getElementById('gTarget').value;
+    if(!b) return toast("Mise requise", 'err');
+    const d = document.getElementById('gMult');
+    let m = 1.00;
+    const int = setInterval(()=>{ m+=0.1; d.innerText=m.toFixed(2)+"x"; }, 100);
+    try {
+        await (await contract.playAviator(ethers.utils.parseUnits(b,8), Math.floor(t*100))).wait();
+        clearInterval(int); d.innerText="GAGNÉ"; d.style.color="var(--succ)"; toast("Gagné!", 'succ');
+    } catch(e) {
+        clearInterval(int); d.innerText="CRASH"; d.style.color="var(--dan)"; toast("Perdu", 'err');
+    }
+    setTimeout(()=>{ d.innerText="1.00x"; d.style.color="#fff"; }, 2000);
 };
