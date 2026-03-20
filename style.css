@@ -35,7 +35,7 @@ input:focus { border-color: var(--prim); }
 .input-group { margin-bottom: 10px; }
 .input-group label { display: block; font-size: 0.8rem; color: var(--sec); margin-bottom: 4px; }
 
-/* Home Specifics */
+/* Home */
 .price-card-center { text-align: center; padding: 20px; }
 .price-big { font-size: 2.5rem; font-weight: 800; color: var(--prim); margin: 10px 0; }
 .price-label { color: var(--sec); font-size: 0.9rem; }
@@ -44,7 +44,7 @@ input:focus { border-color: var(--prim); }
 .stat-card.highlight { border: 1px solid rgba(245,182,35,0.3); }
 .stat-card .label { font-size: 0.7rem; color: var(--sec); }
 
-/* Trade Specifics */
+/* Trade */
 .chart-card { padding: 10px; }
 .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
 .price-live { font-size: 1.5rem; font-weight: 700; color: var(--prim); text-align: center; margin-bottom: 8px; }
@@ -66,16 +66,6 @@ input:focus { border-color: var(--prim); }
 .token-info span { color: var(--sec); font-size: 0.85rem; }
 .token-actions { display: flex; gap: 5px; }
 
-/* Game & Mining */
-.game-screen { height: 200px; background: radial-gradient(circle, #1a1a1a, #000); border-radius: 8px; position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; overflow: hidden; }
-.plane { font-size: 2.5rem; position: absolute; bottom: 20px; left: 20px; }
-.mining-visual { text-align: center; padding: 20px 0; color: var(--sec); } .mining-visual i { font-size: 2.5rem; margin-bottom: 10px; color: var(--prim); }
-.mining-stats { display: flex; justify-content: space-around; background: #000; padding: 10px; border-radius: 6px; margin-bottom: 10px; }
-.m-stat { text-align: center; } .m-stat .val { font-size: 1rem; font-weight: 700; }
-.shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.shop-item { background: var(--card); padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #2B3139; }
-.s-icon { font-size: 1.5rem; color: var(--prim); margin-bottom: 5px; }
-
 /* Others */
 .swap-box { background: #000; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
 .swap-row { display: flex; justify-content: space-between; align-items: center; margin: 5px 0; }
@@ -87,6 +77,16 @@ input:focus { border-color: var(--prim); }
 .btn-link { background: none; border: none; color: var(--prim); text-decoration: underline; cursor: pointer; float: right; }
 .ref-code { background: #000; padding: 8px; border-radius: 6px; color: var(--prim); font-family: monospace; text-align: center; margin-bottom: 10px; }
 .small-text { font-size: 0.75rem; color: var(--sec); margin-bottom: 5px; }
+
+/* Game & Mining */
+.game-screen { height: 200px; background: radial-gradient(circle, #1a1a1a, #000); border-radius: 8px; position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; overflow: hidden; }
+.plane { font-size: 2.5rem; position: absolute; bottom: 20px; left: 20px; }
+.mining-visual { text-align: center; padding: 20px 0; color: var(--sec); } .mining-visual i { font-size: 2.5rem; margin-bottom: 10px; color: var(--prim); }
+.mining-stats { display: flex; justify-content: space-around; background: #000; padding: 10px; border-radius: 6px; margin-bottom: 10px; }
+.m-stat { text-align: center; } .m-stat .val { font-size: 1rem; font-weight: 700; }
+.shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.shop-item { background: var(--card); padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #2B3139; }
+.s-icon { font-size: 1.5rem; color: var(--prim); margin-bottom: 5px; }
 
 /* List */
 .list-container { display: flex; flex-direction: column; gap: 8px; }
