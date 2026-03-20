@@ -30,12 +30,13 @@ input:focus { border-color: var(--prim); }
 .btn-sm { background: #2B3139; color: #fff; border: none; padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; }
 .btn-sm-action { background: var(--prim); color: #000; border: none; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; }
 .outline-sm { background: transparent; border: 1px solid var(--sec); color: var(--sec); padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; }
+.btn-outline-sm { background: transparent; border: 1px solid var(--prim); color: var(--prim); padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; }
 .full-width { width: 100%; } .flex-1 { flex: 1; }
 .row-inputs, .row-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .input-group { margin-bottom: 10px; }
 .input-group label { display: block; font-size: 0.8rem; color: var(--sec); margin-bottom: 4px; }
 
-/* Home Specifics */
+/* Home */
 .price-card-center { text-align: center; padding: 20px; }
 .price-big { font-size: 2.5rem; font-weight: 800; color: var(--prim); margin: 10px 0; }
 .price-label { color: var(--sec); font-size: 0.9rem; }
@@ -43,14 +44,13 @@ input:focus { border-color: var(--prim); }
 .stat-card { background: var(--card); padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #2B3139; }
 .stat-card.highlight { border: 1px solid rgba(245,182,35,0.3); }
 .stat-card .label { font-size: 0.7rem; color: var(--sec); }
-.quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.action-btn { border: none; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; }
-.action-btn.primary { background: var(--prim); color: #000; grid-column: span 2; }
 
 /* Trade Specifics */
 .chart-card { padding: 10px; }
 .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
 .price-live { font-size: 1.5rem; font-weight: 700; color: var(--prim); text-align: center; margin-bottom: 8px; }
+.live-indicator { color: var(--succ); font-size: 0.7rem; }
+#tvchart { height: 300px; width: 100%; background: #131722; border-radius: 8px; }
 .trade-tabs { display: flex; background: #000; padding: 3px; border-radius: 6px; margin-bottom: 10px; }
 .t-tab { flex: 1; background: none; border: none; color: var(--sec); padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600; }
 .t-tab.active { background: var(--inp); color: #fff; }
@@ -66,7 +66,6 @@ input:focus { border-color: var(--prim); }
 .token-info { flex: 1; }
 .token-info strong { display: block; font-size: 1rem; }
 .token-info span { color: var(--sec); font-size: 0.85rem; }
-.token-actions { display: flex; gap: 5px; }
 
 /* Game & Mining */
 .game-screen { height: 200px; background: radial-gradient(circle, #1a1a1a, #000); border-radius: 8px; position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; overflow: hidden; }
