@@ -5,324 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FitiaPRO - Mining & Trading</title>
   
-  <!-- Ethers.js - Version stable -->
+  <!-- Ethers.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
   
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
-      color: #fff;
-      min-height: 100vh;
-    }
-    
-    .container {
-      max-width: 480px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    
-    /* Header */
-    .header {
-      background: rgba(30, 30, 47, 0.8);
-      backdrop-filter: blur(10px);
-      padding: 15px 20px;
-      border-radius: 16px;
-      margin-bottom: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 15px;
-    }
-    
-    .logo-icon {
-      background: linear-gradient(135deg, #F7B500, #FFD54F);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    
-    .price-ticker {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px;
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 8px;
-    }
-    
-    .price {
-      font-family: monospace;
-      font-size: 18px;
-      font-weight: 600;
-    }
-    
-    .change {
-      color: #00C853;
-      font-size: 14px;
-    }
-    
-    /* Connect Button */
-    .connect-btn {
-      width: 100%;
-      padding: 15px;
-      background: linear-gradient(135deg, #F7B500, #FFD54F);
-      border: none;
-      border-radius: 12px;
-      color: #1a1a2e;
-      font-weight: 600;
-      font-size: 16px;
-      cursor: pointer;
-      margin-bottom: 20px;
-      transition: transform 0.2s;
-    }
-    
-    .connect-btn:hover {
-      transform: scale(1.02);
-    }
-    
-    /* Wallet Modal */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(5px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      padding: 20px;
-    }
-    
-    .modal-overlay.hidden {
-      display: none;
-    }
-    
-    .modal {
-      background: #1e1e2f;
-      border-radius: 20px;
-      padding: 25px;
-      width: 100%;
-      max-width: 400px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    
-    .modal-header h2 {
-      font-size: 20px;
-    }
-    
-    .close-btn {
-      background: none;
-      border: none;
-      color: #fff;
-      font-size: 24px;
-      cursor: pointer;
-      padding: 5px;
-    }
-    
-    .wallet-btn {
-      width: 100%;
-      padding: 15px;
-      margin-bottom: 10px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 2px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      color: #fff;
-      font-size: 16px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      transition: all 0.2s;
-    }
-    
-    .wallet-btn:hover {
-      border-color: #F7B500;
-      background: rgba(247, 181, 0, 0.1);
-    }
-    
-    .wallet-icon {
-      width: 24px;
-      height: 24px;
-    }
-    
-    /* Balance Cards */
-    .balance-card {
-      background: linear-gradient(145deg, #2a2a3f, #1e1e2f);
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 15px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .balance-label {
-      color: #8b8b9f;
-      font-size: 14px;
-      margin-bottom: 8px;
-    }
-    
-    .balance-amount {
-      font-size: 32px;
-      font-weight: 700;
-      font-family: monospace;
-      margin-bottom: 8px;
-    }
-    
-    .balance-change {
-      color: #00C853;
-      font-size: 14px;
-    }
-    
-    .token-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 15px;
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 12px;
-      margin-top: 10px;
-    }
-    
-    .token-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    
-    .token-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      font-size: 12px;
-    }
-    
-    .token-icon.fta {
-      background: linear-gradient(135deg, #6366F1, #8B5CF6);
-    }
-    
-    .token-icon.usdt {
-      background: linear-gradient(135deg, #22C55E, #10B981);
-    }
-    
-    /* Navigation */
-    .nav-tabs {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      overflow-x: auto;
-    }
-    
-    .nav-tab {
-      flex: 1;
-      min-width: max-content;
-      padding: 12px 20px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      color: #8b8b9f;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .nav-tab.active {
-      background: #F7B500;
-      color: #1a1a2e;
-      border-color: #F7B500;
-    }
-    
-    /* Quick Actions */
-    .quick-actions {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    
-    .action-btn {
-      padding: 15px 10px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      color: #fff;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s;
-    }
-    
-    .action-btn:hover {
-      border-color: #F7B500;
-      transform: translateY(-2px);
-    }
-    
-    .action-btn i {
-      font-size: 20px;
-      color: #F7B500;
-    }
-    
-    /* Toast */
-    .toast {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #1e1e2f;
-      border-left: 4px solid #F7B500;
-      padding: 15px 25px;
-      border-radius: 8px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-      z-index: 2000;
-      animation: slideDown 0.3s ease;
-    }
-    
-    .toast.success { border-left-color: #00C853; }
-    .toast.error { border-left-color: #FF1744; }
-    
-    @keyframes slideDown {
-      from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
-      to { transform: translateX(-50%) translateY(0); opacity: 1; }
-    }
-    
-    /* Loading */
-    .loading {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid rgba(255, 255, 255, 0.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    
-    .hidden { display: none !important; }
-  </style>
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
@@ -342,7 +29,7 @@
         <span>👛</span> Bitget Wallet
       </button>
       
-      <div style="margin-top: 15px; padding: 10px; background: rgba(247, 181, 0, 0.1); border-radius: 8px; font-size: 12px; color: #F7B500;">
+      <div class="network-info">
         🔗 Réseau: Polygon
       </div>
     </div>
@@ -355,15 +42,15 @@
     <div class="header">
       <div class="logo">
         <span class="logo-icon">⚡</span>
-        <span>Fitia<span style="color: #F7B500;">PRO</span></span>
+        <span>Fitia<span class="pro">PRO</span></span>
       </div>
       
       <div class="price-ticker">
         <div>
-          <div style="font-size: 12px; color: #8b8b9f;">FTA/USDT</div>
+          <div class="pair-label">FTA/USDT</div>
           <div class="price" id="ftaPrice">$1.25</div>
         </div>
-        <div class="change">+3.2%</div>
+        <div class="change positive">+3.2%</div>
       </div>
     </div>
 
@@ -374,229 +61,196 @@
       <div class="balance-change">+2.45% (24h)</div>
     </div>
 
+    <!-- Tokens -->
     <div class="token-row">
       <div class="token-info">
         <div class="token-icon fta">FTA</div>
         <div>
-          <div style="font-weight: 500;">Fitia Token</div>
-          <div style="font-size: 12px; color: #8b8b9f;" id="ftaBalance">0.00 FTA</div>
+          <div class="token-name">Fitia Token</div>
+          <div class="token-balance" id="ftaBalance">0.00 FTA</div>
         </div>
       </div>
-      <div style="font-family: monospace;" id="ftaValue">$0.00</div>
+      <div class="token-value" id="ftaValue">$0.00</div>
     </div>
 
     <div class="token-row">
       <div class="token-info">
         <div class="token-icon usdt">USDT</div>
         <div>
-          <div style="font-weight: 500;">Tether USD</div>
-          <div style="font-size: 12px; color: #8b8b9f;" id="usdtBalance">0.00 USDT</div>
+          <div class="token-name">Tether USD</div>
+          <div class="token-balance" id="usdtBalance">0.00 USDT</div>
         </div>
       </div>
-      <div style="font-family: monospace;" id="usdtValue">$0.00</div>
+      <div class="token-value" id="usdtValue">$0.00</div>
     </div>
 
     <!-- Quick Actions -->
     <div class="quick-actions">
-      <button class="action-btn">
+      <button class="action-btn" onclick="openModal('deposit')">
         <span>⬇️</span>
-        <span style="font-size: 12px;">Dépôt</span>
+        <span>Dépôt</span>
       </button>
-      <button class="action-btn">
+      <button class="action-btn" onclick="openModal('withdraw')">
         <span>⬆️</span>
-        <span style="font-size: 12px;">Retrait</span>
+        <span>Retrait</span>
       </button>
-      <button class="action-btn">
+      <button class="action-btn" onclick="switchTab('trade')">
         <span>🔄</span>
-        <span style="font-size: 12px;">Échanger</span>
+        <span>Échanger</span>
       </button>
-      <button class="action-btn">
-        <span>✈️</span>
-        <span style="font-size: 12px;">Envoyer</span>
+      <button class="action-btn" onclick="switchTab('mining')">
+        <span>⛏️</span>
+        <span>Mining</span>
       </button>
     </div>
 
     <!-- Navigation -->
     <div class="nav-tabs">
-      <button class="nav-tab active">🏠 Accueil</button>
-      <button class="nav-tab">📈 Trade</button>
-      <button class="nav-tab">⛏️ Mining</button>
-      <button class="nav-tab">🎮 Jeux</button>
+      <button class="nav-tab active" onclick="switchTab('home')">🏠 Accueil</button>
+      <button class="nav-tab" onclick="switchTab('trade')">📈 Trade</button>
+      <button class="nav-tab" onclick="switchTab('mining')">⛏️ Mining</button>
+      <button class="nav-tab" onclick="switchTab('games')">🎮 Jeux</button>
     </div>
 
-    <!-- Wallet Address -->
-    <div style="text-align: center; padding: 15px; background: rgba(247, 181, 0, 0.1); border-radius: 12px; margin-top: 20px;">
-      <div style="font-size: 12px; color: #8b8b9f; margin-bottom: 5px;">Connecté</div>
-      <div style="font-family: monospace; color: #F7B500;" id="walletAddress">0x...</div>
-      <button onclick="disconnectWallet()" style="margin-top: 10px; padding: 8px 16px; background: rgba(255, 23, 68, 0.2); border: 1px solid #FF1744; color: #FF1744; border-radius: 8px; cursor: pointer; font-size: 12px;">
-        Déconnecter
-      </button>
+    <!-- Sections -->
+    <div id="homeSection" class="section active">
+      <div class="wallet-info">
+        <div class="info-label">Connecté</div>
+        <div class="wallet-address" id="walletAddress">0x...</div>
+        <button class="disconnect-btn" onclick="disconnectWallet()">
+          Déconnecter
+        </button>
+      </div>
+    </div>
+
+    <div id="tradeSection" class="section">
+      <h3>📈 Trading FTA</h3>
+      
+      <div class="trade-form">
+        <div class="form-group">
+          <label>Type</label>
+          <select id="tradeType">
+            <option value="buy">Acheter FTA</option>
+            <option value="sell">Vendre FTA</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Montant USDT</label>
+          <input type="number" id="tradeAmount" placeholder="100">
+        </div>
+        
+        <button class="trade-btn buy" id="tradeBtn" onclick="executeTrade()">
+          Acheter FTA
+        </button>
+      </div>
+    </div>
+
+    <div id="miningSection" class="section">
+      <h3>⛏️ Centre de Mining</h3>
+      
+      <div class="rewards-card">
+        <div class="info-label">Récompenses à claimer</div>
+        <div class="rewards-amount" id="miningRewards">0.00 FTA</div>
+        <button class="claim-btn" onclick="claimRewards()">
+          🎁 Claim Rewards
+        </button>
+      </div>
+      
+      <div class="machine-grid">
+        <div class="machine-card">
+          <div class="machine-icon">🔹</div>
+          <div class="machine-name">Starter</div>
+          <div class="machine-price">12.50 USDT</div>
+          <button class="buy-btn" onclick="buyMachine(0)">Acheter</button>
+        </div>
+        <div class="machine-card">
+          <div class="machine-icon">🔷</div>
+          <div class="machine-name">Pro</div>
+          <div class="machine-price">55.00 USDT</div>
+          <button class="buy-btn" onclick="buyMachine(1)">Acheter</button>
+        </div>
+        <div class="machine-card">
+          <div class="machine-icon">🔶</div>
+          <div class="machine-name">Ultra</div>
+          <div class="machine-price">195.00 USDT</div>
+          <button class="buy-btn" onclick="buyMachine(2)">Acheter</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="gamesSection" class="section">
+      <h3>🎮 Aviator</h3>
+      
+      <div class="trade-form">
+        <div class="form-group">
+          <label>Mise (FTA)</label>
+          <input type="number" id="aviatorBet" value="10">
+        </div>
+        
+        <div class="form-group">
+          <label>Target</label>
+          <input type="number" id="aviatorTarget" value="2.00" step="0.01">
+        </div>
+        
+        <button class="claim-btn" id="aviatorBtn" onclick="playAviator()">
+          ✈️ Lancer
+        </button>
+      </div>
+      
+      <div class="aviator-display">
+        <div class="multiplier" id="aviatorMultiplier">1.00x</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Deposit Modal -->
+  <div id="depositModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>⬇️ Dépôt</h2>
+        <button class="close-btn" onclick="closeModal('depositModal')">×</button>
+      </div>
+      <div class="form-group">
+        <label>Token</label>
+        <select id="depositToken">
+          <option value="USDT">USDT</option>
+          <option value="FTA">FTA</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Montant</label>
+        <input type="number" id="depositAmount" placeholder="100">
+      </div>
+      <button class="claim-btn" onclick="confirmDeposit()">Confirmer</button>
     </div>
   </div>
 
-  <script>
-    // Global state
-    let provider, signer, userAddress;
-    
-    // Vérifier si ethers.js est chargé
-    if (typeof ethers === 'undefined') {
-      console.error('❌ ethers.js n\'est pas chargé!');
-      alert('Erreur: Bibliothèque ethers.js non chargée. Vérifiez votre connexion Internet.');
-    } else {
-      console.log('✅ ethers.js chargé avec succès');
-    }
-    
-    // Check if already connected
-    window.addEventListener('load', async () => {
-      if (window.ethereum) {
-        try {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-          if (accounts.length > 0) {
-            await connectExistingWallet();
-          }
-        } catch (error) {
-          console.error('Error:', error);
-        }
-      }
-    });
-    
-    async function connectWallet(type) {
-      try {
-        // Vérifier ethers.js
-        if (typeof ethers === 'undefined') {
-          throw new Error('ethers.js n\'est pas chargé. Rechargez la page.');
-        }
-        
-        if (type === 'metamask') {
-          if (!window.ethereum) {
-            window.open('https://metamask.io/download', '_blank');
-            throw new Error('MetaMask non installé');
-          }
-          
-          const accounts = await window.ethereum.request({ 
-            method: 'eth_requestAccounts' 
-          });
-          
-          provider = new ethers.providers.Web3Provider(window.ethereum);
-          signer = provider.getSigner();
-          userAddress = accounts[0];
-          
-        } else if (type === 'bitget') {
-          const bitget = window.bitkeep?.ethereum || window.bitget?.ethereum;
-          if (!bitget) {
-            window.open('https://web3.bitget.com', '_blank');
-            throw new Error('Bitget Wallet non installé');
-          }
-          
-          const accounts = await bitget.request({ 
-            method: 'eth_requestAccounts' 
-          });
-          
-          provider = new ethers.providers.Web3Provider(bitget);
-          signer = provider.getSigner();
-          userAddress = accounts[0];
-        }
-        
-        // Switch to Polygon
-        await switchToPolygon();
-        
-        // Update UI
-        closeModal();
-        updateUI();
-        showToast('success', 'Connecté!', userAddress.slice(0, 6) + '...' + userAddress.slice(-4));
-        
-      } catch (error) {
-        console.error('Connection error:', error);
-        showToast('error', 'Erreur', error.message);
-      }
-    }
-    
-    async function switchToPolygon() {
-      const chainId = '0x89'; // 137
-      
-      try {
-        await window.ethereum?.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId }],
-        });
-      } catch (error) {
-        if (error.code === 4902) {
-          await window.ethereum?.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId,
-              chainName: 'Polygon Mainnet',
-              nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
-              rpcUrls: ['https://polygon-rpc.com'],
-              blockExplorerUrls: ['https://polygonscan.com'],
-            }],
-          });
-        }
-      }
-    }
-    
-    async function connectExistingWallet() {
-      if (typeof ethers === 'undefined') {
-        console.error('ethers not loaded');
-        return;
-      }
-      
-      provider = new ethers.providers.Web3Provider(window.ethereum);
-      signer = provider.getSigner();
-      userAddress = (await provider.listAccounts())[0];
-      updateUI();
-    }
-    
-    function updateUI() {
-      document.getElementById('connectModal').classList.add('hidden');
-      document.getElementById('mainApp').style.display = 'block';
-      document.getElementById('walletAddress').textContent = userAddress;
-      
-      // Simulate balances (replace with real contract calls)
-      document.getElementById('ftaBalance').textContent = '125.50 FTA';
-      document.getElementById('usdtBalance').textContent = '500.00 USDT';
-      document.getElementById('ftaValue').textContent = '$156.88';
-      document.getElementById('usdtValue').textContent = '$500.00';
-      document.getElementById('totalBalance').textContent = '$656.88';
-    }
-    
-    function disconnectWallet() {
-      provider = null;
-      signer = null;
-      userAddress = null;
-      document.getElementById('connectModal').classList.remove('hidden');
-      document.getElementById('mainApp').style.display = 'none';
-      showToast('info', 'Déconnecté', 'Wallet déconnecté');
-    }
-    
-    function closeModal() {
-      document.getElementById('connectModal').classList.add('hidden');
-    }
-    
-    function showToast(type, title, message) {
-      const toast = document.createElement('div');
-      toast.className = `toast ${type}`;
-      toast.innerHTML = `<strong>${title}</strong><br><small>${message}</small>`;
-      document.body.appendChild(toast);
-      
-      setTimeout(() => toast.remove(), 3000);
-    }
-    
-    // Listen for account changes
-    if (window.ethereum) {
-      window.ethereum.on('accountsChanged', (accounts) => {
-        if (accounts.length === 0) {
-          disconnectWallet();
-        } else {
-          userAddress = accounts[0];
-          updateUI();
-        }
-      });
-      
-      window.ethereum.on('chainChanged', () => {
-        window.location.reload();
-      });
-    }
-  </script>
+  <!-- Withdraw Modal -->
+  <div id="withdrawModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>⬆️ Retrait</h2>
+        <button class="close-btn" onclick="closeModal('withdrawModal')">×</button>
+      </div>
+      <div class="form-group">
+        <label>Token</label>
+        <select id="withdrawToken">
+          <option value="USDT">USDT</option>
+          <option value="FTA">FTA</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Montant</label>
+        <input type="number" id="withdrawAmount" placeholder="100">
+      </div>
+      <button class="claim-btn" onclick="confirmWithdraw()">Confirmer</button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
