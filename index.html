@@ -1,725 +1,584 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Fitia PRO - Mining & Trading Ecosystem</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FitiaPRO - Mining & Trading</title>
   
-  <!-- Meta Mobile -->
-  <meta name="theme-color" content="#F7B500"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  
-  <!-- Fonts & Icons -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Chart Library -->
-  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-  
-  <!-- Web3 Libraries -->
+  <!-- MetaMask et Web3 -->
   <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
-  <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
   
-  <!-- Styles -->
-  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+      color: #fff;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    /* Header */
+    .header {
+      background: rgba(30, 30, 47, 0.8);
+      backdrop-filter: blur(10px);
+      padding: 15px 20px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 15px;
+    }
+    
+    .logo-icon {
+      background: linear-gradient(135deg, #F7B500, #FFD54F);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .price-ticker {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+    }
+    
+    .price {
+      font-family: monospace;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .change {
+      color: #00C853;
+      font-size: 14px;
+    }
+    
+    /* Connect Button */
+    .connect-btn {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #F7B500, #FFD54F);
+      border: none;
+      border-radius: 12px;
+      color: #1a1a2e;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      transition: transform 0.2s;
+    }
+    
+    .connect-btn:hover {
+      transform: scale(1.02);
+    }
+    
+    /* Wallet Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    
+    .modal-overlay.hidden {
+      display: none;
+    }
+    
+    .modal {
+      background: #1e1e2f;
+      border-radius: 20px;
+      padding: 25px;
+      width: 100%;
+      max-width: 400px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .modal-header h2 {
+      font-size: 20px;
+    }
+    
+    .close-btn {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 5px;
+    }
+    
+    .wallet-btn {
+      width: 100%;
+      padding: 15px;
+      margin-bottom: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s;
+    }
+    
+    .wallet-btn:hover {
+      border-color: #F7B500;
+      background: rgba(247, 181, 0, 0.1);
+    }
+    
+    .wallet-icon {
+      width: 24px;
+      height: 24px;
+    }
+    
+    /* Balance Cards */
+    .balance-card {
+      background: linear-gradient(145deg, #2a2a3f, #1e1e2f);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .balance-label {
+      color: #8b8b9f;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    
+    .balance-amount {
+      font-size: 32px;
+      font-weight: 700;
+      font-family: monospace;
+      margin-bottom: 8px;
+    }
+    
+    .balance-change {
+      color: #00C853;
+      font-size: 14px;
+    }
+    
+    .token-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      margin-top: 10px;
+    }
+    
+    .token-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .token-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    
+    .token-icon.fta {
+      background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    }
+    
+    .token-icon.usdt {
+      background: linear-gradient(135deg, #22C55E, #10B981);
+    }
+    
+    /* Navigation */
+    .nav-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+    
+    .nav-tab {
+      flex: 1;
+      min-width: max-content;
+      padding: 12px 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      color: #8b8b9f;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .nav-tab.active {
+      background: #F7B500;
+      color: #1a1a2e;
+      border-color: #F7B500;
+    }
+    
+    /* Quick Actions */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    
+    .action-btn {
+      padding: 15px 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    
+    .action-btn:hover {
+      border-color: #F7B500;
+      transform: translateY(-2px);
+    }
+    
+    .action-btn i {
+      font-size: 20px;
+      color: #F7B500;
+    }
+    
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e1e2f;
+      border-left: 4px solid #F7B500;
+      padding: 15px 25px;
+      border-radius: 8px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      animation: slideDown 0.3s ease;
+    }
+    
+    .toast.success { border-left-color: #00C853; }
+    .toast.error { border-left-color: #FF1744; }
+    
+    @keyframes slideDown {
+      from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+      to { transform: translateX(-50%) translateY(0); opacity: 1; }
+    }
+    
+    /* Loading */
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .hidden { display: none !important; }
+  </style>
 </head>
-<body class="theme-yellow">
-  
-  <!-- 🔐 Connect Wallet Overlay -->
-  <div id="connectOverlay" class="overlay active">
-    <div class="connect-modal">
+<body>
+
+  <!-- Connect Modal -->
+  <div id="connectModal" class="modal-overlay">
+    <div class="modal">
       <div class="modal-header">
-        <h2><i class="fas fa-wallet"></i> Connecter le portefeuille</h2>
-        <button class="close-btn" onclick="closeConnectModal()"><i class="fas fa-times"></i></button>
+        <h2>🔐 Connecter le portefeuille</h2>
+        <button class="close-btn" onclick="closeModal()">×</button>
       </div>
-      <div class="wallet-options">
-        <button class="wallet-btn" onclick="connectWallet('metamask')">
-          <i class="fas fa-fox"></i> MetaMask
-        </button>
-        <button class="wallet-btn" onclick="connectWallet('walletconnect')">
-          <i class="fas fa-qrcode"></i> WalletConnect
-        </button>
-        <button class="wallet-btn" onclick="connectWallet('bitget')">
-          <img src="https://wallet.bitget.com/logo.png" alt="Bitget" class="wallet-logo"> Bitget Wallet
-        </button>
+      
+      <button class="wallet-btn" onclick="connectWallet('metamask')">
+        <span>🦊</span> MetaMask
+      </button>
+      
+      <button class="wallet-btn" onclick="connectWallet('bitget')">
+        <span>👛</span> Bitget Wallet
+      </button>
+      
+      <div style="margin-top: 15px; padding: 10px; background: rgba(247, 181, 0, 0.1); border-radius: 8px; font-size: 12px; color: #F7B500;">
+        🔗 Réseau: Polygon
       </div>
-      <p class="network-info">🔗 Réseau: <span id="currentNetwork">Polygon</span></p>
     </div>
   </div>
 
-  <!-- 📱 App Container -->
-  <div id="app" class="app-container hidden">
+  <!-- Main App -->
+  <div class="container" id="mainApp" style="display: none;">
     
     <!-- Header -->
-    <header class="app-header">
-      <div class="header-left">
-        <div class="logo">
-          <span class="logo-icon">⚡</span>
-          <span class="logo-text">Fitia<span class="logo-pro">PRO</span></span>
-        </div>
+    <div class="header">
+      <div class="logo">
+        <span class="logo-icon">⚡</span>
+        <span>Fitia<span style="color: #F7B500;">PRO</span></span>
       </div>
-      <div class="header-center">
-        <div class="price-ticker">
-          <span class="asset-name">FTA/USDT</span>
-          <span class="asset-price" id="ftaPrice">--.--</span>
-          <span class="asset-change positive" id="ftaChange">+0.00%</span>
-        </div>
-      </div>
-      <div class="header-right">
-        <button class="icon-btn" onclick="toggleNotifications()">
-          <i class="fas fa-bell"></i>
-          <span class="badge" id="notifBadge">0</span>
-        </button>
-        <button class="icon-btn" onclick="openProfile()">
-          <i class="fas fa-user"></i>
-        </button>
-        <button class="wallet-btn-mini" id="walletAddress" onclick="copyAddress()">
-          <span>0x...</span>
-          <i class="fas fa-chevron-down"></i>
-        </button>
-      </div>
-    </header>
-
-    <!-- Navigation Tabs -->
-    <nav class="tab-nav">
-      <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">
-        <i class="fas fa-home"></i> Accueil
-      </button>
-      <button class="tab-btn" data-tab="trade" onclick="switchTab('trade')">
-        <i class="fas fa-chart-line"></i> Trade
-      </button>
-      <button class="tab-btn" data-tab="mining" onclick="switchTab('mining')">
-        <i class="fas fa-microchip"></i> Mining
-      </button>
-      <button class="tab-btn" data-tab="games" onclick="switchTab('games')">
-        <i class="fas fa-gamepad"></i> Jeux
-      </button>
-      <button class="tab-btn" data-tab="more" onclick="switchTab('more')">
-        <i class="fas fa-ellipsis-h"></i> Plus
-      </button>
-    </nav>
-
-    <!-- Main Content Area -->
-    <main class="content-area">
       
-      <!-- 🏠 DASHBOARD TAB -->
-      <section id="dashboard" class="tab-content active">
-        
-        <!-- Balance Cards -->
-        <div class="balance-grid">
-          <div class="balance-card primary">
-            <div class="balance-header">
-              <span class="balance-label">Portfolio Total</span>
-              <button class="eye-btn" onclick="toggleBalanceVisibility()">
-                <i class="fas fa-eye" id="eyeIcon"></i>
-              </button>
-            </div>
-            <div class="balance-amount" id="totalBalance">$0.00</div>
-            <div class="balance-change">
-              <span class="change-value positive">+2.45%</span>
-              <span class="change-period">24h</span>
-            </div>
-          </div>
-          
-          <div class="balance-card">
-            <div class="token-row">
-              <div class="token-info">
-                <div class="token-icon fta">FTA</div>
-                <div>
-                  <div class="token-name">Fitia Token</div>
-                  <div class="token-balance" id="ftaBalance">0.00 FTA</div>
-                </div>
-              </div>
-              <div class="token-value" id="ftaValue">$0.00</div>
-            </div>
-          </div>
-          
-          <div class="balance-card">
-            <div class="token-row">
-              <div class="token-info">
-                <div class="token-icon usdt">USDT</div>
-                <div>
-                  <div class="token-name">Tether USD</div>
-                  <div class="token-balance" id="usdtBalance">0.00 USDT</div>
-                </div>
-              </div>
-              <div class="token-value" id="usdtValue">$0.00</div>
-            </div>
-          </div>
+      <div class="price-ticker">
+        <div>
+          <div style="font-size: 12px; color: #8b8b9f;">FTA/USDT</div>
+          <div class="price" id="ftaPrice">$1.25</div>
         </div>
-
-        <!-- Quick Actions -->
-        <div class="quick-actions">
-          <button class="action-btn" onclick="openModal('deposit')">
-            <i class="fas fa-arrow-down"></i> Dépôt
-          </button>
-          <button class="action-btn" onclick="openModal('withdraw')">
-            <i class="fas fa-arrow-up"></i> Retrait
-          </button>
-          <button class="action-btn" onclick="openModal('swap')">
-            <i class="fas fa-exchange-alt"></i> Échanger
-          </button>
-          <button class="action-btn" onclick="openModal('transfer')">
-            <i class="fas fa-paper-plane"></i> Envoyer
-          </button>
-        </div>
-
-        <!-- Market Overview -->
-        <div class="section-card">
-          <div class="section-header">
-            <h3><i class="fas fa-chart-pie"></i> Marché</h3>
-            <a href="#" onclick="switchTab('trade')">Voir tout</a>
-          </div>
-          <div class="market-list">
-            <div class="market-item" onclick="selectTradingPair('FTA/USDT')">
-              <div class="market-pair">FTA/USDT</div>
-              <div class="market-price" id="marketFtaPrice">$1.25</div>
-              <div class="market-change positive">+3.2%</div>
-            </div>
-            <div class="market-item" onclick="selectTradingPair('BTC/USDT')">
-              <div class="market-pair">BTC/USDT</div>
-              <div class="market-price" id="marketBtcPrice">$67,432</div>
-              <div class="market-change positive">+1.8%</div>
-            </div>
-            <div class="market-item" onclick="selectTradingPair('ETH/USDT')">
-              <div class="market-pair">ETH/USDT</div>
-              <div class="market-price" id="marketEthPrice">$3,521</div>
-              <div class="market-change negative">-0.5%</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Mining Stats -->
-        <div class="section-card">
-          <div class="section-header">
-            <h3><i class="fas fa-tachometer-alt"></i> Mining Stats</h3>
-          </div>
-          <div class="mining-stats">
-            <div class="stat-item">
-              <span class="stat-label">Machines Actives</span>
-              <span class="stat-value" id="activeMachines">0</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">Hashpower Total</span>
-              <span class="stat-value" id="totalHashpower">0 H/s</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">Récompenses Claimables</span>
-              <span class="stat-value claimable" id="claimableRewards">0 FTA</span>
-            </div>
-            <button class="claim-btn" onclick="claimAllRewards()">
-              <i class="fas fa-gift"></i> Claim All
-            </button>
-          </div>
-        </div>
-
-      </section>
-
-      <!-- 📈 TRADE TAB -->
-      <section id="trade" class="tab-content">
-        
-        <!-- Trading Chart -->
-        <div class="chart-container">
-          <div class="chart-header">
-            <div class="chart-pair">
-              <span class="pair-name" id="currentPair">FTA/USDT</span>
-              <select class="timeframe-select" id="timeframe" onchange="changeTimeframe()">
-                <option value="1m">1m</option>
-                <option value="5m">5m</option>
-                <option value="15m" selected>15m</option>
-                <option value="1h">1h</option>
-                <option value="4h">4h</option>
-                <option value="1d">1J</option>
-              </select>
-            </div>
-            <div class="chart-price">
-              <span class="price-value" id="chartPrice">$1.2500</span>
-              <span class="price-change positive" id="chartChange">+3.24%</span>
-            </div>
-          </div>
-          <div id="tradingChart" class="trading-chart"></div>
-          <div class="chart-tools">
-            <button class="tool-btn active" data-tool="candle"><i class="fas fa-chart-bar"></i></button>
-            <button class="tool-btn" data-tool="line"><i class="fas fa-chart-line"></i></button>
-            <button class="tool-btn" data-tool="depth"><i class="fas fa-layer-group"></i></button>
-            <div class="chart-indicators">
-              <button class="indicator-btn">MA</button>
-              <button class="indicator-btn">EMA</button>
-              <button class="indicator-btn">RSI</button>
-              <button class="indicator-btn">MACD</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Order Panel -->
-        <div class="order-panel">
-          <div class="order-tabs">
-            <button class="order-tab active" data-side="buy" onclick="setOrderSide('buy')">Buy</button>
-            <button class="order-tab" data-side="sell" onclick="setOrderSide('sell')">Sell</button>
-            <button class="order-tab" data-type="spot" onclick="setOrderType('spot')">Spot</button>
-            <button class="order-tab" data-type="futures" onclick="setOrderType('futures')">Futures</button>
-          </div>
-          
-          <div class="order-form">
-            <div class="form-group">
-              <label>Type d'ordre</label>
-              <select id="orderType" onchange="updateOrderForm()">
-                <option value="limit">Limit</option>
-                <option value="market">Market</option>
-                <option value="stoplimit">Stop-Limit</option>
-              </select>
-            </div>
-            
-            <div class="form-group" id="priceGroup">
-              <label>Prix (USDT)</label>
-              <input type="number" id="orderPrice" step="0.0001" placeholder="0.0000">
-            </div>
-            
-            <div class="form-group">
-              <label>Quantité (FTA)</label>
-              <input type="number" id="orderAmount" step="0.01" placeholder="0.00">
-              <div class="amount-shortcuts">
-                <button type="button" onclick="setAmountPercent(25)">25%</button>
-                <button type="button" onclick="setAmountPercent(50)">50%</button>
-                <button type="button" onclick="setAmountPercent(75)">75%</button>
-                <button type="button" onclick="setAmountPercent(100)">Max</button>
-              </div>
-            </div>
-            
-            <div class="form-group">
-              <label>Leverage <span class="leverage-value" id="leverageValue">10x</span></label>
-              <input type="range" id="leverageSlider" min="1" max="50" value="10" oninput="updateLeverage()">
-              <div class="leverage-labels">
-                <span>1x</span><span>10x</span><span>25x</span><span>50x</span>
-              </div>
-            </div>
-            
-            <div class="form-group" id="stopLossGroup">
-              <label>Stop Loss (optionnel)</label>
-              <input type="number" id="stopLoss" step="0.0001" placeholder="Prix de stop">
-            </div>
-            
-            <div class="form-group" id="takeProfitGroup">
-              <label>Take Profit (optionnel)</label>
-              <input type="number" id="takeProfit" step="0.0001" placeholder="Prix de target">
-            </div>
-            
-            <div class="order-summary">
-              <div class="summary-row">
-                <span>Total</span>
-                <span id="orderTotal">0.00 USDT</span>
-              </div>
-              <div class="summary-row">
-                <span>Frais (0.1%)</span>
-                <span id="orderFee">0.00 USDT</span>
-              </div>
-            </div>
-            
-            <button class="order-btn buy" id="orderButton" onclick="placeOrder()">
-              Acheter FTA
-            </button>
-          </div>
-        </div>
-
-        <!-- Positions & Order Book -->
-        <div class="trade-bottom">
-          <div class="positions-panel">
-            <h4>Positions Ouvertes</h4>
-            <div id="openPositions" class="positions-list">
-              <div class="empty-state">Aucune position ouverte</div>
-            </div>
-          </div>
-          
-          <div class="orderbook-panel">
-            <h4>Carnet d'ordres</h4>
-            <div class="orderbook">
-              <div class="orderbook-header">
-                <span>Prix</span><span>Quantité</span><span>Total</span>
-              </div>
-              <div class="orderbook-asks" id="orderbookAsks"></div>
-              <div class="orderbook-spread" id="spreadDisplay">Spread: 0.02%</div>
-              <div class="orderbook-bids" id="orderbookBids"></div>
-            </div>
-          </div>
-        </div>
-
-      </section>
-
-      <!-- ⛏️ MINING TAB -->
-      <section id="mining" class="tab-content">
-        
-        <!-- Mining Dashboard -->
-        <div class="mining-dashboard">
-          <div class="mining-header">
-            <h3><i class="fas fa-hard-hat"></i> Centre de Mining</h3>
-            <div class="mining-stats-mini">
-              <span>Cap: <strong id="miningCap">10M FTA</strong></span>
-              <span>Mined: <strong id="totalMined">0 FTA</strong></span>
-            </div>
-          </div>
-
-          <!-- Machine Selection -->
-          <div class="section-card">
-            <h4><i class="fas fa-server"></i> Acheter une Machine</h4>
-            <div class="machine-grid" id="machineTypes">
-              <!-- Dynamically populated -->
-              <div class="machine-card" onclick="selectMachine(0)">
-                <div class="machine-icon">🔹</div>
-                <h5>Starter Miner</h5>
-                <div class="machine-specs">
-                  <span>Hashpower: 10 H/s</span>
-                  <span>Prix: <strong>12.50 USDT</strong></span>
-                </div>
-                <button class="buy-btn">Acheter</button>
-              </div>
-              <div class="machine-card" onclick="selectMachine(1)">
-                <div class="machine-icon">🔷</div>
-                <h5>Pro Miner</h5>
-                <div class="machine-specs">
-                  <span>Hashpower: 50 H/s</span>
-                  <span>Prix: <strong>55.00 USDT</strong></span>
-                </div>
-                <button class="buy-btn">Acheter</button>
-              </div>
-              <div class="machine-card" onclick="selectMachine(2)">
-                <div class="machine-icon">🔶</div>
-                <h5>Ultra Miner</h5>
-                <div class="machine-specs">
-                  <span>Hashpower: 200 H/s</span>
-                  <span>Prix: <strong>195.00 USDT</strong></span>
-                </div>
-                <button class="buy-btn">Acheter</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- My Machines -->
-          <div class="section-card">
-            <h4><i class="fas fa-list"></i> Mes Machines</h4>
-            <div id="myMachines" class="machines-list">
-              <div class="empty-state">Aucune machine achetée</div>
-            </div>
-          </div>
-
-          <!-- Battery Management -->
-          <div class="section-card">
-            <h4><i class="fas fa-battery-three-quarters"></i> Batteries</h4>
-            <div class="battery-options">
-              <button class="battery-btn" onclick="buyBattery(0)">
-                <span>🔋 24h</span>
-                <strong>2.50 USDT</strong>
-              </button>
-              <button class="battery-btn" onclick="buyBattery(1)">
-                <span>🔋🔋 7j</span>
-                <strong>15.00 USDT</strong>
-              </button>
-              <button class="battery-btn featured" onclick="buyBattery(2)">
-                <span>🔋🔋🔋 30j</span>
-                <strong>50.00 USDT</strong>
-                <span class="badge-save">-15%</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Claim Rewards -->
-          <div class="claim-section">
-            <div class="claim-info">
-              <span>Récompenses disponibles</span>
-              <strong id="pendingMiningRewards">0.00 FTA</strong>
-            </div>
-            <button class="claim-large-btn" onclick="claimMiningRewards()">
-              <i class="fas fa-coins"></i> Claim Rewards
-            </button>
-          </div>
-        </div>
-
-      </section>
-
-      <!-- 🎮 GAMES TAB -->
-      <section id="games" class="tab-content">
-        
-        <!-- Aviator Game -->
-        <div class="game-container">
-          <div class="game-header">
-            <h3><i class="fas fa-plane"></i> Aviator</h3>
-            <div class="game-stats">
-              <span>House Edge: <strong>2%</strong></span>
-              <span>Max Win: <strong>100x</strong></span>
-            </div>
-          </div>
-          
-          <div class="aviator-display">
-            <div class="flight-area">
-              <div class="flight-path">
-                <svg viewBox="0 0 400 200" id="flightSvg">
-                  <path id="flightCurve" class="flight-curve" d="M 0 180 Q 100 180 150 100 T 300 20"/>
-                  <circle id="plane" class="plane" cx="0" cy="180" r="8"/>
-                  <text id="multiplier" class="multiplier-text" x="200" y="100">1.00x</text>
-                </svg>
-              </div>
-              <div class="crash-indicator hidden" id="crashIndicator">
-                <span class="crash-text">CRASHED @ <span id="crashValue">2.34x</span></span>
-              </div>
-            </div>
-            
-            <div class="bet-controls">
-              <div class="bet-input-group">
-                <label>Mise (FTA)</label>
-                <div class="bet-input-wrapper">
-                  <button onclick="adjustBet(-10)">-</button>
-                  <input type="number" id="aviatorBet" value="10" min="1" max="10000">
-                  <button onclick="adjustBet(10)">+</button>
-                </div>
-              </div>
-              
-              <div class="target-input-group">
-                <label>Target Multiplicateur</label>
-                <input type="number" id="aviatorTarget" value="2.00" min="1.01" step="0.01">
-              </div>
-              
-              <button class="aviator-btn bet" id="aviatorActionBtn" onclick="playAviator()">
-                <span class="btn-text">Placer la mise</span>
-                <span class="btn-loader hidden"></span>
-              </button>
-            </div>
-            
-            <div class="game-history">
-              <h5>Résultats récents</h5>
-              <div class="history-scroll" id="aviatorHistory">
-                <span class="history-item win">2.45x</span>
-                <span class="history-item lose">1.12x</span>
-                <span class="history-item win">5.67x</span>
-                <span class="history-item win">1.89x</span>
-                <span class="history-item lose">1.03x</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Other Games Placeholder -->
-        <div class="games-grid">
-          <div class="game-card coming-soon">
-            <i class="fas fa-dice"></i>
-            <h4>Dice Roll</h4>
-            <p>Bientôt disponible</p>
-          </div>
-          <div class="game-card coming-soon">
-            <i class="fas fa-coins"></i>
-            <h4>Coin Flip</h4>
-            <p>Bientôt disponible</p>
-          </div>
-          <div class="game-card coming-soon">
-            <i class="fas fa-slot-machine"></i>
-            <h4>Slots</h4>
-            <p>Bientôt disponible</p>
-          </div>
-        </div>
-
-      </section>
-
-      <!-- ⚙️ MORE TAB -->
-      <section id="more" class="tab-content">
-        
-        <!-- User Profile -->
-        <div class="profile-card">
-          <div class="profile-header">
-            <div class="profile-avatar" id="userAvatar">👤</div>
-            <div class="profile-info">
-              <h4 id="userName">Utilisateur</h4>
-              <div class="profile-level">
-                <span class="level-badge">Niveau <span id="userLevel">1</span></span>
-                <div class="xp-bar">
-                  <div class="xp-fill" id="xpFill" style="width: 0%"></div>
-                </div>
-                <span class="xp-text"><span id="userXp">0</span>/<span id="nextLevelXp">1000</span> XP</span>
-              </div>
-            </div>
-          </div>
-          <div class="profile-stats">
-            <div class="stat">
-              <span class="stat-num" id="totalVolume">0</span>
-              <span class="stat-label">Volume Total</span>
-            </div>
-            <div class="stat">
-              <span class="stat-num" id="referralCount">0</span>
-              <span class="stat-label">Parrainages</span>
-            </div>
-            <div class="stat">
-              <span class="stat-num" id="feeDiscount">0%</span>
-              <span class="stat-label">Réduction Frais</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Finance Modules -->
-        <div class="modules-grid">
-          <div class="module-card" onclick="openModal('staking')">
-            <i class="fas fa-hand-holding-usd"></i>
-            <div>
-              <h5>Staking</h5>
-              <p>Gagnez des récompenses</p>
-            </div>
-          </div>
-          <div class="module-card" onclick="openModal('farming')">
-            <i class="fas fa-seedling"></i>
-            <div>
-              <h5>Yield Farming</h5>
-              <p>LP Rewards FTA/USDT</p>
-            </div>
-          </div>
-          <div class="module-card" onclick="openModal('lending')">
-            <i class="fas fa-handshake"></i>
-            <div>
-              <h5>Prêt / Emprunt</h5>
-              <p>Collatéralisez vos actifs</p>
-            </div>
-          </div>
-          <div class="module-card" onclick="openModal('insurance')">
-            <i class="fas fa-shield-alt"></i>
-            <div>
-              <h5>Assurance</h5>
-              <p>Protégez vos positions</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Referral System -->
-        <div class="section-card">
-          <h4><i class="fas fa-users"></i> Programme de Parrainage</h4>
-          <div class="referral-box">
-            <label>Votre lien de parrainage</label>
-            <div class="referral-input">
-              <input type="text" id="referralLink" readonly value="https://fitia.pro/?ref=0x...">
-              <button onclick="copyReferralLink()"><i class="fas fa-copy"></i></button>
-            </div>
-            <div class="referral-rewards">
-              <div class="reward-item">
-                <span>🎁 Parrain</span>
-                <strong>10% des frais</strong>
-              </div>
-              <div class="reward-item">
-                <span>🎁 Filleul</span>
-                <strong>5% de réduction</strong>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Settings -->
-        <div class="section-card">
-          <h4><i class="fas fa-cog"></i> Paramètres</h4>
-          <div class="settings-list">
-            <div class="setting-item">
-              <span>Devise d'affichage</span>
-              <select id="currencySelect">
-                <option value="USD">USD $</option>
-                <option value="EUR">EUR €</option>
-              </select>
-            </div>
-            <div class="setting-item">
-              <span>Notifications</span>
-              <label class="toggle">
-                <input type="checkbox" checked>
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-            <div class="setting-item">
-              <span>Mode Sombre</span>
-              <label class="toggle">
-                <input type="checkbox" id="darkModeToggle">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-            <button class="setting-btn danger" onclick="disconnectWallet()">
-              <i class="fas fa-sign-out-alt"></i> Déconnecter
-            </button>
-          </div>
-        </div>
-
-      </section>
-
-    </main>
-
-    <!-- Bottom Navigation (Mobile) -->
-    <nav class="bottom-nav">
-      <button class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
-        <i class="fas fa-home"></i>
-        <span>Accueil</span>
-      </button>
-      <button class="nav-item" data-tab="trade" onclick="switchTab('trade')">
-        <i class="fas fa-chart-line"></i>
-        <span>Trade</span>
-      </button>
-      <button class="nav-item center-btn" onclick="openQuickTrade()">
-        <i class="fas fa-plus"></i>
-      </button>
-      <button class="nav-item" data-tab="mining" onclick="switchTab('mining')">
-        <i class="fas fa-microchip"></i>
-        <span>Mining</span>
-      </button>
-      <button class="nav-item" data-tab="more" onclick="switchTab('more')">
-        <i class="fas fa-bars"></i>
-        <span>Menu</span>
-      </button>
-    </nav>
-
-  </div>
-
-  <!-- 🔔 Modals -->
-  <div id="modalOverlay" class="modal-overlay hidden">
-    <!-- Deposit Modal -->
-    <div id="depositModal" class="modal hidden">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3><i class="fas fa-arrow-down"></i> Déposer des fonds</h3>
-          <button class="close-modal" onclick="closeModal('deposit')"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-          <div class="token-select">
-            <label>Sélectionner un token</label>
-            <select id="depositToken">
-              <option value="usdt">USDT (ERC20)</option>
-              <option value="fta">FTA</option>
-              <option value="matic">MATIC</option>
-            </select>
-          </div>
-          <div class="amount-input">
-            <label>Montant</label>
-            <input type="number" id="depositAmount" placeholder="0.00" step="0.01">
-            <button class="max-btn" onclick="setMaxDeposit()">MAX</button>
-          </div>
-          <div class="deposit-address">
-            <label>Adresse de dépôt</label>
-            <div class="address-box">
-              <code id="depositAddress">0x1234...5678</code>
-              <button onclick="copyAddress()"><i class="fas fa-copy"></i></button>
-            </div>
-            <small>Envoyez uniquement <span id="depositTokenLabel">USDT</span> sur cette adresse</small>
-          </div>
-          <button class="modal-btn primary" onclick="confirmDeposit()">Confirmer le dépôt</button>
-        </div>
+        <div class="change">+3.2%</div>
       </div>
     </div>
 
-    <!-- Add more modals similarly: withdraw, swap, staking, farming, etc. -->
+    <!-- Balance -->
+    <div class="balance-card">
+      <div class="balance-label">Portfolio Total</div>
+      <div class="balance-amount" id="totalBalance">$0.00</div>
+      <div class="balance-change">+2.45% (24h)</div>
+    </div>
+
+    <div class="token-row">
+      <div class="token-info">
+        <div class="token-icon fta">FTA</div>
+        <div>
+          <div style="font-weight: 500;">Fitia Token</div>
+          <div style="font-size: 12px; color: #8b8b9f;" id="ftaBalance">0.00 FTA</div>
+        </div>
+      </div>
+      <div style="font-family: monospace;" id="ftaValue">$0.00</div>
+    </div>
+
+    <div class="token-row">
+      <div class="token-info">
+        <div class="token-icon usdt">USDT</div>
+        <div>
+          <div style="font-weight: 500;">Tether USD</div>
+          <div style="font-size: 12px; color: #8b8b9f;" id="usdtBalance">0.00 USDT</div>
+        </div>
+      </div>
+      <div style="font-family: monospace;" id="usdtValue">$0.00</div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <button class="action-btn">
+        <span>⬇️</span>
+        <span style="font-size: 12px;">Dépôt</span>
+      </button>
+      <button class="action-btn">
+        <span>⬆️</span>
+        <span style="font-size: 12px;">Retrait</span>
+      </button>
+      <button class="action-btn">
+        <span>🔄</span>
+        <span style="font-size: 12px;">Échanger</span>
+      </button>
+      <button class="action-btn">
+        <span>✈️</span>
+        <span style="font-size: 12px;">Envoyer</span>
+      </button>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-tabs">
+      <button class="nav-tab active">🏠 Accueil</button>
+      <button class="nav-tab">📈 Trade</button>
+      <button class="nav-tab">⛏️ Mining</button>
+      <button class="nav-tab">🎮 Jeux</button>
+    </div>
+
+    <!-- Wallet Address -->
+    <div style="text-align: center; padding: 15px; background: rgba(247, 181, 0, 0.1); border-radius: 12px; margin-top: 20px;">
+      <div style="font-size: 12px; color: #8b8b9f; margin-bottom: 5px;">Connecté</div>
+      <div style="font-family: monospace; color: #F7B500;" id="walletAddress">0x...</div>
+      <button onclick="disconnectWallet()" style="margin-top: 10px; padding: 8px 16px; background: rgba(255, 23, 68, 0.2); border: 1px solid #FF1744; color: #FF1744; border-radius: 8px; cursor: pointer; font-size: 12px;">
+        Déconnecter
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Global state
+    let provider, signer, userAddress;
     
-  </div>
-
-  <!-- Toast Notifications -->
-  <div id="toastContainer" class="toast-container"></div>
-
-  <!-- Loading Overlay -->
-  <div id="loadingOverlay" class="loading-overlay hidden">
-    <div class="spinner"></div>
-    <p>Chargement...</p>
-  </div>
-
-  <!-- Scripts -->
-  <script src="js/utils.js"></script>
-  <script src="js/abi/FitiaEcosystemHub.json"></script>
-  <script src="js/chart.js"></script>
-  <script src="js/app.js"></script>
-  
+    // Check if already connected
+    window.addEventListener('load', async () => {
+      if (window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          if (accounts.length > 0) {
+            await connectExistingWallet();
+          }
+        } catch (error) {
+          console.error('Error:', error);
+        }
+      }
+    });
+    
+    async function connectWallet(type) {
+      try {
+        if (type === 'metamask') {
+          if (!window.ethereum) {
+            window.open('https://metamask.io/download', '_blank');
+            throw new Error('MetaMask non installé');
+          }
+          
+          const accounts = await window.ethereum.request({ 
+            method: 'eth_requestAccounts' 
+          });
+          
+          provider = new ethers.providers.Web3Provider(window.ethereum);
+          signer = provider.getSigner();
+          userAddress = accounts[0];
+          
+        } else if (type === 'bitget') {
+          const bitget = window.bitkeep?.ethereum || window.bitget?.ethereum;
+          if (!bitget) {
+            window.open('https://web3.bitget.com', '_blank');
+            throw new Error('Bitget Wallet non installé');
+          }
+          
+          const accounts = await bitget.request({ 
+            method: 'eth_requestAccounts' 
+          });
+          
+          provider = new ethers.providers.Web3Provider(bitget);
+          signer = provider.getSigner();
+          userAddress = accounts[0];
+        }
+        
+        // Switch to Polygon
+        await switchToPolygon();
+        
+        // Update UI
+        closeModal();
+        updateUI();
+        showToast('success', 'Connecté!', userAddress.slice(0, 6) + '...' + userAddress.slice(-4));
+        
+      } catch (error) {
+        console.error('Connection error:', error);
+        showToast('error', 'Erreur', error.message);
+      }
+    }
+    
+    async function switchToPolygon() {
+      const chainId = '0x89'; // 137
+      
+      try {
+        await window.ethereum?.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId }],
+        });
+      } catch (error) {
+        if (error.code === 4902) {
+          await window.ethereum?.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId,
+              chainName: 'Polygon Mainnet',
+              nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+              rpcUrls: ['https://polygon-rpc.com'],
+              blockExplorerUrls: ['https://polygonscan.com'],
+            }],
+          });
+        }
+      }
+    }
+    
+    async function connectExistingWallet() {
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      signer = provider.getSigner();
+      userAddress = (await provider.listAccounts())[0];
+      updateUI();
+    }
+    
+    function updateUI() {
+      document.getElementById('connectModal').classList.add('hidden');
+      document.getElementById('mainApp').style.display = 'block';
+      document.getElementById('walletAddress').textContent = userAddress;
+      
+      // Simulate balances (replace with real contract calls)
+      document.getElementById('ftaBalance').textContent = '125.50 FTA';
+      document.getElementById('usdtBalance').textContent = '500.00 USDT';
+      document.getElementById('ftaValue').textContent = '$156.88';
+      document.getElementById('usdtValue').textContent = '$500.00';
+      document.getElementById('totalBalance').textContent = '$656.88';
+    }
+    
+    function disconnectWallet() {
+      provider = null;
+      signer = null;
+      userAddress = null;
+      document.getElementById('connectModal').classList.remove('hidden');
+      document.getElementById('mainApp').style.display = 'none';
+      showToast('info', 'Déconnecté', 'Wallet déconnecté');
+    }
+    
+    function closeModal() {
+      document.getElementById('connectModal').classList.add('hidden');
+    }
+    
+    function showToast(type, title, message) {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<strong>${title}</strong><br><small>${message}</small>`;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => toast.remove(), 3000);
+    }
+    
+    // Listen for account changes
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', (accounts) => {
+        if (accounts.length === 0) {
+          disconnectWallet();
+        } else {
+          userAddress = accounts[0];
+          updateUI();
+        }
+      });
+      
+      window.ethereum.on('chainChanged', () => {
+        window.location.reload();
+      });
+    }
+  </script>
 </body>
 </html>
