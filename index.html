@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FitiaPRO - Mining & Trading</title>
   
-  <!-- MetaMask et Web3 -->
-  <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+  <!-- Ethers.js - Version stable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
   
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
       color: #fff;
       min-height: 100vh;
@@ -438,6 +438,14 @@
     // Global state
     let provider, signer, userAddress;
     
+    // Vérifier si ethers.js est chargé
+    if (typeof ethers === 'undefined') {
+      console.error('❌ ethers.js n\'est pas chargé!');
+      alert('Erreur: Bibliothèque ethers.js non chargée. Vérifiez votre connexion Internet.');
+    } else {
+      console.log('✅ ethers.js chargé avec succès');
+    }
+    
     // Check if already connected
     window.addEventListener('load', async () => {
       if (window.ethereum) {
@@ -454,6 +462,11 @@
     
     async function connectWallet(type) {
       try {
+        // Vérifier ethers.js
+        if (typeof ethers === 'undefined') {
+          throw new Error('ethers.js n\'est pas chargé. Rechargez la page.');
+        }
+        
         if (type === 'metamask') {
           if (!window.ethereum) {
             window.open('https://metamask.io/download', '_blank');
@@ -523,6 +536,11 @@
     }
     
     async function connectExistingWallet() {
+      if (typeof ethers === 'undefined') {
+        console.error('ethers not loaded');
+        return;
+      }
+      
       provider = new ethers.providers.Web3Provider(window.ethereum);
       signer = provider.getSigner();
       userAddress = (await provider.listAccounts())[0];
