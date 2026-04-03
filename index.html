@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#0c0e12">
     <title>FITIA PRO MINER</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
@@ -14,28 +14,157 @@
     <div class="bg-glow"></div>
     <div id="toast-container"></div>
 
+    <!-- ══════════ WALLET AUTH SCREEN ══════════ -->
+    <div id="wallet-auth" class="wallet-auth">
+        <div class="auth-bg-glow"></div>
+
+        <!-- Welcome -->
+        <div id="step-welcome" class="auth-step active">
+            <div class="auth-brand">
+                <div class="auth-logo">⚡</div>
+                <div class="auth-title">FITIA <span>PRO</span></div>
+                <div class="auth-subtitle">Sovereign Vault Wallet</div>
+            </div>
+            <div class="auth-network"><span class="net-dot"></span> Polygon Network</div>
+            <div class="auth-actions">
+                <button class="auth-btn-primary" onclick="App.beginCreate()">
+                    <span class="auth-btn-icon">⚡</span> Créer un nouveau wallet
+                </button>
+                <button class="auth-btn-secondary" onclick="App.showStep('step-import')">
+                    <span class="auth-btn-icon">📥</span> Importer un wallet
+                </button>
+            </div>
+        </div>
+
+        <!-- Mnemonic -->
+        <div id="step-mnemonic" class="auth-step">
+            <button class="auth-back" onclick="App.showStep('step-welcome')">← Retour</button>
+            <h2 class="auth-heading">Phrase de récupération</h2>
+            <p class="auth-warn">Sauvegardez ces 12 mots en lieu sûr. Ils sont la seule façon de récupérer votre wallet.</p>
+            <div id="mnemonic-grid" class="mnemonic-grid"></div>
+            <button class="auth-btn-copy" onclick="App.copyMnemonic()">📋 Copier la phrase</button>
+            <label class="auth-check-label">
+                <input type="checkbox" id="mnemonic-saved-check" onchange="document.getElementById('btn-after-mnemonic').disabled=!this.checked">
+                <span>J'ai sauvegardé ma phrase de récupération</span>
+            </label>
+            <button id="btn-after-mnemonic" class="auth-btn-primary" onclick="App.showStep('step-password')" disabled>Continuer</button>
+        </div>
+
+        <!-- Set Password (create) -->
+        <div id="step-password" class="auth-step">
+            <button class="auth-back" onclick="App.showStep('step-mnemonic')">← Retour</button>
+            <h2 class="auth-heading">Protéger votre wallet</h2>
+            <p class="auth-desc">Définissez un mot de passe pour chiffrer votre wallet localement.</p>
+            <input type="password" id="create-pwd" class="auth-input" placeholder="Mot de passe (min. 6 caractères)">
+            <input type="password" id="create-pwd-confirm" class="auth-input" placeholder="Confirmer le mot de passe">
+            <button class="auth-btn-primary" onclick="App.finishCreate()">Créer le wallet</button>
+        </div>
+
+        <!-- Import -->
+        <div id="step-import" class="auth-step">
+            <button class="auth-back" onclick="App.showStep('step-welcome')">← Retour</button>
+            <h2 class="auth-heading">Importer un wallet</h2>
+            <div class="import-tabs">
+                <button class="import-tab active" id="tab-key" onclick="App.setImportMode('key')">Clé privée</button>
+                <button class="import-tab" id="tab-mnemonic" onclick="App.setImportMode('mnemonic')">Phrase 12 mots</button>
+            </div>
+            <div id="import-key-area">
+                <input type="text" id="import-key" class="auth-input" placeholder="Collez votre clé privée (0x...)">
+            </div>
+            <div id="import-mnemonic-area" style="display:none">
+                <textarea id="import-mnemonic" class="auth-textarea" placeholder="Collez votre phrase de 12 mots séparées par des espaces"></textarea>
+            </div>
+            <input type="password" id="import-pwd" class="auth-input" placeholder="Mot de passe (min. 6 caractères)">
+            <input type="password" id="import-pwd-confirm" class="auth-input" placeholder="Confirmer le mot de passe">
+            <button class="auth-btn-primary" onclick="App.doImport()">Importer</button>
+        </div>
+
+        <!-- Unlock -->
+        <div id="step-unlock" class="auth-step">
+            <div class="auth-brand-sm">
+                <div class="auth-logo-sm">⚡</div>
+                <div class="auth-title-sm">FITIA PRO</div>
+            </div>
+            <div class="unlock-address" id="unlock-addr-display">0x...</div>
+            <p class="unlock-label">Entrez votre mot de passe pour déverrouiller</p>
+            <input type="password" id="unlock-pwd" class="auth-input" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')App.unlockWallet()">
+            <button class="auth-btn-primary" onclick="App.unlockWallet()">Déverrouiller</button>
+            <button class="auth-btn-danger" onclick="App.deleteWallet()">Supprimer ce wallet</button>
+        </div>
+    </div>
+
+    <!-- ══════════ WALLET PANEL (bottom sheet) ══════════ -->
+    <div id="wallet-panel" class="wallet-panel hidden">
+        <div class="panel-overlay" onclick="App.hideWalletPanel()"></div>
+        <div class="panel-content">
+            <div class="panel-handle"></div>
+            <div class="panel-addr-row">
+                <div class="panel-addr-icon">⚡</div>
+                <div class="panel-addr-text">
+                    <div class="panel-addr-label">Adresse du Wallet</div>
+                    <div class="panel-addr-value" id="panel-full-addr">0x...</div>
+                </div>
+                <button class="panel-copy-btn" onclick="App.copyAddress()">📋</button>
+            </div>
+            <div class="panel-balances">
+                <div class="panel-bal-item">
+                    <span class="panel-bal-label">MATIC <small>(gas)</small></span>
+                    <span class="panel-bal-value" id="panel-matic-bal">0.00</span>
+                </div>
+                <div class="panel-bal-item">
+                    <span class="panel-bal-label">USDT</span>
+                    <span class="panel-bal-value" id="panel-usdt-bal">0.00</span>
+                </div>
+                <div class="panel-bal-item">
+                    <span class="panel-bal-label">FTA</span>
+                    <span class="panel-bal-value" id="panel-fta-bal">0.00</span>
+                </div>
+            </div>
+            <div class="panel-actions">
+                <a href="https://faucet.polygon.technology/" target="_blank" class="panel-action-btn">
+                    <span>💧</span> Obtenir du MATIC
+                </a>
+                <button class="panel-action-btn" onclick="App.showExportModal()">
+                    <span>🔑</span> Exporter la clé privée
+                </button>
+                <button class="panel-action-btn danger" onclick="App.logout()">
+                    <span>🚪</span> Déconnexion
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════ EXPORT KEY MODAL ══════════ -->
+    <div id="export-modal" class="export-modal hidden">
+        <div class="export-content">
+            <h3 class="export-heading">Exporter la clé privée</h3>
+            <p class="export-warn">⚠️ Ne partagez jamais votre clé privée avec personne.</p>
+            <input type="password" id="export-pwd" class="auth-input" placeholder="Confirmez votre mot de passe">
+            <button class="auth-btn-primary" onclick="App.doExportKey()">Afficher la clé</button>
+            <div id="export-key-result" class="export-key-result hidden">
+                <code id="export-key-value"></code>
+                <button class="auth-btn-copy" onclick="App.copyExportedKey()">📋 Copier la clé</button>
+            </div>
+            <button class="auth-btn-secondary" onclick="App.hideExportModal()" style="margin-top:12px">Annuler</button>
+        </div>
+    </div>
+
+    <!-- ══════════ MAIN APP ══════════ -->
     <div class="app-shell">
-       
-        <!-- HEADER -->
         <header>
             <div class="brand">
                 <div class="logo-icon">⚡</div>
                 <div class="brand-text">FITIA <span class="pro-badge">PRO</span></div>
             </div>
-            <button id="btn-connect" class="btn-connect" onclick="App.connect()">Connecter</button>
-            <div id="wallet-status" class="wallet-status hidden">
+            <div id="wallet-status" class="wallet-status hidden" onclick="App.showWalletPanel()" style="cursor:pointer">
                 <span id="addr-display">0x...</span>
                 <span class="status-dot"></span>
             </div>
         </header>
 
-        <!-- MAIN CONTENT -->
         <main id="main-view">
-           
             <!-- DASHBOARD -->
             <div id="view-dashboard" class="view active">
-               
-                <!-- PARRAINAGE -->
                 <div class="card referral-card">
                     <h3>👥 Système de Parrainage</h3>
                     <p class="small-text">Gagnez des commissions sur 3 niveaux.</p>
@@ -72,9 +201,7 @@
                     RÉCLAMER
                 </button>
 
-                <!-- BALANCES CARD -->
                 <div class="card balances-card">
-                    <!-- USDT -->
                     <div class="row-between" style="align-items: center;">
                         <span style="display:flex; align-items:center; gap:8px;">
                             <img src="https://i.ibb.co/BRGx1GN/IMG-20260228-134642-512-x-512-pixel.webp" class="token-logo" alt="USDT">
@@ -82,7 +209,6 @@
                         </span>
                         <span class="balance" id="bal-usdt">0.00</span>
                     </div>
-                    <!-- FTA -->
                     <div class="row-between" style="margin-top:12px; align-items: center;">
                         <span style="display:flex; align-items:center; gap:8px;">
                             <img id="logo-fta-bal" src="https://i.ibb.co/vvz2DDK5/20260207-190817.webp" class="token-logo" alt="FTA">
@@ -117,18 +243,14 @@
             <!-- GAMES -->
             <div id="view-games" class="view">
                 <h2 class="view-title">🎮 Game Center</h2>
-                
                 <div class="game-tabs">
                     <button class="game-tab active" onclick="App.showGame('wingo')">Win Go</button>
                     <button class="game-tab" onclick="App.showGame('wheel')">Roue</button>
                     <button class="game-tab" onclick="App.showGame('fishing')">Pêche</button>
                     <button class="game-tab" onclick="App.showGame('lottery')">Loterie</button>
                 </div>
-
-                <!-- Win Go -->
                 <div id="game-wingo" class="game-area active">
                     <p class="game-info">Deviner le numéro (0-9) ou Grand/Petit.</p>
-                    
                     <div class="slot-machine">
                         <div class="slot-window">
                             <div class="slot-reel" id="slot-reel">
@@ -137,43 +259,32 @@
                         </div>
                     </div>
                     <div id="wingo-result" class="game-result-box hidden"></div>
-
                     <input type="number" id="wingo-bet" class="game-input" placeholder="Mise en FTA">
                     <div class="game-options">
                         <button onclick="App.playWinGo(1, 0)">Petit (0-4)</button>
                         <button onclick="App.playWinGo(1, 1)">Grand (5-9)</button>
                     </div>
                 </div>
-
-                <!-- Roue -->
                 <div id="game-wheel" class="game-area">
                     <p class="game-info">Tournez pour tenter de gagner le Jackpot !</p>
-                    
                     <div class="wheel-container">
                         <div class="wheel-pointer">▼</div>
                         <canvas id="wheel-canvas" width="300" height="300"></canvas>
                     </div>
                     <div id="wheel-result" class="game-result-box hidden"></div>
-                    
                     <div class="jackpot-display">Jackpot: <span id="wheel-jackpot">0</span> FTA</div>
                     <button class="btn-game" onclick="App.spinWheel()">Tourner (100 FTA)</button>
                 </div>
-
-                <!-- Pêche -->
                 <div id="game-fishing" class="game-area">
                     <p class="game-info">Lancez votre ligne pour attraper des gains.</p>
-                    
                     <div class="fishing-container">
                         <div class="fishing-line" id="fishing-line"></div>
                         <div class="fishing-hook" id="fishing-hook">🪝</div>
                     </div>
                     <div id="fishing-status" class="fishing-status">En attente...</div>
                     <div id="fish-result" class="game-result-box hidden"></div>
-                    
                     <button class="btn-game" onclick="App.goFishing()">Pêcher (50 FTA)</button>
                 </div>
-
-                <!-- Loterie -->
                 <div id="game-lottery" class="game-area">
                     <p class="game-info">Achetez un ticket pour participer au tirage.</p>
                     <div class="jackpot-display">Pot: <span id="lottery-pot">0</span> FTA</div>
@@ -202,16 +313,14 @@
                     </div>
                     <div class="input-wrap">
                         <input type="number" id="swap-to-in" placeholder="0.0" readonly>
-                        <div class="token-select" style="background:#333; cursor:default;" id="token-to-display">FTA</div>
+                        <div class="token-select" style="background:#282a2e; cursor:default;" id="token-to-display">FTA</div>
                     </div>
                     <div class="rate-info" id="swap-rate">Chargement...</div>
                     <button class="btn-primary" onclick="App.executeSwap()">ÉCHANGER</button>
                 </div>
             </div>
-
         </main>
 
-        <!-- NAVIGATION -->
         <nav class="bottom-nav">
             <button class="nav-item active" onclick="App.nav('dashboard')">
                 <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
@@ -234,7 +343,6 @@
                 <span>Swap</span>
             </button>
         </nav>
-
     </div>
 
     <div id="loader" class="loader hidden">

@@ -1,11 +1,12 @@
 const CONFIG = {
     MINING: "0xb7555D092b0B30D30552502f8a2674D48601b10F", // VOTRE ADRESSE CONTRAT
-    USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // Polygon USDT
+    USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
     FTA: "0x535bBe393D64a60E14B731b7350675792d501623", // VOTRE ADRESSE FTA
     CHAIN_ID: 137,
-    //logos
+    RPC_URL: "https://polygon-rpc.com",
     LOGO_USDT: "https://cryptologos.cc/logos/tether-usdt-logo.png",
-    LOGO_FTA: "https://i.ibb.co/vvz2DDK5/20260207-190817.webp"
+    LOGO_FTA: "https://i.ibb.co/vvz2DDK5/20260207-190817.webp",
+    WALLET_STORAGE_KEY: "fitia_pro_wallet_v1"
 };
 
 const MINING_ABI = [
@@ -39,36 +40,257 @@ const ERC20_ABI = [
 class Application {
     constructor() {
         this.provider = null; this.signer = null; this.contracts = {}; this.user = null;
+        this.wallet = null; this.tempWallet = null; this.mnemonicPhrase = "";
         this.currentRate = 0; this.payMode = 'USDT'; this.swapDirection = 'USDT_TO_FTA';
         this.ftaDecimals = 18; this.currentMultiplier = 1000000000000000000n;
-        this.currentRealPower = 0; this.pendingBalance = 0;    
-        this.miningTimer = null; this.storageKey = "fitia_last_claim_time_v2"; 
-        this.shopData = []; this.isLoadingShop = false; 
+        this.currentRealPower = 0; this.pendingBalance = 0;
+        this.miningTimer = null; this.dataInterval = null;
+        this.storageKey = "fitia_last_claim_time_v2";
+        this.shopData = []; this.isLoadingShop = false;
         this.vizContext = null; this.vizBars = [];
-        this.wheelAngle = 0;
-        this.wheelInterval = null;
-        this.isSpinning = false;
-        this.wheelCtx = null;
+        this.wheelAngle = 0; this.wheelInterval = null;
+        this.isSpinning = false; this.wheelCtx = null;
+        this.importMode = 'key';
     }
+
+    // ═══════════════════════════════════════
+    //  WALLET LIFECYCLE
+    // ═══════════════════════════════════════
 
     async init() {
-        if (window.ethereum) {
-            this.provider = new ethers.BrowserProvider(window.ethereum);
-            window.ethereum.on('accountsChanged', () => window.location.reload());
-            window.ethereum.on('chainChanged', () => window.location.reload());
-        } else { this.showToast("Installez MetaMask", true); }
+        const stored = localStorage.getItem(CONFIG.WALLET_STORAGE_KEY);
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                const addr = parsed.address;
+                document.getElementById('unlock-addr-display').innerText = addr.slice(0,8) + "..." + addr.slice(-6);
+                this.showStep('step-unlock');
+            } catch(e) {
+                localStorage.removeItem(CONFIG.WALLET_STORAGE_KEY);
+                this.showStep('step-welcome');
+            }
+        } else {
+            this.showStep('step-welcome');
+        }
     }
 
-    async connect() {
-        if (!window.ethereum) return;
-        this.setLoader(true, "Connexion...");
+    beginCreate() {
+        this.setLoader(true, "Génération du wallet...");
+        setTimeout(() => {
+            this.tempWallet = ethers.Wallet.createRandom();
+            this.mnemonicPhrase = this.tempWallet.mnemonic.phrase;
+            const words = this.mnemonicPhrase.split(' ');
+            const grid = document.getElementById('mnemonic-grid');
+            grid.innerHTML = '';
+            words.forEach((w, i) => {
+                const div = document.createElement('div');
+                div.className = 'mnemonic-word';
+                div.innerHTML = `<span class="word-num">${String(i+1).padStart(2,'0')}</span><span class="word-text">${w}</span>`;
+                grid.appendChild(div);
+            });
+            document.getElementById('mnemonic-saved-check').checked = false;
+            document.getElementById('btn-after-mnemonic').disabled = true;
+            this.setLoader(false);
+            this.showStep('step-mnemonic');
+        }, 800);
+    }
+
+    async finishCreate() {
+        const pwd = document.getElementById('create-pwd').value;
+        const pwdC = document.getElementById('create-pwd-confirm').value;
+        if (pwd.length < 6) return this.showToast("Mot de passe trop court (min. 6)", true);
+        if (pwd !== pwdC) return this.showToast("Les mots de passe ne correspondent pas", true);
+
+        this.setLoader(true, "Chiffrement du wallet...");
         try {
-            await window.ethereum.request({ method: 'eth_requestAccounts' });
-            this.signer = await this.provider.getSigner();
-            this.user = await this.signer.getAddress();
+            const encrypted = await this.tempWallet.encrypt(pwd);
+            localStorage.setItem(CONFIG.WALLET_STORAGE_KEY, encrypted);
+            this.wallet = this.tempWallet;
+            this.tempWallet = null;
+            this.mnemonicPhrase = "";
+            await this._connect();
+        } catch(e) {
+            console.error(e);
+            this.showToast("Erreur lors du chiffrement", true);
+        }
+        this.setLoader(false);
+    }
+
+    setImportMode(mode) {
+        this.importMode = mode;
+        document.getElementById('tab-key').classList.toggle('active', mode === 'key');
+        document.getElementById('tab-mnemonic').classList.toggle('active', mode === 'mnemonic');
+        document.getElementById('import-key-area').style.display = mode === 'key' ? 'block' : 'none';
+        document.getElementById('import-mnemonic-area').style.display = mode === 'mnemonic' ? 'block' : 'none';
+    }
+
+    async doImport() {
+        const pwd = document.getElementById('import-pwd').value;
+        const pwdC = document.getElementById('import-pwd-confirm').value;
+        if (pwd.length < 6) return this.showToast("Mot de passe trop court (min. 6)", true);
+        if (pwd !== pwdC) return this.showToast("Les mots de passe ne correspondent pas", true);
+
+        this.setLoader(true, "Import en cours...");
+        try {
+            let wallet;
+            if (this.importMode === 'key') {
+                const key = document.getElementById('import-key').value.trim();
+                if (!key || !key.startsWith('0x') || key.length < 64) return this.showToast("Clé privée invalide", true);
+                wallet = new ethers.Wallet(key);
+            } else {
+                const phrase = document.getElementById('import-mnemonic').value.trim();
+                if (!phrase || phrase.split(' ').length < 12) return this.showToast("Phrase mnémonique invalide (12 mots requis)", true);
+                wallet = ethers.Wallet.fromPhrase(phrase);
+            }
+            const encrypted = await wallet.encrypt(pwd);
+            localStorage.setItem(CONFIG.WALLET_STORAGE_KEY, encrypted);
+            this.wallet = wallet;
+            await this._connect();
+        } catch(e) {
+            console.error(e);
+            this.showToast("Import échoué. Vérifiez vos informations.", true);
+        }
+        this.setLoader(false);
+    }
+
+    async unlockWallet() {
+        const pwd = document.getElementById('unlock-pwd').value;
+        if (!pwd) return this.showToast("Entrez votre mot de passe", true);
+
+        this.setLoader(true, "Déverrouillage...");
+        try {
+            const encrypted = localStorage.getItem(CONFIG.WALLET_STORAGE_KEY);
+            const wallet = await ethers.Wallet.fromEncryptedJson(encrypted, pwd);
+            this.wallet = wallet;
+            await this._connect();
+        } catch(e) {
+            this.showToast("Mot de passe incorrect", true);
+        }
+        this.setLoader(false);
+    }
+
+    logout() {
+        this.wallet = null; this.user = null; this.contracts = {};
+        this.stopMiningCounter();
+        if (this.dataInterval) { clearInterval(this.dataInterval); this.dataInterval = null; }
+        document.getElementById('wallet-status').classList.add('hidden');
+        document.getElementById('wallet-auth').classList.remove('hidden');
+        this.hideWalletPanel();
+        this.showStep('step-unlock');
+        this.pendingBalance = 0;
+        document.getElementById('val-pending').innerText = '0.00000';
+        document.getElementById('val-power').innerText = '0.00000';
+        document.getElementById('viz-status').innerText = 'EN ATTENTE';
+        document.getElementById('viz-status').style.color = 'var(--surface-highest)';
+        document.getElementById('unlock-pwd').value = '';
+    }
+
+    deleteWallet() {
+        if (confirm("Êtes-vous sûr ? Cette action est irréversible si vous n'avez pas sauvegardé votre phrase.")) {
+            localStorage.removeItem(CONFIG.WALLET_STORAGE_KEY);
+            this.logout();
+            this.showStep('step-welcome');
+            this.showToast("Wallet supprimé");
+        }
+    }
+
+    // ═══════════════════════════════════════
+    //  AUTH UI HELPERS
+    // ═══════════════════════════════════════
+
+    showStep(stepId) {
+        document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
+        document.getElementById(stepId).classList.add('active');
+    }
+
+    copyMnemonic() {
+        if (!this.mnemonicPhrase) return;
+        navigator.clipboard.writeText(this.mnemonicPhrase);
+        this.showToast("Phrase copiée !");
+    }
+
+    // ═══════════════════════════════════════
+    //  WALLET PANEL
+    // ═══════════════════════════════════════
+
+    showWalletPanel() {
+        if (!this.wallet) return;
+        document.getElementById('panel-full-addr').innerText = this.wallet.address;
+        document.getElementById('wallet-panel').classList.remove('hidden');
+        this._updatePanelBalances();
+    }
+
+    hideWalletPanel() {
+        document.getElementById('wallet-panel').classList.add('hidden');
+        document.getElementById('export-modal').classList.add('hidden');
+        document.getElementById('export-key-result').classList.add('hidden');
+        document.getElementById('export-pwd').value = '';
+    }
+
+    copyAddress() {
+        if (!this.wallet) return;
+        navigator.clipboard.writeText(this.wallet.address);
+        this.showToast("Adresse copiée !");
+    }
+
+    async _updatePanelBalances() {
+        if (!this.provider || !this.wallet) return;
+        try {
+            const matic = await this.provider.getBalance(this.wallet.address);
+            document.getElementById('panel-matic-bal').innerText = parseFloat(ethers.formatUnits(matic, 18)).toFixed(4);
+            const usdt = await this.contracts.usdt?.balanceOf(this.wallet.address);
+            document.getElementById('panel-usdt-bal').innerText = usdt ? parseFloat(ethers.formatUnits(usdt, 6)).toFixed(2) : '0.00';
+            const fta = await this.contracts.fta?.balanceOf(this.wallet.address);
+            document.getElementById('panel-fta-bal').innerText = fta ? parseFloat(ethers.formatUnits(fta, this.ftaDecimals)).toFixed(2) : '0.00';
+        } catch(e) {}
+    }
+
+    showExportModal() {
+        this.hideWalletPanel();
+        document.getElementById('export-modal').classList.remove('hidden');
+        document.getElementById('export-key-result').classList.add('hidden');
+        document.getElementById('export-pwd').value = '';
+    }
+
+    hideExportModal() {
+        document.getElementById('export-modal').classList.add('hidden');
+    }
+
+    async doExportKey() {
+        const pwd = document.getElementById('export-pwd').value;
+        if (!pwd) return this.showToast("Entrez votre mot de passe", true);
+        try {
+            const encrypted = localStorage.getItem(CONFIG.WALLET_STORAGE_KEY);
+            const wallet = await ethers.Wallet.fromEncryptedJson(encrypted, pwd);
+            document.getElementById('export-key-value').innerText = wallet.privateKey;
+            document.getElementById('export-key-result').classList.remove('hidden');
+        } catch(e) {
+            this.showToast("Mot de passe incorrect", true);
+        }
+    }
+
+    copyExportedKey() {
+        const key = document.getElementById('export-key-value').innerText;
+        navigator.clipboard.writeText(key);
+        this.showToast("Clé copiée !");
+    }
+
+    // ═══════════════════════════════════════
+    //  BLOCKCHAIN CONNECTION & DATA
+    // ═══════════════════════════════════════
+
+    async _connect() {
+        try {
+            this.provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
+            this.signer = this.wallet.connect(this.provider);
+            this.user = this.wallet.address;
 
             const network = await this.provider.getNetwork();
-            if (Number(network.chainId) !== CONFIG.CHAIN_ID) await this.switchNetwork();
+            if (Number(network.chainId) !== CONFIG.CHAIN_ID) {
+                this.showToast("Erreur réseau : Polygon requis", true);
+                this.logout();
+                return;
+            }
 
             this.contracts.usdt = new ethers.Contract(CONFIG.USDT, ERC20_ABI, this.signer);
             this.contracts.fta = new ethers.Contract(CONFIG.FTA, ERC20_ABI, this.signer);
@@ -76,9 +298,10 @@ class Application {
 
             try { this.ftaDecimals = await this.contracts.fta.decimals(); } catch(e) { this.ftaDecimals = 18; }
 
-            document.getElementById('btn-connect').classList.add('hidden');
+            // Cacher l'écran d'auth, afficher le header
+            document.getElementById('wallet-auth').classList.add('hidden');
             document.getElementById('wallet-status').classList.remove('hidden');
-            document.getElementById('addr-display').innerText = this.user.slice(0,6) + "..." + this.user.slice(38);
+            document.getElementById('addr-display').innerText = this.user.slice(0,6) + "..." + this.user.slice(-4);
 
             this.checkReferral();
             document.getElementById('ref-link').value = window.location.origin + "?ref=" + this.user;
@@ -86,27 +309,25 @@ class Application {
             const ftaLogoEl = document.getElementById('logo-fta-bal');
             if(ftaLogoEl) ftaLogoEl.src = CONFIG.LOGO_FTA;
 
-            if (!localStorage.getItem(this.storageKey)) { localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000)); }
+            if (!localStorage.getItem(this.storageKey)) { 
+                localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000)); 
+            }
 
             await this.updateData();
-            setInterval(() => this.updateData(), 5000);
+            if (this.dataInterval) clearInterval(this.dataInterval);
+            this.dataInterval = setInterval(() => this.updateData(), 5000);
+            
             this.initVisualizer();
             window.addEventListener('resize', () => this.resizeCanvas());
             this.initWheel();
 
-        } catch (e) { this.showToast("Erreur connexion", true); console.error(e); }
-        this.setLoader(false);
-    }
-
-    async switchNetwork() {
-        try { await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] });
-        } catch (e) {
-             if (e.code === 4902) {
-                await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: '0x89', chainName: 'Polygon', nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 }, rpcUrls: ['https://polygon-rpc.com/'], blockExplorerUrls: ['https://polygonscan.com/'] }] });
-            }
+            this.showToast("Wallet connecté avec succès !");
+        } catch (e) { 
+            console.error(e); 
+            this.showToast("Erreur de connexion RPC", true); 
         }
     }
-    
+
     resizeCanvas() {
         if(this.vizContext) {
             const canvas = this.vizContext.canvas;
@@ -134,7 +355,7 @@ class Application {
                 if (!this.miningTimer) this.startMiningCounter();
             } else {
                 this.stopMiningCounter();
-                document.getElementById('viz-status').innerText = "AUCUNE MACHINE"; document.getElementById('viz-status').style.color = "#666";
+                document.getElementById('viz-status').innerText = "AUCUNE MACHINE"; document.getElementById('viz-status').style.color = "var(--surface-highest)";
                 this.pendingBalance = 0; document.getElementById('val-pending').innerText = "0.00000";
             }
 
@@ -175,7 +396,12 @@ class Application {
             }
         }, 1000);
     }
+
     stopMiningCounter() { if (this.miningTimer) { clearInterval(this.miningTimer); this.miningTimer = null; } }
+
+    // ═══════════════════════════════════════
+    //  PARRAINAGE
+    // ═══════════════════════════════════════
 
     checkReferral() {
         const params = new URLSearchParams(window.location.search);
@@ -195,10 +421,7 @@ class Application {
             await tx.wait();
             this.showToast("Parrain lié avec succès !");
             document.getElementById('bind-ref-area').style.display = 'none';
-        } catch(e) { 
-            // Affiche l'erreur exacte du contrat (ex: "Cannot refer yourself")
-            this.showError(e); 
-        }
+        } catch(e) { this.showError(e); }
         this.setLoader(false);
     }
 
@@ -208,6 +431,10 @@ class Application {
         navigator.clipboard.writeText(val);
         this.showToast("Lien copié !");
     }
+
+    // ═══════════════════════════════════════
+    //  SHOP
+    // ═══════════════════════════════════════
 
     setPayMode(mode) {
         this.payMode = mode;
@@ -240,7 +467,6 @@ class Application {
                 const powerBN = BigInt(data.power.toString());
                 const effectivePowerBN = (powerBN * this.currentMultiplier) / 1000000000000000000n;
                 const power = parseFloat(ethers.formatUnits(effectivePowerBN, 8)); 
-
                 this.shopData.push({ price: priceUsdt, power: power, priceFta: priceFta });
             }
             this._renderShopHTML(container);
@@ -269,7 +495,7 @@ class Application {
     }
 
     async buyMachine(id) {
-        if (!this.user) return this.connect();
+        if (!this.user) return this.showToast("Wallet non connecté", true);
         this.setLoader(true, "Transaction...");
         try {
             const m = await this.contracts.mining.machineTypes(id);
@@ -293,18 +519,24 @@ class Application {
         this.setLoader(false);
     }
 
+    // ═══════════════════════════════════════
+    //  SWAP
+    // ═══════════════════════════════════════
+
     toggleSwap() {
         this.swapDirection = this.swapDirection === 'USDT_TO_FTA' ? 'FTA_TO_USDT' : 'USDT_TO_FTA';
         document.getElementById('token-from-display').innerText = this.swapDirection === 'USDT_TO_FTA' ? 'USDT' : 'FTA';
         document.getElementById('token-to-display').innerText = this.swapDirection === 'USDT_TO_FTA' ? 'FTA' : 'USDT';
         this.updateData();
     }
+
     calcSwap() {
         const val = document.getElementById('swap-from-in').value;
         if (!val) return document.getElementById('swap-to-in').value = '';
         const res = this.swapDirection === 'USDT_TO_FTA' ? val * this.currentRate : val / this.currentRate;
         document.getElementById('swap-to-in').value = res.toFixed(5);
     }
+
     async executeSwap() {
         const val = document.getElementById('swap-from-in').value;
         if (!val || val <= 0) return this.showToast("Montant invalide", true);
@@ -325,6 +557,10 @@ class Application {
         this.setLoader(false);
     }
 
+    // ═══════════════════════════════════════
+    //  MINING CLAIM
+    // ═══════════════════════════════════════
+
     async claim() {
         if (!this.user) return;
         this.stopMiningCounter();
@@ -339,6 +575,10 @@ class Application {
         } catch(e) { this.showError(e); this.startMiningCounter(); }
         this.setLoader(false);
     }
+
+    // ═══════════════════════════════════════
+    //  GAMES
+    // ═══════════════════════════════════════
 
     showGame(id) {
         document.querySelectorAll('.game-area').forEach(el => el.classList.remove('active'));
@@ -394,7 +634,7 @@ class Application {
         const ctx = this.wheelCtx;
         if(!ctx) return;
         const seg = ["10x", "2x", "5x", "1x", "50x", "0x", "3x", "WIN"];
-        const colors = ["#F0B90B", "#3b82f6", "#f59e0b", "#8b5cf6", "#ef4444", "#1e293b", "#ec4899", "#F0B90B"];
+        const colors = ["#f0b90b", "#b1e4ff", "#ffd87f", "#56ceff", "#ffb4ab", "#282a2e", "#c4c7ca", "#f0b90b"];
         
         ctx.clearRect(0, 0, 300, 300);
         ctx.save();
@@ -411,11 +651,11 @@ class Application {
             ctx.fillStyle = colors[i];
             ctx.fill();
             ctx.save(); ctx.translate(150, 150); ctx.rotate(i * step + step / 2);
-            ctx.textAlign = "right"; ctx.fillStyle = "#fff"; ctx.font = "bold 14px sans-serif";
-            ctx.fillText(seg[i], 110, 5);
+            ctx.textAlign = "right"; ctx.fillStyle = "#111417"; ctx.font = "bold 14px 'Space Grotesk', sans-serif";
+            ctx.fillText(seg[i], 115, 5);
             ctx.restore();
         }
-        ctx.beginPath(); ctx.arc(150, 150, 20, 0, 2 * Math.PI); ctx.fillStyle = "#000"; ctx.fill();
+        ctx.beginPath(); ctx.arc(150, 150, 20, 0, 2 * Math.PI); ctx.fillStyle = "#0c0e12"; ctx.fill();
         ctx.restore();
     }
 
@@ -494,6 +734,10 @@ class Application {
         this.setLoader(false);
     }
 
+    // ═══════════════════════════════════════
+    //  NAVIGATION & UI
+    // ═══════════════════════════════════════
+
     nav(viewId) {
         document.querySelectorAll('.view').forEach(el => { el.classList.remove('active'); el.style.display = 'none'; });
         const activeView = document.getElementById('view-' + viewId);
@@ -530,7 +774,11 @@ class Application {
             noRigs.style.display = found ? 'none' : 'block';
         } catch(e) { console.error("Erreur chargement machines", e); }
     }
-    
+
+    // ═══════════════════════════════════════
+    //  VISUALIZER
+    // ═══════════════════════════════════════
+
     initVisualizer() {
         const canvas = document.getElementById('mining-canvas');
         if (!canvas) return;
@@ -540,15 +788,17 @@ class Application {
         for(let i=0; i<20; i++) this.vizBars.push({ height: 0, targetHeight: 0 });
         this.animateVisualizer();
     }
+
     updateVisualizerIntensity(p) {
         let intensity = p > 0 ? Math.min((p * 500) + 10, 100) : 0;
         this.vizBars.forEach(bar => bar.targetHeight = (this.vizContext.canvas.height * (intensity/100)) * Math.random());
     }
+
     animateVisualizer() {
         if(!this.vizContext) return;
         const ctx = this.vizContext;
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        ctx.fillStyle = "#F0B90B";
+        ctx.fillStyle = "#f0b90b";
         const w = ctx.canvas.width / 20;
         this.vizBars.forEach((bar, i) => {
             bar.height += (bar.targetHeight - bar.height) * 0.1;
@@ -557,6 +807,10 @@ class Application {
         });
         requestAnimationFrame(() => this.animateVisualizer());
     }
+
+    // ═══════════════════════════════════════
+    //  UTILS
+    // ═══════════════════════════════════════
 
     setLoader(show, msg="Chargement...") {
         const l = document.getElementById('loader');
