@@ -66,7 +66,6 @@ class Application {
         this.treasuryBalances = { POL: '0.00', USDT: '0.00', FTA: '0.00' };
     }
 
-    // Utilitaire pour détruire un provider sans crash
     _safeDestroy(p) {
         if (p && typeof p.destroy === 'function') {
             try { p.destroy(); } catch(e) {}
@@ -124,7 +123,7 @@ class Application {
         if (pwd !== pwdC) return this.showToast("Les mots de passe ne correspondent pas", true);
         this.setLoader(true, "Chiffrement...");
         try {
-            if (!window.crypto || !window.crypto.subtle) throw new Error("Contexte non sécurisé.");
+            if (!window.crypto || !window.crypto.subtle) throw new Error("Contexte non sécurisé. Ouvrez via HTTPS ou localhost.");
             const encrypted = await this.tempWallet.encrypt(pwd);
             localStorage.setItem(CONFIG.WALLET_STORAGE_KEY, encrypted);
             this.wallet = this.tempWallet;
@@ -133,7 +132,8 @@ class Application {
             await this._connect();
         } catch(e) {
             console.error(e);
-            this.showToast("Ouvrez via HTTPS ou localhost.", true);
+            let msg = e.message || "Erreur inconnue";
+            this.showToast(msg, true);
         }
         this.setLoader(false);
     }
@@ -153,7 +153,7 @@ class Application {
         if (pwd !== pwdC) return this.showToast("Les mots de passe ne correspondent pas", true);
         this.setLoader(true, "Import...");
         try {
-            if (!window.crypto || !window.crypto.subtle) throw new Error("Contexte non sécurisé.");
+            if (!window.crypto || !window.crypto.subtle) throw new Error("Contexte non sécurisé. Ouvrez via HTTPS ou localhost.");
             let wallet;
             if (this.importMode === 'key') {
                 const key = document.getElementById('import-key').value.trim();
@@ -170,7 +170,8 @@ class Application {
             await this._connect();
         } catch(e) {
             console.error(e);
-            this.showToast("Ouvrez via HTTPS ou localhost.", true);
+            let msg = e.message || "Erreur inconnue";
+            this.showToast(msg, true);
         }
         this.setLoader(false);
     }
@@ -228,10 +229,6 @@ class Application {
         this.showToast("Phrase copiée !");
     }
 
-    // ═════════════════════════════════
-    //  WALLET PANEL
-    // ═════════════════════════════════
-
     showWalletPanel() {
         if (!this.wallet) return;
         document.getElementById('panel-full-addr').innerText = this.wallet.address;
@@ -251,10 +248,6 @@ class Application {
         navigator.clipboard.writeText(this.wallet.address);
         this.showToast("Adresse copiée !");
     }
-
-    // ═════════════════════════════════
-    //  TREASURY (DÉPÔT / RETRAIT)
-    // ═════════════════════════════════
 
     showTreasury() {
         this.hideWalletPanel();
@@ -343,21 +336,11 @@ class Application {
                 this.showToast("POL envoyé avec succès !");
             } else if (this.treasuryToken === 'USDT') {
                 const amount = ethers.parseUnits(amountStr, 6);
-                const allow = await this.contracts.usdt.allowance(this.user, toAddr);
-                if (allow < amount) {
-                    this.setLoader(true, "Approbation USDT...");
-                    await (await this.contracts.usdt.approve(toAddr, amount)).wait();
-                }
                 const tx = await this.contracts.usdt.transfer(toAddr, amount);
                 await tx.wait();
                 this.showToast("USDT envoyé avec succès !");
             } else if (this.treasuryToken === 'FTA') {
                 const amount = ethers.parseUnits(amountStr, this.ftaDecimals);
-                const allow = await this.contracts.fta.allowance(this.user, toAddr);
-                if (allow < amount) {
-                    this.setLoader(true, "Approbation FTA...");
-                    await (await this.contracts.fta.approve(toAddr, amount)).wait();
-                }
                 const tx = await this.contracts.fta.transfer(toAddr, amount);
                 await tx.wait();
                 this.showToast("FTA envoyé avec succès !");
@@ -396,10 +379,10 @@ class Application {
     }
 
     // ═════════════════════════════════
-    //  RPC MAINNET
+    //  RPC MAINNET — CORRIGÉ
     // ═════════════════════════════════
 
-    async _tryConnect() {
+    async _tryConnect(url) {
         const isWss = url.startsWith("wss://") || url.startsWith("ws://");
         let tempProvider;
         try {
@@ -459,16 +442,17 @@ class Application {
 
         this.setLoader(false);
         const customUrl = prompt(
-            "⚠️ Aucun RPC Polygon accessible.\n\n" +
+            "Aucun RPC Polygon accessible.\n\n" +
             "SOLUTION : Lancez un serveur local :\n" +
-            "• VS Code : Extension 'Live Server' → 'Go Live'\n" +
-            "• Terminal : npx serve .\n" +
-            "• Terminal : python -m http.server 8000\n\n" +
+            "- VS Code : Extension 'Live Server' puis 'Go Live'\n" +
+            "- Terminal : npx serve .\n" +
+            "- Terminal : python -m http.server 8000\n\n" +
             "Ou collez ici un RPC Polygon :",
             ""
         );
         if (!customUrl || (!customUrl.startsWith("http") && !customUrl.startsWith("wss"))) {
-            this.showToast("RPC requis pour continuer.", true); return;
+            this.showToast("RPC requis pour continuer.", true);
+            return;
         }
         this.setLoader(true, "Test RPC...");
         if ((await this._tryConnect(customUrl.trim())).success) {
@@ -494,7 +478,7 @@ class Application {
             document.getElementById('addr-display').innerText = this.user.slice(0,6) + "..." + this.user.slice(-4);
 
             this.checkReferral();
-            document.getElementById('ref-link').value = window.location.origin + "?ref=" + this.user;
+            document.getElementById('ref-link').value = window.location.origin + window.location.pathname + "?ref=" + this.user;
             const ftaLogoEl = document.getElementById('logo-fta-bal');
             if(ftaLogoEl) ftaLogoEl.src = CONFIG.LOGO_FTA;
 
@@ -511,7 +495,7 @@ class Application {
         } catch(e) {
             console.error(e);
             this.setLoader(false);
-            this.showToast("Erreur finalisation.", true);
+            this.showToast("Erreur finalisation : " + (e.message || "inconnue"), true);
         }
     }
 
@@ -696,6 +680,8 @@ class Application {
         this.swapDirection = this.swapDirection === 'USDT_TO_FTA' ? 'FTA_TO_USDT' : 'USDT_TO_FTA';
         document.getElementById('token-from-display').innerText = this.swapDirection === 'USDT_TO_FTA' ? 'USDT' : 'FTA';
         document.getElementById('token-to-display').innerText = this.swapDirection === 'USDT_TO_FTA' ? 'FTA' : 'USDT';
+        document.getElementById('swap-from-in').value = '';
+        document.getElementById('swap-to-in').value = '';
         this.updateData();
     }
 
@@ -721,6 +707,7 @@ class Application {
             await tx.wait();
             this.showToast("Échange réussi !");
             document.getElementById('swap-from-in').value = '';
+            document.getElementById('swap-to-in').value = '';
             this.updateData();
         } catch(e) { this.showError(e); }
         this.setLoader(false);

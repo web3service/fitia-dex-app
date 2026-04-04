@@ -6,8 +6,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0c0e12">
     <title>FITIA PRO MINER</title>
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(() => {});
+        }
+    </script>
 </head>
 <body>
 
@@ -264,7 +270,7 @@
                 <div class="card balances-card">
                     <div class="row-between" style="align-items: center;">
                         <span style="display:flex; align-items:center; gap:8px;">
-                            <span class="token-icon-inline pol-icon">💎</span>
+                            <img src="https://i.ibb.co/NdCLLsck/IMG-20260302-131520-512-x-512-pixel.webp" class="token-logo" alt="POL">
                             POL
                         </span>
                         <span class="balance" id="bal-pol">0.00</span>
