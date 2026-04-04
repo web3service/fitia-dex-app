@@ -18,14 +18,13 @@
     <div id="wallet-auth" class="wallet-auth">
         <div class="auth-bg-glow"></div>
 
-        <!-- Welcome -->
         <div id="step-welcome" class="auth-step active">
             <div class="auth-brand">
                 <div class="auth-logo">⚡</div>
                 <div class="auth-title">FITIA <span>PRO</span></div>
                 <div class="auth-subtitle">Sovereign Vault Wallet</div>
             </div>
-            <div class="auth-network"><span class="net-dot"></span> Polygon Network</div>
+            <div class="auth-network"><span class="net-dot"></span> Polygon Mainnet</div>
             <div class="auth-actions">
                 <button class="auth-btn-primary" onclick="App.beginCreate()">
                     <span class="auth-btn-icon">⚡</span> Créer un nouveau wallet
@@ -36,7 +35,6 @@
             </div>
         </div>
 
-        <!-- Mnemonic -->
         <div id="step-mnemonic" class="auth-step">
             <button class="auth-back" onclick="App.showStep('step-welcome')">← Retour</button>
             <h2 class="auth-heading">Phrase de récupération</h2>
@@ -50,7 +48,6 @@
             <button id="btn-after-mnemonic" class="auth-btn-primary" onclick="App.showStep('step-password')" disabled>Continuer</button>
         </div>
 
-        <!-- Set Password (create) -->
         <div id="step-password" class="auth-step">
             <button class="auth-back" onclick="App.showStep('step-mnemonic')">← Retour</button>
             <h2 class="auth-heading">Protéger votre wallet</h2>
@@ -60,7 +57,6 @@
             <button class="auth-btn-primary" onclick="App.finishCreate()">Créer le wallet</button>
         </div>
 
-        <!-- Import -->
         <div id="step-import" class="auth-step">
             <button class="auth-back" onclick="App.showStep('step-welcome')">← Retour</button>
             <h2 class="auth-heading">Importer un wallet</h2>
@@ -79,7 +75,6 @@
             <button class="auth-btn-primary" onclick="App.doImport()">Importer</button>
         </div>
 
-        <!-- Unlock -->
         <div id="step-unlock" class="auth-step">
             <div class="auth-brand-sm">
                 <div class="auth-logo-sm">⚡</div>
@@ -93,7 +88,7 @@
         </div>
     </div>
 
-    <!-- ══════════ WALLET PANEL (bottom sheet) ══════════ -->
+    <!-- ══════════ WALLET PANEL ══════════ -->
     <div id="wallet-panel" class="wallet-panel hidden">
         <div class="panel-overlay" onclick="App.hideWalletPanel()"></div>
         <div class="panel-content">
@@ -108,8 +103,8 @@
             </div>
             <div class="panel-balances">
                 <div class="panel-bal-item">
-                    <span class="panel-bal-label">MATIC <small>(gas)</small></span>
-                    <span class="panel-bal-value" id="panel-matic-bal">0.00</span>
+                    <span class="panel-bal-label">POL</span>
+                    <span class="panel-bal-value" id="panel-pol-bal">0.00</span>
                 </div>
                 <div class="panel-bal-item">
                     <span class="panel-bal-label">USDT</span>
@@ -121,15 +116,79 @@
                 </div>
             </div>
             <div class="panel-actions">
-                <a href="https://faucet.polygon.technology/" target="_blank" class="panel-action-btn">
-                    <span>💧</span> Obtenir du MATIC
-                </a>
+                <button class="panel-action-btn highlight" onclick="App.showTreasury()">
+                    <span>💰</span> Dépôt / Retrait
+                </button>
                 <button class="panel-action-btn" onclick="App.showExportModal()">
                     <span>🔑</span> Exporter la clé privée
                 </button>
                 <button class="panel-action-btn danger" onclick="App.logout()">
                     <span>🚪</span> Déconnexion
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════ TREASURY MODAL ══════════ -->
+    <div id="treasury-modal" class="treasury-modal hidden">
+        <div class="treasury-content">
+            <div class="treasury-header">
+                <button class="auth-back" onclick="App.hideTreasury()" style="margin:0; padding:0; position:absolute; left:16px; top:16px;">←</button>
+                <h3 class="treasury-heading">💰 Trésorerie</h3>
+            </div>
+
+            <div class="treasury-tabs">
+                <button class="treasury-tab active" id="ttab-deposit" onclick="App.setTreasuryMode('deposit')">Dépôt</button>
+                <button class="treasury-tab" id="ttab-withdraw" onclick="App.setTreasuryMode('withdraw')">Retrait</button>
+            </div>
+
+            <div class="treasury-token-tabs">
+                <button class="ttoken-tab active" id="ttoken-pol" onclick="App.setTreasuryToken('POL')">POL</button>
+                <button class="ttoken-tab" id="ttoken-usdt" onclick="App.setTreasuryToken('USDT')">USDT</button>
+                <button class="ttoken-tab" id="ttoken-fta" onclick="App.setTreasuryToken('FTA')">FTA</button>
+            </div>
+
+            <!-- DEPOSIT VIEW -->
+            <div id="treasury-deposit" class="treasury-view active">
+                <div class="treasury-bal-display">
+                    <span class="treasury-bal-label" id="t-deposit-label">Solde POL</span>
+                    <span class="treasury-bal-val" id="t-deposit-bal">0.00</span>
+                </div>
+                <div class="deposit-address-box">
+                    <div class="deposit-addr-label">Adresse de réception</div>
+                    <div class="deposit-addr-row">
+                        <code id="t-deposit-addr" class="deposit-addr-code">0x...</code>
+                        <button class="panel-copy-btn" onclick="App.copyTreasuryAddr()">📋</button>
+                    </div>
+                    <p class="deposit-note">
+                        Envoyez des <span id="t-deposit-note-token">POL</span> à cette adresse depuis votre wallet externe (MetaMask, Trust Wallet, exchange, etc.).
+                    </p>
+                    <div class="deposit-warning">
+                        ⚠️ Envoyez uniquement du <span id="t-deposit-warn-token">POL</span> sur le réseau Polygon. Tout autre réseau ou token sera perdu.
+                    </div>
+                </div>
+            </div>
+
+            <!-- WITHDRAW VIEW -->
+            <div id="treasury-withdraw" class="treasury-view">
+                <div class="treasury-bal-display">
+                    <span class="treasury-bal-label" id="t-withdraw-label">Solde POL</span>
+                    <span class="treasury-bal-val" id="t-withdraw-bal">0.00</span>
+                </div>
+                <div class="withdraw-form">
+                    <div class="withdraw-field">
+                        <label>Montant à envoyer</label>
+                        <div class="withdraw-input-row">
+                            <input type="number" id="t-withdraw-amount" class="auth-input" placeholder="0.0" oninput="App.updateWithdrawMax()">
+                            <button class="withdraw-max-btn" onclick="App.setWithdrawMax()">MAX</button>
+                        </div>
+                    </div>
+                    <div class="withdraw-field">
+                        <label>Adresse de destination</label>
+                        <input type="text" id="t-withdraw-to" class="auth-input" placeholder="0x...">
+                    </div>
+                    <button class="auth-btn-primary" onclick="App.executeWithdraw()">ENVOYER</button>
+                </div>
             </div>
         </div>
     </div>
@@ -201,7 +260,15 @@
                     RÉCLAMER
                 </button>
 
+                <!-- BALANCES CARD -->
                 <div class="card balances-card">
+                    <div class="row-between" style="align-items: center;">
+                        <span style="display:flex; align-items:center; gap:8px;">
+                            <span class="token-icon-inline pol-icon">💎</span>
+                            POL
+                        </span>
+                        <span class="balance" id="bal-pol">0.00</span>
+                    </div>
                     <div class="row-between" style="align-items: center;">
                         <span style="display:flex; align-items:center; gap:8px;">
                             <img src="https://i.ibb.co/BRGx1GN/IMG-20260228-134642-512-x-512-pixel.webp" class="token-logo" alt="USDT">
@@ -209,7 +276,7 @@
                         </span>
                         <span class="balance" id="bal-usdt">0.00</span>
                     </div>
-                    <div class="row-between" style="margin-top:12px; align-items: center;">
+                    <div class="row-between" style="align-items: center;">
                         <span style="display:flex; align-items:center; gap:8px;">
                             <img id="logo-fta-bal" src="https://i.ibb.co/vvz2DDK5/20260207-190817.webp" class="token-logo" alt="FTA">
                             FTA
@@ -296,21 +363,13 @@
             <div id="view-swap" class="view">
                 <h2 class="view-title">💱 Échange</h2>
                 <div class="card swap-interface">
-                    <div class="swap-header">
-                        <span>Vous payez</span>
-                        <span>Solde: <span id="swap-bal-from">0</span></span>
-                    </div>
+                    <div class="swap-header"><span>Vous payez</span><span>Solde: <span id="swap-bal-from">0</span></span></div>
                     <div class="input-wrap">
                         <input type="number" id="swap-from-in" placeholder="0.0" oninput="App.calcSwap()">
                         <div class="token-select" onclick="App.toggleSwap()" id="token-from-display">USDT</div>
                     </div>
-                    <div class="swap-arrow-wrap">
-                        <div class="swap-arrow" onclick="App.toggleSwap()">⇅</div>
-                    </div>
-                    <div class="swap-header">
-                        <span>Vous recevez</span>
-                        <span>Solde: <span id="swap-bal-to">0</span></span>
-                    </div>
+                    <div class="swap-arrow-wrap"><div class="swap-arrow" onclick="App.toggleSwap()">⇅</div></div>
+                    <div class="swap-header"><span>Vous recevez</span><span>Solde: <span id="swap-bal-to">0</span></span></div>
                     <div class="input-wrap">
                         <input type="number" id="swap-to-in" placeholder="0.0" readonly>
                         <div class="token-select" style="background:#282a2e; cursor:default;" id="token-to-display">FTA</div>
@@ -335,7 +394,7 @@
                 <span>Mes Rigs</span>
             </button>
             <button class="nav-item" onclick="App.nav('games')">
-                <svg viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5z"/></svg>
                 <span>Jeux</span>
             </button>
             <button class="nav-item" onclick="App.nav('swap')">
