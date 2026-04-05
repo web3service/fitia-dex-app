@@ -1,7 +1,312 @@
+// ═══════════════════════════════════════
+//  TRANSLATIONS
+// ═══════════════════════════════════════
+const LANG = {
+    en: {
+        btn_back: '← Back',
+        heading_recovery: 'Recovery Phrase',
+        warn_recovery: 'Save these 12 words in a safe place. They are the only way to recover your wallet.',
+        btn_copy_phrase: '📋 Copy phrase',
+        check_saved: 'I have saved my recovery phrase',
+        btn_continue: 'Continue',
+        heading_protect: 'Protect your wallet',
+        desc_protect: 'Set a password to encrypt your wallet locally.',
+        btn_create_wallet: 'Create wallet',
+        heading_import: 'Import a wallet',
+        tab_private_key: 'Private Key',
+        tab_phrase: '12-word Phrase',
+        btn_import_submit: 'Import',
+        label_unlock: 'Enter your password to unlock',
+        btn_unlock: 'Unlock',
+        btn_delete_wallet: 'Delete this wallet',
+        label_wallet_addr: 'Wallet Address',
+        btn_treasury: 'Deposit / Withdraw',
+        btn_export_key: 'Export private key',
+        btn_logout: 'Logout',
+        heading_treasury: '💰 Treasury',
+        tab_deposit: 'Deposit',
+        tab_withdraw: 'Withdraw',
+        label_receiving_addr: 'Receiving address',
+        label_amount: 'Amount to send',
+        label_destination: 'Destination address',
+        btn_send: 'SEND',
+        heading_export: 'Export private key',
+        warn_export: '⚠️ Never share your private key with anyone.',
+        btn_show_key: 'Show key',
+        btn_copy_key: '📋 Copy key',
+        btn_cancel: 'Cancel',
+        heading_referral: '👥 Referral System',
+        desc_referral: 'Earn commissions on 3 levels.',
+        label_ref_detected: 'Referrer detected: ',
+        btn_bind_ref: 'BIND MY REFERRER',
+        label_power: 'POWER',
+        label_fta_sec: 'FTA / sec',
+        label_pending: 'PENDING',
+        btn_claim: 'CLAIM',
+        heading_shop: '⛏️ Shop',
+        heading_my_rigs: '⚙️ My Machines',
+        no_rigs_text: "You don't have any active machines yet.",
+        heading_games: '🎮 Game Center',
+        tab_wingo: 'Win Go',
+        tab_wheel: 'Wheel',
+        tab_fishing: 'Fishing',
+        tab_lottery: 'Lottery',
+        info_wingo: 'Guess the number (0-9) or Big/Small.',
+        btn_small: 'Small (0-4)',
+        btn_big: 'Big (5-9)',
+        info_wheel: 'Spin to try to win the Jackpot!',
+        label_jackpot: 'Jackpot:',
+        btn_spin: 'Spin (100 FTA)',
+        info_fishing: 'Cast your line to catch rewards.',
+        btn_fish: 'Fish (50 FTA)',
+        label_pot: 'Pot:',
+        info_lottery: 'Buy a ticket to participate in the draw.',
+        btn_lottery: 'Buy Ticket (50 FTA)',
+        heading_swap: '💱 Exchange',
+        label_you_pay: 'You pay',
+        label_balance: 'Balance:',
+        label_you_receive: 'You receive',
+        btn_swap: 'SWAP',
+        nav_home: 'Home',
+        nav_shop: 'Shop',
+        nav_rigs: 'My Rigs',
+        nav_games: 'Games',
+        nav_swap: 'Swap',
+        ph_password: 'Password (min. 6 characters)',
+        ph_confirm: 'Confirm password',
+        ph_private_key: 'Paste your private key (0x...)',
+        ph_phrase: 'Paste your 12 words separated by spaces',
+        ph_password_simple: 'Password',
+        ph_confirm_export: 'Confirm your password',
+        ph_bet_fta: 'Bet in FTA',
+        link_connect_first: 'Connect first...',
+        loader_generating: 'Generating...',
+        err_mnemonic: 'Mnemonic not generated.',
+        err_generation: 'Generation error.',
+        err_pwd_short: 'Password too short (min. 6)',
+        err_pwd_mismatch: 'Passwords do not match',
+        loader_encrypting: 'Encrypting...',
+        err_insecure: 'Insecure context. Open via HTTPS or localhost.',
+        loader_importing: 'Importing...',
+        err_invalid_key: 'Invalid private key',
+        err_invalid_phrase: 'Invalid phrase (12 words)',
+        err_enter_pwd: 'Enter your password',
+        loader_unlocking: 'Unlocking...',
+        err_wrong_pwd: 'Wrong password',
+        confirm_delete: 'Delete this wallet? Irreversible without your recovery phrase.',
+        toast_deleted: 'Wallet deleted',
+        toast_phrase_copied: 'Phrase copied!',
+        toast_addr_copied: 'Address copied!',
+        err_invalid_amount: 'Invalid amount',
+        err_invalid_addr: 'Invalid destination address',
+        loader_sending: 'Sending...',
+        toast_pol_sent: 'POL sent successfully!',
+        toast_usdt_sent: 'USDT sent successfully!',
+        toast_fta_sent: 'FTA sent successfully!',
+        toast_key_copied: 'Key copied!',
+        loader_connecting: 'Connecting to mainnet...',
+        loader_rpc_saved: 'Testing saved RPC...',
+        loader_wss: 'WSS {0}/{1}...',
+        loader_rpc: 'RPC {0}/{1}...',
+        prompt_rpc: 'No Polygon RPC accessible.\n\nSOLUTION: Run a local server:\n- VS Code: "Live Server" extension then "Go Live"\n- Terminal: npx serve .\n- Terminal: python -m http.server 8000\n\nOr paste a Polygon RPC here:',
+        err_rpc_required: 'RPC required to continue.',
+        loader_test_rpc: 'Testing RPC...',
+        err_rpc_no_response: 'This RPC is not responding.',
+        toast_connected: 'Connected to Polygon mainnet!',
+        err_finalization: 'Finalization error: ',
+        viz_mining: 'ACTIVE MINING',
+        viz_no_machine: 'NO MACHINE',
+        viz_waiting: 'WAITING',
+        rate_display: '1 USDT = {0} FTA',
+        loader_binding: 'Binding...',
+        toast_ref_bound: 'Referrer bound!',
+        err_connect_first: 'Connect first',
+        toast_link_copied: 'Link copied!',
+        rig_name: 'RIG {0}',
+        btn_buy: 'BUY',
+        err_not_connected: 'Wallet not connected',
+        loader_transaction: 'Transaction...',
+        toast_purchase: 'Purchase successful!',
+        loader_swapping: 'Swapping...',
+        toast_swap_success: 'Swap successful!',
+        loader_claiming: 'Claiming...',
+        toast_claimed: 'Rewards claimed!',
+        err_invalid_bet: 'Invalid bet',
+        result_number: 'Result: {0}',
+        toast_wheel_spun: 'Wheel spun!',
+        status_waiting: 'Waiting...',
+        status_casting: 'Casting...',
+        status_line_cast: 'Line cast...',
+        status_bite: 'It bites!',
+        toast_fish_success: 'Fishing successful!',
+        label_error: 'Error',
+        loader_ticket: 'Buying ticket...',
+        toast_ticket: 'Ticket purchased!',
+        err_self_ref: 'Cannot refer yourself.',
+        err_ref_set: 'Referrer already set.',
+        status_active: 'ACTIVE',
+        label_balance_token: 'Balance {0}',
+        label_available_token: 'Available {0}',
+        note_deposit: 'Send {0} to this address from your external wallet (MetaMask, Trust Wallet, exchange, etc.).',
+        warn_deposit: '⚠️ Only send {0} on the Polygon network. Any other network or token will be lost.'
+    },
+    fr: {
+        btn_back: '← Retour',
+        heading_recovery: 'Phrase de récupération',
+        warn_recovery: 'Sauvegardez ces 12 mots en lieu sûr. Ils sont la seule façon de récupérer votre wallet.',
+        btn_copy_phrase: '📋 Copier la phrase',
+        check_saved: "J'ai sauvegardé ma phrase de récupération",
+        btn_continue: 'Continuer',
+        heading_protect: 'Protéger votre wallet',
+        desc_protect: 'Définissez un mot de passe pour chiffrer votre wallet localement.',
+        btn_create_wallet: 'Créer le wallet',
+        heading_import: 'Importer un wallet',
+        tab_private_key: 'Clé privée',
+        tab_phrase: 'Phrase 12 mots',
+        btn_import_submit: 'Importer',
+        label_unlock: 'Entrez votre mot de passe pour déverrouiller',
+        btn_unlock: 'Déverrouiller',
+        btn_delete_wallet: 'Supprimer ce wallet',
+        label_wallet_addr: 'Adresse du Wallet',
+        btn_treasury: 'Dépôt / Retrait',
+        btn_export_key: 'Exporter la clé privée',
+        btn_logout: 'Déconnexion',
+        heading_treasury: '💰 Trésorerie',
+        tab_deposit: 'Dépôt',
+        tab_withdraw: 'Retrait',
+        label_receiving_addr: 'Adresse de réception',
+        label_amount: 'Montant à envoyer',
+        label_destination: 'Adresse de destination',
+        btn_send: 'ENVOYER',
+        heading_export: 'Exporter la clé privée',
+        warn_export: '⚠️ Ne partagez jamais votre clé privée avec personne.',
+        btn_show_key: 'Afficher la clé',
+        btn_copy_key: '📋 Copier la clé',
+        btn_cancel: 'Annuler',
+        heading_referral: '👥 Système de Parrainage',
+        desc_referral: 'Gagnez des commissions sur 3 niveaux.',
+        label_ref_detected: 'Parrain détecté : ',
+        btn_bind_ref: 'LIER MON PARRAIN',
+        label_power: 'PUISSANCE',
+        label_fta_sec: 'FTA / sec',
+        label_pending: 'EN ATTENTE',
+        btn_claim: 'RÉCLAMER',
+        heading_shop: '⛏️ Boutique',
+        heading_my_rigs: '⚙️ Mes Machines',
+        no_rigs_text: "Vous n'avez pas encore de machines actives.",
+        heading_games: '🎮 Game Center',
+        tab_wingo: 'Win Go',
+        tab_wheel: 'Roue',
+        tab_fishing: 'Pêche',
+        tab_lottery: 'Loterie',
+        info_wingo: 'Deviner le numéro (0-9) ou Grand/Petit.',
+        btn_small: 'Petit (0-4)',
+        btn_big: 'Grand (5-9)',
+        info_wheel: 'Tournez pour tenter de gagner le Jackpot !',
+        label_jackpot: 'Jackpot:',
+        btn_spin: 'Tourner (100 FTA)',
+        info_fishing: 'Lancez votre ligne pour attraper des gains.',
+        btn_fish: 'Pêcher (50 FTA)',
+        label_pot: 'Pot:',
+        info_lottery: 'Achetez un ticket pour participer au tirage.',
+        btn_lottery: 'Acheter Ticket (50 FTA)',
+        heading_swap: '💱 Échange',
+        label_you_pay: 'Vous payez',
+        label_balance: 'Solde:',
+        label_you_receive: 'Vous recevez',
+        btn_swap: 'ÉCHANGER',
+        nav_home: 'Home',
+        nav_shop: 'Shop',
+        nav_rigs: 'Mes Rigs',
+        nav_games: 'Jeux',
+        nav_swap: 'Swap',
+        ph_password: 'Mot de passe (min. 6 caractères)',
+        ph_confirm: 'Confirmer le mot de passe',
+        ph_private_key: 'Collez votre clé privée (0x...)',
+        ph_phrase: 'Collez votre phrase de 12 mots séparées par des espaces',
+        ph_password_simple: 'Mot de passe',
+        ph_confirm_export: 'Confirmez votre mot de passe',
+        ph_bet_fta: 'Mise en FTA',
+        link_connect_first: 'Connectez-vous...',
+        loader_generating: 'Génération...',
+        err_mnemonic: 'Mnemonic non généré.',
+        err_generation: 'Erreur de génération.',
+        err_pwd_short: 'Mot de passe trop court (min. 6)',
+        err_pwd_mismatch: 'Les mots de passe ne correspondent pas',
+        loader_encrypting: 'Chiffrement...',
+        err_insecure: 'Contexte non sécurisé. Ouvrez via HTTPS ou localhost.',
+        loader_importing: 'Import...',
+        err_invalid_key: 'Clé privée invalide',
+        err_invalid_phrase: 'Phrase invalide (12 mots)',
+        err_enter_pwd: 'Entrez votre mot de passe',
+        loader_unlocking: 'Déverrouillage...',
+        err_wrong_pwd: 'Mot de passe incorrect',
+        confirm_delete: 'Supprimer ce wallet ? Irréversible sans votre phrase de récupération.',
+        toast_deleted: 'Wallet supprimé',
+        toast_phrase_copied: 'Phrase copiée !',
+        toast_addr_copied: 'Adresse copiée !',
+        err_invalid_amount: 'Montant invalide',
+        err_invalid_addr: 'Adresse de destination invalide',
+        loader_sending: 'Envoi en cours...',
+        toast_pol_sent: 'POL envoyé avec succès !',
+        toast_usdt_sent: 'USDT envoyé avec succès !',
+        toast_fta_sent: 'FTA envoyé avec succès !',
+        toast_key_copied: 'Clé copiée !',
+        loader_connecting: 'Connexion mainnet...',
+        loader_rpc_saved: 'Test RPC sauvegardé...',
+        loader_wss: 'WSS {0}/{1}...',
+        loader_rpc: 'RPC {0}/{1}...',
+        prompt_rpc: "Aucun RPC Polygon accessible.\n\nSOLUTION : Lancez un serveur local :\n- VS Code : Extension 'Live Server' puis 'Go Live'\n- Terminal : npx serve .\n- Terminal : python -m http.server 8000\n\nOu collez ici un RPC Polygon :",
+        err_rpc_required: 'RPC requis pour continuer.',
+        loader_test_rpc: 'Test RPC...',
+        err_rpc_no_response: 'Ce RPC ne répond pas.',
+        toast_connected: 'Connecté au mainnet Polygon !',
+        err_finalization: 'Erreur finalisation : ',
+        viz_mining: 'MINAGE ACTIF',
+        viz_no_machine: 'AUCUNE MACHINE',
+        viz_waiting: 'EN ATTENTE',
+        rate_display: '1 USDT = {0} FTA',
+        loader_binding: 'Liaison...',
+        toast_ref_bound: 'Parrain lié !',
+        err_connect_first: 'Connectez-vous d\'abord',
+        toast_link_copied: 'Lien copié !',
+        rig_name: 'RIG {0}',
+        btn_buy: 'ACHETER',
+        err_not_connected: 'Wallet non connecté',
+        loader_transaction: 'Transaction...',
+        toast_purchase: 'Achat réussi !',
+        loader_swapping: 'Swap...',
+        toast_swap_success: 'Échange réussi !',
+        loader_claiming: 'Claim...',
+        toast_claimed: 'Gains réclamés !',
+        err_invalid_bet: 'Mise invalide',
+        result_number: 'Résultat : {0}',
+        toast_wheel_spun: 'Roue tournée !',
+        status_waiting: 'En attente...',
+        status_casting: 'Lancer...',
+        status_line_cast: 'Ligne lancée...',
+        status_bite: 'Ça mord !',
+        toast_fish_success: 'Pêche réussie !',
+        label_error: 'Erreur',
+        loader_ticket: 'Ticket...',
+        toast_ticket: 'Ticket acheté !',
+        err_self_ref: 'Impossible de vous parrainer vous-même.',
+        err_ref_set: 'Parrain déjà défini.',
+        status_active: 'ACTIF',
+        label_balance_token: 'Solde {0}',
+        label_available_token: 'Disponible {0}',
+        note_deposit: 'Envoyez des {0} à cette adresse depuis votre wallet externe (MetaMask, Trust Wallet, exchange, etc.).',
+        warn_deposit: '⚠️ Envoyez uniquement du {0} sur le réseau Polygon. Tout autre réseau ou token sera perdu.'
+    }
+};
+
+// ═══════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════
 const CONFIG = {
-    MINING: "0xb7555D092b0B30D30552502f8a2674D48601b10F", // VOTRE ADRESSE CONTRAT
+    MINING: "0xb7555D092b0B30D30552502f8a2674D48601b10F",
     USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
-    FTA: "0x535bBe393D64a60E14B731b7350675792d501623", // VOTRE ADRESSE FTA
+    FTA: "0x535bBe393D64a60E14B731b7350675792d501623",
     CHAIN_ID: 137,
     WSS_LIST: [
         "wss://polygon.drpc.org",
@@ -16,7 +321,8 @@ const CONFIG = {
     LOGO_USDT: "https://cryptologos.cc/logos/tether-usdt-logo.png",
     LOGO_FTA: "https://i.ibb.co/vvz2DDK5/20260207-190817.webp",
     WALLET_STORAGE_KEY: "fitia_pro_wallet_v1",
-    CUSTOM_RPC_KEY: "fitia_custom_rpc"
+    CUSTOM_RPC_KEY: "fitia_custom_rpc",
+    LANG_KEY: "fitia_lang"
 };
 
 const MINING_ABI = [
@@ -48,6 +354,9 @@ const ERC20_ABI = [
     "function transfer(address, uint256) returns (bool)"
 ];
 
+// ═══════════════════════════════════════
+//  APPLICATION
+// ═══════════════════════════════════════
 class Application {
     constructor() {
         this.provider = null; this.signer = null; this.contracts = {}; this.user = null;
@@ -64,15 +373,45 @@ class Application {
         this.importMode = 'key';
         this.treasuryMode = 'deposit'; this.treasuryToken = 'POL';
         this.treasuryBalances = { POL: '0.00', USDT: '0.00', FTA: '0.00' };
+        this.lang = 'en';
+    }
+
+    t(key, ...args) {
+        let str = (LANG[this.lang] && LANG[this.lang][key]) || (LANG['en'] && LANG['en'][key]) || key;
+        args.forEach((arg, i) => { str = str.replace(`{${i}}`, arg); });
+        return str;
+    }
+
+    toggleLang() {
+        this.lang = this.lang === 'en' ? 'fr' : 'en';
+        localStorage.setItem(CONFIG.LANG_KEY, this.lang);
+        document.getElementById('lang-btn').innerText = this.lang.toUpperCase();
+        this.applyLang();
+        if (this.user) this._updateTreasuryUI();
+    }
+
+    applyLang() {
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.dataset.i18n;
+            const val = this.t(key);
+            if (val !== key) el.textContent = val;
+        });
+        document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+            const key = el.dataset.i18nPh;
+            const val = this.t(key);
+            if (val !== key) el.placeholder = val;
+        });
     }
 
     _safeDestroy(p) {
-        if (p && typeof p.destroy === 'function') {
-            try { p.destroy(); } catch(e) {}
-        }
+        if (p && typeof p.destroy === 'function') { try { p.destroy(); } catch(e) {} }
     }
 
     async init() {
+        const savedLang = localStorage.getItem(CONFIG.LANG_KEY);
+        if (savedLang && LANG[savedLang]) this.lang = savedLang;
+        document.getElementById('lang-btn').innerText = this.lang.toUpperCase();
+        this.applyLang();
         const stored = localStorage.getItem(CONFIG.WALLET_STORAGE_KEY);
         if (stored) {
             try {
@@ -89,11 +428,11 @@ class Application {
     }
 
     beginCreate() {
-        this.setLoader(true, "Génération...");
+        this.setLoader(true, this.t('loader_generating'));
         setTimeout(() => {
             try {
                 this.tempWallet = ethers.Wallet.createRandom();
-                if (!this.tempWallet.mnemonic || !this.tempWallet.mnemonic.phrase) throw new Error("Mnemonic non généré.");
+                if (!this.tempWallet.mnemonic || !this.tempWallet.mnemonic.phrase) throw new Error(this.t('err_mnemonic'));
                 this.mnemonicPhrase = this.tempWallet.mnemonic.phrase;
                 const words = this.mnemonicPhrase.split(' ');
                 const grid = document.getElementById('mnemonic-grid');
@@ -111,7 +450,7 @@ class Application {
             } catch(e) {
                 console.error(e);
                 this.setLoader(false);
-                this.showToast("Erreur de génération.", true);
+                this.showToast(this.t('err_generation'), true);
             }
         }, 500);
     }
@@ -119,11 +458,11 @@ class Application {
     async finishCreate() {
         const pwd = document.getElementById('create-pwd').value;
         const pwdC = document.getElementById('create-pwd-confirm').value;
-        if (pwd.length < 6) return this.showToast("Mot de passe trop court (min. 6)", true);
-        if (pwd !== pwdC) return this.showToast("Les mots de passe ne correspondent pas", true);
-        this.setLoader(true, "Chiffrement...");
+        if (pwd.length < 6) return this.showToast(this.t('err_pwd_short'), true);
+        if (pwd !== pwdC) return this.showToast(this.t('err_pwd_mismatch'), true);
+        this.setLoader(true, this.t('loader_encrypting'));
         try {
-            if (!window.crypto || !window.crypto.subtle) throw new Error("Contexte non sécurisé. Ouvrez via HTTPS ou localhost.");
+            if (!window.crypto || !window.crypto.subtle) throw new Error(this.t('err_insecure'));
             const encrypted = await this.tempWallet.encrypt(pwd);
             localStorage.setItem(CONFIG.WALLET_STORAGE_KEY, encrypted);
             this.wallet = this.tempWallet;
@@ -132,8 +471,7 @@ class Application {
             await this._connect();
         } catch(e) {
             console.error(e);
-            let msg = e.message || "Erreur inconnue";
-            this.showToast(msg, true);
+            this.showToast(e.message || "Error", true);
         }
         this.setLoader(false);
     }
@@ -149,19 +487,19 @@ class Application {
     async doImport() {
         const pwd = document.getElementById('import-pwd').value;
         const pwdC = document.getElementById('import-pwd-confirm').value;
-        if (pwd.length < 6) return this.showToast("Mot de passe trop court (min. 6)", true);
-        if (pwd !== pwdC) return this.showToast("Les mots de passe ne correspondent pas", true);
-        this.setLoader(true, "Import...");
+        if (pwd.length < 6) return this.showToast(this.t('err_pwd_short'), true);
+        if (pwd !== pwdC) return this.showToast(this.t('err_pwd_mismatch'), true);
+        this.setLoader(true, this.t('loader_importing'));
         try {
-            if (!window.crypto || !window.crypto.subtle) throw new Error("Contexte non sécurisé. Ouvrez via HTTPS ou localhost.");
+            if (!window.crypto || !window.crypto.subtle) throw new Error(this.t('err_insecure'));
             let wallet;
             if (this.importMode === 'key') {
                 const key = document.getElementById('import-key').value.trim();
-                if (!key || !key.startsWith('0x') || key.length < 64) return this.showToast("Clé privée invalide", true);
+                if (!key || !key.startsWith('0x') || key.length < 64) return this.showToast(this.t('err_invalid_key'), true);
                 wallet = new ethers.Wallet(key);
             } else {
                 const phrase = document.getElementById('import-mnemonic').value.trim();
-                if (!phrase || phrase.split(' ').length < 12) return this.showToast("Phrase invalide (12 mots)", true);
+                if (!phrase || phrase.split(' ').length < 12) return this.showToast(this.t('err_invalid_phrase'), true);
                 wallet = ethers.Wallet.fromPhrase(phrase);
             }
             const encrypted = await wallet.encrypt(pwd);
@@ -170,23 +508,22 @@ class Application {
             await this._connect();
         } catch(e) {
             console.error(e);
-            let msg = e.message || "Erreur inconnue";
-            this.showToast(msg, true);
+            this.showToast(e.message || "Error", true);
         }
         this.setLoader(false);
     }
 
     async unlockWallet() {
         const pwd = document.getElementById('unlock-pwd').value;
-        if (!pwd) return this.showToast("Entrez votre mot de passe", true);
-        this.setLoader(true, "Déverrouillage...");
+        if (!pwd) return this.showToast(this.t('err_enter_pwd'), true);
+        this.setLoader(true, this.t('loader_unlocking'));
         try {
             const encrypted = localStorage.getItem(CONFIG.WALLET_STORAGE_KEY);
             const wallet = await ethers.Wallet.fromEncryptedJson(encrypted, pwd);
             this.wallet = wallet;
             await this._connect();
         } catch(e) {
-            this.showToast("Mot de passe incorrect", true);
+            this.showToast(this.t('err_wrong_pwd'), true);
         }
         this.setLoader(false);
     }
@@ -204,17 +541,17 @@ class Application {
         this.pendingBalance = 0;
         document.getElementById('val-pending').innerText = '0.00000';
         document.getElementById('val-power').innerText = '0.00000';
-        document.getElementById('viz-status').innerText = 'EN ATTENTE';
+        document.getElementById('viz-status').innerText = this.t('viz_waiting');
         document.getElementById('viz-status').style.color = 'var(--surface-highest)';
         document.getElementById('unlock-pwd').value = '';
     }
 
     deleteWallet() {
-        if (confirm("Supprimer ce wallet ? Irréversible sans votre phrase de récupération.")) {
+        if (confirm(this.t('confirm_delete'))) {
             localStorage.removeItem(CONFIG.WALLET_STORAGE_KEY);
             this.logout();
             this.showStep('step-welcome');
-            this.showToast("Wallet supprimé");
+            this.showToast(this.t('toast_deleted'));
         }
     }
 
@@ -226,7 +563,7 @@ class Application {
     copyMnemonic() {
         if (!this.mnemonicPhrase) return;
         navigator.clipboard.writeText(this.mnemonicPhrase);
-        this.showToast("Phrase copiée !");
+        this.showToast(this.t('toast_phrase_copied'));
     }
 
     showWalletPanel() {
@@ -246,7 +583,7 @@ class Application {
     copyAddress() {
         if (!this.wallet) return;
         navigator.clipboard.writeText(this.wallet.address);
-        this.showToast("Adresse copiée !");
+        this.showToast(this.t('toast_addr_copied'));
     }
 
     showTreasury() {
@@ -257,9 +594,7 @@ class Application {
         this._refreshTreasuryBalances();
     }
 
-    hideTreasury() {
-        document.getElementById('treasury-modal').classList.add('hidden');
-    }
+    hideTreasury() { document.getElementById('treasury-modal').classList.add('hidden'); }
 
     setTreasuryMode(mode) {
         this.treasuryMode = mode;
@@ -280,13 +615,15 @@ class Application {
     _updateTreasuryUI() {
         const t = this.treasuryToken;
         const b = this.treasuryBalances[t] || '0.00';
-        document.getElementById('t-deposit-label').innerText = `Solde ${t}`;
+        document.getElementById('t-deposit-label').innerText = this.t('label_balance_token', t);
         document.getElementById('t-deposit-bal').innerText = b;
         document.getElementById('t-deposit-addr').innerText = this.wallet ? this.wallet.address : '0x...';
-        document.getElementById('t-deposit-note-token').innerText = t;
-        document.getElementById('t-deposit-warn-token').innerText = t;
-        document.getElementById('t-withdraw-label').innerText = `Disponible ${t}`;
+        document.getElementById('t-withdraw-label').innerText = this.t('label_available_token', t);
         document.getElementById('t-withdraw-bal').innerText = b;
+        const noteEl = document.querySelector('.deposit-note');
+        if (noteEl) noteEl.innerHTML = this.t('note_deposit', `<span style="color:var(--accent-deep);font-weight:600">${t}</span>`);
+        const warnEl = document.querySelector('.deposit-warning');
+        if (warnEl) warnEl.innerHTML = this.t('warn_deposit', `<span style="color:var(--danger)">${t}</span>`);
     }
 
     async _refreshTreasuryBalances() {
@@ -312,7 +649,7 @@ class Application {
     copyTreasuryAddr() {
         if (!this.wallet) return;
         navigator.clipboard.writeText(this.wallet.address);
-        this.showToast("Adresse copiée !");
+        this.showToast(this.t('toast_addr_copied'));
     }
 
     setWithdrawMax() {
@@ -324,26 +661,25 @@ class Application {
     async executeWithdraw() {
         const amountStr = document.getElementById('t-withdraw-amount').value;
         const toAddr = document.getElementById('t-withdraw-to').value.trim();
-        if (!amountStr || parseFloat(amountStr) <= 0) return this.showToast("Montant invalide", true);
-        if (!toAddr || !ethers.isAddress(toAddr)) return this.showToast("Adresse de destination invalide", true);
-
-        this.setLoader(true, "Envoi en cours...");
+        if (!amountStr || parseFloat(amountStr) <= 0) return this.showToast(this.t('err_invalid_amount'), true);
+        if (!toAddr || !ethers.isAddress(toAddr)) return this.showToast(this.t('err_invalid_addr'), true);
+        this.setLoader(true, this.t('loader_sending'));
         try {
             if (this.treasuryToken === 'POL') {
                 const amount = ethers.parseEther(amountStr);
                 const tx = await this.signer.sendTransaction({ to: toAddr, value: amount });
                 await tx.wait();
-                this.showToast("POL envoyé avec succès !");
+                this.showToast(this.t('toast_pol_sent'));
             } else if (this.treasuryToken === 'USDT') {
                 const amount = ethers.parseUnits(amountStr, 6);
                 const tx = await this.contracts.usdt.transfer(toAddr, amount);
                 await tx.wait();
-                this.showToast("USDT envoyé avec succès !");
+                this.showToast(this.t('toast_usdt_sent'));
             } else if (this.treasuryToken === 'FTA') {
                 const amount = ethers.parseUnits(amountStr, this.ftaDecimals);
                 const tx = await this.contracts.fta.transfer(toAddr, amount);
                 await tx.wait();
-                this.showToast("FTA envoyé avec succès !");
+                this.showToast(this.t('toast_fta_sent'));
             }
             document.getElementById('t-withdraw-amount').value = '';
             document.getElementById('t-withdraw-to').value = '';
@@ -364,22 +700,22 @@ class Application {
 
     async doExportKey() {
         const pwd = document.getElementById('export-pwd').value;
-        if (!pwd) return this.showToast("Entrez votre mot de passe", true);
+        if (!pwd) return this.showToast(this.t('err_enter_pwd'), true);
         try {
             const encrypted = localStorage.getItem(CONFIG.WALLET_STORAGE_KEY);
             const wallet = await ethers.Wallet.fromEncryptedJson(encrypted, pwd);
             document.getElementById('export-key-value').innerText = wallet.privateKey;
             document.getElementById('export-key-result').classList.remove('hidden');
-        } catch(e) { this.showToast("Mot de passe incorrect", true); }
+        } catch(e) { this.showToast(this.t('err_wrong_pwd'), true); }
     }
 
     copyExportedKey() {
         navigator.clipboard.writeText(document.getElementById('export-key-value').innerText);
-        this.showToast("Clé copiée !");
+        this.showToast(this.t('toast_key_copied'));
     }
 
     // ═════════════════════════════════
-    //  RPC MAINNET — CORRIGÉ
+    //  RPC MAINNET
     // ═════════════════════════════════
 
     async _tryConnect(url) {
@@ -399,14 +735,14 @@ class Application {
                 ]);
             } catch(e) {
                 this._safeDestroy(tempProvider);
-                return { success: false, error: "Exception réseau" };
+                return { success: false, error: "Network exception" };
             }
             if (Number(network.chainId) === CONFIG.CHAIN_ID) {
                 this.provider = tempProvider;
                 return { success: true };
             } else {
                 this._safeDestroy(tempProvider);
-                return { success: false, error: "Mauvais réseau détecté" };
+                return { success: false, error: "Wrong network" };
             }
         } catch(e) {
             this._safeDestroy(tempProvider);
@@ -417,50 +753,39 @@ class Application {
     async _connect() {
         this._safeDestroy(this.provider);
         this.provider = null;
-        this.setLoader(true, "Connexion mainnet...");
+        this.setLoader(true, this.t('loader_connecting'));
 
-        // 1. RPC custom sauvegardé
         const customRpc = localStorage.getItem(CONFIG.CUSTOM_RPC_KEY);
         if (customRpc) {
-            this.setLoader(true, "Test RPC sauvegardé...");
+            this.setLoader(true, this.t('loader_rpc_saved'));
             const r = await this._tryConnect(customRpc);
             if (r.success) return this._finalizeConnection();
             localStorage.removeItem(CONFIG.CUSTOM_RPC_KEY);
         }
 
-        // 2. WebSocket RPCs
         for (let i = 0; i < CONFIG.WSS_LIST.length; i++) {
-            this.setLoader(true, `WSS ${i+1}/${CONFIG.WSS_LIST.length}...`);
+            this.setLoader(true, this.t('loader_wss', i+1, CONFIG.WSS_LIST.length));
             if ((await this._tryConnect(CONFIG.WSS_LIST[i])).success) return this._finalizeConnection();
         }
 
-        // 3. HTTP RPCs
         for (let i = 0; i < CONFIG.HTTP_LIST.length; i++) {
-            this.setLoader(true, `RPC ${i+1}/${CONFIG.HTTP_LIST.length}...`);
+            this.setLoader(true, this.t('loader_rpc', i+1, CONFIG.HTTP_LIST.length));
             if ((await this._tryConnect(CONFIG.HTTP_LIST[i])).success) return this._finalizeConnection();
         }
 
         this.setLoader(false);
-        const customUrl = prompt(
-            "Aucun RPC Polygon accessible.\n\n" +
-            "SOLUTION : Lancez un serveur local :\n" +
-            "- VS Code : Extension 'Live Server' puis 'Go Live'\n" +
-            "- Terminal : npx serve .\n" +
-            "- Terminal : python -m http.server 8000\n\n" +
-            "Ou collez ici un RPC Polygon :",
-            ""
-        );
+        const customUrl = prompt(this.t('prompt_rpc'), "");
         if (!customUrl || (!customUrl.startsWith("http") && !customUrl.startsWith("wss"))) {
-            this.showToast("RPC requis pour continuer.", true);
+            this.showToast(this.t('err_rpc_required'), true);
             return;
         }
-        this.setLoader(true, "Test RPC...");
+        this.setLoader(true, this.t('loader_test_rpc'));
         if ((await this._tryConnect(customUrl.trim())).success) {
             localStorage.setItem(CONFIG.CUSTOM_RPC_KEY, customUrl.trim());
             return this._finalizeConnection();
         }
         this.setLoader(false);
-        this.showToast("Ce RPC ne répond pas.", true);
+        this.showToast(this.t('err_rpc_no_response'), true);
     }
 
     async _finalizeConnection() {
@@ -491,11 +816,11 @@ class Application {
             this.initVisualizer();
             window.addEventListener('resize', () => this.resizeCanvas());
             this.initWheel();
-            this.showToast("Connecté au mainnet Polygon !");
+            this.showToast(this.t('toast_connected'));
         } catch(e) {
             console.error(e);
             this.setLoader(false);
-            this.showToast("Erreur finalisation : " + (e.message || "inconnue"), true);
+            this.showToast(this.t('err_finalization') + (e.message || ""), true);
         }
     }
 
@@ -518,12 +843,14 @@ class Application {
             const timePassed = Math.floor(Date.now() / 1000) - lastClaim;
             if (this.currentRealPower > 0) {
                 if (!this.miningTimer) { this.pendingBalance = this.currentRealPower * timePassed; document.getElementById('val-pending').innerText = this.pendingBalance.toFixed(5); }
-                document.getElementById('viz-status').innerText = "MINAGE ACTIF"; document.getElementById('viz-status').style.color = "var(--primary)";
+                document.getElementById('viz-status').innerText = this.t('viz_mining');
+                document.getElementById('viz-status').style.color = "var(--primary)";
                 this.updateVisualizerIntensity(this.currentRealPower);
                 if (!this.miningTimer) this.startMiningCounter();
             } else {
                 this.stopMiningCounter();
-                document.getElementById('viz-status').innerText = "AUCUNE MACHINE"; document.getElementById('viz-status').style.color = "var(--surface-highest)";
+                document.getElementById('viz-status').innerText = this.t('viz_no_machine');
+                document.getElementById('viz-status').style.color = "var(--surface-highest)";
                 this.pendingBalance = 0; document.getElementById('val-pending').innerText = '0.00000';
             }
             document.getElementById('val-power').innerText = this.currentRealPower.toFixed(5);
@@ -542,7 +869,7 @@ class Application {
 
             const rate = await this.contracts.mining.exchangeRate();
             this.currentRate = parseFloat(ethers.formatUnits(rate, 8));
-            document.getElementById('swap-rate').innerText = `1 USDT = ${this.currentRate.toFixed(2)} FTA`;
+            document.getElementById('swap-rate').innerText = this.t('rate_display', this.currentRate.toFixed(2));
             const fromBal = this.swapDirection === 'USDT_TO_FTA' ? usdtBal : ftaBal;
             const toBal = this.swapDirection === 'USDT_TO_FTA' ? ftaBal : usdtBal;
             document.getElementById('swap-bal-from').innerText = parseFloat(ethers.formatUnits(fromBal, this.swapDirection === 'USDT_TO_FTA' ? 6 : this.ftaDecimals)).toFixed(2);
@@ -582,11 +909,11 @@ class Application {
     async bindReferrer() {
         const addr = document.getElementById('detected-ref').innerText;
         if (!ethers.isAddress(addr)) return;
-        this.setLoader(true, "Liaison...");
+        this.setLoader(true, this.t('loader_binding'));
         try {
             const tx = await this.contracts.mining.setReferrer(addr);
             await tx.wait();
-            this.showToast("Parrain lié !");
+            this.showToast(this.t('toast_ref_bound'));
             document.getElementById('bind-ref-area').style.display = 'none';
         } catch(e) { this.showError(e); }
         this.setLoader(false);
@@ -594,9 +921,9 @@ class Application {
 
     copyLink() {
         const val = document.getElementById('ref-link').value;
-        if (!val || val === "Connectez-vous...") return this.showToast("Connectez-vous d'abord", true);
+        if (!val || val === this.t('link_connect_first')) return this.showToast(this.t('err_connect_first'), true);
         navigator.clipboard.writeText(val);
-        this.showToast("Lien copié !");
+        this.showToast(this.t('toast_link_copied'));
     }
 
     setPayMode(mode) {
@@ -639,12 +966,12 @@ class Application {
             div.className = 'rig-item';
             div.innerHTML = `
                 <div>
-                    <span class="rig-name">RIG ${i+1}</span>
+                    <span class="rig-name">${this.t('rig_name', i+1)}</span>
                     <span class="rig-power">${data.power.toFixed(5)} FTA/s</span>
                 </div>
                 <div>
                     <span class="rig-price">${this.payMode === 'USDT' ? data.price.toFixed(2) + ' $' : data.priceFta.toFixed(2) + ' FTA'}</span>
-                    <button class="btn-primary" style="padding:8px; font-size:0.8rem" onclick="App.buyMachine(${i})">ACHETER</button>
+                    <button class="btn-primary" style="padding:8px; font-size:0.8rem" onclick="App.buyMachine(${i})">${this.t('btn_buy')}</button>
                 </div>
             `;
             container.appendChild(div);
@@ -652,8 +979,8 @@ class Application {
     }
 
     async buyMachine(id) {
-        if (!this.user) return this.showToast("Wallet non connecté", true);
-        this.setLoader(true, "Transaction...");
+        if (!this.user) return this.showToast(this.t('err_not_connected'), true);
+        this.setLoader(true, this.t('loader_transaction'));
         try {
             const m = await this.contracts.mining.machineTypes(id);
             if (this.payMode === 'USDT') {
@@ -667,7 +994,7 @@ class Application {
                 if (allow < ftaPrice) { await (await this.contracts.fta.approve(CONFIG.MINING, ftaPrice)).wait(); }
                 await (await this.contracts.mining.buyMachineWithFTA(id)).wait();
             }
-            this.showToast("Achat réussi !");
+            this.showToast(this.t('toast_purchase'));
             this.isLoadingShop = false;
             await this.renderShop(true);
             await this.checkMyMachines();
@@ -694,8 +1021,8 @@ class Application {
 
     async executeSwap() {
         const val = document.getElementById('swap-from-in').value;
-        if (!val || val <= 0) return this.showToast("Montant invalide", true);
-        this.setLoader(true, "Swap...");
+        if (!val || val <= 0) return this.showToast(this.t('err_invalid_amount'), true);
+        this.setLoader(true, this.t('loader_swapping'));
         const isUsdtTo = this.swapDirection === 'USDT_TO_FTA';
         const decimals = isUsdtTo ? 6 : this.ftaDecimals;
         const amount = ethers.parseUnits(val, decimals);
@@ -705,7 +1032,7 @@ class Application {
             if (allowance < amount) { await (await tokenContract.approve(CONFIG.MINING, amount)).wait(); }
             const tx = isUsdtTo ? await this.contracts.mining.swapUsdtForFta(amount) : await this.contracts.mining.swapFtaForUsdt(amount);
             await tx.wait();
-            this.showToast("Échange réussi !");
+            this.showToast(this.t('toast_swap_success'));
             document.getElementById('swap-from-in').value = '';
             document.getElementById('swap-to-in').value = '';
             this.updateData();
@@ -716,12 +1043,12 @@ class Application {
     async claim() {
         if (!this.user) return;
         this.stopMiningCounter();
-        this.setLoader(true, "Claim...");
+        this.setLoader(true, this.t('loader_claiming'));
         try {
             await (await this.contracts.mining.claimRewards()).wait();
             this.pendingBalance = 0;
             localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
-            this.showToast("Gains réclamés !");
+            this.showToast(this.t('toast_claimed'));
             this.updateData();
             if (this.currentRealPower > 0) this.startMiningCounter();
         } catch(e) { this.showError(e); this.startMiningCounter(); }
@@ -745,7 +1072,7 @@ class Application {
 
     async playWinGo(type, choice) {
         const betVal = document.getElementById('wingo-bet').value;
-        if (!betVal || betVal <= 0) return this.showToast("Mise invalide", true);
+        if (!betVal || betVal <= 0) return this.showToast(this.t('err_invalid_bet'), true);
         const amount = ethers.parseUnits(betVal, this.ftaDecimals);
         const buttons = document.querySelectorAll('#game-wingo .game-options button');
         buttons.forEach(b => b.disabled = true);
@@ -759,7 +1086,7 @@ class Application {
             reel.classList.remove('spinning');
             const randomNum = Math.floor(Math.random() * 10);
             reel.style.transform = `translateY(${-80 * randomNum}px)`;
-            this.showGameResult('wingo-result', `Résultat: ${randomNum}`, true);
+            this.showGameResult('wingo-result', this.t('result_number', randomNum), true);
             this.updateData();
         } catch(e) { reel.classList.remove('spinning'); reel.style.transform = 'translateY(0px)'; this.showError(e); }
         buttons.forEach(b => b.disabled = false);
@@ -804,7 +1131,7 @@ class Application {
             clearInterval(this.wheelInterval);
             this.wheelAngle += 5;
             this.drawWheel(this.wheelAngle);
-            this.showGameResult('wheel-result', "Roue tournée !", true);
+            this.showGameResult('wheel-result', this.t('toast_wheel_spun'), true);
             this.updateData();
         } catch(e) { clearInterval(this.wheelInterval); this.showError(e); }
         this.isSpinning = false; btn.disabled = false;
@@ -815,29 +1142,29 @@ class Application {
         const hook = document.getElementById('fishing-hook');
         const status = document.getElementById('fishing-status');
         const btn = document.querySelector('#game-fishing .btn-game'); btn.disabled = true;
-        line.style.height = '0px'; hook.style.top = '0px'; status.innerText = "Lancer...";
+        line.style.height = '0px'; hook.style.top = '0px'; status.innerText = this.t('status_casting');
         try {
             const price = ethers.parseUnits("50", this.ftaDecimals);
             const allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
             if (allow < price) await (await this.contracts.fta.approve(CONFIG.MINING, price)).wait();
-            setTimeout(() => { line.style.height = '120px'; hook.style.top = '120px'; status.innerText = "Ligne lancée..."; }, 500);
+            setTimeout(() => { line.style.height = '120px'; hook.style.top = '120px'; status.innerText = this.t('status_line_cast'); }, 500);
             const tx = await this.contracts.mining.goFishing(); await tx.wait();
-            status.innerText = "Ça mord !"; hook.style.fontSize = "3rem";
+            status.innerText = this.t('status_bite'); hook.style.fontSize = "3rem";
             setTimeout(() => hook.style.fontSize = "2rem", 500);
-            this.showGameResult('fish-result', "Pêche réussie !", true);
+            this.showGameResult('fish-result', this.t('toast_fish_success'), true);
             this.updateData();
-        } catch(e) { line.style.height = '0px'; hook.style.top = '0px'; status.innerText="Erreur"; this.showError(e); }
+        } catch(e) { line.style.height = '0px'; hook.style.top = '0px'; status.innerText = this.t('label_error'); this.showError(e); }
         btn.disabled = false;
     }
 
     async buyLotteryTicket() {
-        this.setLoader(true, "Ticket...");
+        this.setLoader(true, this.t('loader_ticket'));
         try {
             const price = ethers.parseUnits("50", this.ftaDecimals);
             const allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
             if (allow < price) await (await this.contracts.fta.approve(CONFIG.MINING, price)).wait();
             await (await this.contracts.mining.buyLotteryTicket()).wait();
-            this.showToast("Ticket acheté !"); this.updateData();
+            this.showToast(this.t('toast_ticket')); this.updateData();
         } catch(e) { this.showError(e); }
         this.setLoader(false);
     }
@@ -870,12 +1197,12 @@ class Application {
                     if (this.shopData[i]) powerDisplay = this.shopData[i].power.toFixed(5);
                     const div = document.createElement('div');
                     div.className = 'my-rig-card active';
-                    div.innerHTML = `<div class="rig-info"><h4>RIG ${i+1} <span style="opacity:0.5">x${machineCount.toString()}</span></h4><p>${powerDisplay} FTA/s</p></div><span class="rig-status-badge status-active">ACTIF</span>`;
+                    div.innerHTML = `<div class="rig-info"><h4>${this.t('rig_name', i+1)} <span style="opacity:0.5">x${machineCount.toString()}</span></h4><p>${powerDisplay} FTA/s</p></div><span class="rig-status-badge status-active">${this.t('status_active')}</span>`;
                     container.appendChild(div);
                 }
             }
             noRigs.style.display = found ? 'none' : 'block';
-        } catch(e) { console.error("Erreur chargement machines", e); }
+        } catch(e) { console.error("Machines error", e); }
     }
 
     initVisualizer() {
@@ -907,7 +1234,7 @@ class Application {
         requestAnimationFrame(() => this.animateVisualizer());
     }
 
-    setLoader(show, msg="Chargement...") {
+    setLoader(show, msg="Processing...") {
         const l = document.getElementById('loader');
         document.getElementById('loader-text').innerText = msg;
         show ? l.classList.remove('hidden') : l.classList.add('hidden');
@@ -915,11 +1242,11 @@ class Application {
 
     showError(e) {
         console.error(e);
-        let msg = "Erreur";
+        let msg = this.t('label_error');
         if(e.reason) msg = e.reason;
-        if(msg.includes("Cannot refer yourself")) msg = "Impossible de vous parrainer vous-même.";
-        if(msg.includes("Referrer already set")) msg = "Parrain déjà défini.";
-        if(msg.includes("Invalid bet amount")) msg = "Mise invalide";
+        if(msg.includes("Cannot refer yourself")) msg = this.t('err_self_ref');
+        if(msg.includes("Referrer already set")) msg = this.t('err_ref_set');
+        if(msg.includes("Invalid bet amount")) msg = this.t('err_invalid_bet');
         this.showToast(msg, true);
     }
 
