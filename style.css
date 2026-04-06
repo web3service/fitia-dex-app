@@ -206,12 +206,15 @@ main::-webkit-scrollbar { display: none; }
 .toggle-btn.active { background: var(--primary); color: #251a00; box-shadow: 0 0 10px rgba(240,185,11,0.2); }
 .grid-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; perspective: 1000px; }
 .rig-item { background: linear-gradient(160deg, var(--card-bg) 0%, var(--surface-low) 100%); border: 0.5px solid rgba(79,70,51,0.2); border-radius: 0.5rem; padding: 16px 14px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; transform-style: preserve-3d; transform: rotateY(-3deg) rotateX(3deg); transition: all 0.4s cubic-bezier(0.175,0.885,0.32,1.275); box-shadow: 6px 6px 18px rgba(5,7,10,0.6), -1px -1px 2px rgba(255,255,255,0.01); position: relative; min-height: 135px; overflow: hidden; }
-.rig-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 35%); border-radius: 0.5rem; pointer-events: none; }
+.rig-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 35%); border-radius: 0.5rem; pointer-events: none; z-index: 1; }
 .rig-item:hover, .rig-item:active { transform: rotateY(0deg) rotateX(0deg) translateZ(12px) scale(1.01); box-shadow: 3px 3px 12px rgba(5,7,10,0.7), 0 20px 40px rgba(5,7,10,0.3); z-index: 2; }
-.rig-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.88rem; transform: translateZ(15px); color: var(--text); }
-.rig-power { color: var(--accent); font-size: 0.7rem; margin: 4px 0; transform: translateZ(10px); font-weight: 500; font-family: 'Space Grotesk', sans-serif; }
-.rig-price { color: var(--text); font-family: 'Space Grotesk', sans-serif; font-size: 1.05rem; font-weight: 700; margin-bottom: 10px; transform: translateZ(18px); }
-.rig-item .btn-primary { transform: translateZ(12px); padding: 7px; font-size: 0.6rem; letter-spacing: 0.2em; }
+.rig-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.88rem; transform: translateZ(15px); color: var(--text); position: relative; z-index: 2; }
+.rig-power { color: var(--accent); font-size: 0.7rem; margin: 4px 0; transform: translateZ(10px); font-weight: 500; font-family: 'Space Grotesk', sans-serif; position: relative; z-index: 2; }
+.rig-price { color: var(--text); font-family: 'Space Grotesk', sans-serif; font-size: 1.05rem; font-weight: 700; margin-bottom: 10px; transform: translateZ(18px); position: relative; z-index: 2; }
+.rig-item .btn-primary { transform: translateZ(12px); padding: 7px; font-size: 0.6rem; letter-spacing: 0.2em; position: relative; z-index: 2; }
+.rig-image { width: calc(100% + 28px); height: 90px; object-fit: cover; border-radius: 0.35rem 0.35rem 0 0; margin: -16px -14px 10px -14px; filter: brightness(0.6) contrast(1.2) saturate(0.7); border-bottom: 1px solid rgba(240,185,11,0.12); transition: filter 0.4s; position: relative; z-index: 1; }
+.rig-item:hover .rig-image,
+.rig-item:active .rig-image { filter: brightness(0.8) contrast(1.15) saturate(0.9); }
 .rigs-list-container { display: flex; flex-direction: column; gap: 8px; }
 .my-rig-card { background: rgba(255,255,255,0.015); border: 0.5px solid rgba(79,70,51,0.12); border-left: 2px solid var(--surface-highest); padding: 14px 16px; border-radius: 0.25rem; display: flex; justify-content: space-between; align-items: center; }
 .my-rig-card.active { border-left-color: var(--primary-container); background: linear-gradient(90deg, rgba(240,185,11,0.03), transparent); border-color: rgba(79,70,51,0.12); border-left: 2px solid var(--primary-container); }
@@ -290,6 +293,7 @@ main::-webkit-scrollbar { display: none; }
     .mnemonic-grid { grid-template-columns: repeat(2, 1fr); }
     .panel-balances { grid-template-columns: repeat(3, 1fr); gap: 4px; }
     .panel-bal-value { font-size: 0.8rem; }
+    .rig-image { height: 70px; }
 }
 @media screen and (min-width: 500px) {
     .bottom-nav { max-width: 500px; left: 50%; transform: translateX(-50%); border-radius: 0.5rem 0.5rem 0 0; }

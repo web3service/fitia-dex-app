@@ -311,12 +311,26 @@ const CONFIG = {
     WSS_LIST: [
         "wss://polygon.drpc.org",
         "wss://polygon-mainnet.publicnode.com",
-        "wss://rpc.ankr.com/polygon/ws"
+        "wss://rpc.ankr.com/polygon/ws",
+        "wss://polygon-bor-rpc.publicnode.com",
+        "wss://polygon.gateway.tenderly.co",
+        "wss://ws-matic-mainnet.chainstacklabs.com"
     ],
     HTTP_LIST: [
         "https://polygon.drpc.org",
+        "https://polygon-rpc.com",
         "https://polygon-mainnet.publicnode.com",
-        "https://polygon.llamarpc.com"
+        "https://polygon.llamarpc.com",
+        "https://rpc.ankr.com/polygon",
+        "https://polygon.gateway.tenderly.co",
+        "https://1rpc.io/matic",
+        "https://polygon.meowrpc.com",
+        "https://polygon-bor-rpc.publicnode.com",
+        "https://polygon-mainnet.chainstacklabs.com",
+        "https://matic-mainnet.chainstacklabs.com",
+        "https://polygon-node.taxi",
+        "https://rpc-mainnet.matic.quiknode.pro",
+        "https://polygon-bor.publicnode.com"
     ],
     LOGO_USDT: "https://cryptologos.cc/logos/tether-usdt-logo.png",
     LOGO_FTA: "https://i.ibb.co/vvz2DDK5/20260207-190817.webp",
@@ -374,6 +388,16 @@ class Application {
         this.treasuryMode = 'deposit'; this.treasuryToken = 'POL';
         this.treasuryBalances = { POL: '0.00', USDT: '0.00', FTA: '0.00' };
         this.lang = 'en';
+        this.rigImages = [
+            "https://images.unsplash.com/photo-1614064641938-3bbee52942c7?w=400&h=250&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1597852074816-d933c7d2b988?w=400&h=250&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=250&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=250&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400&h=250&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=400&h=250&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&h=250&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=400&h=250&fit=crop&q=80"
+        ];
     }
 
     t(key, ...args) {
@@ -962,9 +986,11 @@ class Application {
         container.innerHTML = '';
         for(let i=0; i<this.shopData.length; i++) {
             const data = this.shopData[i];
+            const imgUrl = this.rigImages[i % this.rigImages.length];
             const div = document.createElement('div');
             div.className = 'rig-item';
             div.innerHTML = `
+                <img class="rig-image" src="${imgUrl}" alt="${this.t('rig_name', i+1)}" loading="lazy" onerror="this.style.display='none'">
                 <div>
                     <span class="rig-name">${this.t('rig_name', i+1)}</span>
                     <span class="rig-power">${data.power.toFixed(5)} FTA/s</span>
