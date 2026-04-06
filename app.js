@@ -148,7 +148,31 @@ const LANG = {
         label_balance_token: 'Balance {0}',
         label_available_token: 'Available {0}',
         note_deposit: 'Send {0} to this address from your external wallet (MetaMask, Trust Wallet, exchange, etc.).',
-        warn_deposit: '⚠️ Only send {0} on the Polygon network. Any other network or token will be lost.'
+        warn_deposit: '⚠️ Only send {0} on the Polygon network. Any other network or token will be lost.',
+        nav_history: 'History',
+        heading_history: '📜 History',
+        filter_all: 'All',
+        filter_sends: 'Sends',
+        filter_swaps: 'Swaps',
+        filter_games: 'Games',
+        filter_mining: 'Mining',
+        no_history: 'No transactions yet.',
+        btn_clear_history: 'Clear',
+        tx_send_pol: 'Send POL',
+        tx_send_usdt: 'Send USDT',
+        tx_send_fta: 'Send FTA',
+        tx_buy_machine: 'Machine Purchase',
+        tx_swap: 'Token Swap',
+        tx_claim: 'Claim Rewards',
+        tx_lottery: 'Lottery Ticket',
+        tx_wheel: 'Wheel Spin',
+        tx_fishing: 'Fishing',
+        tx_wingo: 'Win Go Bet',
+        tx_referral: 'Referral Bind',
+        label_just_now: 'Just now',
+        label_min_ago: '{0}m ago',
+        label_hr_ago: '{0}h ago',
+        label_day_ago: '{0}d ago'
     },
     fr: {
         btn_back: '← Retour',
@@ -296,7 +320,31 @@ const LANG = {
         label_balance_token: 'Solde {0}',
         label_available_token: 'Disponible {0}',
         note_deposit: 'Envoyez des {0} à cette adresse depuis votre wallet externe (MetaMask, Trust Wallet, exchange, etc.).',
-        warn_deposit: '⚠️ Envoyez uniquement du {0} sur le réseau Polygon. Tout autre réseau ou token sera perdu.'
+        warn_deposit: '⚠️ Envoyez uniquement du {0} sur le réseau Polygon. Tout autre réseau ou token sera perdu.',
+        nav_history: 'Historique',
+        heading_history: '📜 Historique',
+        filter_all: 'Tout',
+        filter_sends: 'Envois',
+        filter_swaps: 'Échanges',
+        filter_games: 'Jeux',
+        filter_mining: 'Minage',
+        no_history: 'Aucune transaction pour le moment.',
+        btn_clear_history: 'Effacer',
+        tx_send_pol: 'Envoi POL',
+        tx_send_usdt: 'Envoi USDT',
+        tx_send_fta: 'Envoi FTA',
+        tx_buy_machine: 'Achat Machine',
+        tx_swap: 'Échange de tokens',
+        tx_claim: 'Réclamation de gains',
+        tx_lottery: 'Ticket Loterie',
+        tx_wheel: 'Tour de Roue',
+        tx_fishing: 'Pêche',
+        tx_wingo: 'Pari Win Go',
+        tx_referral: 'Lien Parrain',
+        label_just_now: "À l'instant",
+        label_min_ago: 'il y a {0}m',
+        label_hr_ago: 'il y a {0}h',
+        label_day_ago: 'il y a {0}j'
     }
 };
 
@@ -388,6 +436,8 @@ class Application {
         this.treasuryMode = 'deposit'; this.treasuryToken = 'POL';
         this.treasuryBalances = { POL: '0.00', USDT: '0.00', FTA: '0.00' };
         this.lang = 'en';
+        this.polPrice = 0;
+        this.priceInterval = null;
         this.rigImages = [
             "https://images.unsplash.com/photo-1614064641938-3bbee52942c7?w=400&h=250&fit=crop&q=80",
             "https://images.unsplash.com/photo-1597852074816-d933c7d2b988?w=400&h=250&fit=crop&q=80",
@@ -556,6 +606,7 @@ class Application {
         this.wallet = null; this.user = null; this.contracts = {};
         this.stopMiningCounter();
         if (this.dataInterval) { clearInterval(this.dataInterval); this.dataInterval = null; }
+        if (this.priceInterval) { clearInterval(this.priceInterval); this.priceInterval = null; }
         this._safeDestroy(this.provider);
         this.provider = null;
         document.getElementById('wallet-status').classList.add('hidden');
@@ -840,11 +891,37 @@ class Application {
             this.initVisualizer();
             window.addEventListener('resize', () => this.resizeCanvas());
             this.initWheel();
+            this._fetchPolPrice();
+            if (this.priceInterval) clearInterval(this.priceInterval);
+            this.priceInterval = setInterval(() => this._fetchPolPrice(), 60000);
             this.showToast(this.t('toast_connected'));
         } catch(e) {
             console.error(e);
             this.setLoader(false);
             this.showToast(this.t('err_finalization') + (e.message || ""), true);
+        }
+    }
+
+    async _fetchPolPrice() {
+        const apis = [
+            { url: 'https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd', parse: d => d?.matic_network?.usd },
+            { url: 'https://api.coincap.io/v2/assets/polygon', parse: d => d?.data?.priceUsd ? parseFloat(d.data.priceUsd) : 0 },
+            { url: 'https://min-api.cryptocompare.com/data/price?fsym=MATIC&tsyms=USD', parse: d => d?.USD }
+        ];
+        for (const api of apis) {
+            try {
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), 8000);
+                const res = await fetch(api.url, { signal: ctrl.signal });
+                clearTimeout(timer);
+                if (!res.ok) continue;
+                const data = await res.json();
+                const price = api.parse(data);
+                if (price && price > 0) {
+                    this.polPrice = price;
+                    return;
+                }
+            } catch(e) { continue; }
         }
     }
 
@@ -882,13 +959,23 @@ class Application {
             const polBal = await this.provider.getBalance(this.user);
             const usdtBal = await this.contracts.usdt.balanceOf(this.user);
             const ftaBal = await this.contracts.fta.balanceOf(this.user);
-            document.getElementById('bal-pol').innerText = parseFloat(ethers.formatUnits(polBal, 18)).toFixed(4);
-            document.getElementById('bal-usdt').innerText = parseFloat(ethers.formatUnits(usdtBal, 6)).toFixed(2);
-            document.getElementById('bal-fta').innerText = parseFloat(ethers.formatUnits(ftaBal, this.ftaDecimals)).toFixed(2);
 
-            this.treasuryBalances.POL = parseFloat(ethers.formatUnits(polBal, 18)).toFixed(4);
-            this.treasuryBalances.USDT = parseFloat(ethers.formatUnits(usdtBal, 6)).toFixed(2);
-            this.treasuryBalances.FTA = parseFloat(ethers.formatUnits(ftaBal, this.ftaDecimals)).toFixed(2);
+            const polBalVal = parseFloat(ethers.formatUnits(polBal, 18));
+            const usdtBalVal = parseFloat(ethers.formatUnits(usdtBal, 6));
+            const ftaBalVal = parseFloat(ethers.formatUnits(ftaBal, this.ftaDecimals));
+            const ftaPrice = this.currentRate > 0 ? (1 / this.currentRate) : 0;
+
+            document.getElementById('bal-pol').innerText = polBalVal.toFixed(4);
+            document.getElementById('bal-usdt').innerText = usdtBalVal.toFixed(2);
+            document.getElementById('bal-fta').innerText = ftaBalVal.toFixed(2);
+
+            document.getElementById('bal-pol-usd').innerText = '≈ $' + (polBalVal * this.polPrice).toFixed(2);
+            document.getElementById('bal-usdt-usd').innerText = '≈ $' + usdtBalVal.toFixed(2);
+            document.getElementById('bal-fta-usd').innerText = '≈ $' + (ftaBalVal * ftaPrice).toFixed(2);
+
+            this.treasuryBalances.POL = polBalVal.toFixed(4);
+            this.treasuryBalances.USDT = usdtBalVal.toFixed(2);
+            this.treasuryBalances.FTA = ftaBalVal.toFixed(2);
             this._updateTreasuryUI();
 
             const rate = await this.contracts.mining.exchangeRate();
@@ -1287,59 +1374,6 @@ class Application {
 }
 
 // ═══════════════════════════════════════
-//  ADD HISTORY TRANSLATIONS
-// ═══════════════════════════════════════
-LANG.en.nav_history = 'History';
-LANG.en.heading_history = '📜 History';
-LANG.en.filter_all = 'All';
-LANG.en.filter_sends = 'Sends';
-LANG.en.filter_swaps = 'Swaps';
-LANG.en.filter_games = 'Games';
-LANG.en.filter_mining = 'Mining';
-LANG.en.no_history = 'No transactions yet.';
-LANG.en.tx_send_pol = 'Send POL';
-LANG.en.tx_send_usdt = 'Send USDT';
-LANG.en.tx_send_fta = 'Send FTA';
-LANG.en.tx_buy_machine = 'Machine Purchase';
-LANG.en.tx_swap = 'Token Swap';
-LANG.en.tx_claim = 'Claim Rewards';
-LANG.en.tx_lottery = 'Lottery Ticket';
-LANG.en.tx_wheel = 'Wheel Spin';
-LANG.en.tx_fishing = 'Fishing';
-LANG.en.tx_wingo = 'Win Go Bet';
-LANG.en.tx_referral = 'Referral Bind';
-LANG.en.btn_clear_history = 'Clear';
-LANG.en.label_just_now = 'Just now';
-LANG.en.label_min_ago = '{0}m ago';
-LANG.en.label_hr_ago = '{0}h ago';
-LANG.en.label_day_ago = '{0}d ago';
-
-LANG.fr.nav_history = 'Historique';
-LANG.fr.heading_history = '📜 Historique';
-LANG.fr.filter_all = 'Tout';
-LANG.fr.filter_sends = 'Envois';
-LANG.fr.filter_swaps = 'Échanges';
-LANG.fr.filter_games = 'Jeux';
-LANG.fr.filter_mining = 'Minage';
-LANG.fr.no_history = 'Aucune transaction pour le moment.';
-LANG.fr.tx_send_pol = 'Envoi POL';
-LANG.fr.tx_send_usdt = 'Envoi USDT';
-LANG.fr.tx_send_fta = 'Envoi FTA';
-LANG.fr.tx_buy_machine = 'Achat Machine';
-LANG.fr.tx_swap = 'Échange de tokens';
-LANG.fr.tx_claim = 'Réclamation de gains';
-LANG.fr.tx_lottery = 'Ticket Loterie';
-LANG.fr.tx_wheel = 'Tour de Roue';
-LANG.fr.tx_fishing = 'Pêche';
-LANG.fr.tx_wingo = 'Pari Win Go';
-LANG.fr.tx_referral = 'Lien Parrain';
-LANG.fr.btn_clear_history = 'Effacer';
-LANG.fr.label_just_now = "À l'instant";
-LANG.fr.label_min_ago = 'il y a {0}m';
-LANG.fr.label_hr_ago = 'il y a {0}h';
-LANG.fr.label_day_ago = 'il y a {0}j';
-
-// ═══════════════════════════════════════
 //  TRANSACTION TRACKER
 // ═══════════════════════════════════════
 const TxTracker = {
@@ -1524,7 +1558,6 @@ const TxTracker = {
     }
 };
 
-// Auto-setup when DOM is ready (runs before App.init on window.onload)
 document.addEventListener('DOMContentLoaded', () => {
     TxTracker.setup();
 });
