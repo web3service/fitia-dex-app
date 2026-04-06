@@ -1286,5 +1286,248 @@ class Application {
     }
 }
 
+// ═══════════════════════════════════════
+//  ADD HISTORY TRANSLATIONS
+// ═══════════════════════════════════════
+LANG.en.nav_history = 'History';
+LANG.en.heading_history = '📜 History';
+LANG.en.filter_all = 'All';
+LANG.en.filter_sends = 'Sends';
+LANG.en.filter_swaps = 'Swaps';
+LANG.en.filter_games = 'Games';
+LANG.en.filter_mining = 'Mining';
+LANG.en.no_history = 'No transactions yet.';
+LANG.en.tx_send_pol = 'Send POL';
+LANG.en.tx_send_usdt = 'Send USDT';
+LANG.en.tx_send_fta = 'Send FTA';
+LANG.en.tx_buy_machine = 'Machine Purchase';
+LANG.en.tx_swap = 'Token Swap';
+LANG.en.tx_claim = 'Claim Rewards';
+LANG.en.tx_lottery = 'Lottery Ticket';
+LANG.en.tx_wheel = 'Wheel Spin';
+LANG.en.tx_fishing = 'Fishing';
+LANG.en.tx_wingo = 'Win Go Bet';
+LANG.en.tx_referral = 'Referral Bind';
+LANG.en.btn_clear_history = 'Clear';
+LANG.en.label_just_now = 'Just now';
+LANG.en.label_min_ago = '{0}m ago';
+LANG.en.label_hr_ago = '{0}h ago';
+LANG.en.label_day_ago = '{0}d ago';
+
+LANG.fr.nav_history = 'Historique';
+LANG.fr.heading_history = '📜 Historique';
+LANG.fr.filter_all = 'Tout';
+LANG.fr.filter_sends = 'Envois';
+LANG.fr.filter_swaps = 'Échanges';
+LANG.fr.filter_games = 'Jeux';
+LANG.fr.filter_mining = 'Minage';
+LANG.fr.no_history = 'Aucune transaction pour le moment.';
+LANG.fr.tx_send_pol = 'Envoi POL';
+LANG.fr.tx_send_usdt = 'Envoi USDT';
+LANG.fr.tx_send_fta = 'Envoi FTA';
+LANG.fr.tx_buy_machine = 'Achat Machine';
+LANG.fr.tx_swap = 'Échange de tokens';
+LANG.fr.tx_claim = 'Réclamation de gains';
+LANG.fr.tx_lottery = 'Ticket Loterie';
+LANG.fr.tx_wheel = 'Tour de Roue';
+LANG.fr.tx_fishing = 'Pêche';
+LANG.fr.tx_wingo = 'Pari Win Go';
+LANG.fr.tx_referral = 'Lien Parrain';
+LANG.fr.btn_clear_history = 'Effacer';
+LANG.fr.label_just_now = "À l'instant";
+LANG.fr.label_min_ago = 'il y a {0}m';
+LANG.fr.label_hr_ago = 'il y a {0}h';
+LANG.fr.label_day_ago = 'il y a {0}j';
+
+// ═══════════════════════════════════════
+//  TRANSACTION TRACKER
+// ═══════════════════════════════════════
+const TxTracker = {
+    STORAGE_KEY: 'fitia_tx_history_v1',
+    MAX_ITEMS: 100,
+    currentFilter: 'all',
+    _lastAmounts: {},
+
+    _getLang() { return (typeof App !== 'undefined' && App.lang) ? App.lang : 'en'; },
+    _t(key, ...args) {
+        const lang = this._getLang();
+        let str = (LANG[lang] && LANG[lang][key]) || (LANG['en'] && LANG['en'][key]) || key;
+        args.forEach((a, i) => { str = str.replace(`{${i}}`, a); });
+        return str;
+    },
+
+    _getTxList() {
+        try { return JSON.parse(localStorage.getItem(this.STORAGE_KEY)) || []; }
+        catch(e) { return []; }
+    },
+
+    _saveTxList(list) {
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(list.slice(0, this.MAX_ITEMS)));
+    },
+
+    _mapToastToTx(text) {
+        const t = (key) => this._t(key);
+        const map = [
+            { keys: ['toast_pol_sent', 'POL envoyé'], type: 'send_pol', cat: 'sends', icon: '📤', dir: 'out' },
+            { keys: ['toast_usdt_sent', 'USDT envoyé'], type: 'send_usdt', cat: 'sends', icon: '📤', dir: 'out' },
+            { keys: ['toast_fta_sent', 'FTA envoyé'], type: 'send_fta', cat: 'sends', icon: '📤', dir: 'out' },
+            { keys: ['toast_purchase', 'Achat réussi'], type: 'buy_machine', cat: 'mining', icon: '⛏️', dir: 'neutral' },
+            { keys: ['toast_swap_success', 'Échange réussi'], type: 'swap', cat: 'swaps', icon: '💱', dir: 'neutral' },
+            { keys: ['toast_claimed', 'Gains réclamés'], type: 'claim', cat: 'mining', icon: '💰', dir: 'in' },
+            { keys: ['toast_ticket', 'Ticket acheté'], type: 'lottery', cat: 'games', icon: '🎟️', dir: 'neutral' },
+            { keys: ['toast_wheel_spun', 'Roue tournée'], type: 'wheel', cat: 'games', icon: '🎡', dir: 'neutral' },
+            { keys: ['toast_fish_success', 'Pêche réussie'], type: 'fishing', cat: 'games', icon: '🎣', dir: 'neutral' },
+            { keys: ['toast_ref_bound', 'Parrain lié'], type: 'referral', cat: 'mining', icon: '👥', dir: 'neutral' }
+        ];
+        for (const entry of map) {
+            for (const k of entry.keys) {
+                const translated = t(k);
+                if (text === translated || text.includes(translated)) return entry;
+            }
+        }
+        return null;
+    },
+
+    _getAmountForType(type) {
+        const amounts = {
+            send_pol: this._lastAmounts.withdraw,
+            send_usdt: this._lastAmounts.withdraw,
+            send_fta: this._lastAmounts.withdraw,
+            swap: this._lastAmounts.swap,
+            wingo: this._lastAmounts.bet,
+            wheel: '100',
+            fishing: '50',
+            lottery: '50'
+        };
+        return amounts[type] || '';
+    },
+
+    record(text) {
+        const mapping = this._mapToastToTx(text);
+        if (!mapping) return;
+        const amount = this._getAmountForType(mapping.type);
+        const tx = {
+            id: Date.now() + Math.random(),
+            type: mapping.type,
+            category: mapping.cat,
+            icon: mapping.icon,
+            direction: mapping.dir,
+            title: this._t('tx_' + mapping.type),
+            amount: amount,
+            timestamp: Date.now()
+        };
+        const list = this._getTxList();
+        list.unshift(tx);
+        this._saveTxList(list);
+    },
+
+    _formatTime(ts) {
+        const diff = Math.floor((Date.now() - ts) / 1000);
+        if (diff < 60) return this._t('label_just_now');
+        if (diff < 3600) return this._t('label_min_ago', Math.floor(diff / 60));
+        if (diff < 86400) return this._t('label_hr_ago', Math.floor(diff / 3600));
+        return this._t('label_day_ago', Math.floor(diff / 86400));
+    },
+
+    _getCatClass(cat) {
+        const map = { sends: 'send', swaps: 'swap', games: 'game', mining: 'mining', referral: 'referral' };
+        return map[cat] || 'mining';
+    },
+
+    _getDirClass(dir) {
+        const map = { out: 'out', in: 'in', neutral: 'neutral' };
+        return map[dir] || 'neutral';
+    },
+
+    setFilter(filter) {
+        this.currentFilter = filter;
+        document.querySelectorAll('.hfilter').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filter === filter);
+        });
+        this.render();
+    },
+
+    render() {
+        const list = this._getTxList();
+        const filtered = this.currentFilter === 'all' ? list : list.filter(tx => tx.category === this.currentFilter);
+        const container = document.getElementById('history-list');
+        const empty = document.getElementById('history-empty');
+        if (!container) return;
+
+        if (filtered.length === 0) {
+            container.classList.add('hidden');
+            empty.classList.remove('hidden');
+            return;
+        }
+        container.classList.remove('hidden');
+        empty.classList.add('hidden');
+
+        container.innerHTML = filtered.map(tx => `
+            <div class="tx-card">
+                <div class="tx-icon ${this._getCatClass(tx.category)}">${tx.icon}</div>
+                <div class="tx-info">
+                    <div class="tx-title">${tx.title}</div>
+                    <div class="tx-subtitle">${tx.amount ? tx.amount + (tx.direction === 'out' ? ' ↗' : tx.direction === 'in' ? ' ↙' : '') : ''}</div>
+                </div>
+                <div class="tx-right">
+                    <div class="tx-amount ${this._getDirClass(tx.direction)}">${tx.amount ? (tx.direction === 'out' ? '-' : tx.direction === 'in' ? '+' : '') + tx.amount : '—'}</div>
+                    <div class="tx-time">${this._formatTime(tx.timestamp)}</div>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    clearAll() {
+        if (confirm(this._getLang() === 'fr' ? 'Effacer tout l\'historique ?' : 'Clear all history?')) {
+            localStorage.removeItem(this.STORAGE_KEY);
+            this.render();
+        }
+    },
+
+    setupInputTrackers() {
+        const pairs = [
+            ['t-withdraw-amount', 'withdraw'],
+            ['swap-from-in', 'swap'],
+            ['wingo-bet', 'bet']
+        ];
+        pairs.forEach(([id, key]) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', () => { this._lastAmounts[key] = el.value; });
+                el.addEventListener('change', () => { this._lastAmounts[key] = el.value; });
+            }
+        });
+    },
+
+    setupToastObserver() {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach(mutation => {
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType === 1 && node.classList && node.classList.contains('toast')) {
+                        const isError = node.style.borderLeftColor === 'var(--danger)' ||
+                                        getComputedStyle(node).borderLeftColor === 'rgb(255, 180, 171)';
+                        if (!isError) {
+                            this.record(node.innerText || node.textContent);
+                        }
+                    }
+                });
+            });
+        });
+        observer.observe(container, { childList: true });
+    },
+
+    setup() {
+        this.setupInputTrackers();
+        this.setupToastObserver();
+    }
+};
+
+// Auto-setup when DOM is ready (runs before App.init on window.onload)
+document.addEventListener('DOMContentLoaded', () => {
+    TxTracker.setup();
+});
+
 const App = new Application();
 window.onload = () => App.init();
