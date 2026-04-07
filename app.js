@@ -933,11 +933,16 @@ class Application {
                     this.polPrice = result.price;
                     if (result.change !== null && result.change !== undefined) {
                         this.priceChanges.POL = result.change;
+                    } else {
+                        this.priceChanges.POL = 0;
                     }
+                    this._updatePriceChangeUI();
                     return;
                 }
             } catch(e) { continue; }
         }
+        this.priceChanges.POL = 0;
+        this._updatePriceChangeUI();
     }
 
     _updatePriceChangeUI() {
@@ -968,7 +973,11 @@ class Application {
             const priceCurrent = 1 / this.currentRate;
             if (priceInitial > 0) {
                 this.priceChanges.FTA = ((priceCurrent - priceInitial) / priceInitial) * 100;
+            } else {
+                this.priceChanges.FTA = 0;
             }
+        } else {
+            this.priceChanges.FTA = 0;
         }
         this.priceChanges.USDT = 0;
     }
@@ -981,8 +990,8 @@ class Application {
         try {
             new QRCode(container, {
                 text: this.wallet.address,
-                width: 160,
-                height: 160,
+                width: 180,
+                height: 180,
                 colorDark: '#111417',
                 colorLight: '#ffffff',
                 correctLevel: QRCode.CorrectLevel.M

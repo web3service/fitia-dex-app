@@ -202,7 +202,7 @@ main::-webkit-scrollbar { display: none; }
 .balance { font-family: 'Space Grotesk', monospace; font-weight: 700; font-size: 0.9rem; color: var(--text); }
 .balance-usd { font-family: 'Space Grotesk', monospace; font-size: 0.67rem; color: var(--text-muted); opacity: 0.55; font-weight: 500; letter-spacing: 0.02em; }
 
-/* ══════ NOUVEAU : Pourcentages de prix 24h ══════ */
+/* ══════ Pourcentages de prix 24h ══════ */
 .balance-change {
     display: block;
     font-family: 'Space Grotesk', monospace;
@@ -335,31 +335,29 @@ main::-webkit-scrollbar { display: none; }
 .history-empty p { color: var(--text-muted); font-size: 0.78rem; opacity: 0.5; margin: 0; }
 .history-empty.hidden, .history-list.hidden { display: none !important; }
 
-/* ══════ NOUVEAU : QR Code dans le deposit ══════ */
+/* ══════ QR Code dans le deposit ══════ */
 .qr-code-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 14px 0;
-    padding: 12px;
+    margin: 18px auto;
+    padding: 18px;
     background: #ffffff;
-    border-radius: 0.4rem;
+    border-radius: 0.6rem;
     width: fit-content;
-    margin-left: auto;
-    margin-right: auto;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
 }
-.qr-code-container canvas,
+.qr-code-container canvas {
+    display: none !important;
+}
 .qr-code-container img {
     display: block !important;
-    border-radius: 0.15rem;
-}
-.qr-code-container img {
-    width: 160px !important;
-    height: 160px !important;
+    width: 180px !important;
+    height: 180px !important;
+    border-radius: 0.2rem;
 }
 
-/* ══════ NOUVEAU : Affichage USD dans le withdraw ══════ */
+/* ══════ Affichage USD dans le withdraw ══════ */
 .withdraw-usd-display {
     text-align: right;
     font-family: 'Space Grotesk', monospace;
@@ -462,7 +460,7 @@ main::-webkit-scrollbar { display: none; }
     .balance-usd { font-size: 0.6rem !important; }
     .balance-row { padding: 9px 0 !important; }
     .qr-code-container img { width: 130px !important; height: 130px !important; }
-    .qr-code-container { padding: 8px; }
+    .qr-code-container { padding: 12px; }
     .withdraw-usd-display { font-size: 0.72rem !important; }
     .balance-change { font-size: 0.5rem !important; }
 }
@@ -592,7 +590,7 @@ main::-webkit-scrollbar { display: none; }
     .balance-row { padding: 6px 0 !important; }
     .balance-usd { font-size: 0.6rem !important; }
     .qr-code-container img { width: 110px !important; height: 110px !important; }
-    .qr-code-container { padding: 6px; margin: 8px auto !important; }
+    .qr-code-container { padding: 10px; margin: 10px auto !important; }
     .withdraw-usd-display { font-size: 0.7rem !important; }
 }
 
