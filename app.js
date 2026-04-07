@@ -3,10 +3,348 @@
 // ═══════════════════════════════════════
 const LANG = {
     en: {
-        btn_back: '← Back', heading_recovery: 'Recovery Phrase', warn_recovery: 'Save these 12 words in a safe place. They are the only way to recover your wallet.', btn_copy_phrase: '📋 Copy phrase', check_saved: 'I have saved my recovery phrase', btn_continue: 'Continue', heading_protect: 'Protect your wallet', desc_protect: 'Set a password to encrypt your wallet locally.', btn_create_wallet: 'Create wallet', heading_import: 'Import a wallet', tab_private_key: 'Private Key', tab_phrase: '12-word Phrase', btn_import_submit: 'Import', label_unlock: 'Enter your password to unlock', btn_unlock: 'Unlock', btn_delete_wallet: 'Delete this wallet', label_wallet_addr: 'Wallet Address', btn_treasury: 'Deposit / Withdraw', btn_export_key: 'Export private key', btn_logout: 'Logout', heading_treasury: '💰 Treasury', tab_deposit: 'Deposit', tab_withdraw: 'Withdraw', label_receiving_addr: 'Receiving address', label_amount: 'Amount to send', label_destination: 'Destination address', btn_send: 'SEND', heading_export: 'Export private key', warn_export: '⚠️ Never share your private key with anyone.', btn_show_key: 'Show key', btn_copy_key: '📋 Copy key', btn_cancel: 'Cancel', heading_referral: '👥 Referral System', desc_referral: 'Earn commissions on 3 levels.', label_ref_detected: 'Referrer detected: ', btn_bind_ref: 'BIND MY REFERRER', label_power: 'POWER', label_fta_sec: 'FTA / sec', label_pending: 'PENDING', btn_claim: 'CLAIM', heading_shop: '⛏️ Shop', heading_my_rigs: '⚙️ My Machines', no_rigs_text: "You don't have any active machines yet.", heading_games: '🎮 Game Center', tab_wingo: 'Win Go', tab_wheel: 'Wheel', tab_fishing: 'Fishing', tab_lottery: 'Lottery', info_wingo: 'Guess the number (0-9) or Big/Small.', btn_small: 'Small (0-4)', btn_big: 'Big (5-9)', info_wheel: 'Spin to try to win the Jackpot!', label_jackpot: 'Jackpot:', btn_spin: 'Spin (100 FTA)', info_fishing: 'Cast your line to catch rewards.', btn_fish: 'Fish (50 FTA)', label_pot: 'Pot:', info_lottery: 'Buy a ticket to participate in the draw.', btn_lottery: 'Buy Ticket (50 FTA)', heading_swap: '💱 Exchange', label_you_pay: 'You pay', label_balance: 'Balance:', label_you_receive: 'You receive', btn_swap: 'SWAP', nav_home: 'Home', nav_shop: 'Shop', nav_rigs: 'My Rigs', nav_games: 'Games', nav_swap: 'Swap', ph_password: 'Password (min. 6 characters)', ph_confirm: 'Confirm password', ph_private_key: 'Paste your private key (0x...)', ph_phrase: 'Paste your 12 words separated by spaces', ph_password_simple: 'Password', ph_confirm_export: 'Confirm your password', ph_bet_fta: 'Bet in FTA', link_connect_first: 'Connect first...', loader_generating: 'Generating...', err_mnemonic: 'Mnemonic not generated.', err_generation: 'Generation error.', err_pwd_short: 'Password too short (min. 6)', err_pwd_mismatch: 'Passwords do not match', loader_encrypting: 'Encrypting...', err_insecure: 'Insecure context. Open via HTTPS or localhost.', loader_importing: 'Importing...', err_invalid_key: 'Invalid private key', err_invalid_phrase: 'Invalid phrase (12 words)', err_enter_pwd: 'Enter your password', loader_unlocking: 'Unlocking...', err_wrong_pwd: 'Wrong password', confirm_delete: 'Delete this wallet? Irreversible without your recovery phrase.', toast_deleted: 'Wallet deleted', toast_phrase_copied: 'Phrase copied!', toast_addr_copied: 'Address copied!', err_invalid_amount: 'Invalid amount', err_invalid_addr: 'Invalid destination address', loader_sending: 'Sending...', toast_pol_sent: 'POL sent successfully!', toast_usdt_sent: 'USDT sent successfully!', toast_fta_sent: 'FTA sent successfully!', toast_key_copied: 'Key copied!', loader_connecting: 'Connecting to mainnet...', loader_rpc_saved: 'Testing saved RPC...', loader_wss: 'WSS {0}/{1}...', loader_rpc: 'RPC {0}/{1}...', prompt_rpc: 'No Polygon RPC accessible.\n\nSOLUTION: Run a local server:\n- VS Code: "Live Server" extension then "Go Live"\n- Terminal: npx serve .\n- Terminal: python -m http.server 8000\n\nOr paste a Polygon RPC here:', err_rpc_required: 'RPC required to continue.', loader_test_rpc: 'Testing RPC...', err_rpc_no_response: 'This RPC is not responding.', toast_connected: 'Connected to Polygon mainnet!', err_finalization: 'Finalization error: ', viz_mining: 'ACTIVE MINING', viz_no_machine: 'NO MACHINE', viz_waiting: 'WAITING', rate_display: '1 USDT = {0} FTA', loader_binding: 'Binding...', toast_ref_bound: 'Referrer bound!', err_connect_first: 'Connect first', toast_link_copied: 'Link copied!', rig_name: 'RIG {0}', btn_buy: 'BUY', err_not_connected: 'Wallet not connected', loader_transaction: 'Transaction...', toast_purchase: 'Purchase successful!', loader_swapping: 'Swapping...', toast_swap_success: 'Swap successful!', loader_claiming: 'Claiming...', toast_claimed: 'Rewards claimed!', err_invalid_bet: 'Invalid bet', result_number: 'Result: {0}', toast_wheel_spun: 'Wheel spun!', status_waiting: 'Waiting...', status_casting: 'Casting...', status_line_cast: 'Line cast...', status_bite: 'It bites!', toast_fish_success: 'Fishing successful!', label_error: 'Error', loader_ticket: 'Buying ticket...', toast_ticket: 'Ticket purchased!', err_self_ref: 'Cannot refer yourself.', err_ref_set: 'Referrer already set.', status_active: 'ACTIVE', label_balance_token: 'Balance {0}', label_available_token: 'Available {0}', note_deposit: 'Send {0} to this address from your external wallet (MetaMask, Trust Wallet, exchange, etc.).', warn_deposit: '⚠️ Only send {0} on the Polygon network. Any other network or token will be lost.', nav_history: 'History', heading_history: '📜 History', filter_all: 'All', filter_sends: 'Sends', filter_swaps: 'Swaps', filter_games: 'Games', filter_mining: 'Mining', no_history: 'No transactions yet.', btn_clear_history: 'Clear', tx_send_pol: 'Send POL', tx_send_usdt: 'Send USDT', tx_send_fta: 'Send FTA', tx_buy_machine: 'Machine Purchase', tx_swap: 'Token Swap', tx_claim: 'Claim Rewards', tx_lottery: 'Lottery Ticket', tx_wheel: 'Wheel Spin', tx_fishing: 'Fishing', tx_wingo: 'Win Go Bet', tx_referral: 'Referral Bind', label_just_now: 'Just now', label_min_ago: '{0}m ago', label_hr_ago: '{0}h ago', label_day_ago: '{0}d ago'
+        btn_back: '← Back',
+        heading_recovery: 'Recovery Phrase',
+        warn_recovery: 'Save these 12 words in a safe place. They are the only way to recover your wallet.',
+        btn_copy_phrase: '📋 Copy phrase',
+        check_saved: 'I have saved my recovery phrase',
+        btn_continue: 'Continue',
+        heading_protect: 'Protect your wallet',
+        desc_protect: 'Set a password to encrypt your wallet locally.',
+        btn_create_wallet: 'Create wallet',
+        heading_import: 'Import a wallet',
+        tab_private_key: 'Private Key',
+        tab_phrase: '12-word Phrase',
+        btn_import_submit: 'Import',
+        label_unlock: 'Enter your password to unlock',
+        btn_unlock: 'Unlock',
+        btn_delete_wallet: 'Delete this wallet',
+        label_wallet_addr: 'Wallet Address',
+        btn_treasury: 'Deposit / Withdraw',
+        btn_export_key: 'Export private key',
+        btn_logout: 'Logout',
+        heading_treasury: '💰 Treasury',
+        tab_deposit: 'Deposit',
+        tab_withdraw: 'Withdraw',
+        label_receiving_addr: 'Receiving address',
+        label_amount: 'Amount to send',
+        label_destination: 'Destination address',
+        btn_send: 'SEND',
+        heading_export: 'Export private key',
+        warn_export: '⚠️ Never share your private key with anyone.',
+        btn_show_key: 'Show key',
+        btn_copy_key: '📋 Copy key',
+        btn_cancel: 'Cancel',
+        heading_referral: '👥 Referral System',
+        desc_referral: 'Earn commissions on 3 levels.',
+        label_ref_detected: 'Referrer detected: ',
+        btn_bind_ref: 'BIND MY REFERRER',
+        label_power: 'POWER',
+        label_fta_sec: 'FTA / sec',
+        label_pending: 'PENDING',
+        btn_claim: 'CLAIM',
+        heading_shop: '⛏️ Shop',
+        heading_my_rigs: '⚙️ My Machines',
+        no_rigs_text: "You don't have any active machines yet.",
+        heading_games: '🎮 Game Center',
+        tab_wingo: 'Win Go',
+        tab_wheel: 'Wheel',
+        tab_fishing: 'Fishing',
+        tab_lottery: 'Lottery',
+        info_wingo: 'Guess the number (0-9) or Big/Small.',
+        btn_small: 'Small (0-4)',
+        btn_big: 'Big (5-9)',
+        info_wheel: 'Spin to try to win the Jackpot!',
+        label_jackpot: 'Jackpot:',
+        btn_spin: 'Spin (100 FTA)',
+        info_fishing: 'Cast your line to catch rewards.',
+        btn_fish: 'Fish (50 FTA)',
+        label_pot: 'Pot:',
+        info_lottery: 'Buy a ticket to participate in the draw.',
+        btn_lottery: 'Buy Ticket (50 FTA)',
+        heading_swap: '💱 Exchange',
+        label_you_pay: 'You pay',
+        label_balance: 'Balance:',
+        label_you_receive: 'You receive',
+        btn_swap: 'SWAP',
+        nav_home: 'Home',
+        nav_shop: 'Shop',
+        nav_rigs: 'My Rigs',
+        nav_games: 'Games',
+        nav_swap: 'Swap',
+        ph_password: 'Password (min. 6 characters)',
+        ph_confirm: 'Confirm password',
+        ph_private_key: 'Paste your private key (0x...)',
+        ph_phrase: 'Paste your 12 words separated by spaces',
+        ph_password_simple: 'Password',
+        ph_confirm_export: 'Confirm your password',
+        ph_bet_fta: 'Bet in FTA',
+        link_connect_first: 'Connect first...',
+        loader_generating: 'Generating...',
+        err_mnemonic: 'Mnemonic not generated.',
+        err_generation: 'Generation error.',
+        err_pwd_short: 'Password too short (min. 6)',
+        err_pwd_mismatch: 'Passwords do not match',
+        loader_encrypting: 'Encrypting...',
+        err_insecure: 'Insecure context. Open via HTTPS or localhost.',
+        loader_importing: 'Importing...',
+        err_invalid_key: 'Invalid private key',
+        err_invalid_phrase: 'Invalid phrase (12 words)',
+        err_enter_pwd: 'Enter your password',
+        loader_unlocking: 'Unlocking...',
+        err_wrong_pwd: 'Wrong password',
+        confirm_delete: 'Delete this wallet? Irreversible without your recovery phrase.',
+        toast_deleted: 'Wallet deleted',
+        toast_phrase_copied: 'Phrase copied!',
+        toast_addr_copied: 'Address copied!',
+        err_invalid_amount: 'Invalid amount',
+        err_invalid_addr: 'Invalid destination address',
+        loader_sending: 'Sending...',
+        toast_pol_sent: 'POL sent successfully!',
+        toast_usdt_sent: 'USDT sent successfully!',
+        toast_fta_sent: 'FTA sent successfully!',
+        toast_key_copied: 'Key copied!',
+        loader_connecting: 'Connecting to mainnet...',
+        loader_rpc_saved: 'Testing saved RPC...',
+        loader_wss: 'WSS {0}/{1}...',
+        loader_rpc: 'RPC {0}/{1}...',
+        prompt_rpc: 'No Polygon RPC accessible.\n\nSOLUTION: Run a local server:\n- VS Code: "Live Server" extension then "Go Live"\n- Terminal: npx serve .\n- Terminal: python -m http.server 8000\n\nOr paste a Polygon RPC here:',
+        err_rpc_required: 'RPC required to continue.',
+        loader_test_rpc: 'Testing RPC...',
+        err_rpc_no_response: 'This RPC is not responding.',
+        toast_connected: 'Connected to Polygon mainnet!',
+        err_finalization: 'Finalization error: ',
+        viz_mining: 'ACTIVE MINING',
+        viz_no_machine: 'NO MACHINE',
+        viz_waiting: 'WAITING',
+        rate_display: '1 USDT = {0} FTA',
+        loader_binding: 'Binding...',
+        toast_ref_bound: 'Referrer bound!',
+        err_connect_first: 'Connect first',
+        toast_link_copied: 'Link copied!',
+        rig_name: 'RIG {0}',
+        btn_buy: 'BUY',
+        err_not_connected: 'Wallet not connected',
+        loader_transaction: 'Transaction...',
+        toast_purchase: 'Purchase successful!',
+        loader_swapping: 'Swapping...',
+        toast_swap_success: 'Swap successful!',
+        loader_claiming: 'Claiming...',
+        toast_claimed: 'Rewards claimed!',
+        err_invalid_bet: 'Invalid bet',
+        result_number: 'Result: {0}',
+        toast_wheel_spun: 'Wheel spun!',
+        status_waiting: 'Waiting...',
+        status_casting: 'Casting...',
+        status_line_cast: 'Line cast...',
+        status_bite: 'It bites!',
+        toast_fish_success: 'Fishing successful!',
+        label_error: 'Error',
+        loader_ticket: 'Buying ticket...',
+        toast_ticket: 'Ticket purchased!',
+        err_self_ref: 'Cannot refer yourself.',
+        err_ref_set: 'Referrer already set.',
+        status_active: 'ACTIVE',
+        label_balance_token: 'Balance {0}',
+        label_available_token: 'Available {0}',
+        note_deposit: 'Send {0} to this address from your external wallet (MetaMask, Trust Wallet, exchange, etc.).',
+        warn_deposit: '⚠️ Only send {0} on the Polygon network. Any other network or token will be lost.',
+        nav_history: 'History',
+        heading_history: '📜 History',
+        filter_all: 'All',
+        filter_sends: 'Sends',
+        filter_swaps: 'Swaps',
+        filter_games: 'Games',
+        filter_mining: 'Mining',
+        no_history: 'No transactions yet.',
+        btn_clear_history: 'Clear',
+        tx_send_pol: 'Send POL',
+        tx_send_usdt: 'Send USDT',
+        tx_send_fta: 'Send FTA',
+        tx_buy_machine: 'Machine Purchase',
+        tx_swap: 'Token Swap',
+        tx_claim: 'Claim Rewards',
+        tx_lottery: 'Lottery Ticket',
+        tx_wheel: 'Wheel Spin',
+        tx_fishing: 'Fishing',
+        tx_wingo: 'Win Go Bet',
+        tx_referral: 'Referral Bind',
+        label_just_now: 'Just now',
+        label_min_ago: '{0}m ago',
+        label_hr_ago: '{0}h ago',
+        label_day_ago: '{0}d ago'
     },
     fr: {
-        btn_back: '← Retour', heading_recovery: 'Phrase de récupération', warn_recovery: 'Sauvegardez ces 12 mots en lieu sûr. Ils sont la seule façon de récupérer votre wallet.', btn_copy_phrase: '📋 Copier la phrase', check_saved: "J'ai sauvegardé ma phrase de récupération", btn_continue: 'Continuer', heading_protect: 'Protéger votre wallet', desc_protect: 'Définissez un mot de passe pour chiffrer votre wallet localement.', btn_create_wallet: 'Créer le wallet', heading_import: 'Importer un wallet', tab_private_key: 'Clé privée', tab_phrase: 'Phrase 12 mots', btn_import_submit: 'Importer', label_unlock: 'Entrez votre mot de passe pour déverrouiller', btn_unlock: 'Déverrouiller', btn_delete_wallet: 'Supprimer ce wallet', label_wallet_addr: 'Adresse du Wallet', btn_treasury: 'Dépôt / Retrait', btn_export_key: 'Exporter la clé privée', btn_logout: 'Déconnexion', heading_treasury: '💰 Trésorerie', tab_deposit: 'Dépôt', tab_withdraw: 'Retrait', label_receiving_addr: 'Adresse de réception', label_amount: 'Montant à envoyer', label_destination: 'Adresse de destination', btn_send: 'ENVOYER', heading_export: 'Exporter la clé privée', warn_export: '⚠️ Ne partagez jamais votre clé privée avec personne.', btn_show_key: 'Afficher la clé', btn_copy_key: '📋 Copier la clé', btn_cancel: 'Annuler', heading_referral: '👥 Système de Parrainage', desc_referral: 'Gagnez des commissions sur 3 niveaux.', label_ref_detected: 'Parrain détecté : ', btn_bind_ref: 'LIER MON PARRAIN', label_power: 'PUISSANCE', label_fta_sec: 'FTA / sec', label_pending: 'EN ATTENTE', btn_claim: 'RÉCLAMER', heading_shop: '⛏️ Boutique', heading_my_rigs: '⚙️ Mes Machines', no_rigs_text: "Vous n'avez pas encore de machines actives.", heading_games: '🎮 Game Center', tab_wingo: 'Win Go', tab_wheel: 'Roue', tab_fishing: 'Pêche', tab_lottery: 'Loterie', info_wingo: 'Deviner le numéro (0-9) ou Grand/Petit.', btn_small: 'Petit (0-4)', btn_big: 'Grand (5-9)', info_wheel: 'Tournez pour tenter de gagner le Jackpot !', label_jackpot: 'Jackpot:', btn_spin: 'Tourner (100 FTA)', info_fishing: 'Lancez votre ligne pour attraper des gains.', btn_fish: 'Pêcher (50 FTA)', label_pot: 'Pot:', info_lottery: 'Achetez un ticket pour participer au tirage.', btn_lottery: 'Acheter Ticket (50 FTA)', heading_swap: '💱 Échange', label_you_pay: 'Vous payez', label_balance: 'Solde:', label_you_receive: 'Vous recevez', btn_swap: 'ÉCHANGER', nav_home: 'Home', nav_shop: 'Shop', nav_rigs: 'Mes Rigs', nav_games: 'Jeux', nav_swap: 'Swap', ph_password: 'Mot de passe (min. 6 caractères)', ph_confirm: 'Confirmer le mot de passe', ph_private_key: 'Collez votre clé privée (0x...)', ph_phrase: 'Collez votre phrase de 12 mots séparées par des espaces', ph_password_simple: 'Mot de passe', ph_confirm_export: 'Confirmez votre mot de passe', ph_bet_fta: 'Mise en FTA', link_connect_first: 'Connectez-vous...', loader_generating: 'Génération...', err_mnemonic: 'Mnemonic non généré.', err_generation: 'Erreur de génération.', err_pwd_short: 'Mot de passe trop court (min. 6)', err_pwd_mismatch: 'Les mots de passe ne correspondent pas', loader_encrypting: 'Chiffrement...', err_insecure: 'Contexte non sécurisé. Ouvrez via HTTPS ou localhost.', loader_importing: 'Import...', err_invalid_key: 'Clé privée invalide', err_invalid_phrase: 'Phrase invalide (12 mots)', err_enter_pwd: 'Entrez votre mot de passe', loader_unlocking: 'Déverrouillage...', err_wrong_pwd: 'Mot de passe incorrect', confirm_delete: 'Supprimer ce wallet ? Irréversible sans votre phrase de récupération.', toast_deleted: 'Wallet supprimé', toast_phrase_copied: 'Phrase copiée !', toast_addr_copied: 'Adresse copiée !', err_invalid_amount: 'Montant invalide', err_invalid_addr: 'Adresse de destination invalide', loader_sending: 'Envoi en cours...', toast_pol_sent: 'POL envoyé avec succès !', toast_usdt_sent: 'USDT envoyé avec succès !', toast_fta_sent: 'FTA envoyé avec succès !', toast_key_copied: 'Clé copiée !', loader_connecting: 'Connexion mainnet...', loader_rpc_saved: 'Test RPC sauvegardé...', loader_wss: 'WSS {0}/{1}...', loader_rpc: 'RPC {0}/{1}...', prompt_rpc: "Aucun RPC Polygon accessible.\n\nSOLUTION : Lancez un serveur local :\n- VS Code : Extension 'Live Server' puis 'Go Live'\n- Terminal : npx serve .\n- Terminal : python -m http.server 8000\n\nOu collez ici un RPC Polygon :", err_rpc_required: 'RPC requis pour continuer.', loader_test_rpc: 'Test RPC...', err_rpc_no_response: 'Ce RPC ne répond pas.', toast_connected: 'Connecté au mainnet Polygon !', err_finalization: 'Erreur finalisation : ', viz_mining: 'MINAGE ACTIF', viz_no_machine: 'AUCUNE MACHINE', viz_waiting: 'EN ATTENTE', rate_display: '1 USDT = {0} FTA', loader_binding: 'Liaison...', toast_ref_bound: 'Parrain lié !', err_connect_first: 'Connectez-vous d\'abord', toast_link_copied: 'Lien copié !', rig_name: 'RIG {0}', btn_buy: 'ACHETER', err_not_connected: 'Wallet non connecté', loader_transaction: 'Transaction...', toast_purchase: 'Achat réussi !', loader_swapping: 'Swap...', toast_swap_success: 'Échange réussi !', loader_claiming: 'Claim...', toast_claimed: 'Gains réclamés !', err_invalid_bet: 'Mise invalide', result_number: 'Résultat : {0}', toast_wheel_spun: 'Roue tournée !', status_waiting: 'En attente...', status_casting: 'Lancer...', status_line_cast: 'Ligne lancée...', status_bite: 'Ça mord !', toast_fish_success: 'Pêche réussie !', label_error: 'Erreur', loader_ticket: 'Ticket...', toast_ticket: 'Ticket acheté !', err_self_ref: 'Impossible de vous parrainer vous-même.', err_ref_set: 'Parrain déjà défini.', status_active: 'ACTIF', label_balance_token: 'Solde {0}', label_available_token: 'Disponible {0}', note_deposit: 'Envoyez des {0} à cette adresse depuis votre wallet externe (MetaMask, Trust Wallet, exchange, etc.).', warn_deposit: '⚠️ Envoyez uniquement du {0} sur le réseau Polygon. Tout autre réseau ou token sera perdu.', nav_history: 'Historique', heading_history: '📜 Historique', filter_all: 'Tout', filter_sends: 'Envois', filter_swaps: 'Échanges', filter_games: 'Jeux', filter_mining: 'Minage', no_history: 'Aucune transaction pour le moment.', btn_clear_history: 'Effacer', tx_send_pol: 'Envoi POL', tx_send_usdt: 'Envoi USDT', tx_send_fta: 'Envoi FTA', tx_buy_machine: 'Achat Machine', tx_swap: 'Échange de tokens', tx_claim: 'Réclamation de gains', tx_lottery: 'Ticket Loterie', tx_wheel: 'Tour de Roue', tx_fishing: 'Pêche', tx_wingo: 'Pari Win Go', tx_referral: 'Lien Parrain', label_just_now: "À l'instant", label_min_ago: 'il y a {0}m', label_hr_ago: 'il y a {0}h', label_day_ago: 'il y a {0}j'
+        btn_back: '← Retour',
+        heading_recovery: 'Phrase de récupération',
+        warn_recovery: 'Sauvegardez ces 12 mots en lieu sûr. Ils sont la seule façon de récupérer votre wallet.',
+        btn_copy_phrase: '📋 Copier la phrase',
+        check_saved: "J'ai sauvegardé ma phrase de récupération",
+        btn_continue: 'Continuer',
+        heading_protect: 'Protéger votre wallet',
+        desc_protect: 'Définissez un mot de passe pour chiffrer votre wallet localement.',
+        btn_create_wallet: 'Créer le wallet',
+        heading_import: 'Importer un wallet',
+        tab_private_key: 'Clé privée',
+        tab_phrase: 'Phrase 12 mots',
+        btn_import_submit: 'Importer',
+        label_unlock: 'Entrez votre mot de passe pour déverrouiller',
+        btn_unlock: 'Déverrouiller',
+        btn_delete_wallet: 'Supprimer ce wallet',
+        label_wallet_addr: 'Adresse du Wallet',
+        btn_treasury: 'Dépôt / Retrait',
+        btn_export_key: 'Exporter la clé privée',
+        btn_logout: 'Déconnexion',
+        heading_treasury: '💰 Trésorerie',
+        tab_deposit: 'Dépôt',
+        tab_withdraw: 'Retrait',
+        label_receiving_addr: 'Adresse de réception',
+        label_amount: 'Montant à envoyer',
+        label_destination: 'Adresse de destination',
+        btn_send: 'ENVOYER',
+        heading_export: 'Exporter la clé privée',
+        warn_export: '⚠️ Ne partagez jamais votre clé privée avec personne.',
+        btn_show_key: 'Afficher la clé',
+        btn_copy_key: '📋 Copier la clé',
+        btn_cancel: 'Annuler',
+        heading_referral: '👥 Système de Parrainage',
+        desc_referral: 'Gagnez des commissions sur 3 niveaux.',
+        label_ref_detected: 'Parrain détecté : ',
+        btn_bind_ref: 'LIER MON PARRAIN',
+        label_power: 'PUISSANCE',
+        label_fta_sec: 'FTA / sec',
+        label_pending: 'EN ATTENTE',
+        btn_claim: 'RÉCLAMER',
+        heading_shop: '⛏️ Boutique',
+        heading_my_rigs: '⚙️ Mes Machines',
+        no_rigs_text: "Vous n'avez pas encore de machines actives.",
+        heading_games: '🎮 Game Center',
+        tab_wingo: 'Win Go',
+        tab_wheel: 'Roue',
+        tab_fishing: 'Pêche',
+        tab_lottery: 'Loterie',
+        info_wingo: 'Deviner le numéro (0-9) ou Grand/Petit.',
+        btn_small: 'Petit (0-4)',
+        btn_big: 'Grand (5-9)',
+        info_wheel: 'Tournez pour tenter de gagner le Jackpot !',
+        label_jackpot: 'Jackpot:',
+        btn_spin: 'Tourner (100 FTA)',
+        info_fishing: 'Lancez votre ligne pour attraper des gains.',
+        btn_fish: 'Pêcher (50 FTA)',
+        label_pot: 'Pot:',
+        info_lottery: 'Achetez un ticket pour participer au tirage.',
+        btn_lottery: 'Acheter Ticket (50 FTA)',
+        heading_swap: '💱 Échange',
+        label_you_pay: 'Vous payez',
+        label_balance: 'Solde:',
+        label_you_receive: 'Vous recevez',
+        btn_swap: 'ÉCHANGER',
+        nav_home: 'Home',
+        nav_shop: 'Shop',
+        nav_rigs: 'Mes Rigs',
+        nav_games: 'Jeux',
+        nav_swap: 'Swap',
+        ph_password: 'Mot de passe (min. 6 caractères)',
+        ph_confirm: 'Confirmer le mot de passe',
+        ph_private_key: 'Collez votre clé privée (0x...)',
+        ph_phrase: 'Collez votre phrase de 12 mots séparées par des espaces',
+        ph_password_simple: 'Mot de passe',
+        ph_confirm_export: 'Confirmez votre mot de passe',
+        ph_bet_fta: 'Mise en FTA',
+        link_connect_first: 'Connectez-vous...',
+        loader_generating: 'Génération...',
+        err_mnemonic: 'Mnemonic non généré.',
+        err_generation: 'Erreur de génération.',
+        err_pwd_short: 'Mot de passe trop court (min. 6)',
+        err_pwd_mismatch: 'Les mots de passe ne correspondent pas',
+        loader_encrypting: 'Chiffrement...',
+        err_insecure: 'Contexte non sécurisé. Ouvrez via HTTPS ou localhost.',
+        loader_importing: 'Import...',
+        err_invalid_key: 'Clé privée invalide',
+        err_invalid_phrase: 'Phrase invalide (12 mots)',
+        err_enter_pwd: 'Entrez votre mot de passe',
+        loader_unlocking: 'Déverrouillage...',
+        err_wrong_pwd: 'Mot de passe incorrect',
+        confirm_delete: 'Supprimer ce wallet ? Irréversible sans votre phrase de récupération.',
+        toast_deleted: 'Wallet supprimé',
+        toast_phrase_copied: 'Phrase copiée !',
+        toast_addr_copied: 'Adresse copiée !',
+        err_invalid_amount: 'Montant invalide',
+        err_invalid_addr: 'Adresse de destination invalide',
+        loader_sending: 'Envoi en cours...',
+        toast_pol_sent: 'POL envoyé avec succès !',
+        toast_usdt_sent: 'USDT envoyé avec succès !',
+        toast_fta_sent: 'FTA envoyé avec succès !',
+        toast_key_copied: 'Clé copiée !',
+        loader_connecting: 'Connexion mainnet...',
+        loader_rpc_saved: 'Test RPC sauvegardé...',
+        loader_wss: 'WSS {0}/{1}...',
+        loader_rpc: 'RPC {0}/{1}...',
+        prompt_rpc: "Aucun RPC Polygon accessible.\n\nSOLUTION : Lancez un serveur local :\n- VS Code : Extension 'Live Server' puis 'Go Live'\n- Terminal : npx serve .\n- Terminal : python -m http.server 8000\n\nOu collez ici un RPC Polygon :",
+        err_rpc_required: 'RPC requis pour continuer.',
+        loader_test_rpc: 'Test RPC...',
+        err_rpc_no_response: 'Ce RPC ne répond pas.',
+        toast_connected: 'Connecté au mainnet Polygon !',
+        err_finalization: 'Erreur finalisation : ',
+        viz_mining: 'MINAGE ACTIF',
+        viz_no_machine: 'AUCUNE MACHINE',
+        viz_waiting: 'EN ATTENTE',
+        rate_display: '1 USDT = {0} FTA',
+        loader_binding: 'Liaison...',
+        toast_ref_bound: 'Parrain lié !',
+        err_connect_first: 'Connectez-vous d\'abord',
+        toast_link_copied: 'Lien copié !',
+        rig_name: 'RIG {0}',
+        btn_buy: 'ACHETER',
+        err_not_connected: 'Wallet non connecté',
+        loader_transaction: 'Transaction...',
+        toast_purchase: 'Achat réussi !',
+        loader_swapping: 'Swap...',
+        toast_swap_success: 'Échange réussi !',
+        loader_claiming: 'Claim...',
+        toast_claimed: 'Gains réclamés !',
+        err_invalid_bet: 'Mise invalide',
+        result_number: 'Résultat : {0}',
+        toast_wheel_spun: 'Roue tournée !',
+        status_waiting: 'En attente...',
+        status_casting: 'Lancer...',
+        status_line_cast: 'Ligne lancée...',
+        status_bite: 'Ça mord !',
+        toast_fish_success: 'Pêche réussie !',
+        label_error: 'Erreur',
+        loader_ticket: 'Ticket...',
+        toast_ticket: 'Ticket acheté !',
+        err_self_ref: 'Impossible de vous parrainer vous-même.',
+        err_ref_set: 'Parrain déjà défini.',
+        status_active: 'ACTIF',
+        label_balance_token: 'Solde {0}',
+        label_available_token: 'Disponible {0}',
+        note_deposit: 'Envoyez des {0} à cette adresse depuis votre wallet externe (MetaMask, Trust Wallet, exchange, etc.).',
+        warn_deposit: '⚠️ Envoyez uniquement du {0} sur le réseau Polygon. Tout autre réseau ou token sera perdu.',
+        nav_history: 'Historique',
+        heading_history: '📜 Historique',
+        filter_all: 'Tout',
+        filter_sends: 'Envois',
+        filter_swaps: 'Échanges',
+        filter_games: 'Jeux',
+        filter_mining: 'Minage',
+        no_history: 'Aucune transaction pour le moment.',
+        btn_clear_history: 'Effacer',
+        tx_send_pol: 'Envoi POL',
+        tx_send_usdt: 'Envoi USDT',
+        tx_send_fta: 'Envoi FTA',
+        tx_buy_machine: 'Achat Machine',
+        tx_swap: 'Échange de tokens',
+        tx_claim: 'Réclamation de gains',
+        tx_lottery: 'Ticket Loterie',
+        tx_wheel: 'Tour de Roue',
+        tx_fishing: 'Pêche',
+        tx_wingo: 'Pari Win Go',
+        tx_referral: 'Lien Parrain',
+        label_just_now: "À l'instant",
+        label_min_ago: 'il y a {0}m',
+        label_hr_ago: 'il y a {0}h',
+        label_day_ago: 'il y a {0}j'
     }
 };
 
@@ -99,8 +437,10 @@ class Application {
         this.treasuryBalances = { POL: '0.00', USDT: '0.00', FTA: '0.00' };
         this.lang = 'en';
         this.polPrice = 0;
-        this.priceChanges = { POL: 0, USDT: 0, FTA: 0 };
         this.priceInterval = null;
+        this.priceChanges = { POL: null, USDT: null, FTA: null };
+        this._initialFtaRate = null;
+        this._qrGenerated = false;
         this.rigImages = [
             "https://images.unsplash.com/photo-1614064641938-3bbee52942c7?w=400&h=250&fit=crop&q=80",
             "https://images.unsplash.com/photo-1597852074816-d933c7d2b988?w=400&h=250&fit=crop&q=80",
@@ -144,29 +484,7 @@ class Application {
         if (p && typeof p.destroy === 'function') { try { p.destroy(); } catch(e) {} }
     }
 
-    async _loadQRLib() {
-        if (window.QRCode) return true;
-        return new Promise((resolve) => {
-            const s = document.createElement('script');
-            s.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
-            s.onload = () => resolve(true);
-            s.onerror = () => resolve(false);
-            document.head.appendChild(s);
-        });
-    }
-
-    async _generateQR(text) {
-        const loaded = await this._loadQRLib();
-        if (!loaded || !window.QRCode) return;
-        const img = document.getElementById('t-deposit-qr');
-        if (!img) return;
-        try {
-            img.src = window.QRCode.toDataURL(text, { width: 280, margin: 1, color: '#111417', background: '#ffffff' });
-        } catch(e) { img.src = ''; }
-    }
-
     async init() {
-        await this._loadQRLib();
         const savedLang = localStorage.getItem(CONFIG.LANG_KEY);
         if (savedLang && LANG[savedLang]) this.lang = savedLang;
         document.getElementById('lang-btn').innerText = this.lang.toUpperCase();
@@ -299,11 +617,16 @@ class Application {
         this.hideTreasury(); this.hideWalletPanel();
         this.showStep('step-unlock');
         this.pendingBalance = 0;
+        this._initialFtaRate = null;
+        this.priceChanges = { POL: null, USDT: null, FTA: null };
         document.getElementById('val-pending').innerText = '0.00000';
         document.getElementById('val-power').innerText = '0.00000';
         document.getElementById('viz-status').innerText = this.t('viz_waiting');
         document.getElementById('viz-status').style.color = 'var(--surface-highest)';
         document.getElementById('unlock-pwd').value = '';
+        document.getElementById('bal-pol-change').textContent = '';
+        document.getElementById('bal-usdt-change').textContent = '';
+        document.getElementById('bal-fta-change').textContent = '';
     }
 
     deleteWallet() {
@@ -352,7 +675,7 @@ class Application {
         this.setTreasuryToken(this.treasuryToken);
         this.setTreasuryMode(this.treasuryMode);
         this._refreshTreasuryBalances();
-        if (this.wallet) this._generateQR(this.wallet.address);
+        this._generateQRCode();
     }
 
     hideTreasury() { document.getElementById('treasury-modal').classList.add('hidden'); }
@@ -371,7 +694,7 @@ class Application {
         document.getElementById('ttoken-usdt').classList.toggle('active', token === 'USDT');
         document.getElementById('ttoken-fta').classList.toggle('active', token === 'FTA');
         this._updateTreasuryUI();
-        if (this.wallet) this._generateQR(this.wallet.address);
+        document.getElementById('withdraw-usd-display').textContent = '';
     }
 
     _updateTreasuryUI() {
@@ -386,7 +709,6 @@ class Application {
         if (noteEl) noteEl.innerHTML = this.t('note_deposit', `<span style="color:var(--accent-deep);font-weight:600">${t}</span>`);
         const warnEl = document.querySelector('.deposit-warning');
         if (warnEl) warnEl.innerHTML = this.t('warn_deposit', `<span style="color:var(--danger)">${t}</span>`);
-        this.updateWithdrawUsd();
     }
 
     async _refreshTreasuryBalances() {
@@ -417,22 +739,10 @@ class Application {
 
     setWithdrawMax() {
         document.getElementById('t-withdraw-amount').value = this.treasuryBalances[this.treasuryToken] || '0';
-        this.updateWithdrawUsd();
+        this.updateWithdrawUSD();
     }
 
-    updateWithdrawUsd() {
-        const amountStr = document.getElementById('t-withdraw-amount').value;
-        const usdEl = document.getElementById('t-withdraw-usd');
-        if (!usdEl) return;
-        const val = parseFloat(amountStr);
-        if (!val || val <= 0 || isNaN(val)) { usdEl.innerText = '≈ $0.00'; return; }
-        const token = this.treasuryToken;
-        let usdVal = 0;
-        if (token === 'POL') usdVal = val * this.polPrice;
-        else if (token === 'USDT') usdVal = val;
-        else if (token === 'FTA' && this.currentRate > 0) usdVal = val * (1 / this.currentRate);
-        usdEl.innerText = '≈ $' + usdVal.toFixed(2);
-    }
+    updateWithdrawMax() {}
 
     async executeWithdraw() {
         const amountStr = document.getElementById('t-withdraw-amount').value;
@@ -459,7 +769,7 @@ class Application {
             }
             document.getElementById('t-withdraw-amount').value = '';
             document.getElementById('t-withdraw-to').value = '';
-            this.updateWithdrawUsd();
+            document.getElementById('withdraw-usd-display').textContent = '';
             await this._refreshTreasuryBalances();
             this.updateData();
         } catch(e) { this.showError(e); }
@@ -531,6 +841,7 @@ class Application {
         this._safeDestroy(this.provider);
         this.provider = null;
         this.setLoader(true, this.t('loader_connecting'));
+
         const customRpc = localStorage.getItem(CONFIG.CUSTOM_RPC_KEY);
         if (customRpc) {
             this.setLoader(true, this.t('loader_rpc_saved'));
@@ -538,14 +849,17 @@ class Application {
             if (r.success) return this._finalizeConnection();
             localStorage.removeItem(CONFIG.CUSTOM_RPC_KEY);
         }
+
         for (let i = 0; i < CONFIG.WSS_LIST.length; i++) {
             this.setLoader(true, this.t('loader_wss', i+1, CONFIG.WSS_LIST.length));
             if ((await this._tryConnect(CONFIG.WSS_LIST[i])).success) return this._finalizeConnection();
         }
+
         for (let i = 0; i < CONFIG.HTTP_LIST.length; i++) {
             this.setLoader(true, this.t('loader_rpc', i+1, CONFIG.HTTP_LIST.length));
             if ((await this._tryConnect(CONFIG.HTTP_LIST[i])).success) return this._finalizeConnection();
         }
+
         this.setLoader(false);
         const customUrl = prompt(this.t('prompt_rpc'), "");
         if (!customUrl || (!customUrl.startsWith("http") && !customUrl.startsWith("wss"))) {
@@ -568,15 +882,20 @@ class Application {
             this.contracts.usdt = new ethers.Contract(CONFIG.USDT, ERC20_ABI, this.signer);
             this.contracts.fta = new ethers.Contract(CONFIG.FTA, ERC20_ABI, this.signer);
             this.contracts.mining = new ethers.Contract(CONFIG.MINING, MINING_ABI, this.signer);
+
             try { this.ftaDecimals = await this.contracts.fta.decimals(); } catch(e) { this.ftaDecimals = 18; }
+
             document.getElementById('wallet-auth').classList.add('hidden');
             document.getElementById('wallet-status').classList.remove('hidden');
             document.getElementById('addr-display').innerText = this.user.slice(0,6) + "..." + this.user.slice(-4);
+
             this.checkReferral();
             document.getElementById('ref-link').value = window.location.origin + window.location.pathname + "?ref=" + this.user;
             const ftaLogoEl = document.getElementById('logo-fta-bal');
             if(ftaLogoEl) ftaLogoEl.src = CONFIG.LOGO_FTA;
+
             if (!localStorage.getItem(this.storageKey)) localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
+
             this.setLoader(false);
             await this.updateData();
             if (this.dataInterval) clearInterval(this.dataInterval);
@@ -584,9 +903,9 @@ class Application {
             this.initVisualizer();
             window.addEventListener('resize', () => this.resizeCanvas());
             this.initWheel();
-            this._fetchPrices();
+            this._fetchPolPrice();
             if (this.priceInterval) clearInterval(this.priceInterval);
-            this.priceInterval = setInterval(() => this._fetchPrices(), 60000);
+            this.priceInterval = setInterval(() => this._fetchPolPrice(), 60000);
             this.showToast(this.t('toast_connected'));
         } catch(e) {
             console.error(e);
@@ -595,23 +914,108 @@ class Application {
         }
     }
 
-    async _fetchPrices() {
-        try {
-            const ctrl = new AbortController();
-            const timer = setTimeout(() => ctrl.abort(), 10000);
-            const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=matic-network,tether&vs_currencies=usd&include_24hr_change=true', { signal: ctrl.signal });
-            clearTimeout(timer);
-            if (res.ok) {
+    async _fetchPolPrice() {
+        const apis = [
+            { url: 'https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd&include_24hr_change=true', parse: d => ({ price: d?.matic_network?.usd, change: d?.matic_network?.usd_24h_change }) },
+            { url: 'https://api.coincap.io/v2/assets/polygon', parse: d => ({ price: d?.data?.priceUsd ? parseFloat(d.data.priceUsd) : 0, change: d?.data?.changePercent24Hr ? parseFloat(d.data.changePercent24Hr) : null }) },
+            { url: 'https://min-api.cryptocompare.com/data/price?fsym=MATIC&tsyms=USD', parse: d => ({ price: d?.USD, change: null }) }
+        ];
+        for (const api of apis) {
+            try {
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), 8000);
+                const res = await fetch(api.url, { signal: ctrl.signal });
+                clearTimeout(timer);
+                if (!res.ok) continue;
                 const data = await res.json();
-                if (data['matic-network']) {
-                    this.polPrice = data['matic-network'].usd || 0;
-                    this.priceChanges.POL = data['matic-network'].usd_24h_change || 0;
+                const result = api.parse(data);
+                if (result && result.price && result.price > 0) {
+                    this.polPrice = result.price;
+                    if (result.change !== null && result.change !== undefined) {
+                        this.priceChanges.POL = result.change;
+                    }
+                    return;
                 }
-                if (data['tether']) {
-                    this.priceChanges.USDT = data['tether'].usd_24h_change || 0;
-                }
+            } catch(e) { continue; }
+        }
+    }
+
+    _updatePriceChangeUI() {
+        const tokens = ['POL', 'USDT', 'FTA'];
+        tokens.forEach(token => {
+            const el = document.getElementById('bal-' + token.toLowerCase() + '-change');
+            if (!el) return;
+            const change = this.priceChanges[token];
+            if (change === null || change === undefined) {
+                el.className = 'balance-change neutral';
+                el.textContent = '—';
+                return;
             }
-        } catch(e) {}
+            const isUp = change >= 0;
+            const arrow = isUp ? '▲' : '▼';
+            const sign = isUp ? '+' : '';
+            el.className = 'balance-change ' + (isUp ? 'up' : 'down');
+            el.textContent = arrow + ' ' + sign + change.toFixed(2) + '%';
+        });
+    }
+
+    _updateFtaPriceChange() {
+        if (!this._initialFtaRate && this.currentRate > 0) {
+            this._initialFtaRate = this.currentRate;
+        }
+        if (this._initialFtaRate && this.currentRate > 0 && this._initialFtaRate !== this.currentRate) {
+            const priceInitial = 1 / this._initialFtaRate;
+            const priceCurrent = 1 / this.currentRate;
+            if (priceInitial > 0) {
+                this.priceChanges.FTA = ((priceCurrent - priceInitial) / priceInitial) * 100;
+            }
+        }
+        this.priceChanges.USDT = 0;
+    }
+
+    _generateQRCode() {
+        if (this._qrGenerated || !this.wallet) return;
+        const container = document.getElementById('qr-code-container');
+        if (!container) return;
+        container.innerHTML = '';
+        try {
+            new QRCode(container, {
+                text: this.wallet.address,
+                width: 160,
+                height: 160,
+                colorDark: '#111417',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M
+            });
+            this._qrGenerated = true;
+        } catch(e) {
+            console.warn('QR generation failed:', e);
+        }
+    }
+
+    updateWithdrawUSD() {
+        const amountStr = document.getElementById('t-withdraw-amount').value;
+        const display = document.getElementById('withdraw-usd-display');
+        if (!display) return;
+        if (!amountStr || parseFloat(amountStr) <= 0 || isNaN(parseFloat(amountStr))) {
+            display.textContent = '';
+            return;
+        }
+        const amount = parseFloat(amountStr);
+        let usdValue = 0;
+        if (this.treasuryToken === 'POL') {
+            usdValue = amount * this.polPrice;
+        } else if (this.treasuryToken === 'USDT') {
+            usdValue = amount;
+        } else if (this.treasuryToken === 'FTA') {
+            const ftaPrice = this.currentRate > 0 ? (1 / this.currentRate) : 0;
+            usdValue = amount * ftaPrice;
+        }
+        if (usdValue > 0) {
+            display.textContent = '≈ $' + usdValue.toFixed(2);
+        } else {
+            display.textContent = '';
+        }
     }
 
     resizeCanvas() {
@@ -620,12 +1024,6 @@ class Application {
             canvas.width = canvas.offsetWidth * 2;
             canvas.height = canvas.offsetHeight * 2;
         }
-    }
-
-    _formatChange(val) {
-        if (!val || val === 0) return { text: '--', cls: 'neutral' };
-        const sign = val >= 0 ? '+' : '';
-        return { text: sign + val.toFixed(2) + '%', cls: val >= 0 ? 'up' : 'down' };
     }
 
     async updateData() {
@@ -668,16 +1066,6 @@ class Application {
             document.getElementById('bal-usdt-usd').innerText = '≈ $' + usdtBalVal.toFixed(2);
             document.getElementById('bal-fta-usd').innerText = '≈ $' + (ftaBalVal * ftaPrice).toFixed(2);
 
-            const polCh = this._formatChange(this.priceChanges.POL);
-            const usdtCh = this._formatChange(this.priceChanges.USDT);
-            const ftaCh = this._formatChange(this.priceChanges.FTA);
-            const polEl = document.getElementById('bal-pol-change');
-            const usdtEl = document.getElementById('bal-usdt-change');
-            const ftaEl = document.getElementById('bal-fta-change');
-            polEl.innerText = polCh.text; polEl.className = 'balance-change ' + polCh.cls;
-            usdtEl.innerText = usdtCh.text; usdtEl.className = 'balance-change ' + usdtCh.cls;
-            ftaEl.innerText = ftaCh.text; ftaEl.className = 'balance-change ' + ftaCh.cls;
-
             this.treasuryBalances.POL = polBalVal.toFixed(4);
             this.treasuryBalances.USDT = usdtBalVal.toFixed(2);
             this.treasuryBalances.FTA = ftaBalVal.toFixed(2);
@@ -690,6 +1078,9 @@ class Application {
             const toBal = this.swapDirection === 'USDT_TO_FTA' ? ftaBal : usdtBal;
             document.getElementById('swap-bal-from').innerText = parseFloat(ethers.formatUnits(fromBal, this.swapDirection === 'USDT_TO_FTA' ? 6 : this.ftaDecimals)).toFixed(2);
             document.getElementById('swap-bal-to').innerText = parseFloat(ethers.formatUnits(toBal, this.swapDirection === 'USDT_TO_FTA' ? this.ftaDecimals : 6)).toFixed(2);
+
+            this._updateFtaPriceChange();
+            this._updatePriceChangeUI();
 
             await this.renderShop(false);
             try {
@@ -1192,6 +1583,7 @@ const TxTracker = {
         const container = document.getElementById('history-list');
         const empty = document.getElementById('history-empty');
         if (!container) return;
+
         if (filtered.length === 0) {
             container.classList.add('hidden');
             empty.classList.remove('hidden');
@@ -1199,6 +1591,7 @@ const TxTracker = {
         }
         container.classList.remove('hidden');
         empty.classList.add('hidden');
+
         container.innerHTML = filtered.map(tx => `
             <div class="tx-card">
                 <div class="tx-icon ${this._getCatClass(tx.category)}">${tx.icon}</div>
