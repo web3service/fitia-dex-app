@@ -338,23 +338,24 @@ main::-webkit-scrollbar { display: none; }
 /* ══════ QR Code dans le deposit ══════ */
 .qr-code-container {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     margin: 18px auto;
-    padding: 18px;
+    padding: 18px 18px 14px 18px;
     background: #ffffff;
-    border-radius: 0.6rem;
+    border-radius: 0.55rem;
     width: fit-content;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    box-shadow: 0 3px 20px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04);
 }
 .qr-code-container canvas {
     display: none !important;
 }
 .qr-code-container img {
     display: block !important;
-    width: 180px !important;
-    height: 180px !important;
-    border-radius: 0.2rem;
+    border-radius: 0.15rem;
+    width: 164px !important;
+    height: 164px !important;
 }
 
 /* ══════ Affichage USD dans le withdraw ══════ */
@@ -460,7 +461,7 @@ main::-webkit-scrollbar { display: none; }
     .balance-usd { font-size: 0.6rem !important; }
     .balance-row { padding: 9px 0 !important; }
     .qr-code-container img { width: 130px !important; height: 130px !important; }
-    .qr-code-container { padding: 12px; }
+    .qr-code-container { padding: 8px; }
     .withdraw-usd-display { font-size: 0.72rem !important; }
     .balance-change { font-size: 0.5rem !important; }
 }
@@ -590,7 +591,7 @@ main::-webkit-scrollbar { display: none; }
     .balance-row { padding: 6px 0 !important; }
     .balance-usd { font-size: 0.6rem !important; }
     .qr-code-container img { width: 110px !important; height: 110px !important; }
-    .qr-code-container { padding: 10px; margin: 10px auto !important; }
+    .qr-code-container { padding: 6px; margin: 8px auto !important; }
     .withdraw-usd-display { font-size: 0.7rem !important; }
 }
 

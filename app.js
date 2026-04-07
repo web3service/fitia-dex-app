@@ -441,6 +441,7 @@ class Application {
         this.priceChanges = { POL: null, USDT: null, FTA: null };
         this._initialFtaRate = null;
         this._qrGenerated = false;
+        this._ftaUsdPrice = 0;
         this.rigImages = [
             "https://images.unsplash.com/photo-1614064641938-3bbee52942c7?w=400&h=250&fit=crop&q=80",
             "https://images.unsplash.com/photo-1597852074816-d933c7d2b988?w=400&h=250&fit=crop&q=80",
@@ -618,6 +619,7 @@ class Application {
         this.showStep('step-unlock');
         this.pendingBalance = 0;
         this._initialFtaRate = null;
+        this._ftaUsdPrice = 0;
         this.priceChanges = { POL: null, USDT: null, FTA: null };
         document.getElementById('val-pending').innerText = '0.00000';
         document.getElementById('val-power').innerText = '0.00000';
@@ -904,8 +906,10 @@ class Application {
             window.addEventListener('resize', () => this.resizeCanvas());
             this.initWheel();
             this._fetchPolPrice();
+            this._fetchFtaPriceChange();
             if (this.priceInterval) clearInterval(this.priceInterval);
             this.priceInterval = setInterval(() => this._fetchPolPrice(), 60000);
+            setInterval(() => this._fetchFtaPriceChange(), 120000);
             this.showToast(this.t('toast_connected'));
         } catch(e) {
             console.error(e);
@@ -933,16 +937,49 @@ class Application {
                     this.polPrice = result.price;
                     if (result.change !== null && result.change !== undefined) {
                         this.priceChanges.POL = result.change;
-                    } else {
-                        this.priceChanges.POL = 0;
                     }
                     this._updatePriceChangeUI();
+                    this._refreshBalUsdDisplays();
                     return;
                 }
             } catch(e) { continue; }
         }
-        this.priceChanges.POL = 0;
-        this._updatePriceChangeUI();
+    }
+
+    async _fetchFtaPriceChange() {
+        try {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 8000);
+            const res = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + CONFIG.FTA, { signal: ctrl.signal });
+            clearTimeout(timer);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.pairs && data.pairs.length > 0) {
+                const pair = data.pairs[0];
+                if (pair.priceChange && pair.priceChange.h24 !== null && pair.priceChange.h24 !== undefined) {
+                    this.priceChanges.FTA = pair.priceChange.h24;
+                    this._updatePriceChangeUI();
+                }
+                if (pair.priceUsd) {
+                    this._ftaUsdPrice = parseFloat(pair.priceUsd);
+                    this._refreshBalUsdDisplays();
+                }
+            }
+        } catch(e) {}
+    }
+
+    _refreshBalUsdDisplays() {
+        const polEl = document.getElementById('bal-pol');
+        const ftaEl = document.getElementById('bal-fta');
+        if (polEl && this.polPrice > 0) {
+            const polVal = parseFloat(polEl.innerText) || 0;
+            document.getElementById('bal-pol-usd').innerText = '≈ $' + (polVal * this.polPrice).toFixed(2);
+        }
+        if (ftaEl) {
+            const ftaVal = parseFloat(ftaEl.innerText) || 0;
+            const ftaPrice = this._ftaUsdPrice || (this.currentRate > 0 ? (1 / this.currentRate) : 0);
+            document.getElementById('bal-fta-usd').innerText = '≈ $' + (ftaVal * ftaPrice).toFixed(2);
+        }
     }
 
     _updatePriceChangeUI() {
@@ -968,16 +1005,14 @@ class Application {
         if (!this._initialFtaRate && this.currentRate > 0) {
             this._initialFtaRate = this.currentRate;
         }
-        if (this._initialFtaRate && this.currentRate > 0 && this._initialFtaRate !== this.currentRate) {
-            const priceInitial = 1 / this._initialFtaRate;
-            const priceCurrent = 1 / this.currentRate;
-            if (priceInitial > 0) {
-                this.priceChanges.FTA = ((priceCurrent - priceInitial) / priceInitial) * 100;
-            } else {
-                this.priceChanges.FTA = 0;
+        if (this.priceChanges.FTA === null || this.priceChanges.FTA === undefined) {
+            if (this._initialFtaRate && this.currentRate > 0 && this._initialFtaRate !== this.currentRate) {
+                const priceInitial = 1 / this._initialFtaRate;
+                const priceCurrent = 1 / this.currentRate;
+                if (priceInitial > 0) {
+                    this.priceChanges.FTA = ((priceCurrent - priceInitial) / priceInitial) * 100;
+                }
             }
-        } else {
-            this.priceChanges.FTA = 0;
         }
         this.priceChanges.USDT = 0;
     }
@@ -990,8 +1025,8 @@ class Application {
         try {
             new QRCode(container, {
                 text: this.wallet.address,
-                width: 180,
-                height: 180,
+                width: 164,
+                height: 164,
                 colorDark: '#111417',
                 colorLight: '#ffffff',
                 correctLevel: QRCode.CorrectLevel.M
@@ -1017,7 +1052,7 @@ class Application {
         } else if (this.treasuryToken === 'USDT') {
             usdValue = amount;
         } else if (this.treasuryToken === 'FTA') {
-            const ftaPrice = this.currentRate > 0 ? (1 / this.currentRate) : 0;
+            const ftaPrice = this._ftaUsdPrice || (this.currentRate > 0 ? (1 / this.currentRate) : 0);
             usdValue = amount * ftaPrice;
         }
         if (usdValue > 0) {
@@ -1065,7 +1100,7 @@ class Application {
             const polBalVal = parseFloat(ethers.formatUnits(polBal, 18));
             const usdtBalVal = parseFloat(ethers.formatUnits(usdtBal, 6));
             const ftaBalVal = parseFloat(ethers.formatUnits(ftaBal, this.ftaDecimals));
-            const ftaPrice = this.currentRate > 0 ? (1 / this.currentRate) : 0;
+            const ftaPrice = this._ftaUsdPrice || (this.currentRate > 0 ? (1 / this.currentRate) : 0);
 
             document.getElementById('bal-pol').innerText = polBalVal.toFixed(4);
             document.getElementById('bal-usdt').innerText = usdtBalVal.toFixed(2);
