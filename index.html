@@ -160,6 +160,10 @@
                     <span class="treasury-bal-label" id="t-deposit-label">Balance POL</span>
                     <span class="treasury-bal-val" id="t-deposit-bal">0.00</span>
                 </div>
+                <div class="deposit-qr-wrap">
+                    <img id="t-deposit-qr" class="deposit-qr" src="" alt="QR Code">
+                    <div class="deposit-qr-label">Scan to deposit</div>
+                </div>
                 <div class="deposit-address-box">
                     <div class="deposit-addr-label" data-i18n="label_receiving_addr">Receiving address</div>
                     <div class="deposit-addr-row">
@@ -181,9 +185,10 @@
                     <div class="withdraw-field">
                         <label data-i18n="label_amount">Amount to send</label>
                         <div class="withdraw-input-row">
-                            <input type="number" id="t-withdraw-amount" class="auth-input" placeholder="0.0" oninput="App.updateWithdrawMax()">
+                            <input type="number" id="t-withdraw-amount" class="auth-input" placeholder="0.0" oninput="App.updateWithdrawUsd()">
                             <button class="withdraw-max-btn" onclick="App.setWithdrawMax()">MAX</button>
                         </div>
+                        <div class="withdraw-usd-preview" id="t-withdraw-usd">≈ $0.00</div>
                     </div>
                     <div class="withdraw-field">
                         <label data-i18n="label_destination">Destination address</label>
@@ -268,7 +273,10 @@
                     <div class="balance-row">
                         <div class="balance-left">
                             <img src="https://i.ibb.co/NdCLLsck/IMG-20260302-131520-512-x-512-pixel.webp" class="token-logo" alt="POL">
-                            <span class="balance-name">POL</span>
+                            <div class="balance-name-wrap">
+                                <span class="balance-name">POL</span>
+                                <span class="balance-change" id="bal-pol-change">--</span>
+                            </div>
                         </div>
                         <div class="balance-right">
                             <span class="balance" id="bal-pol">0.00</span>
@@ -278,7 +286,10 @@
                     <div class="balance-row">
                         <div class="balance-left">
                             <img src="https://i.ibb.co/BRGx1GN/IMG-20260228-134642-512-x-512-pixel.webp" class="token-logo" alt="USDT">
-                            <span class="balance-name">USDT</span>
+                            <div class="balance-name-wrap">
+                                <span class="balance-name">USDT</span>
+                                <span class="balance-change" id="bal-usdt-change">--</span>
+                            </div>
                         </div>
                         <div class="balance-right">
                             <span class="balance" id="bal-usdt">0.00</span>
@@ -288,7 +299,10 @@
                     <div class="balance-row">
                         <div class="balance-left">
                             <img id="logo-fta-bal" src="https://i.ibb.co/vvz2DDK5/20260207-190817.webp" class="token-logo" alt="FTA">
-                            <span class="balance-name">FTA</span>
+                            <div class="balance-name-wrap">
+                                <span class="balance-name">FTA</span>
+                                <span class="balance-change" id="bal-fta-change">--</span>
+                            </div>
                         </div>
                         <div class="balance-right">
                             <span class="balance" id="bal-fta">0.00</span>

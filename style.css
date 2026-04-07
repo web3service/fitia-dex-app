@@ -129,18 +129,27 @@ input, textarea, select { font-size: 16px !important; }
 .treasury-bal-display { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--surface-lowest); border-radius: 0.25rem; border: 0.5px solid rgba(79,70,51,0.1); margin-bottom: 14px; }
 .treasury-bal-label { font-family: 'Space Grotesk', sans-serif; font-size: 0.62rem; color: var(--text-muted); letter-spacing: 0.12em; text-transform: uppercase; }
 .treasury-bal-val { font-family: 'Space Grotesk', monospace; font-size: 1rem; font-weight: 700; color: var(--text); }
+
+/* ══════ DEPOSIT QR CODE ══════ */
+.deposit-qr-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: 16px; }
+.deposit-qr { width: 180px; height: 180px; border-radius: 0.5rem; border: 0.5px solid rgba(79,70,51,0.2); padding: 8px; background: #fff; }
+.deposit-qr-label { font-family: 'Space Grotesk', sans-serif; font-size: 0.62rem; color: var(--text-muted); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 8px; opacity: 0.5; }
 .deposit-address-box { background: var(--surface-lowest); border: 0.5px solid rgba(79,70,51,0.15); border-radius: 0.25rem; padding: 14px; }
 .deposit-addr-label { font-family: 'Space Grotesk', sans-serif; font-size: 0.58rem; color: var(--text-muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
 .deposit-addr-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .deposit-addr-code { flex: 1; font-family: 'Space Grotesk', monospace; font-size: 0.7rem; color: var(--primary); word-break: break-all; line-height: 1.5; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 0.125rem; }
 .deposit-note { font-size: 0.72rem; color: var(--text-muted); line-height: 1.5; margin: 0 0 10px 0; opacity: 0.7; }
 .deposit-warning { background: rgba(255,180,171,0.06); border: 0.5px solid rgba(255,180,171,0.15); border-radius: 0.25rem; padding: 10px; font-size: 0.7rem; color: var(--danger); line-height: 1.5; }
+
+/* ══════ WITHDRAW USD PREVIEW ══════ */
 .withdraw-form { display: flex; flex-direction: column; gap: 12px; }
 .withdraw-field label { display: block; font-family: 'Space Grotesk', sans-serif; font-size: 0.58rem; color: var(--text-muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }
 .withdraw-input-row { display: flex; gap: 8px; }
 .withdraw-input-row .auth-input { flex: 1; margin-bottom: 0; }
 .withdraw-max-btn { background: var(--surface-high); border: 0.5px solid rgba(79,70,51,0.2); color: var(--primary); font-family: 'Space Grotesk', sans-serif; font-size: 0.62rem; font-weight: 700; padding: 0 14px; border-radius: 0.25rem; cursor: pointer; letter-spacing: 0.1em; white-space: nowrap; min-height: 48px; display: flex; align-items: center; }
 .withdraw-max-btn:active { background: var(--surface-highest); }
+.withdraw-usd-preview { font-family: 'Space Grotesk', monospace; font-size: 0.82rem; color: var(--primary); font-weight: 700; text-align: right; padding: 4px 2px 0; opacity: 0.85; letter-spacing: 0.02em; min-height: 22px; }
+
 .export-modal { position: fixed; inset: 0; z-index: 7000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 20px; }
 .export-modal.hidden { display: none !important; }
 .export-content { background: var(--surface-low); border: 0.5px solid rgba(79,70,51,0.2); border-radius: 0.5rem; padding: 20px 16px; width: 100%; max-width: 400px; animation: authIn 0.3s ease; max-height: 80dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -197,7 +206,12 @@ main::-webkit-scrollbar { display: none; }
 .balance-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; }
 .balance-row:not(:last-child) { border-bottom: 0.5px solid rgba(79,70,51,0.1); }
 .balance-left { display: flex; align-items: center; gap: 10px; }
+.balance-name-wrap { display: flex; flex-direction: column; gap: 1px; }
 .balance-name { font-size: 0.85rem; color: var(--text); font-weight: 600; letter-spacing: 0.02em; }
+.balance-change { font-family: 'Space Grotesk', monospace; font-size: 0.6rem; font-weight: 600; letter-spacing: 0.03em; }
+.balance-change.up { color: var(--success); }
+.balance-change.down { color: var(--danger); }
+.balance-change.neutral { color: var(--text-muted); opacity: 0.4; }
 .balance-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 .balance { font-family: 'Space Grotesk', monospace; font-weight: 700; font-size: 0.9rem; color: var(--text); }
 .balance-usd { font-family: 'Space Grotesk', monospace; font-size: 0.67rem; color: var(--text-muted); opacity: 0.55; font-weight: 500; letter-spacing: 0.02em; }
@@ -398,7 +412,11 @@ main::-webkit-scrollbar { display: none; }
     .balance { font-size: 0.82rem !important; }
     .balance-name { font-size: 0.78rem !important; }
     .balance-usd { font-size: 0.6rem !important; }
+    .balance-change { font-size: 0.55rem !important; }
     .balance-row { padding: 9px 0 !important; }
+    .deposit-qr { width: 150px !important; height: 150px !important; }
+    .deposit-qr-label { font-size: 0.55rem !important; }
+    .withdraw-usd-preview { font-size: 0.75rem !important; }
 }
 @media screen and (min-width: 321px) and (max-width: 360px) {
     :root { --nav-height: 56px; }
@@ -483,6 +501,7 @@ main::-webkit-scrollbar { display: none; }
     .balances-card .balance-row { padding: 6px 0 !important; }
     .auth-brand { margin-bottom: 18px !important; }
     .auth-network { margin-bottom: 18px !important; }
+    .deposit-qr { width: 140px !important; height: 140px !important; }
 }
 @media screen and (max-height: 580px) {
     .visualizer-wrap { height: 40px !important; }
@@ -526,7 +545,9 @@ main::-webkit-scrollbar { display: none; }
     .treasury-content { padding: 14px 12px !important; }
     .export-content { padding: 14px 12px !important; }
     .balance-row { padding: 6px 0 !important; }
-    .balance-usd { font-size: 0.6rem !important; }
+    .balance-usd, .balance-change { font-size: 0.55rem !important; }
+    .deposit-qr { width: 120px !important; height: 120px !important; }
+    .withdraw-usd-preview { font-size: 0.68rem !important; }
 }
 
 /* ACCESSIBILITE */
