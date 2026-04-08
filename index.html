@@ -154,7 +154,6 @@
                 <button class="ttoken-tab" id="ttoken-fta" onclick="App.setTreasuryToken('FTA')">FTA</button>
             </div>
 
-            <!-- DEPOSIT VIEW -->
             <div id="treasury-deposit" class="treasury-view active">
                 <div class="treasury-bal-display">
                     <span class="treasury-bal-label" id="t-deposit-label">Balance POL</span>
@@ -171,7 +170,6 @@
                 </div>
             </div>
 
-            <!-- WITHDRAW VIEW -->
             <div id="treasury-withdraw" class="treasury-view">
                 <div class="treasury-bal-display">
                     <span class="treasury-bal-label" id="t-withdraw-label">Available POL</span>
@@ -265,7 +263,6 @@
                     <span data-i18n="btn_claim">CLAIM</span>
                 </button>
 
-                <!-- BALANCES CARD -->
                 <div class="card balances-card">
                     <div class="balance-row">
                         <div class="balance-left">
@@ -373,26 +370,6 @@
                 </div>
             </div>
 
-            <!-- SWAP -->
-            <div id="view-swap" class="view">
-                <h2 class="view-title" data-i18n="heading_swap">💱 Exchange</h2>
-                <div class="card swap-interface">
-                    <div class="swap-header"><span data-i18n="label_you_pay">You pay</span><span><span data-i18n="label_balance">Balance:</span> <span id="swap-bal-from">0</span></span></div>
-                    <div class="input-wrap">
-                        <input type="number" id="swap-from-in" placeholder="0.0" oninput="App.calcSwap()">
-                        <div class="token-select" onclick="App.toggleSwap()" id="token-from-display">USDT</div>
-                    </div>
-                    <div class="swap-arrow-wrap"><div class="swap-arrow" onclick="App.toggleSwap()">⇅</div></div>
-                    <div class="swap-header"><span data-i18n="label_you_receive">You receive</span><span><span data-i18n="label_balance">Balance:</span> <span id="swap-bal-to">0</span></span></div>
-                    <div class="input-wrap">
-                        <input type="number" id="swap-to-in" placeholder="0.0" readonly>
-                        <div class="token-select" style="background:#282a2e; cursor:default;" id="token-to-display">FTA</div>
-                    </div>
-                    <div class="rate-info" id="swap-rate">Loading...</div>
-                    <button class="btn-primary" data-i18n="btn_swap" onclick="App.executeSwap()">SWAP</button>
-                </div>
-            </div>
-
             <!-- TRANSACTION HISTORY -->
             <div id="view-history" class="view">
                 <div class="history-header">
@@ -402,7 +379,6 @@
                 <div class="history-filters">
                     <button class="hfilter active" data-i18n="filter_all" data-filter="all" onclick="TxTracker.setFilter('all')">All</button>
                     <button class="hfilter" data-i18n="filter_sends" data-filter="sends" onclick="TxTracker.setFilter('sends')">Sends</button>
-                    <button class="hfilter" data-i18n="filter_swaps" data-filter="swaps" onclick="TxTracker.setFilter('swaps')">Swaps</button>
                     <button class="hfilter" data-i18n="filter_games" data-filter="games" onclick="TxTracker.setFilter('games')">Games</button>
                     <button class="hfilter" data-i18n="filter_mining" data-filter="mining" onclick="TxTracker.setFilter('mining')">Mining</button>
                 </div>
@@ -430,10 +406,6 @@
             <button class="nav-item" onclick="App.nav('games')">
                 <svg viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5z"/></svg>
                 <span data-i18n="nav_games">Games</span>
-            </button>
-            <button class="nav-item" onclick="App.nav('swap')">
-                <svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
-                <span data-i18n="nav_swap">Swap</span>
             </button>
             <button class="nav-item" onclick="App.nav('history'); TxTracker.render()">
                 <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
