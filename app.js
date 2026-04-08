@@ -765,21 +765,21 @@ class Application {
         try {
             if (this.treasuryToken === 'POL') {
                 var amount = ethers.parseEther(amountStr);
-                TxTracker._lastAmounts.withdraw = { amount: amountStr, unit: 'POL' };
                 var tx = await this.signer.sendTransaction({ to: toAddr, value: amount });
                 await tx.wait();
+                TxTracker._lastAmounts.withdraw = { amount: amountStr, unit: 'POL' };
                 this.showToast(this.t('toast_pol_sent'));
             } else if (this.treasuryToken === 'USDT') {
                 var amount = ethers.parseUnits(amountStr, 6);
-                TxTracker._lastAmounts.withdraw = { amount: amountStr, unit: 'USDT' };
                 var tx = await this.contracts.usdt.transfer(toAddr, amount);
                 await tx.wait();
+                TxTracker._lastAmounts.withdraw = { amount: amountStr, unit: 'USDT' };
                 this.showToast(this.t('toast_usdt_sent'));
             } else if (this.treasuryToken === 'FTA') {
                 var amount = ethers.parseUnits(amountStr, this.ftaDecimals);
-                TxTracker._lastAmounts.withdraw = { amount: amountStr, unit: 'FTA' };
                 var tx = await this.contracts.fta.transfer(toAddr, amount);
                 await tx.wait();
+                TxTracker._lastAmounts.withdraw = { amount: amountStr, unit: 'FTA' };
                 this.showToast(this.t('toast_fta_sent'));
             }
             document.getElementById('t-withdraw-amount').value = '';
@@ -1066,18 +1066,18 @@ class Application {
             if (this.payMode === 'USDT') {
                 var allow = await this.contracts.usdt.allowance(this.user, CONFIG.MINING);
                 if (allow < m.price) { await (await this.contracts.usdt.approve(CONFIG.MINING, m.price)).wait(); }
+                await (await this.contracts.mining.buyMachine(id)).wait();
                 var priceUsdtVal = parseFloat(ethers.formatUnits(m.price, 6));
                 TxTracker._lastAmounts.buy_machine = { amount: priceUsdtVal.toFixed(2), unit: 'USDT' };
-                await (await this.contracts.mining.buyMachine(id)).wait();
             } else {
                 var rate = await this.contracts.mining.exchangeRate();
                 var ftaPrice = (m.price * rate) / 1000000n;
                 var allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
                 if (allow < ftaPrice) { await (await this.contracts.fta.approve(CONFIG.MINING, ftaPrice)).wait(); }
+                await (await this.contracts.mining.buyMachineWithFTA(id)).wait();
                 var priceUsdtVal = parseFloat(ethers.formatUnits(m.price, 6));
                 var priceFtaVal = (priceUsdtVal * this.currentRate).toFixed(2);
                 TxTracker._lastAmounts.buy_machine = { amount: priceFtaVal, unit: 'FTA' };
-                await (await this.contracts.mining.buyMachineWithFTA(id)).wait();
             }
             this.showToast(this.t('toast_purchase'));
             this.isLoadingShop = false;
