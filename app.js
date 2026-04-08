@@ -765,16 +765,19 @@ class Application {
         try {
             if (this.treasuryToken === 'POL') {
                 var amount = ethers.parseEther(amountStr);
+                TxTracker._lastAmounts.withdraw = { amount: amountStr, unit: 'POL' };
                 var tx = await this.signer.sendTransaction({ to: toAddr, value: amount });
                 await tx.wait();
                 this.showToast(this.t('toast_pol_sent'));
             } else if (this.treasuryToken === 'USDT') {
                 var amount = ethers.parseUnits(amountStr, 6);
+                TxTracker._lastAmounts.withdraw = { amount: amountStr, unit: 'USDT' };
                 var tx = await this.contracts.usdt.transfer(toAddr, amount);
                 await tx.wait();
                 this.showToast(this.t('toast_usdt_sent'));
             } else if (this.treasuryToken === 'FTA') {
                 var amount = ethers.parseUnits(amountStr, this.ftaDecimals);
+                TxTracker._lastAmounts.withdraw = { amount: amountStr, unit: 'FTA' };
                 var tx = await this.contracts.fta.transfer(toAddr, amount);
                 await tx.wait();
                 this.showToast(this.t('toast_fta_sent'));
@@ -1063,12 +1066,17 @@ class Application {
             if (this.payMode === 'USDT') {
                 var allow = await this.contracts.usdt.allowance(this.user, CONFIG.MINING);
                 if (allow < m.price) { await (await this.contracts.usdt.approve(CONFIG.MINING, m.price)).wait(); }
+                var priceUsdtVal = parseFloat(ethers.formatUnits(m.price, 6));
+                TxTracker._lastAmounts.buy_machine = { amount: priceUsdtVal.toFixed(2), unit: 'USDT' };
                 await (await this.contracts.mining.buyMachine(id)).wait();
             } else {
                 var rate = await this.contracts.mining.exchangeRate();
                 var ftaPrice = (m.price * rate) / 1000000n;
                 var allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
                 if (allow < ftaPrice) { await (await this.contracts.fta.approve(CONFIG.MINING, ftaPrice)).wait(); }
+                var priceUsdtVal = parseFloat(ethers.formatUnits(m.price, 6));
+                var priceFtaVal = (priceUsdtVal * this.currentRate).toFixed(2);
+                TxTracker._lastAmounts.buy_machine = { amount: priceFtaVal, unit: 'FTA' };
                 await (await this.contracts.mining.buyMachineWithFTA(id)).wait();
             }
             this.showToast(this.t('toast_purchase'));
@@ -1085,9 +1093,11 @@ class Application {
         this.stopMiningCounter();
         this.setLoader(true, this.t('loader_claiming'));
         try {
+            var claimedAmount = this.pendingBalance.toFixed(5);
             await (await this.contracts.mining.claimRewards()).wait();
             this.pendingBalance = 0;
             localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
+            TxTracker._lastAmounts.claim = { amount: claimedAmount, unit: 'FTA' };
             this.showToast(this.t('toast_claimed'));
             this.updateData();
             if (this.currentRealPower > 0) this.startMiningCounter();
@@ -1126,6 +1136,7 @@ class Application {
             reel.classList.remove('spinning');
             var randomNum = Math.floor(Math.random() * 10);
             reel.style.transform = 'translateY(' + (-80 * randomNum) + 'px)';
+            TxTracker.recordManual('wingo', betVal, 'FTA');
             this.showGameResult('wingo-result', this.t('result_number', randomNum), true);
             this.updateData();
         } catch(e) {
@@ -1176,6 +1187,7 @@ class Application {
             clearInterval(this.wheelInterval);
             this.wheelAngle += 5;
             this.drawWheel(this.wheelAngle);
+            TxTracker.recordManual('wheel', '100', 'FTA');
             this.showGameResult('wheel-result', this.t('toast_wheel_spun'), true);
             this.updateData();
         } catch(e) { clearInterval(this.wheelInterval); this.showError(e); }
@@ -1196,6 +1208,7 @@ class Application {
             var tx = await this.contracts.mining.goFishing(); await tx.wait();
             status.innerText = this.t('status_bite'); hook.style.fontSize = "3rem";
             setTimeout(function() { hook.style.fontSize = "2rem"; }, 500);
+            TxTracker.recordManual('fishing', '50', 'FTA');
             this.showGameResult('fish-result', this.t('toast_fish_success'), true);
             this.updateData();
         } catch(e) {
@@ -1211,6 +1224,7 @@ class Application {
             var allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
             if (allow < price) await (await this.contracts.fta.approve(CONFIG.MINING, price)).wait();
             await (await this.contracts.mining.buyLotteryTicket()).wait();
+            TxTracker._lastAmounts.lottery = { amount: '50', unit: 'FTA' };
             this.showToast(this.t('toast_ticket')); this.updateData();
         } catch(e) { this.showError(e); }
         this.setLoader(false);
@@ -1307,6 +1321,9 @@ class Application {
     }
 }
 
+// ═══════════════════════════════════════
+//  TRANSACTION TRACKER (HISTORY)
+// ═══════════════════════════════════════
 var TxTracker = {
     STORAGE_KEY: 'fitia_tx_history_v1',
     MAX_ITEMS: 100,
@@ -1336,12 +1353,9 @@ var TxTracker = {
             { keys: ['toast_pol_sent', 'POL envoyé'], type: 'send_pol', cat: 'sends', icon: '📤', dir: 'out' },
             { keys: ['toast_usdt_sent', 'USDT envoyé'], type: 'send_usdt', cat: 'sends', icon: '📤', dir: 'out' },
             { keys: ['toast_fta_sent', 'FTA envoyé'], type: 'send_fta', cat: 'sends', icon: '📤', dir: 'out' },
-            { keys: ['toast_purchase', 'Achat réussi'], type: 'buy_machine', cat: 'mining', icon: '⛏️', dir: 'neutral' },
-            { keys: ['toast_swap_success', 'Échange réussi'], type: 'swap', cat: 'swaps', icon: '💱', dir: 'neutral' },
+            { keys: ['toast_purchase', 'Achat réussi'], type: 'buy_machine', cat: 'mining', icon: '⛏️', dir: 'out' },
             { keys: ['toast_claimed', 'Gains réclamés'], type: 'claim', cat: 'mining', icon: '💰', dir: 'in' },
             { keys: ['toast_ticket', 'Ticket acheté'], type: 'lottery', cat: 'games', icon: '🎟️', dir: 'neutral' },
-            { keys: ['toast_wheel_spun', 'Roue tournée'], type: 'wheel', cat: 'games', icon: '🎡', dir: 'neutral' },
-            { keys: ['toast_fish_success', 'Pêche réussie'], type: 'fishing', cat: 'games', icon: '🎣', dir: 'neutral' },
             { keys: ['toast_ref_bound', 'Parrain lié'], type: 'referral', cat: 'mining', icon: '👥', dir: 'neutral' }
         ];
         for (var i = 0; i < map.length; i++) {
@@ -1353,24 +1367,41 @@ var TxTracker = {
         return null;
     },
 
-    _getAmountForType: function(type) {
-        var amounts = {
-            send_pol: this._lastAmounts.withdraw,
-            send_usdt: this._lastAmounts.withdraw,
-            send_fta: this._lastAmounts.withdraw,
-            swap: this._lastAmounts.swap,
-            wingo: this._lastAmounts.bet,
-            wheel: '100',
-            fishing: '50',
-            lottery: '50'
+    recordManual: function(type, amount, unit) {
+        var typeMap = {
+            send_pol: { cat: 'sends', icon: '📤', dir: 'out' },
+            send_usdt: { cat: 'sends', icon: '📤', dir: 'out' },
+            send_fta: { cat: 'sends', icon: '📤', dir: 'out' },
+            buy_machine: { cat: 'mining', icon: '⛏️', dir: 'out' },
+            claim: { cat: 'mining', icon: '💰', dir: 'in' },
+            lottery: { cat: 'games', icon: '🎟️', dir: 'neutral' },
+            wheel: { cat: 'games', icon: '🎡', dir: 'neutral' },
+            fishing: { cat: 'games', icon: '🎣', dir: 'neutral' },
+            wingo: { cat: 'games', icon: '🎲', dir: 'neutral' },
+            referral: { cat: 'mining', icon: '👥', dir: 'neutral' }
         };
-        return amounts[type] || '';
+        var info = typeMap[type];
+        if (!info) return;
+        var tx = {
+            id: Date.now() + Math.random(),
+            type: type,
+            category: info.cat,
+            icon: info.icon,
+            direction: info.dir,
+            title: this._t('tx_' + type),
+            amount: amount || '',
+            unit: unit || '',
+            timestamp: Date.now()
+        };
+        var list = this._getTxList();
+        list.unshift(tx);
+        this._saveTxList(list);
     },
 
     record: function(text) {
         var mapping = this._mapToastToTx(text);
         if (!mapping) return;
-        var amount = this._getAmountForType(mapping.type);
+        var amountData = this._lastAmounts[mapping.type] || {};
         var tx = {
             id: Date.now() + Math.random(),
             type: mapping.type,
@@ -1378,7 +1409,8 @@ var TxTracker = {
             icon: mapping.icon,
             direction: mapping.dir,
             title: this._t('tx_' + mapping.type),
-            amount: amount,
+            amount: amountData.amount || '',
+            unit: amountData.unit || '',
             timestamp: Date.now()
         };
         var list = this._getTxList();
@@ -1426,12 +1458,13 @@ var TxTracker = {
         container.classList.remove('hidden');
         empty.classList.add('hidden');
         container.innerHTML = filtered.map(function(tx) {
-            var amountStr = tx.amount ? tx.amount + (tx.direction === 'out' ? ' ↗' : tx.direction === 'in' ? ' ↙' : '') : '';
-            var amountPrefix = tx.amount ? (tx.direction === 'out' ? '-' : tx.direction === 'in' ? '+' : '') : '';
+            var amountDisplay = tx.amount ? tx.amount + (tx.unit ? ' ' + tx.unit : '') : '';
+            var prefix = amountDisplay ? (tx.direction === 'out' ? '-' : tx.direction === 'in' ? '+' : '') : '';
+            var finalAmount = amountDisplay ? prefix + amountDisplay : '—';
             return '<div class="tx-card">' +
                 '<div class="tx-icon ' + TxTracker._getCatClass(tx.category) + '">' + tx.icon + '</div>' +
-                '<div class="tx-info"><div class="tx-title">' + tx.title + '</div><div class="tx-subtitle">' + amountStr + '</div></div>' +
-                '<div class="tx-right"><div class="tx-amount ' + TxTracker._getDirClass(tx.direction) + '">' + (tx.amount ? amountPrefix + tx.amount : '—') + '</div>' +
+                '<div class="tx-info"><div class="tx-title">' + tx.title + '</div></div>' +
+                '<div class="tx-right"><div class="tx-amount ' + TxTracker._getDirClass(tx.direction) + '">' + finalAmount + '</div>' +
                 '<div class="tx-time">' + TxTracker._formatTime(tx.timestamp) + '</div></div></div>';
         }).join('');
     },
@@ -1444,17 +1477,13 @@ var TxTracker = {
     },
 
     setupInputTrackers: function() {
-        var pairs = [
-            ['t-withdraw-amount', 'withdraw'],
-            ['wingo-bet', 'bet']
-        ];
-        pairs.forEach(function(pair) {
-            var el = document.getElementById(pair[0]);
-            if (el) {
-                el.addEventListener('input', function() { TxTracker._lastAmounts[pair[1]] = el.value; });
-                el.addEventListener('change', function() { TxTracker._lastAmounts[pair[1]] = el.value; });
-            }
-        });
+        var self = this;
+        var wingoEl = document.getElementById('wingo-bet');
+        if (wingoEl) {
+            wingoEl.addEventListener('input', function() {
+                self._lastAmounts.wingo = { amount: wingoEl.value, unit: 'FTA' };
+            });
+        }
     },
 
     setupToastObserver: function() {
