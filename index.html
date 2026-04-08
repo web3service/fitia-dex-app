@@ -230,13 +230,15 @@
                 <div class="card referral-card">
                     <h3 data-i18n="heading_referral">👥 Referral System</h3>
                     <p class="small-text" data-i18n="desc_referral">Earn commissions on 3 levels.</p>
-                    <div class="input-group" onclick="App.copyLink()">
-                        <input type="text" id="ref-link" readonly value="Connect first...">
+                    <p class="small-text" style="margin-bottom:6px;" data-i18n="label_your_ref_addr">Your referral address:</p>
+                    <div class="input-group" onclick="App.copyRefAddr()">
+                        <input type="text" id="ref-addr" readonly value="Connect first...">
                         <button class="icon-btn">📋</button>
                     </div>
-                    <div id="bind-ref-area" style="display:none; margin-top:15px;">
-                        <p class="small-text"><span data-i18n="label_ref_detected">Referrer detected: </span><span id="detected-ref" class="highlight"></span></p>
-                        <button class="btn-sm btn-full" data-i18n="btn_bind_ref" onclick="App.bindReferrer()">BIND MY REFERRER</button>
+                    <div style="margin-top:15px;">
+                        <p class="small-text" data-i18n="label_bind_referrer_desc">Enter your referrer's address to bind:</p>
+                        <input type="text" id="bind-ref-input" class="auth-input" data-i18n-ph="ph_ref_addr" placeholder="Paste referrer address (0x...)">
+                        <button class="btn-sm btn-full" data-i18n="btn_bind_ref" onclick="App.bindReferrerManual()">BIND MY REFERRER</button>
                     </div>
                 </div>
 

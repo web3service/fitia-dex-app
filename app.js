@@ -37,6 +37,9 @@ const LANG = {
         btn_cancel: 'Cancel',
         heading_referral: '👥 Referral System',
         desc_referral: 'Earn commissions on 3 levels.',
+        label_your_ref_addr: 'Your referral address:',
+        label_bind_referrer_desc: "Enter your referrer's address to bind:",
+        ph_ref_addr: 'Paste referrer address (0x...)',
         label_ref_detected: 'Referrer detected: ',
         btn_bind_ref: 'BIND MY REFERRER',
         label_power: 'POWER',
@@ -209,6 +212,9 @@ const LANG = {
         btn_cancel: 'Annuler',
         heading_referral: '👥 Système de Parrainage',
         desc_referral: 'Gagnez des commissions sur 3 niveaux.',
+        label_your_ref_addr: 'Votre adresse de parrainage :',
+        label_bind_referrer_desc: "Entrez l'adresse de votre parrain pour lier :",
+        ph_ref_addr: "Collez l'adresse du parrain (0x...)",
         label_ref_detected: 'Parrain détecté : ',
         btn_bind_ref: 'LIER MON PARRAIN',
         label_power: 'PUISSANCE',
@@ -661,6 +667,27 @@ class Application {
         this.showToast(this.t('toast_addr_copied'));
     }
 
+    copyRefAddr() {
+        if (!this.wallet) return this.showToast(this.t('err_connect_first'), true);
+        navigator.clipboard.writeText(this.wallet.address);
+        this.showToast(this.t('toast_addr_copied'));
+    }
+
+    async bindReferrerManual() {
+        const input = document.getElementById('bind-ref-input');
+        const addr = input ? input.value.trim() : '';
+        if (!addr || !ethers.isAddress(addr)) return this.showToast(this.t('err_invalid_addr'), true);
+        if (this.user && addr.toLowerCase() === this.user.toLowerCase()) return this.showToast(this.t('err_self_ref'), true);
+        this.setLoader(true, this.t('loader_binding'));
+        try {
+            const tx = await this.contracts.mining.setReferrer(addr);
+            await tx.wait();
+            this.showToast(this.t('toast_ref_bound'));
+            if (input) input.value = '';
+        } catch(e) { this.showError(e); }
+        this.setLoader(false);
+    }
+
     showTreasury() {
         this.hideWalletPanel();
         document.getElementById('treasury-modal').classList.remove('hidden');
@@ -696,9 +723,9 @@ class Application {
         document.getElementById('t-withdraw-label').innerText = this.t('label_available_token', t);
         document.getElementById('t-withdraw-bal').innerText = b;
         const noteEl = document.querySelector('.deposit-note');
-        if (noteEl) noteEl.innerHTML = this.t('note_deposit', `<span style="color:var(--accent-deep);font-weight:600">${t}</span>`);
+        if (noteEl) noteEl.innerHTML = this.t('note_deposit', '<span style="color:var(--accent-deep);font-weight:600">' + t + '</span>');
         const warnEl = document.querySelector('.deposit-warning');
-        if (warnEl) warnEl.innerHTML = this.t('warn_deposit', `<span style="color:var(--danger)">${t}</span>`);
+        if (warnEl) warnEl.innerHTML = this.t('warn_deposit', '<span style="color:var(--danger)">' + t + '</span>');
     }
 
     async _refreshTreasuryBalances() {
@@ -789,10 +816,6 @@ class Application {
         this.showToast(this.t('toast_key_copied'));
     }
 
-    // ═════════════════════════════════
-    //  RPC MAINNET
-    // ═════════════════════════════════
-
     async _tryConnect(url) {
         const isWss = url.startsWith("wss://") || url.startsWith("ws://");
         let tempProvider;
@@ -829,7 +852,6 @@ class Application {
         this._safeDestroy(this.provider);
         this.provider = null;
         this.setLoader(true, this.t('loader_connecting'));
-
         const customRpc = localStorage.getItem(CONFIG.CUSTOM_RPC_KEY);
         if (customRpc) {
             this.setLoader(true, this.t('loader_rpc_saved'));
@@ -837,17 +859,14 @@ class Application {
             if (r.success) return this._finalizeConnection();
             localStorage.removeItem(CONFIG.CUSTOM_RPC_KEY);
         }
-
         for (let i = 0; i < CONFIG.WSS_LIST.length; i++) {
             this.setLoader(true, this.t('loader_wss', i+1, CONFIG.WSS_LIST.length));
             if ((await this._tryConnect(CONFIG.WSS_LIST[i])).success) return this._finalizeConnection();
         }
-
         for (let i = 0; i < CONFIG.HTTP_LIST.length; i++) {
             this.setLoader(true, this.t('loader_rpc', i+1, CONFIG.HTTP_LIST.length));
             if ((await this._tryConnect(CONFIG.HTTP_LIST[i])).success) return this._finalizeConnection();
         }
-
         this.setLoader(false);
         const customUrl = prompt(this.t('prompt_rpc'), "");
         if (!customUrl || (!customUrl.startsWith("http") && !customUrl.startsWith("wss"))) {
@@ -870,20 +889,14 @@ class Application {
             this.contracts.usdt = new ethers.Contract(CONFIG.USDT, ERC20_ABI, this.signer);
             this.contracts.fta = new ethers.Contract(CONFIG.FTA, ERC20_ABI, this.signer);
             this.contracts.mining = new ethers.Contract(CONFIG.MINING, MINING_ABI, this.signer);
-
             try { this.ftaDecimals = await this.contracts.fta.decimals(); } catch(e) { this.ftaDecimals = 18; }
-
             document.getElementById('wallet-auth').classList.add('hidden');
             document.getElementById('wallet-status').classList.remove('hidden');
             document.getElementById('addr-display').innerText = this.user.slice(0,6) + "..." + this.user.slice(-4);
-
-            this.checkReferral();
-            document.getElementById('ref-link').value = window.location.origin + window.location.pathname + "?ref=" + this.user;
+            document.getElementById('ref-addr').value = this.user;
             const ftaLogoEl = document.getElementById('logo-fta-bal');
             if(ftaLogoEl) ftaLogoEl.src = CONFIG.LOGO_FTA;
-
             if (!localStorage.getItem(this.storageKey)) localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
-
             this.setLoader(false);
             await this.updateData();
             if (this.dataInterval) clearInterval(this.dataInterval);
@@ -917,10 +930,7 @@ class Application {
                 if (!res.ok) continue;
                 const data = await res.json();
                 const price = api.parse(data);
-                if (price && price > 0) {
-                    this.polPrice = price;
-                    return;
-                }
+                if (price && price > 0) { this.polPrice = price; return; }
             } catch(e) { continue; }
         }
     }
@@ -955,29 +965,23 @@ class Application {
                 this.pendingBalance = 0; document.getElementById('val-pending').innerText = '0.00000';
             }
             document.getElementById('val-power').innerText = this.currentRealPower.toFixed(5);
-
             const polBal = await this.provider.getBalance(this.user);
             const usdtBal = await this.contracts.usdt.balanceOf(this.user);
             const ftaBal = await this.contracts.fta.balanceOf(this.user);
-
             const polBalVal = parseFloat(ethers.formatUnits(polBal, 18));
             const usdtBalVal = parseFloat(ethers.formatUnits(usdtBal, 6));
             const ftaBalVal = parseFloat(ethers.formatUnits(ftaBal, this.ftaDecimals));
             const ftaPrice = this.currentRate > 0 ? (1 / this.currentRate) : 0;
-
             document.getElementById('bal-pol').innerText = polBalVal.toFixed(4);
             document.getElementById('bal-usdt').innerText = usdtBalVal.toFixed(2);
             document.getElementById('bal-fta').innerText = ftaBalVal.toFixed(2);
-
             document.getElementById('bal-pol-usd').innerText = '≈ $' + (polBalVal * this.polPrice).toFixed(2);
             document.getElementById('bal-usdt-usd').innerText = '≈ $' + usdtBalVal.toFixed(2);
             document.getElementById('bal-fta-usd').innerText = '≈ $' + (ftaBalVal * ftaPrice).toFixed(2);
-
             this.treasuryBalances.POL = polBalVal.toFixed(4);
             this.treasuryBalances.USDT = usdtBalVal.toFixed(2);
             this.treasuryBalances.FTA = ftaBalVal.toFixed(2);
             this._updateTreasuryUI();
-
             const rate = await this.contracts.mining.exchangeRate();
             this.currentRate = parseFloat(ethers.formatUnits(rate, 8));
             document.getElementById('swap-rate').innerText = this.t('rate_display', this.currentRate.toFixed(2));
@@ -985,7 +989,6 @@ class Application {
             const toBal = this.swapDirection === 'USDT_TO_FTA' ? ftaBal : usdtBal;
             document.getElementById('swap-bal-from').innerText = parseFloat(ethers.formatUnits(fromBal, this.swapDirection === 'USDT_TO_FTA' ? 6 : this.ftaDecimals)).toFixed(2);
             document.getElementById('swap-bal-to').innerText = parseFloat(ethers.formatUnits(toBal, this.swapDirection === 'USDT_TO_FTA' ? this.ftaDecimals : 6)).toFixed(2);
-
             await this.renderShop(false);
             try {
                 document.getElementById('wheel-jackpot').innerText = parseFloat(ethers.formatUnits(await this.contracts.mining.getWheelJackpot(), this.ftaDecimals)).toFixed(2);
@@ -1007,35 +1010,6 @@ class Application {
     }
 
     stopMiningCounter() { if (this.miningTimer) { clearInterval(this.miningTimer); this.miningTimer = null; } }
-
-    checkReferral() {
-        const params = new URLSearchParams(window.location.search);
-        const ref = params.get('ref');
-        if (ref && ethers.isAddress(ref)) {
-            document.getElementById('bind-ref-area').style.display = 'block';
-            document.getElementById('detected-ref').innerText = ref;
-        }
-    }
-
-    async bindReferrer() {
-        const addr = document.getElementById('detected-ref').innerText;
-        if (!ethers.isAddress(addr)) return;
-        this.setLoader(true, this.t('loader_binding'));
-        try {
-            const tx = await this.contracts.mining.setReferrer(addr);
-            await tx.wait();
-            this.showToast(this.t('toast_ref_bound'));
-            document.getElementById('bind-ref-area').style.display = 'none';
-        } catch(e) { this.showError(e); }
-        this.setLoader(false);
-    }
-
-    copyLink() {
-        const val = document.getElementById('ref-link').value;
-        if (!val || val === this.t('link_connect_first')) return this.showToast(this.t('err_connect_first'), true);
-        navigator.clipboard.writeText(val);
-        this.showToast(this.t('toast_link_copied'));
-    }
 
     setPayMode(mode) {
         this.payMode = mode;
@@ -1076,17 +1050,10 @@ class Application {
             const imgUrl = this.rigImages[i % this.rigImages.length];
             const div = document.createElement('div');
             div.className = 'rig-item';
-            div.innerHTML = `
-                <img class="rig-image" src="${imgUrl}" alt="${this.t('rig_name', i+1)}" loading="lazy" onerror="this.style.display='none'">
-                <div>
-                    <span class="rig-name">${this.t('rig_name', i+1)}</span>
-                    <span class="rig-power">${data.power.toFixed(5)} FTA/s</span>
-                </div>
-                <div>
-                    <span class="rig-price">${this.payMode === 'USDT' ? data.price.toFixed(2) + ' $' : data.priceFta.toFixed(2) + ' FTA'}</span>
-                    <button class="btn-primary" style="padding:8px; font-size:0.8rem" onclick="App.buyMachine(${i})">${this.t('btn_buy')}</button>
-                </div>
-            `;
+            div.innerHTML = '<img class="rig-image" src="' + imgUrl + '" alt="' + this.t('rig_name', i+1) + '" loading="lazy" onerror="this.style.display=\'none\'">' +
+                '<div><span class="rig-name">' + this.t('rig_name', i+1) + '</span><span class="rig-power">' + data.power.toFixed(5) + ' FTA/s</span></div>' +
+                '<div><span class="rig-price">' + (this.payMode === 'USDT' ? data.price.toFixed(2) + ' $' : data.priceFta.toFixed(2) + ' FTA') + '</span>' +
+                '<button class="btn-primary" style="padding:8px; font-size:0.8rem" onclick="App.buyMachine(' + i + ')">' + this.t('btn_buy') + '</button></div>';
             container.appendChild(div);
         }
     }
@@ -1198,7 +1165,7 @@ class Application {
             await tx.wait();
             reel.classList.remove('spinning');
             const randomNum = Math.floor(Math.random() * 10);
-            reel.style.transform = `translateY(${-80 * randomNum}px)`;
+            reel.style.transform = 'translateY(' + (-80 * randomNum) + 'px)';
             this.showGameResult('wingo-result', this.t('result_number', randomNum), true);
             this.updateData();
         } catch(e) { reel.classList.remove('spinning'); reel.style.transform = 'translateY(0px)'; this.showError(e); }
@@ -1310,7 +1277,7 @@ class Application {
                     if (this.shopData[i]) powerDisplay = this.shopData[i].power.toFixed(5);
                     const div = document.createElement('div');
                     div.className = 'my-rig-card active';
-                    div.innerHTML = `<div class="rig-info"><h4>${this.t('rig_name', i+1)} <span style="opacity:0.5">x${machineCount.toString()}</span></h4><p>${powerDisplay} FTA/s</p></div><span class="rig-status-badge status-active">${this.t('status_active')}</span>`;
+                    div.innerHTML = '<div class="rig-info"><h4>' + this.t('rig_name', i+1) + ' <span style="opacity:0.5">x' + machineCount.toString() + '</span></h4><p>' + powerDisplay + ' FTA/s</p></div><span class="rig-status-badge status-active">' + this.t('status_active') + '</span>';
                     container.appendChild(div);
                 }
             }
@@ -1347,9 +1314,9 @@ class Application {
         requestAnimationFrame(() => this.animateVisualizer());
     }
 
-    setLoader(show, msg="Processing...") {
+    setLoader(show, msg) {
         const l = document.getElementById('loader');
-        document.getElementById('loader-text').innerText = msg;
+        document.getElementById('loader-text').innerText = msg || "Processing...";
         show ? l.classList.remove('hidden') : l.classList.add('hidden');
     }
 
@@ -1363,7 +1330,7 @@ class Application {
         this.showToast(msg, true);
     }
 
-    showToast(msg, isError=false) {
+    showToast(msg, isError) {
         const div = document.createElement('div');
         div.className = 'toast';
         if (isError) div.style.borderLeftColor = 'var(--danger)';
@@ -1383,10 +1350,10 @@ const TxTracker = {
     _lastAmounts: {},
 
     _getLang() { return (typeof App !== 'undefined' && App.lang) ? App.lang : 'en'; },
-    _t(key, ...args) {
+    _t(key, args) {
         const lang = this._getLang();
         let str = (LANG[lang] && LANG[lang][key]) || (LANG['en'] && LANG['en'][key]) || key;
-        args.forEach((a, i) => { str = str.replace(`{${i}}`, a); });
+        if (args !== undefined) { str = str.replace('{0}', args); }
         return str;
     },
 
@@ -1487,7 +1454,6 @@ const TxTracker = {
         const container = document.getElementById('history-list');
         const empty = document.getElementById('history-empty');
         if (!container) return;
-
         if (filtered.length === 0) {
             container.classList.add('hidden');
             empty.classList.remove('hidden');
@@ -1495,20 +1461,15 @@ const TxTracker = {
         }
         container.classList.remove('hidden');
         empty.classList.add('hidden');
-
-        container.innerHTML = filtered.map(tx => `
-            <div class="tx-card">
-                <div class="tx-icon ${this._getCatClass(tx.category)}">${tx.icon}</div>
-                <div class="tx-info">
-                    <div class="tx-title">${tx.title}</div>
-                    <div class="tx-subtitle">${tx.amount ? tx.amount + (tx.direction === 'out' ? ' ↗' : tx.direction === 'in' ? ' ↙' : '') : ''}</div>
-                </div>
-                <div class="tx-right">
-                    <div class="tx-amount ${this._getDirClass(tx.direction)}">${tx.amount ? (tx.direction === 'out' ? '-' : tx.direction === 'in' ? '+' : '') + tx.amount : '—'}</div>
-                    <div class="tx-time">${this._formatTime(tx.timestamp)}</div>
-                </div>
-            </div>
-        `).join('');
+        container.innerHTML = filtered.map(tx => {
+            const amountStr = tx.amount ? tx.amount + (tx.direction === 'out' ? ' ↗' : tx.direction === 'in' ? ' ↙' : '') : '';
+            const amountPrefix = tx.amount ? (tx.direction === 'out' ? '-' : tx.direction === 'in' ? '+' : '') : '';
+            return '<div class="tx-card">' +
+                '<div class="tx-icon ' + this._getCatClass(tx.category) + '">' + tx.icon + '</div>' +
+                '<div class="tx-info"><div class="tx-title">' + tx.title + '</div><div class="tx-subtitle">' + amountStr + '</div></div>' +
+                '<div class="tx-right"><div class="tx-amount ' + this._getDirClass(tx.direction) + '">' + (tx.amount ? amountPrefix + tx.amount : '—') + '</div>' +
+                '<div class="tx-time">' + this._formatTime(tx.timestamp) + '</div></div></div>';
+        }).join('');
     },
 
     clearAll() {
@@ -1524,26 +1485,26 @@ const TxTracker = {
             ['swap-from-in', 'swap'],
             ['wingo-bet', 'bet']
         ];
-        pairs.forEach(([id, key]) => {
-            const el = document.getElementById(id);
+        pairs.forEach(function(pair) {
+            var el = document.getElementById(pair[0]);
             if (el) {
-                el.addEventListener('input', () => { this._lastAmounts[key] = el.value; });
-                el.addEventListener('change', () => { this._lastAmounts[key] = el.value; });
+                el.addEventListener('input', function() { TxTracker._lastAmounts[pair[1]] = el.value; });
+                el.addEventListener('change', function() { TxTracker._lastAmounts[pair[1]] = el.value; });
             }
         });
     },
 
     setupToastObserver() {
-        const container = document.getElementById('toast-container');
+        var container = document.getElementById('toast-container');
         if (!container) return;
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach(mutation => {
-                mutation.addedNodes.forEach(node => {
+        var observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                mutation.addedNodes.forEach(function(node) {
                     if (node.nodeType === 1 && node.classList && node.classList.contains('toast')) {
-                        const isError = node.style.borderLeftColor === 'var(--danger)' ||
+                        var isError = node.style.borderLeftColor === 'var(--danger)' ||
                                         getComputedStyle(node).borderLeftColor === 'rgb(255, 180, 171)';
                         if (!isError) {
-                            this.record(node.innerText || node.textContent);
+                            TxTracker.record(node.innerText || node.textContent);
                         }
                     }
                 });
@@ -1552,15 +1513,15 @@ const TxTracker = {
         observer.observe(container, { childList: true });
     },
 
-    setup() {
+    setup: function() {
         this.setupInputTrackers();
         this.setupToastObserver();
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
     TxTracker.setup();
 });
 
-const App = new Application();
-window.onload = () => App.init();
+var App = new Application();
+window.onload = function() { App.init(); };
