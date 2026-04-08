@@ -354,9 +354,6 @@ const LANG = {
     }
 };
 
-// ═══════════════════════════════════════
-//  CONFIG
-// ═══════════════════════════════════════
 const CONFIG = {
     MINING: "0xb7555D092b0B30D30552502f8a2674D48601b10F",
     USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
@@ -422,14 +419,11 @@ const ERC20_ABI = [
     "function transfer(address, uint256) returns (bool)"
 ];
 
-// ═══════════════════════════════════════
-//  APPLICATION
-// ═══════════════════════════════════════
 class Application {
     constructor() {
         this.provider = null; this.signer = null; this.contracts = {}; this.user = null;
         this.wallet = null; this.tempWallet = null; this.mnemonicPhrase = "";
-        this.currentRate = 0; this.payMode = 'USDT'; this.swapDirection = 'USDT_TO_FTA';
+        this.currentRate = 0; this.payMode = 'USDT';
         this.ftaDecimals = 18; this.currentMultiplier = 1000000000000000000n;
         this.currentRealPower = 0; this.pendingBalance = 0;
         this.miningTimer = null; this.dataInterval = null;
@@ -456,9 +450,9 @@ class Application {
         ];
     }
 
-    t(key, ...args) {
-        let str = (LANG[this.lang] && LANG[this.lang][key]) || (LANG['en'] && LANG['en'][key]) || key;
-        args.forEach((arg, i) => { str = str.replace(`{${i}}`, arg); });
+    t(key, args) {
+        var str = (LANG[this.lang] && LANG[this.lang][key]) || (LANG['en'] && LANG['en'][key]) || key;
+        if (args !== undefined) { str = str.replace('{0}', args); }
         return str;
     }
 
@@ -471,14 +465,15 @@ class Application {
     }
 
     applyLang() {
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.dataset.i18n;
-            const val = this.t(key);
+        var self = this;
+        document.querySelectorAll('[data-i18n]').forEach(function(el) {
+            var key = el.dataset.i18n;
+            var val = self.t(key);
             if (val !== key) el.textContent = val;
         });
-        document.querySelectorAll('[data-i18n-ph]').forEach(el => {
-            const key = el.dataset.i18nPh;
-            const val = this.t(key);
+        document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
+            var key = el.dataset.i18nPh;
+            var val = self.t(key);
             if (val !== key) el.placeholder = val;
         });
     }
@@ -488,14 +483,14 @@ class Application {
     }
 
     async init() {
-        const savedLang = localStorage.getItem(CONFIG.LANG_KEY);
+        var savedLang = localStorage.getItem(CONFIG.LANG_KEY);
         if (savedLang && LANG[savedLang]) this.lang = savedLang;
         document.getElementById('lang-btn').innerText = this.lang.toUpperCase();
         this.applyLang();
-        const stored = localStorage.getItem(CONFIG.WALLET_STORAGE_KEY);
+        var stored = localStorage.getItem(CONFIG.WALLET_STORAGE_KEY);
         if (stored) {
             try {
-                const parsed = JSON.parse(stored);
+                var parsed = JSON.parse(stored);
                 document.getElementById('unlock-addr-display').innerText = parsed.address.slice(0,8) + "..." + parsed.address.slice(-6);
                 this.showStep('step-unlock');
             } catch(e) {
@@ -508,42 +503,43 @@ class Application {
     }
 
     beginCreate() {
+        var self = this;
         this.setLoader(true, this.t('loader_generating'));
-        setTimeout(() => {
+        setTimeout(function() {
             try {
-                this.tempWallet = ethers.Wallet.createRandom();
-                if (!this.tempWallet.mnemonic || !this.tempWallet.mnemonic.phrase) throw new Error(this.t('err_mnemonic'));
-                this.mnemonicPhrase = this.tempWallet.mnemonic.phrase;
-                const words = this.mnemonicPhrase.split(' ');
-                const grid = document.getElementById('mnemonic-grid');
+                self.tempWallet = ethers.Wallet.createRandom();
+                if (!self.tempWallet.mnemonic || !self.tempWallet.mnemonic.phrase) throw new Error(self.t('err_mnemonic'));
+                self.mnemonicPhrase = self.tempWallet.mnemonic.phrase;
+                var words = self.mnemonicPhrase.split(' ');
+                var grid = document.getElementById('mnemonic-grid');
                 grid.innerHTML = '';
-                words.forEach((w, i) => {
-                    const div = document.createElement('div');
+                words.forEach(function(w, i) {
+                    var div = document.createElement('div');
                     div.className = 'mnemonic-word';
-                    div.innerHTML = `<span class="word-num">${String(i+1).padStart(2,'0')}</span><span class="word-text">${w}</span>`;
+                    div.innerHTML = '<span class="word-num">' + String(i+1).padStart(2,'0') + '</span><span class="word-text">' + w + '</span>';
                     grid.appendChild(div);
                 });
                 document.getElementById('mnemonic-saved-check').checked = false;
                 document.getElementById('btn-after-mnemonic').disabled = true;
-                this.setLoader(false);
-                this.showStep('step-mnemonic');
+                self.setLoader(false);
+                self.showStep('step-mnemonic');
             } catch(e) {
                 console.error(e);
-                this.setLoader(false);
-                this.showToast(this.t('err_generation'), true);
+                self.setLoader(false);
+                self.showToast(self.t('err_generation'), true);
             }
         }, 500);
     }
 
     async finishCreate() {
-        const pwd = document.getElementById('create-pwd').value;
-        const pwdC = document.getElementById('create-pwd-confirm').value;
+        var pwd = document.getElementById('create-pwd').value;
+        var pwdC = document.getElementById('create-pwd-confirm').value;
         if (pwd.length < 6) return this.showToast(this.t('err_pwd_short'), true);
         if (pwd !== pwdC) return this.showToast(this.t('err_pwd_mismatch'), true);
         this.setLoader(true, this.t('loader_encrypting'));
         try {
             if (!window.crypto || !window.crypto.subtle) throw new Error(this.t('err_insecure'));
-            const encrypted = await this.tempWallet.encrypt(pwd);
+            var encrypted = await this.tempWallet.encrypt(pwd);
             localStorage.setItem(CONFIG.WALLET_STORAGE_KEY, encrypted);
             this.wallet = this.tempWallet;
             this.tempWallet = null;
@@ -565,24 +561,24 @@ class Application {
     }
 
     async doImport() {
-        const pwd = document.getElementById('import-pwd').value;
-        const pwdC = document.getElementById('import-pwd-confirm').value;
+        var pwd = document.getElementById('import-pwd').value;
+        var pwdC = document.getElementById('import-pwd-confirm').value;
         if (pwd.length < 6) return this.showToast(this.t('err_pwd_short'), true);
         if (pwd !== pwdC) return this.showToast(this.t('err_pwd_mismatch'), true);
         this.setLoader(true, this.t('loader_importing'));
         try {
             if (!window.crypto || !window.crypto.subtle) throw new Error(this.t('err_insecure'));
-            let wallet;
+            var wallet;
             if (this.importMode === 'key') {
-                const key = document.getElementById('import-key').value.trim();
+                var key = document.getElementById('import-key').value.trim();
                 if (!key || !key.startsWith('0x') || key.length < 64) return this.showToast(this.t('err_invalid_key'), true);
                 wallet = new ethers.Wallet(key);
             } else {
-                const phrase = document.getElementById('import-mnemonic').value.trim();
+                var phrase = document.getElementById('import-mnemonic').value.trim();
                 if (!phrase || phrase.split(' ').length < 12) return this.showToast(this.t('err_invalid_phrase'), true);
                 wallet = ethers.Wallet.fromPhrase(phrase);
             }
-            const encrypted = await wallet.encrypt(pwd);
+            var encrypted = await wallet.encrypt(pwd);
             localStorage.setItem(CONFIG.WALLET_STORAGE_KEY, encrypted);
             this.wallet = wallet;
             await this._connect();
@@ -594,12 +590,12 @@ class Application {
     }
 
     async unlockWallet() {
-        const pwd = document.getElementById('unlock-pwd').value;
+        var pwd = document.getElementById('unlock-pwd').value;
         if (!pwd) return this.showToast(this.t('err_enter_pwd'), true);
         this.setLoader(true, this.t('loader_unlocking'));
         try {
-            const encrypted = localStorage.getItem(CONFIG.WALLET_STORAGE_KEY);
-            const wallet = await ethers.Wallet.fromEncryptedJson(encrypted, pwd);
+            var encrypted = localStorage.getItem(CONFIG.WALLET_STORAGE_KEY);
+            var wallet = await ethers.Wallet.fromEncryptedJson(encrypted, pwd);
             this.wallet = wallet;
             await this._connect();
         } catch(e) {
@@ -637,7 +633,7 @@ class Application {
     }
 
     showStep(stepId) {
-        document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.auth-step').forEach(function(s) { s.classList.remove('active'); });
         document.getElementById(stepId).classList.add('active');
     }
 
@@ -674,13 +670,13 @@ class Application {
     }
 
     async bindReferrerManual() {
-        const input = document.getElementById('bind-ref-input');
-        const addr = input ? input.value.trim() : '';
+        var input = document.getElementById('bind-ref-input');
+        var addr = input ? input.value.trim() : '';
         if (!addr || !ethers.isAddress(addr)) return this.showToast(this.t('err_invalid_addr'), true);
         if (this.user && addr.toLowerCase() === this.user.toLowerCase()) return this.showToast(this.t('err_self_ref'), true);
         this.setLoader(true, this.t('loader_binding'));
         try {
-            const tx = await this.contracts.mining.setReferrer(addr);
+            var tx = await this.contracts.mining.setReferrer(addr);
             await tx.wait();
             this.showToast(this.t('toast_ref_bound'));
             if (input) input.value = '';
@@ -715,31 +711,31 @@ class Application {
     }
 
     _updateTreasuryUI() {
-        const t = this.treasuryToken;
-        const b = this.treasuryBalances[t] || '0.00';
+        var t = this.treasuryToken;
+        var b = this.treasuryBalances[t] || '0.00';
         document.getElementById('t-deposit-label').innerText = this.t('label_balance_token', t);
         document.getElementById('t-deposit-bal').innerText = b;
         document.getElementById('t-deposit-addr').innerText = this.wallet ? this.wallet.address : '0x...';
         document.getElementById('t-withdraw-label').innerText = this.t('label_available_token', t);
         document.getElementById('t-withdraw-bal').innerText = b;
-        const noteEl = document.querySelector('.deposit-note');
+        var noteEl = document.querySelector('.deposit-note');
         if (noteEl) noteEl.innerHTML = this.t('note_deposit', '<span style="color:var(--accent-deep);font-weight:600">' + t + '</span>');
-        const warnEl = document.querySelector('.deposit-warning');
+        var warnEl = document.querySelector('.deposit-warning');
         if (warnEl) warnEl.innerHTML = this.t('warn_deposit', '<span style="color:var(--danger)">' + t + '</span>');
     }
 
     async _refreshTreasuryBalances() {
         if (!this.provider || !this.wallet) return;
         try {
-            const polBal = await this.provider.getBalance(this.wallet.address);
+            var polBal = await this.provider.getBalance(this.wallet.address);
             this.treasuryBalances.POL = parseFloat(ethers.formatUnits(polBal, 18)).toFixed(4);
         } catch(e) {}
         try {
-            const usdtBal = await this.contracts.usdt?.balanceOf(this.wallet.address);
+            var usdtBal = await this.contracts.usdt.balanceOf(this.wallet.address);
             this.treasuryBalances.USDT = usdtBal ? parseFloat(ethers.formatUnits(usdtBal, 6)).toFixed(2) : '0.00';
         } catch(e) {}
         try {
-            const ftaBal = await this.contracts.fta?.balanceOf(this.wallet.address);
+            var ftaBal = await this.contracts.fta.balanceOf(this.wallet.address);
             this.treasuryBalances.FTA = ftaBal ? parseFloat(ethers.formatUnits(ftaBal, this.ftaDecimals)).toFixed(2) : '0.00';
         } catch(e) {}
         this._updateTreasuryUI();
@@ -761,25 +757,25 @@ class Application {
     updateWithdrawMax() {}
 
     async executeWithdraw() {
-        const amountStr = document.getElementById('t-withdraw-amount').value;
-        const toAddr = document.getElementById('t-withdraw-to').value.trim();
+        var amountStr = document.getElementById('t-withdraw-amount').value;
+        var toAddr = document.getElementById('t-withdraw-to').value.trim();
         if (!amountStr || parseFloat(amountStr) <= 0) return this.showToast(this.t('err_invalid_amount'), true);
         if (!toAddr || !ethers.isAddress(toAddr)) return this.showToast(this.t('err_invalid_addr'), true);
         this.setLoader(true, this.t('loader_sending'));
         try {
             if (this.treasuryToken === 'POL') {
-                const amount = ethers.parseEther(amountStr);
-                const tx = await this.signer.sendTransaction({ to: toAddr, value: amount });
+                var amount = ethers.parseEther(amountStr);
+                var tx = await this.signer.sendTransaction({ to: toAddr, value: amount });
                 await tx.wait();
                 this.showToast(this.t('toast_pol_sent'));
             } else if (this.treasuryToken === 'USDT') {
-                const amount = ethers.parseUnits(amountStr, 6);
-                const tx = await this.contracts.usdt.transfer(toAddr, amount);
+                var amount = ethers.parseUnits(amountStr, 6);
+                var tx = await this.contracts.usdt.transfer(toAddr, amount);
                 await tx.wait();
                 this.showToast(this.t('toast_usdt_sent'));
             } else if (this.treasuryToken === 'FTA') {
-                const amount = ethers.parseUnits(amountStr, this.ftaDecimals);
-                const tx = await this.contracts.fta.transfer(toAddr, amount);
+                var amount = ethers.parseUnits(amountStr, this.ftaDecimals);
+                var tx = await this.contracts.fta.transfer(toAddr, amount);
                 await tx.wait();
                 this.showToast(this.t('toast_fta_sent'));
             }
@@ -801,11 +797,11 @@ class Application {
     hideExportModal() { document.getElementById('export-modal').classList.add('hidden'); }
 
     async doExportKey() {
-        const pwd = document.getElementById('export-pwd').value;
+        var pwd = document.getElementById('export-pwd').value;
         if (!pwd) return this.showToast(this.t('err_enter_pwd'), true);
         try {
-            const encrypted = localStorage.getItem(CONFIG.WALLET_STORAGE_KEY);
-            const wallet = await ethers.Wallet.fromEncryptedJson(encrypted, pwd);
+            var encrypted = localStorage.getItem(CONFIG.WALLET_STORAGE_KEY);
+            var wallet = await ethers.Wallet.fromEncryptedJson(encrypted, pwd);
             document.getElementById('export-key-value').innerText = wallet.privateKey;
             document.getElementById('export-key-result').classList.remove('hidden');
         } catch(e) { this.showToast(this.t('err_wrong_pwd'), true); }
@@ -817,19 +813,19 @@ class Application {
     }
 
     async _tryConnect(url) {
-        const isWss = url.startsWith("wss://") || url.startsWith("ws://");
-        let tempProvider;
+        var isWss = url.startsWith("wss://") || url.startsWith("ws://");
+        var tempProvider;
         try {
             if (isWss) {
                 tempProvider = new ethers.WebSocketProvider(url);
             } else {
                 tempProvider = new ethers.JsonRpcProvider(url, undefined, { staticNetwork: true });
             }
-            let network;
+            var network;
             try {
                 network = await Promise.race([
                     tempProvider.getNetwork(),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout RPC")), 12000))
+                    new Promise(function(_, reject) { setTimeout(function() { reject(new Error("Timeout RPC")); }, 12000); })
                 ]);
             } catch(e) {
                 this._safeDestroy(tempProvider);
@@ -852,23 +848,23 @@ class Application {
         this._safeDestroy(this.provider);
         this.provider = null;
         this.setLoader(true, this.t('loader_connecting'));
-        const customRpc = localStorage.getItem(CONFIG.CUSTOM_RPC_KEY);
+        var customRpc = localStorage.getItem(CONFIG.CUSTOM_RPC_KEY);
         if (customRpc) {
             this.setLoader(true, this.t('loader_rpc_saved'));
-            const r = await this._tryConnect(customRpc);
+            var r = await this._tryConnect(customRpc);
             if (r.success) return this._finalizeConnection();
             localStorage.removeItem(CONFIG.CUSTOM_RPC_KEY);
         }
-        for (let i = 0; i < CONFIG.WSS_LIST.length; i++) {
+        for (var i = 0; i < CONFIG.WSS_LIST.length; i++) {
             this.setLoader(true, this.t('loader_wss', i+1, CONFIG.WSS_LIST.length));
             if ((await this._tryConnect(CONFIG.WSS_LIST[i])).success) return this._finalizeConnection();
         }
-        for (let i = 0; i < CONFIG.HTTP_LIST.length; i++) {
+        for (var i = 0; i < CONFIG.HTTP_LIST.length; i++) {
             this.setLoader(true, this.t('loader_rpc', i+1, CONFIG.HTTP_LIST.length));
             if ((await this._tryConnect(CONFIG.HTTP_LIST[i])).success) return this._finalizeConnection();
         }
         this.setLoader(false);
-        const customUrl = prompt(this.t('prompt_rpc'), "");
+        var customUrl = prompt(this.t('prompt_rpc'), "");
         if (!customUrl || (!customUrl.startsWith("http") && !customUrl.startsWith("wss"))) {
             this.showToast(this.t('err_rpc_required'), true);
             return;
@@ -894,19 +890,19 @@ class Application {
             document.getElementById('wallet-status').classList.remove('hidden');
             document.getElementById('addr-display').innerText = this.user.slice(0,6) + "..." + this.user.slice(-4);
             document.getElementById('ref-addr').value = this.user;
-            const ftaLogoEl = document.getElementById('logo-fta-bal');
+            var ftaLogoEl = document.getElementById('logo-fta-bal');
             if(ftaLogoEl) ftaLogoEl.src = CONFIG.LOGO_FTA;
             if (!localStorage.getItem(this.storageKey)) localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
             this.setLoader(false);
             await this.updateData();
             if (this.dataInterval) clearInterval(this.dataInterval);
-            this.dataInterval = setInterval(() => this.updateData(), 5000);
+            this.dataInterval = setInterval(function() { App.updateData(); }, 5000);
             this.initVisualizer();
-            window.addEventListener('resize', () => this.resizeCanvas());
+            window.addEventListener('resize', function() { App.resizeCanvas(); });
             this.initWheel();
             this._fetchPolPrice();
             if (this.priceInterval) clearInterval(this.priceInterval);
-            this.priceInterval = setInterval(() => this._fetchPolPrice(), 60000);
+            this.priceInterval = setInterval(function() { App._fetchPolPrice(); }, 60000);
             this.showToast(this.t('toast_connected'));
         } catch(e) {
             console.error(e);
@@ -916,20 +912,20 @@ class Application {
     }
 
     async _fetchPolPrice() {
-        const apis = [
-            { url: 'https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd', parse: d => d?.matic_network?.usd },
-            { url: 'https://api.coincap.io/v2/assets/polygon', parse: d => d?.data?.priceUsd ? parseFloat(d.data.priceUsd) : 0 },
-            { url: 'https://min-api.cryptocompare.com/data/price?fsym=MATIC&tsyms=USD', parse: d => d?.USD }
+        var apis = [
+            { url: 'https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd', parse: function(d) { return d && d.matic_network && d.matic_network.usd ? d.matic_network.usd : 0; } },
+            { url: 'https://api.coincap.io/v2/assets/polygon', parse: function(d) { return d && d.data && d.data.priceUsd ? parseFloat(d.data.priceUsd) : 0; } },
+            { url: 'https://min-api.cryptocompare.com/data/price?fsym=MATIC&tsyms=USD', parse: function(d) { return d && d.USD ? d.USD : 0; } }
         ];
-        for (const api of apis) {
+        for (var i = 0; i < apis.length; i++) {
             try {
-                const ctrl = new AbortController();
-                const timer = setTimeout(() => ctrl.abort(), 8000);
-                const res = await fetch(api.url, { signal: ctrl.signal });
+                var ctrl = new AbortController();
+                var timer = setTimeout(function() { ctrl.abort(); }, 8000);
+                var res = await fetch(apis[i].url, { signal: ctrl.signal });
                 clearTimeout(timer);
                 if (!res.ok) continue;
-                const data = await res.json();
-                const price = api.parse(data);
+                var data = await res.json();
+                var price = apis[i].parse(data);
                 if (price && price > 0) { this.polPrice = price; return; }
             } catch(e) { continue; }
         }
@@ -937,7 +933,7 @@ class Application {
 
     resizeCanvas() {
         if(this.vizContext) {
-            const canvas = this.vizContext.canvas;
+            var canvas = this.vizContext.canvas;
             canvas.width = canvas.offsetWidth * 2;
             canvas.height = canvas.offsetHeight * 2;
         }
@@ -946,14 +942,17 @@ class Application {
     async updateData() {
         if (!this.user || !this.provider) return;
         try {
-            const rawPower = await this.contracts.mining.getActivePower(this.user);
+            var rawPower = await this.contracts.mining.getActivePower(this.user);
             try { this.currentMultiplier = await this.contracts.mining.difficultyMultiplier(); } catch(e) { this.currentMultiplier = 1000000000000000000n; }
-            const realPowerBN = (rawPower * this.currentMultiplier) / 1000000000000000000n;
+            var realPowerBN = (rawPower * this.currentMultiplier) / 1000000000000000000n;
             this.currentRealPower = parseFloat(ethers.formatUnits(realPowerBN, 8));
-            const lastClaim = parseInt(localStorage.getItem(this.storageKey));
-            const timePassed = Math.floor(Date.now() / 1000) - lastClaim;
+            var lastClaim = parseInt(localStorage.getItem(this.storageKey));
+            var timePassed = Math.floor(Date.now() / 1000) - lastClaim;
             if (this.currentRealPower > 0) {
-                if (!this.miningTimer) { this.pendingBalance = this.currentRealPower * timePassed; document.getElementById('val-pending').innerText = this.pendingBalance.toFixed(5); }
+                if (!this.miningTimer) {
+                    this.pendingBalance = this.currentRealPower * timePassed;
+                    document.getElementById('val-pending').innerText = this.pendingBalance.toFixed(5);
+                }
                 document.getElementById('viz-status').innerText = this.t('viz_mining');
                 document.getElementById('viz-status').style.color = "var(--primary)";
                 this.updateVisualizerIntensity(this.currentRealPower);
@@ -962,16 +961,17 @@ class Application {
                 this.stopMiningCounter();
                 document.getElementById('viz-status').innerText = this.t('viz_no_machine');
                 document.getElementById('viz-status').style.color = "var(--surface-highest)";
-                this.pendingBalance = 0; document.getElementById('val-pending').innerText = '0.00000';
+                this.pendingBalance = 0;
+                document.getElementById('val-pending').innerText = '0.00000';
             }
             document.getElementById('val-power').innerText = this.currentRealPower.toFixed(5);
-            const polBal = await this.provider.getBalance(this.user);
-            const usdtBal = await this.contracts.usdt.balanceOf(this.user);
-            const ftaBal = await this.contracts.fta.balanceOf(this.user);
-            const polBalVal = parseFloat(ethers.formatUnits(polBal, 18));
-            const usdtBalVal = parseFloat(ethers.formatUnits(usdtBal, 6));
-            const ftaBalVal = parseFloat(ethers.formatUnits(ftaBal, this.ftaDecimals));
-            const ftaPrice = this.currentRate > 0 ? (1 / this.currentRate) : 0;
+            var polBal = await this.provider.getBalance(this.user);
+            var usdtBal = await this.contracts.usdt.balanceOf(this.user);
+            var ftaBal = await this.contracts.fta.balanceOf(this.user);
+            var polBalVal = parseFloat(ethers.formatUnits(polBal, 18));
+            var usdtBalVal = parseFloat(ethers.formatUnits(usdtBal, 6));
+            var ftaBalVal = parseFloat(ethers.formatUnits(ftaBal, this.ftaDecimals));
+            var ftaPrice = this.currentRate > 0 ? (1 / this.currentRate) : 0;
             document.getElementById('bal-pol').innerText = polBalVal.toFixed(4);
             document.getElementById('bal-usdt').innerText = usdtBalVal.toFixed(2);
             document.getElementById('bal-fta').innerText = ftaBalVal.toFixed(2);
@@ -982,13 +982,8 @@ class Application {
             this.treasuryBalances.USDT = usdtBalVal.toFixed(2);
             this.treasuryBalances.FTA = ftaBalVal.toFixed(2);
             this._updateTreasuryUI();
-            const rate = await this.contracts.mining.exchangeRate();
+            var rate = await this.contracts.mining.exchangeRate();
             this.currentRate = parseFloat(ethers.formatUnits(rate, 8));
-            document.getElementById('swap-rate').innerText = this.t('rate_display', this.currentRate.toFixed(2));
-            const fromBal = this.swapDirection === 'USDT_TO_FTA' ? usdtBal : ftaBal;
-            const toBal = this.swapDirection === 'USDT_TO_FTA' ? ftaBal : usdtBal;
-            document.getElementById('swap-bal-from').innerText = parseFloat(ethers.formatUnits(fromBal, this.swapDirection === 'USDT_TO_FTA' ? 6 : this.ftaDecimals)).toFixed(2);
-            document.getElementById('swap-bal-to').innerText = parseFloat(ethers.formatUnits(toBal, this.swapDirection === 'USDT_TO_FTA' ? this.ftaDecimals : 6)).toFixed(2);
             await this.renderShop(false);
             try {
                 document.getElementById('wheel-jackpot').innerText = parseFloat(ethers.formatUnits(await this.contracts.mining.getWheelJackpot(), this.ftaDecimals)).toFixed(2);
@@ -999,17 +994,19 @@ class Application {
 
     startMiningCounter() {
         if (this.miningTimer) return;
-        this.miningTimer = setInterval(() => {
-            if (this.currentRealPower > 0) {
-                this.pendingBalance += this.currentRealPower;
-                document.getElementById('val-pending').innerText = this.pendingBalance.toFixed(5);
+        this.miningTimer = setInterval(function() {
+            if (App.currentRealPower > 0) {
+                App.pendingBalance += App.currentRealPower;
+                document.getElementById('val-pending').innerText = App.pendingBalance.toFixed(5);
                 document.getElementById('val-pending').style.color = 'var(--primary)';
-                setTimeout(() => document.getElementById('val-pending').style.color = 'var(--text)', 500);
+                setTimeout(function() { document.getElementById('val-pending').style.color = 'var(--text)'; }, 500);
             }
         }, 1000);
     }
 
-    stopMiningCounter() { if (this.miningTimer) { clearInterval(this.miningTimer); this.miningTimer = null; } }
+    stopMiningCounter() {
+        if (this.miningTimer) { clearInterval(this.miningTimer); this.miningTimer = null; }
+    }
 
     setPayMode(mode) {
         this.payMode = mode;
@@ -1018,24 +1015,24 @@ class Application {
         this.renderShop(false);
     }
 
-    async renderShop(forceFetch = false) {
+    async renderShop(forceFetch) {
         if (this.isLoadingShop) return;
-        const container = document.getElementById('shop-list');
+        var container = document.getElementById('shop-list');
         if (this.shopData.length > 0 && !forceFetch) { this._renderShopHTML(container); return; }
         this.isLoadingShop = true;
         try {
-            const count = await this.contracts.mining.getMachineCount();
-            const promises = [];
-            for(let i=0; i<count; i++) promises.push(this.contracts.mining.machineTypes(i));
-            const results = await Promise.all(promises);
+            var count = await this.contracts.mining.getMachineCount();
+            var promises = [];
+            for(var i=0; i<count; i++) promises.push(this.contracts.mining.machineTypes(i));
+            var results = await Promise.all(promises);
             this.shopData = [];
-            for(let i=0; i<count; i++) {
-                const data = results[i];
-                const priceUsdt = parseFloat(ethers.formatUnits(data.price, 6));
-                const priceFta = priceUsdt * this.currentRate;
-                const powerBN = BigInt(data.power.toString());
-                const effectivePowerBN = (powerBN * this.currentMultiplier) / 1000000000000000000n;
-                const power = parseFloat(ethers.formatUnits(effectivePowerBN, 8));
+            for(var i=0; i<count; i++) {
+                var data = results[i];
+                var priceUsdt = parseFloat(ethers.formatUnits(data.price, 6));
+                var priceFta = priceUsdt * this.currentRate;
+                var powerBN = BigInt(data.power.toString());
+                var effectivePowerBN = (powerBN * this.currentMultiplier) / 1000000000000000000n;
+                var power = parseFloat(ethers.formatUnits(effectivePowerBN, 8));
                 this.shopData.push({ price: priceUsdt, power: power, priceFta: priceFta });
             }
             this._renderShopHTML(container);
@@ -1045,10 +1042,10 @@ class Application {
 
     _renderShopHTML(container) {
         container.innerHTML = '';
-        for(let i=0; i<this.shopData.length; i++) {
-            const data = this.shopData[i];
-            const imgUrl = this.rigImages[i % this.rigImages.length];
-            const div = document.createElement('div');
+        for(var i=0; i<this.shopData.length; i++) {
+            var data = this.shopData[i];
+            var imgUrl = this.rigImages[i % this.rigImages.length];
+            var div = document.createElement('div');
             div.className = 'rig-item';
             div.innerHTML = '<img class="rig-image" src="' + imgUrl + '" alt="' + this.t('rig_name', i+1) + '" loading="lazy" onerror="this.style.display=\'none\'">' +
                 '<div><span class="rig-name">' + this.t('rig_name', i+1) + '</span><span class="rig-power">' + data.power.toFixed(5) + ' FTA/s</span></div>' +
@@ -1062,15 +1059,15 @@ class Application {
         if (!this.user) return this.showToast(this.t('err_not_connected'), true);
         this.setLoader(true, this.t('loader_transaction'));
         try {
-            const m = await this.contracts.mining.machineTypes(id);
+            var m = await this.contracts.mining.machineTypes(id);
             if (this.payMode === 'USDT') {
-                const allow = await this.contracts.usdt.allowance(this.user, CONFIG.MINING);
+                var allow = await this.contracts.usdt.allowance(this.user, CONFIG.MINING);
                 if (allow < m.price) { await (await this.contracts.usdt.approve(CONFIG.MINING, m.price)).wait(); }
                 await (await this.contracts.mining.buyMachine(id)).wait();
             } else {
-                const rate = await this.contracts.mining.exchangeRate();
-                const ftaPrice = (m.price * rate) / 1000000n;
-                const allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
+                var rate = await this.contracts.mining.exchangeRate();
+                var ftaPrice = (m.price * rate) / 1000000n;
+                var allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
                 if (allow < ftaPrice) { await (await this.contracts.fta.approve(CONFIG.MINING, ftaPrice)).wait(); }
                 await (await this.contracts.mining.buyMachineWithFTA(id)).wait();
             }
@@ -1080,43 +1077,6 @@ class Application {
             await this.checkMyMachines();
             this.updateData();
         } catch (e) { this.showError(e); }
-        this.setLoader(false);
-    }
-
-    toggleSwap() {
-        this.swapDirection = this.swapDirection === 'USDT_TO_FTA' ? 'FTA_TO_USDT' : 'USDT_TO_FTA';
-        document.getElementById('token-from-display').innerText = this.swapDirection === 'USDT_TO_FTA' ? 'USDT' : 'FTA';
-        document.getElementById('token-to-display').innerText = this.swapDirection === 'USDT_TO_FTA' ? 'FTA' : 'USDT';
-        document.getElementById('swap-from-in').value = '';
-        document.getElementById('swap-to-in').value = '';
-        this.updateData();
-    }
-
-    calcSwap() {
-        const val = document.getElementById('swap-from-in').value;
-        if (!val) return document.getElementById('swap-to-in').value = '';
-        const res = this.swapDirection === 'USDT_TO_FTA' ? val * this.currentRate : val / this.currentRate;
-        document.getElementById('swap-to-in').value = res.toFixed(5);
-    }
-
-    async executeSwap() {
-        const val = document.getElementById('swap-from-in').value;
-        if (!val || val <= 0) return this.showToast(this.t('err_invalid_amount'), true);
-        this.setLoader(true, this.t('loader_swapping'));
-        const isUsdtTo = this.swapDirection === 'USDT_TO_FTA';
-        const decimals = isUsdtTo ? 6 : this.ftaDecimals;
-        const amount = ethers.parseUnits(val, decimals);
-        try {
-            const tokenContract = isUsdtTo ? this.contracts.usdt : this.contracts.fta;
-            const allowance = await tokenContract.allowance(this.user, CONFIG.MINING);
-            if (allowance < amount) { await (await tokenContract.approve(CONFIG.MINING, amount)).wait(); }
-            const tx = isUsdtTo ? await this.contracts.mining.swapUsdtForFta(amount) : await this.contracts.mining.swapFtaForUsdt(amount);
-            await tx.wait();
-            this.showToast(this.t('toast_swap_success'));
-            document.getElementById('swap-from-in').value = '';
-            document.getElementById('swap-to-in').value = '';
-            this.updateData();
-        } catch(e) { this.showError(e); }
         this.setLoader(false);
     }
 
@@ -1136,57 +1096,62 @@ class Application {
     }
 
     showGame(id) {
-        document.querySelectorAll('.game-area').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.game-area').forEach(function(el) { el.classList.remove('active'); });
         document.getElementById('game-' + id).classList.add('active');
-        document.querySelectorAll('.game-tab').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.game-tab').forEach(function(btn) { btn.classList.remove('active'); });
         event.currentTarget.classList.add('active');
     }
 
     showGameResult(elementId, message, isWin) {
-        const el = document.getElementById(elementId);
+        var el = document.getElementById(elementId);
         el.className = "game-result-box " + (isWin ? "win" : "lose");
         el.innerText = message;
         el.classList.remove('hidden');
-        setTimeout(() => el.classList.add('hidden'), 5000);
+        setTimeout(function() { el.classList.add('hidden'); }, 5000);
     }
 
     async playWinGo(type, choice) {
-        const betVal = document.getElementById('wingo-bet').value;
+        var betVal = document.getElementById('wingo-bet').value;
         if (!betVal || betVal <= 0) return this.showToast(this.t('err_invalid_bet'), true);
-        const amount = ethers.parseUnits(betVal, this.ftaDecimals);
-        const buttons = document.querySelectorAll('#game-wingo .game-options button');
-        buttons.forEach(b => b.disabled = true);
-        const reel = document.getElementById('slot-reel');
+        var amount = ethers.parseUnits(betVal, this.ftaDecimals);
+        var buttons = document.querySelectorAll('#game-wingo .game-options button');
+        buttons.forEach(function(b) { b.disabled = true; });
+        var reel = document.getElementById('slot-reel');
         reel.classList.add('spinning');
         try {
-            const allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
+            var allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
             if (allow < amount) await (await this.contracts.fta.approve(CONFIG.MINING, amount)).wait();
-            const tx = await this.contracts.mining.playWinGo(amount, type, choice);
+            var tx = await this.contracts.mining.playWinGo(amount, type, choice);
             await tx.wait();
             reel.classList.remove('spinning');
-            const randomNum = Math.floor(Math.random() * 10);
+            var randomNum = Math.floor(Math.random() * 10);
             reel.style.transform = 'translateY(' + (-80 * randomNum) + 'px)';
             this.showGameResult('wingo-result', this.t('result_number', randomNum), true);
             this.updateData();
-        } catch(e) { reel.classList.remove('spinning'); reel.style.transform = 'translateY(0px)'; this.showError(e); }
-        buttons.forEach(b => b.disabled = false);
+        } catch(e) {
+            reel.classList.remove('spinning');
+            reel.style.transform = 'translateY(0px)';
+            this.showError(e);
+        }
+        buttons.forEach(function(b) { b.disabled = false; });
     }
 
     initWheel() {
-        const canvas = document.getElementById('wheel-canvas');
+        var canvas = document.getElementById('wheel-canvas');
         if(!canvas) return;
         this.wheelCtx = canvas.getContext('2d');
         this.drawWheel(0);
     }
 
     drawWheel(rotation) {
-        const ctx = this.wheelCtx; if(!ctx) return;
-        const seg = ["10x", "2x", "5x", "1x", "50x", "0x", "3x", "WIN"];
-        const colors = ["#f0b90b", "#b1e4ff", "#ffd87f", "#56ceff", "#ffb4ab", "#282a2e", "#c4c7ca", "#f0b90b"];
+        var ctx = this.wheelCtx;
+        if(!ctx) return;
+        var seg = ["10x", "2x", "5x", "1x", "50x", "0x", "3x", "WIN"];
+        var colors = ["#f0b90b", "#b1e4ff", "#ffd87f", "#56ceff", "#ffb4ab", "#282a2e", "#c4c7ca", "#f0b90b"];
         ctx.clearRect(0, 0, 300, 300);
         ctx.save(); ctx.translate(150, 150); ctx.rotate(rotation); ctx.translate(-150, -150);
-        const step = (2 * Math.PI) / seg.length;
-        for(let i=0; i<seg.length; i++) {
+        var step = (2 * Math.PI) / seg.length;
+        for(var i=0; i<seg.length; i++) {
             ctx.beginPath(); ctx.moveTo(150, 150); ctx.arc(150, 150, 140, i * step, (i + 1) * step); ctx.closePath();
             ctx.fillStyle = colors[i]; ctx.fill();
             ctx.save(); ctx.translate(150, 150); ctx.rotate(i * step + step / 2);
@@ -1200,14 +1165,14 @@ class Application {
     async spinWheel() {
         if(this.isSpinning) return;
         this.isSpinning = true;
-        const btn = document.querySelector('#game-wheel .btn-game'); btn.disabled = true;
+        var btn = document.querySelector('#game-wheel .btn-game'); btn.disabled = true;
         if (this.wheelInterval) clearInterval(this.wheelInterval);
-        this.wheelInterval = setInterval(() => { this.wheelAngle += 0.2; this.drawWheel(this.wheelAngle); }, 20);
+        this.wheelInterval = setInterval(function() { App.wheelAngle += 0.2; App.drawWheel(App.wheelAngle); }, 20);
         try {
-            const price = ethers.parseUnits("100", this.ftaDecimals);
-            const allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
+            var price = ethers.parseUnits("100", this.ftaDecimals);
+            var allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
             if (allow < price) await (await this.contracts.fta.approve(CONFIG.MINING, price)).wait();
-            const tx = await this.contracts.mining.spinWheel(); await tx.wait();
+            var tx = await this.contracts.mining.spinWheel(); await tx.wait();
             clearInterval(this.wheelInterval);
             this.wheelAngle += 5;
             this.drawWheel(this.wheelAngle);
@@ -1218,30 +1183,32 @@ class Application {
     }
 
     async goFishing() {
-        const line = document.getElementById('fishing-line');
-        const hook = document.getElementById('fishing-hook');
-        const status = document.getElementById('fishing-status');
-        const btn = document.querySelector('#game-fishing .btn-game'); btn.disabled = true;
+        var line = document.getElementById('fishing-line');
+        var hook = document.getElementById('fishing-hook');
+        var status = document.getElementById('fishing-status');
+        var btn = document.querySelector('#game-fishing .btn-game'); btn.disabled = true;
         line.style.height = '0px'; hook.style.top = '0px'; status.innerText = this.t('status_casting');
         try {
-            const price = ethers.parseUnits("50", this.ftaDecimals);
-            const allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
+            var price = ethers.parseUnits("50", this.ftaDecimals);
+            var allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
             if (allow < price) await (await this.contracts.fta.approve(CONFIG.MINING, price)).wait();
-            setTimeout(() => { line.style.height = '120px'; hook.style.top = '120px'; status.innerText = this.t('status_line_cast'); }, 500);
-            const tx = await this.contracts.mining.goFishing(); await tx.wait();
+            setTimeout(function() { line.style.height = '120px'; hook.style.top = '120px'; status.innerText = App.t('status_line_cast'); }, 500);
+            var tx = await this.contracts.mining.goFishing(); await tx.wait();
             status.innerText = this.t('status_bite'); hook.style.fontSize = "3rem";
-            setTimeout(() => hook.style.fontSize = "2rem", 500);
+            setTimeout(function() { hook.style.fontSize = "2rem"; }, 500);
             this.showGameResult('fish-result', this.t('toast_fish_success'), true);
             this.updateData();
-        } catch(e) { line.style.height = '0px'; hook.style.top = '0px'; status.innerText = this.t('label_error'); this.showError(e); }
+        } catch(e) {
+            line.style.height = '0px'; hook.style.top = '0px'; status.innerText = this.t('label_error'); this.showError(e);
+        }
         btn.disabled = false;
     }
 
     async buyLotteryTicket() {
         this.setLoader(true, this.t('loader_ticket'));
         try {
-            const price = ethers.parseUnits("50", this.ftaDecimals);
-            const allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
+            var price = ethers.parseUnits("50", this.ftaDecimals);
+            var allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
             if (allow < price) await (await this.contracts.fta.approve(CONFIG.MINING, price)).wait();
             await (await this.contracts.mining.buyLotteryTicket()).wait();
             this.showToast(this.t('toast_ticket')); this.updateData();
@@ -1250,32 +1217,32 @@ class Application {
     }
 
     nav(viewId) {
-        document.querySelectorAll('.view').forEach(el => { el.classList.remove('active'); el.style.display = 'none'; });
-        const activeView = document.getElementById('view-' + viewId);
+        document.querySelectorAll('.view').forEach(function(el) { el.classList.remove('active'); el.style.display = 'none'; });
+        var activeView = document.getElementById('view-' + viewId);
         if(activeView) { activeView.classList.add('active'); activeView.style.display = 'block'; }
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(function(el) { el.classList.remove('active'); });
         if(event && event.currentTarget) event.currentTarget.classList.add('active');
         if (viewId === 'my-rigs') this.checkMyMachines();
     }
 
     async checkMyMachines() {
-        const container = document.getElementById('my-rigs-list');
-        const noRigs = document.getElementById('no-rigs');
+        var container = document.getElementById('my-rigs-list');
+        var noRigs = document.getElementById('no-rigs');
         container.innerHTML = '';
         if(!this.user) return;
         try {
-            const count = await this.contracts.mining.getMachineCount();
-            const promises = [];
-            for(let i=0; i<count; i++) promises.push(this.contracts.mining.getUserMachineCount(this.user, i));
-            const results = await Promise.all(promises);
-            let found = false;
-            for(let i=0; i<count; i++) {
-                const machineCount = results[i];
+            var count = await this.contracts.mining.getMachineCount();
+            var promises = [];
+            for(var i=0; i<count; i++) promises.push(this.contracts.mining.getUserMachineCount(this.user, i));
+            var results = await Promise.all(promises);
+            var found = false;
+            for(var i=0; i<count; i++) {
+                var machineCount = results[i];
                 if (machineCount > 0) {
                     found = true;
-                    let powerDisplay = "N/A";
+                    var powerDisplay = "N/A";
                     if (this.shopData[i]) powerDisplay = this.shopData[i].power.toFixed(5);
-                    const div = document.createElement('div');
+                    var div = document.createElement('div');
                     div.className = 'my-rig-card active';
                     div.innerHTML = '<div class="rig-info"><h4>' + this.t('rig_name', i+1) + ' <span style="opacity:0.5">x' + machineCount.toString() + '</span></h4><p>' + powerDisplay + ' FTA/s</p></div><span class="rig-status-badge status-active">' + this.t('status_active') + '</span>';
                     container.appendChild(div);
@@ -1286,43 +1253,43 @@ class Application {
     }
 
     initVisualizer() {
-        const canvas = document.getElementById('mining-canvas');
+        var canvas = document.getElementById('mining-canvas');
         if (!canvas) return;
         this.resizeCanvas();
         this.vizContext = canvas.getContext('2d');
         this.vizBars = [];
-        for(let i=0; i<20; i++) this.vizBars.push({ height: 0, targetHeight: 0 });
+        for(var i=0; i<20; i++) this.vizBars.push({ height: 0, targetHeight: 0 });
         this.animateVisualizer();
     }
 
     updateVisualizerIntensity(p) {
-        let intensity = p > 0 ? Math.min((p * 500) + 10, 100) : 0;
-        this.vizBars.forEach(bar => bar.targetHeight = (this.vizContext.canvas.height * (intensity/100)) * Math.random());
+        var intensity = p > 0 ? Math.min((p * 500) + 10, 100) : 0;
+        this.vizBars.forEach(function(bar) { bar.targetHeight = (App.vizContext.canvas.height * (intensity/100)) * Math.random(); });
     }
 
     animateVisualizer() {
         if(!this.vizContext) return;
-        const ctx = this.vizContext;
+        var ctx = this.vizContext;
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         ctx.fillStyle = "#f0b90b";
-        const w = ctx.canvas.width / 20;
-        this.vizBars.forEach((bar, i) => {
+        var w = ctx.canvas.width / 20;
+        this.vizBars.forEach(function(bar, i) {
             bar.height += (bar.targetHeight - bar.height) * 0.1;
             ctx.fillRect(i * w + 2, ctx.canvas.height - bar.height, w - 4, bar.height);
             bar.targetHeight += (Math.random() - 0.5) * 10;
         });
-        requestAnimationFrame(() => this.animateVisualizer());
+        requestAnimationFrame(function() { App.animateVisualizer(); });
     }
 
     setLoader(show, msg) {
-        const l = document.getElementById('loader');
+        var l = document.getElementById('loader');
         document.getElementById('loader-text').innerText = msg || "Processing...";
         show ? l.classList.remove('hidden') : l.classList.add('hidden');
     }
 
     showError(e) {
         console.error(e);
-        let msg = this.t('label_error');
+        var msg = this.t('label_error');
         if(e.reason) msg = e.reason;
         if(msg.includes("Cannot refer yourself")) msg = this.t('err_self_ref');
         if(msg.includes("Referrer already set")) msg = this.t('err_ref_set');
@@ -1331,44 +1298,41 @@ class Application {
     }
 
     showToast(msg, isError) {
-        const div = document.createElement('div');
+        var div = document.createElement('div');
         div.className = 'toast';
         if (isError) div.style.borderLeftColor = 'var(--danger)';
         div.innerText = msg;
         document.getElementById('toast-container').appendChild(div);
-        setTimeout(() => div.remove(), 4000);
+        setTimeout(function() { div.remove(); }, 4000);
     }
 }
 
-// ═══════════════════════════════════════
-//  TRANSACTION TRACKER
-// ═══════════════════════════════════════
-const TxTracker = {
+var TxTracker = {
     STORAGE_KEY: 'fitia_tx_history_v1',
     MAX_ITEMS: 100,
     currentFilter: 'all',
     _lastAmounts: {},
 
-    _getLang() { return (typeof App !== 'undefined' && App.lang) ? App.lang : 'en'; },
-    _t(key, args) {
-        const lang = this._getLang();
-        let str = (LANG[lang] && LANG[lang][key]) || (LANG['en'] && LANG['en'][key]) || key;
+    _getLang: function() { return (typeof App !== 'undefined' && App.lang) ? App.lang : 'en'; },
+    _t: function(key, args) {
+        var lang = this._getLang();
+        var str = (LANG[lang] && LANG[lang][key]) || (LANG['en'] && LANG['en'][key]) || key;
         if (args !== undefined) { str = str.replace('{0}', args); }
         return str;
     },
 
-    _getTxList() {
+    _getTxList: function() {
         try { return JSON.parse(localStorage.getItem(this.STORAGE_KEY)) || []; }
         catch(e) { return []; }
     },
 
-    _saveTxList(list) {
+    _saveTxList: function(list) {
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(list.slice(0, this.MAX_ITEMS)));
     },
 
-    _mapToastToTx(text) {
-        const t = (key) => this._t(key);
-        const map = [
+    _mapToastToTx: function(text) {
+        var t = function(key) { return TxTracker._t(key); };
+        var map = [
             { keys: ['toast_pol_sent', 'POL envoyé'], type: 'send_pol', cat: 'sends', icon: '📤', dir: 'out' },
             { keys: ['toast_usdt_sent', 'USDT envoyé'], type: 'send_usdt', cat: 'sends', icon: '📤', dir: 'out' },
             { keys: ['toast_fta_sent', 'FTA envoyé'], type: 'send_fta', cat: 'sends', icon: '📤', dir: 'out' },
@@ -1380,17 +1344,17 @@ const TxTracker = {
             { keys: ['toast_fish_success', 'Pêche réussie'], type: 'fishing', cat: 'games', icon: '🎣', dir: 'neutral' },
             { keys: ['toast_ref_bound', 'Parrain lié'], type: 'referral', cat: 'mining', icon: '👥', dir: 'neutral' }
         ];
-        for (const entry of map) {
-            for (const k of entry.keys) {
-                const translated = t(k);
-                if (text === translated || text.includes(translated)) return entry;
+        for (var i = 0; i < map.length; i++) {
+            for (var j = 0; j < map[i].keys.length; j++) {
+                var translated = t(map[i].keys[j]);
+                if (text === translated || text.indexOf(translated) !== -1) return map[i];
             }
         }
         return null;
     },
 
-    _getAmountForType(type) {
-        const amounts = {
+    _getAmountForType: function(type) {
+        var amounts = {
             send_pol: this._lastAmounts.withdraw,
             send_usdt: this._lastAmounts.withdraw,
             send_fta: this._lastAmounts.withdraw,
@@ -1403,11 +1367,11 @@ const TxTracker = {
         return amounts[type] || '';
     },
 
-    record(text) {
-        const mapping = this._mapToastToTx(text);
+    record: function(text) {
+        var mapping = this._mapToastToTx(text);
         if (!mapping) return;
-        const amount = this._getAmountForType(mapping.type);
-        const tx = {
+        var amount = this._getAmountForType(mapping.type);
+        var tx = {
             id: Date.now() + Math.random(),
             type: mapping.type,
             category: mapping.cat,
@@ -1417,42 +1381,42 @@ const TxTracker = {
             amount: amount,
             timestamp: Date.now()
         };
-        const list = this._getTxList();
+        var list = this._getTxList();
         list.unshift(tx);
         this._saveTxList(list);
     },
 
-    _formatTime(ts) {
-        const diff = Math.floor((Date.now() - ts) / 1000);
+    _formatTime: function(ts) {
+        var diff = Math.floor((Date.now() - ts) / 1000);
         if (diff < 60) return this._t('label_just_now');
         if (diff < 3600) return this._t('label_min_ago', Math.floor(diff / 60));
         if (diff < 86400) return this._t('label_hr_ago', Math.floor(diff / 3600));
         return this._t('label_day_ago', Math.floor(diff / 86400));
     },
 
-    _getCatClass(cat) {
-        const map = { sends: 'send', swaps: 'swap', games: 'game', mining: 'mining', referral: 'referral' };
+    _getCatClass: function(cat) {
+        var map = { sends: 'send', swaps: 'swap', games: 'game', mining: 'mining', referral: 'referral' };
         return map[cat] || 'mining';
     },
 
-    _getDirClass(dir) {
-        const map = { out: 'out', in: 'in', neutral: 'neutral' };
+    _getDirClass: function(dir) {
+        var map = { out: 'out', in: 'in', neutral: 'neutral' };
         return map[dir] || 'neutral';
     },
 
-    setFilter(filter) {
+    setFilter: function(filter) {
         this.currentFilter = filter;
-        document.querySelectorAll('.hfilter').forEach(btn => {
+        document.querySelectorAll('.hfilter').forEach(function(btn) {
             btn.classList.toggle('active', btn.dataset.filter === filter);
         });
         this.render();
     },
 
-    render() {
-        const list = this._getTxList();
-        const filtered = this.currentFilter === 'all' ? list : list.filter(tx => tx.category === this.currentFilter);
-        const container = document.getElementById('history-list');
-        const empty = document.getElementById('history-empty');
+    render: function() {
+        var list = this._getTxList();
+        var filtered = this.currentFilter === 'all' ? list : list.filter(function(tx) { return tx.category === TxTracker.currentFilter; });
+        var container = document.getElementById('history-list');
+        var empty = document.getElementById('history-empty');
         if (!container) return;
         if (filtered.length === 0) {
             container.classList.add('hidden');
@@ -1461,28 +1425,27 @@ const TxTracker = {
         }
         container.classList.remove('hidden');
         empty.classList.add('hidden');
-        container.innerHTML = filtered.map(tx => {
-            const amountStr = tx.amount ? tx.amount + (tx.direction === 'out' ? ' ↗' : tx.direction === 'in' ? ' ↙' : '') : '';
-            const amountPrefix = tx.amount ? (tx.direction === 'out' ? '-' : tx.direction === 'in' ? '+' : '') : '';
+        container.innerHTML = filtered.map(function(tx) {
+            var amountStr = tx.amount ? tx.amount + (tx.direction === 'out' ? ' ↗' : tx.direction === 'in' ? ' ↙' : '') : '';
+            var amountPrefix = tx.amount ? (tx.direction === 'out' ? '-' : tx.direction === 'in' ? '+' : '') : '';
             return '<div class="tx-card">' +
-                '<div class="tx-icon ' + this._getCatClass(tx.category) + '">' + tx.icon + '</div>' +
+                '<div class="tx-icon ' + TxTracker._getCatClass(tx.category) + '">' + tx.icon + '</div>' +
                 '<div class="tx-info"><div class="tx-title">' + tx.title + '</div><div class="tx-subtitle">' + amountStr + '</div></div>' +
-                '<div class="tx-right"><div class="tx-amount ' + this._getDirClass(tx.direction) + '">' + (tx.amount ? amountPrefix + tx.amount : '—') + '</div>' +
-                '<div class="tx-time">' + this._formatTime(tx.timestamp) + '</div></div></div>';
+                '<div class="tx-right"><div class="tx-amount ' + TxTracker._getDirClass(tx.direction) + '">' + (tx.amount ? amountPrefix + tx.amount : '—') + '</div>' +
+                '<div class="tx-time">' + TxTracker._formatTime(tx.timestamp) + '</div></div></div>';
         }).join('');
     },
 
-    clearAll() {
+    clearAll: function() {
         if (confirm(this._getLang() === 'fr' ? 'Effacer tout l\'historique ?' : 'Clear all history?')) {
             localStorage.removeItem(this.STORAGE_KEY);
             this.render();
         }
     },
 
-    setupInputTrackers() {
-        const pairs = [
+    setupInputTrackers: function() {
+        var pairs = [
             ['t-withdraw-amount', 'withdraw'],
-            ['swap-from-in', 'swap'],
             ['wingo-bet', 'bet']
         ];
         pairs.forEach(function(pair) {
@@ -1494,7 +1457,7 @@ const TxTracker = {
         });
     },
 
-    setupToastObserver() {
+    setupToastObserver: function() {
         var container = document.getElementById('toast-container');
         if (!container) return;
         var observer = new MutationObserver(function(mutations) {
