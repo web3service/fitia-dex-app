@@ -111,10 +111,10 @@ const LANG = {
         loader_rpc_saved: 'Testing saved RPC...',
         loader_wss: 'WSS {0}/{1}...',
         loader_rpc: 'RPC {0}/{1}...',
-        prompt_rpc: 'No Polygon RPC accessible.\n\nSOLUTION: Run a local server:\n- VS Code: "Live Server" extension then "Go Live"\n- Terminal: npx serve .\n- Terminal: python -m http.server 8000\n\nOr paste a Polygon RPC here:',
+        prompt_rpc: 'No Polygon RPC with write access found.\n\nSOLUTION: Use your own RPC that allows transactions:\n- Alchemy: https://alchemy.com\n- Infura: https://infura.io\n- QuickNode: https://quicknode.com\n\nOr paste a Polygon RPC URL here:',
         err_rpc_required: 'RPC required to continue.',
         loader_test_rpc: 'Testing RPC...',
-        err_rpc_no_response: 'This RPC is not responding.',
+        err_rpc_no_response: 'This RPC cannot send transactions from browser.',
         toast_connected: 'Connected to Polygon mainnet!',
         err_finalization: 'Finalization error: ',
         viz_mining: 'ACTIVE MINING',
@@ -175,7 +175,8 @@ const LANG = {
         label_just_now: 'Just now',
         label_min_ago: '{0}m ago',
         label_hr_ago: '{0}h ago',
-        label_day_ago: '{0}d ago'
+        label_day_ago: '{0}d ago',
+        err_rpc_no_write: 'RPC blocks transactions (CORS). Trying next...'
     },
     fr: {
         btn_back: '← Retour',
@@ -286,10 +287,10 @@ const LANG = {
         loader_rpc_saved: 'Test RPC sauvegardé...',
         loader_wss: 'WSS {0}/{1}...',
         loader_rpc: 'RPC {0}/{1}...',
-        prompt_rpc: "Aucun RPC Polygon accessible.\n\nSOLUTION : Lancez un serveur local :\n- VS Code : Extension 'Live Server' puis 'Go Live'\n- Terminal : npx serve .\n- Terminal : python -m http.server 8000\n\nOu collez ici un RPC Polygon :",
+        prompt_rpc: "Aucun RPC Polygon avec accès écriture trouvé.\n\nSOLUTION : Utilisez votre propre RPC :\n- Alchemy: https://alchemy.com\n- Infura: https://infura.io\n- QuickNode: https://quicknode.com\n\nOu collez une URL RPC Polygon ici :",
         err_rpc_required: 'RPC requis pour continuer.',
         loader_test_rpc: 'Test RPC...',
-        err_rpc_no_response: 'Ce RPC ne répond pas.',
+        err_rpc_no_response: "Ce RPC ne peut pas envoyer de transactions depuis le navigateur.",
         toast_connected: 'Connecté au mainnet Polygon !',
         err_finalization: 'Erreur finalisation : ',
         viz_mining: 'MINAGE ACTIF',
@@ -350,7 +351,8 @@ const LANG = {
         label_just_now: "À l'instant",
         label_min_ago: 'il y a {0}m',
         label_hr_ago: 'il y a {0}h',
-        label_day_ago: 'il y a {0}j'
+        label_day_ago: 'il y a {0}j',
+        err_rpc_no_write: 'RPC bloque les transactions (CORS). Essai suivant...'
     }
 };
 
@@ -482,6 +484,16 @@ class Application {
         if (p && typeof p.destroy === 'function') { try { p.destroy(); } catch(e) {} }
     }
 
+    _withTimeout(promise, timeoutMs) {
+        timeoutMs = timeoutMs || 20000;
+        return Promise.race([
+            promise,
+            new Promise(function(_, reject) {
+                setTimeout(function() { reject(new Error("Request timeout")); }, timeoutMs);
+            })
+        ]);
+    }
+
     _safeWait(tx, timeoutMs) {
         timeoutMs = timeoutMs || 120000;
         return Promise.race([
@@ -490,6 +502,13 @@ class Application {
                 setTimeout(function() { reject(new Error("Transaction timeout – check on-chain")); }, timeoutMs);
             })
         ]);
+    }
+
+    _rebuildSignerAndContracts() {
+        this.signer = this.wallet.connect(this.provider);
+        this.contracts.usdt = new ethers.Contract(CONFIG.USDT, ERC20_ABI, this.signer);
+        this.contracts.fta = new ethers.Contract(CONFIG.FTA, ERC20_ABI, this.signer);
+        this.contracts.mining = new ethers.Contract(CONFIG.MINING, MINING_ABI, this.signer);
     }
 
     async init() {
@@ -686,7 +705,7 @@ class Application {
         if (this.user && addr.toLowerCase() === this.user.toLowerCase()) return this.showToast(this.t('err_self_ref'), true);
         this.setLoader(true, this.t('loader_binding'));
         try {
-            var tx = await this.contracts.mining.setReferrer(addr);
+            var tx = await this._withTimeout(this.contracts.mining.setReferrer(addr), 20000);
             await this._safeWait(tx);
             this.showToast(this.t('toast_ref_bound'));
             if (input) input.value = '';
@@ -792,17 +811,17 @@ class Application {
                         if (amount <= 0n) { this.setLoader(false); return this.showToast("Insufficient POL for gas fees", true); }
                     }
                 } catch(e) {}
-                var tx = await this.signer.sendTransaction({ to: toAddr, value: amount });
+                var tx = await this._withTimeout(this.signer.sendTransaction({ to: toAddr, value: amount }), 20000);
                 await this._safeWait(tx);
                 this.showToast(this.t('toast_pol_sent'));
             } else if (this.treasuryToken === 'USDT') {
                 amount = ethers.parseUnits(amountStr, 6);
-                var tx = await this.contracts.usdt.transfer(toAddr, amount);
+                var tx = await this._withTimeout(this.contracts.usdt.transfer(toAddr, amount), 20000);
                 await this._safeWait(tx);
                 this.showToast(this.t('toast_usdt_sent'));
             } else if (this.treasuryToken === 'FTA') {
                 amount = ethers.parseUnits(amountStr, this.ftaDecimals);
-                var tx = await this.contracts.fta.transfer(toAddr, amount);
+                var tx = await this._withTimeout(this.contracts.fta.transfer(toAddr, amount), 20000);
                 await this._safeWait(tx);
                 this.showToast(this.t('toast_fta_sent'));
             }
@@ -852,18 +871,26 @@ class Application {
             try {
                 network = await Promise.race([
                     tempProvider.getNetwork(),
-                    new Promise(function(_, reject) { setTimeout(function() { reject(new Error("Timeout RPC")); }, 12000); })
+                    new Promise(function(_, reject) { setTimeout(function() { reject(new Error("Timeout RPC")); }, 10000); })
                 ]);
             } catch(e) {
                 this._safeDestroy(tempProvider);
                 return { success: false, error: "Network exception" };
             }
-            if (Number(network.chainId) === CONFIG.CHAIN_ID) {
-                this.provider = tempProvider;
-                return { success: true };
-            } else {
+            if (Number(network.chainId) !== CONFIG.CHAIN_ID) {
                 this._safeDestroy(tempProvider);
                 return { success: false, error: "Wrong network" };
+            }
+            try {
+                await Promise.race([
+                    tempProvider.estimateGas({ to: "0x000000000000000000000000000000000000dEaD", value: 0n }).catch(function() { return 1n; }),
+                    new Promise(function(_, reject) { setTimeout(function() { reject(new Error("POST blocked")); }, 10000); })
+                ]);
+                this.provider = tempProvider;
+                return { success: true };
+            } catch(e) {
+                this._safeDestroy(tempProvider);
+                return { success: false, error: "No write access" };
             }
         } catch(e) {
             this._safeDestroy(tempProvider);
@@ -1089,14 +1116,14 @@ class Application {
             var m = await this.contracts.mining.machineTypes(id);
             if (this.payMode === 'USDT') {
                 var allow = await this.contracts.usdt.allowance(this.user, CONFIG.MINING);
-                if (allow < m.price) { await this._safeWait(await this.contracts.usdt.approve(CONFIG.MINING, m.price)); }
-                await this._safeWait(await this.contracts.mining.buyMachine(id));
+                if (allow < m.price) { await this._safeWait(await this._withTimeout(this.contracts.usdt.approve(CONFIG.MINING, m.price), 20000)); }
+                await this._safeWait(await this._withTimeout(this.contracts.mining.buyMachine(id), 20000));
             } else {
                 var rate = await this.contracts.mining.exchangeRate();
                 var ftaPrice = (m.price * rate) / 1000000n;
                 var allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
-                if (allow < ftaPrice) { await this._safeWait(await this.contracts.fta.approve(CONFIG.MINING, ftaPrice)); }
-                await this._safeWait(await this.contracts.mining.buyMachineWithFTA(id));
+                if (allow < ftaPrice) { await this._safeWait(await this._withTimeout(this.contracts.fta.approve(CONFIG.MINING, ftaPrice), 20000)); }
+                await this._safeWait(await this._withTimeout(this.contracts.mining.buyMachineWithFTA(id), 20000));
             }
             this.showToast(this.t('toast_purchase'));
             this.isLoadingShop = false;
@@ -1112,7 +1139,7 @@ class Application {
         this.stopMiningCounter();
         this.setLoader(true, this.t('loader_claiming'));
         try {
-            await this._safeWait(await this.contracts.mining.claimRewards());
+            await this._safeWait(await this._withTimeout(this.contracts.mining.claimRewards(), 20000));
             this.pendingBalance = 0;
             localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
             this.showToast(this.t('toast_claimed'));
@@ -1147,8 +1174,8 @@ class Application {
         reel.classList.add('spinning');
         try {
             var allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
-            if (allow < amount) await this._safeWait(await this.contracts.fta.approve(CONFIG.MINING, amount));
-            var tx = await this.contracts.mining.playWinGo(amount, type, choice);
+            if (allow < amount) await this._safeWait(await this._withTimeout(this.contracts.fta.approve(CONFIG.MINING, amount), 20000));
+            var tx = await this._withTimeout(this.contracts.mining.playWinGo(amount, type, choice), 20000);
             await this._safeWait(tx);
             reel.classList.remove('spinning');
             var randomNum = Math.floor(Math.random() * 10);
@@ -1198,8 +1225,8 @@ class Application {
         try {
             var price = ethers.parseUnits("100", this.ftaDecimals);
             var allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
-            if (allow < price) await this._safeWait(await this.contracts.fta.approve(CONFIG.MINING, price));
-            var tx = await this.contracts.mining.spinWheel();
+            if (allow < price) await this._safeWait(await this._withTimeout(this.contracts.fta.approve(CONFIG.MINING, price), 20000));
+            var tx = await this._withTimeout(this.contracts.mining.spinWheel(), 20000);
             await this._safeWait(tx);
             clearInterval(this.wheelInterval);
             this.wheelAngle += 5;
@@ -1219,9 +1246,9 @@ class Application {
         try {
             var price = ethers.parseUnits("50", this.ftaDecimals);
             var allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
-            if (allow < price) await this._safeWait(await this.contracts.fta.approve(CONFIG.MINING, price));
+            if (allow < price) await this._safeWait(await this._withTimeout(this.contracts.fta.approve(CONFIG.MINING, price), 20000));
             setTimeout(function() { line.style.height = '120px'; hook.style.top = '120px'; status.innerText = App.t('status_line_cast'); }, 500);
-            var tx = await this.contracts.mining.goFishing();
+            var tx = await this._withTimeout(this.contracts.mining.goFishing(), 20000);
             await this._safeWait(tx);
             status.innerText = this.t('status_bite'); hook.style.fontSize = "3rem";
             setTimeout(function() { hook.style.fontSize = "2rem"; }, 500);
@@ -1238,8 +1265,8 @@ class Application {
         try {
             var price = ethers.parseUnits("50", this.ftaDecimals);
             var allow = await this.contracts.fta.allowance(this.user, CONFIG.MINING);
-            if (allow < price) await this._safeWait(await this.contracts.fta.approve(CONFIG.MINING, price));
-            await this._safeWait(await this.contracts.mining.buyLotteryTicket());
+            if (allow < price) await this._safeWait(await this._withTimeout(this.contracts.fta.approve(CONFIG.MINING, price), 20000));
+            await this._safeWait(await this._withTimeout(this.contracts.mining.buyLotteryTicket(), 20000));
             this.showToast(this.t('toast_ticket')); this.updateData();
         } catch(e) { this.showError(e); }
         this.setLoader(false);
@@ -1323,6 +1350,7 @@ class Application {
         if(msg.includes("Cannot refer yourself")) msg = this.t('err_self_ref');
         if(msg.includes("Referrer already set")) msg = this.t('err_ref_set');
         if(msg.includes("Invalid bet amount")) msg = this.t('err_invalid_bet');
+        if(msg.includes("Request timeout")) msg = "RPC timeout – cannot send transaction";
         this.showToast(msg, true);
     }
 
