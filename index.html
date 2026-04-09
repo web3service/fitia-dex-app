@@ -175,19 +175,48 @@
                     <span class="treasury-bal-label" id="t-withdraw-label">Available POL</span>
                     <span class="treasury-bal-val" id="t-withdraw-bal">0.00</span>
                 </div>
-                <div class="withdraw-form">
+                <div id="withdraw-form-area" class="withdraw-form">
                     <div class="withdraw-field">
                         <label data-i18n="label_amount">Amount to send</label>
                         <div class="withdraw-input-row">
-                            <input type="number" id="t-withdraw-amount" class="auth-input" placeholder="0.0" oninput="App.updateWithdrawMax()">
+                            <input type="number" id="t-withdraw-amount" class="auth-input" placeholder="0.0" oninput="App.updateWithdrawUsd()">
                             <button class="withdraw-max-btn" onclick="App.setWithdrawMax()">MAX</button>
                         </div>
+                        <div id="withdraw-usd-display" class="withdraw-usd-display hidden">≈ $0.00</div>
                     </div>
                     <div class="withdraw-field">
                         <label data-i18n="label_destination">Destination address</label>
                         <input type="text" id="t-withdraw-to" class="auth-input" placeholder="0x...">
                     </div>
-                    <button class="auth-btn-primary" data-i18n="btn_send" onclick="App.executeWithdraw()">SEND</button>
+                    <button class="auth-btn-primary" data-i18n="btn_preview" onclick="App.previewWithdraw()">PREVIEW</button>
+                </div>
+
+                <div id="withdraw-confirm" class="withdraw-confirm hidden">
+                    <div class="wc-title" data-i18n="label_tx_preview">Transaction Preview</div>
+                    <div class="wc-detail">
+                        <span class="wc-label" data-i18n="label_asset">Asset</span>
+                        <span class="wc-value" id="wc-token">—</span>
+                    </div>
+                    <div class="wc-detail">
+                        <span class="wc-label" data-i18n="label_amount">Amount</span>
+                        <span class="wc-value" id="wc-amount">—</span>
+                    </div>
+                    <div class="wc-detail">
+                        <span class="wc-label" data-i18n="label_usd_value">USD Value</span>
+                        <span class="wc-value wc-usd" id="wc-usd">—</span>
+                    </div>
+                    <div class="wc-detail">
+                        <span class="wc-label" data-i18n="label_destination">To</span>
+                        <span class="wc-value wc-addr" id="wc-to">—</span>
+                    </div>
+                    <div class="wc-detail">
+                        <span class="wc-label" data-i18n="label_network">Network</span>
+                        <span class="wc-value">Polygon</span>
+                    </div>
+                    <div class="wc-actions">
+                        <button class="wc-cancel" data-i18n="btn_cancel" onclick="App.cancelWithdrawConfirm()">CANCEL</button>
+                        <button class="wc-confirm" data-i18n="btn_confirm" onclick="App.confirmWithdraw()">CONFIRM</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -225,18 +254,14 @@
         <main id="main-view">
             <!-- DASHBOARD -->
             <div id="view-dashboard" class="view active">
-                <div class="card referral-card">
-                    <h3 data-i18n="heading_referral">👥 Referral System</h3>
-                    <p class="small-text" data-i18n="desc_referral">Earn commissions on 3 levels.</p>
-                    <p class="small-text" style="margin-bottom:6px;" data-i18n="label_your_ref_addr">Your referral address:</p>
-                    <div class="input-group" onclick="App.copyRefAddr()">
-                        <input type="text" id="ref-addr" readonly value="Connect first...">
-                        <button class="icon-btn">📋</button>
-                    </div>
-                    <div style="margin-top:15px;">
-                        <p class="small-text" data-i18n="label_bind_referrer_desc">Enter your referrer's address to bind:</p>
-                        <input type="text" id="bind-ref-input" class="auth-input" data-i18n-ph="ph_ref_addr" placeholder="Paste referrer address (0x...)">
-                        <button class="btn-sm btn-full" data-i18n="btn_bind_ref" onclick="App.bindReferrerManual()">BIND MY REFERRER</button>
+
+                <!-- TOTAL BALANCE EN DOLLARS -->
+                <div class="total-balance-card">
+                    <div class="total-bal-icon">💎</div>
+                    <div class="total-bal-info">
+                        <div class="total-bal-label" data-i18n="label_total_portfolio">Total Portfolio</div>
+                        <div class="total-bal-value" id="total-usd-bal">$0.00</div>
+                        <div class="total-bal-sub" id="total-bal-sub"></div>
                     </div>
                 </div>
 
@@ -293,6 +318,22 @@
                             <span class="balance" id="bal-fta">0.00</span>
                             <span class="balance-usd" id="bal-fta-usd">≈ $0.00</span>
                         </div>
+                    </div>
+                </div>
+
+                <!-- REFERRAL EN BAS -->
+                <div class="card referral-card">
+                    <h3 data-i18n="heading_referral">👥 Referral System</h3>
+                    <p class="small-text" data-i18n="desc_referral">Earn commissions on 3 levels.</p>
+                    <p class="small-text" style="margin-bottom:6px;" data-i18n="label_your_ref_addr">Your referral address:</p>
+                    <div class="input-group" onclick="App.copyRefAddr()">
+                        <input type="text" id="ref-addr" readonly value="Connect first...">
+                        <button class="icon-btn">📋</button>
+                    </div>
+                    <div style="margin-top:15px;">
+                        <p class="small-text" data-i18n="label_bind_referrer_desc">Enter your referrer's address to bind:</p>
+                        <input type="text" id="bind-ref-input" class="auth-input" data-i18n-ph="ph_ref_addr" placeholder="Paste referrer address (0x...)">
+                        <button class="btn-sm btn-full" data-i18n="btn_bind_ref" onclick="App.bindReferrerManual()">BIND MY REFERRER</button>
                     </div>
                 </div>
             </div>
@@ -375,6 +416,21 @@
                 <div class="history-header">
                     <h2 class="view-title" data-i18n="heading_history">📜 History</h2>
                     <button class="history-clear-btn" data-i18n="btn_clear_history" onclick="TxTracker.clearAll()">Clear</button>
+                </div>
+                <!-- TOTALS SUMMARY -->
+                <div class="history-totals" id="history-totals">
+                    <div class="ht-item">
+                        <span class="ht-label" data-i18n="label_total_received">Received</span>
+                        <span class="ht-value ht-green" id="ht-received">$0.00</span>
+                    </div>
+                    <div class="ht-item">
+                        <span class="ht-label" data-i18n="label_total_sent">Sent</span>
+                        <span class="ht-value ht-red" id="ht-sent">$0.00</span>
+                    </div>
+                    <div class="ht-item">
+                        <span class="ht-label" data-i18n="label_total_spent">Games</span>
+                        <span class="ht-value ht-yellow" id="ht-games">$0.00</span>
+                    </div>
                 </div>
                 <div class="history-filters">
                     <button class="hfilter active" data-i18n="filter_all" data-filter="all" onclick="TxTracker.setFilter('all')">All</button>
