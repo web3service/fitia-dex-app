@@ -385,7 +385,8 @@ const CONFIG = {
         "https://matic-mainnet.chainstacklabs.com",
         "https://polygon-node.taxi",
         "https://rpc-mainnet.matic.quiknode.pro",
-        "https://polygon-bor.publicnode.com"
+        "https://polygon-bor.publicnode.com",
+        "https://polygon-mainnet.infura.io/v3/c2f6d03cdf144c49ae94833a26571fa4"
     ],
     LOGO_USDT: "https://cryptologos.cc/logos/tether-usdt-logo.png",
     LOGO_FTA: "https://i.ibb.co/vvz2DDK5/20260207-190817.webp",
