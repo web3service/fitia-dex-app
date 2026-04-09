@@ -195,7 +195,7 @@ main::-webkit-scrollbar { display: none; }
 .btn-full { width: 100%; background: var(--accent-deep); color: #003547; }
 
 .total-balance-card { display: flex; align-items: center; gap: 14px; background: linear-gradient(135deg, rgba(240,185,11,0.06) 0%, rgba(29,32,35,0.7) 60%); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 0.5px solid rgba(240,185,11,0.18); border-radius: 0.6rem; padding: 18px 16px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.3), 0 8px 32px rgba(0,0,0,0.15); }
-.total-bal-icon { font-size: 1.8rem; filter: drop-shadow(0 0 12px rgba(240,185,11,0.35)); flex-shrink: 0; }
+.total-bal-icon { display: none; }
 .total-bal-info { flex: 1; min-width: 0; }
 .total-bal-label { font-family: 'Space Grotesk', sans-serif; font-size: 0.58rem; color: var(--text-muted); letter-spacing: 0.15em; text-transform: uppercase; opacity: 0.6; margin-bottom: 3px; }
 .total-bal-value { font-family: 'Space Grotesk', monospace; font-size: 1.6rem; font-weight: 700; color: var(--primary); letter-spacing: -0.02em; text-shadow: 0 0 20px rgba(240,185,11,0.15); }
