@@ -41,7 +41,6 @@
   </div>
 </header>
 
-<!-- MAIN CONTENT -->
 <main id="main-view">
 
   <!-- ═══ DASHBOARD ═══ -->
@@ -68,15 +67,12 @@
     </div>
     <div id="active-machines-section" class="card" style="margin-bottom:15px;">
       <h3 class="section-title" data-i18n="activeMachines">⛏️ Active Machines</h3>
-      <div id="active-machines-list">
-        <p class="small-text" style="text-align:center;" data-i18n="noActiveMachines">No active machines</p>
-      </div>
+      <div id="active-machines-list"><p class="small-text" style="text-align:center;" data-i18n="noActiveMachines">No active machines</p></div>
     </div>
     <button class="btn-mega" onclick="App.claim()">
-      <span class="pulse-ring"></span>
-      <span data-i18n="claim">CLAIM</span>
+      <span class="pulse-ring"></span><span data-i18n="claim">CLAIM</span>
     </button>
-    <div class="card referral-card" style="margin-top: 15px;">
+    <div class="card referral-card" style="margin-top:15px;">
       <h3 data-i18n="refTitle">👥 Referral System</h3>
       <p class="small-text" data-i18n="refDesc">Enter your referrer's address to link.</p>
       <div class="ref-input-group">
@@ -105,6 +101,32 @@
   <!-- ═══ WALLET & ASSETS ═══ -->
   <div id="view-my-rigs" class="view">
     <h2 class="view-title" data-i18n="myAssets">⚙️ Wallet & Assets</h2>
+
+    <!-- Profile card (NEW) -->
+    <div class="card profile-card" id="profile-section">
+      <div class="profile-header">
+        <div class="profile-avatar" id="profile-avatar">👤</div>
+        <div class="profile-info">
+          <h3 id="profile-name">Not connected</h3>
+          <span class="profile-level" id="profile-level">Level 0</span>
+          <span class="profile-addr" id="profile-addr"></span>
+        </div>
+        <button class="btn-profile-edit" onclick="App.toggleProfileEdit()" id="btn-profile-edit" style="display:none;">✏️</button>
+      </div>
+      <div class="profile-stats-row">
+        <div class="profile-stat"><span class="ps-val" id="ps-invested">$0</span><span class="ps-label" data-i18n="invested">Invested</span></div>
+        <div class="profile-stat"><span class="ps-val" id="ps-earned">$0</span><span class="ps-label" data-i18n="earned">Earned</span></div>
+        <div class="profile-stat"><span class="ps-val" id="ps-machines">0</span><span class="ps-label" data-i18n="machines">Machines</span></div>
+        <div class="profile-stat"><span class="ps-val" id="ps-txs">0</span><span class="ps-label" data-i18n="txCount">Tx</span></div>
+      </div>
+      <!-- Profile Edit Form (hidden by default) -->
+      <div id="profile-edit-form" class="profile-edit-form hidden">
+        <input type="text" id="edit-username" class="game-input" placeholder="Username" style="margin-bottom:8px;text-align:left;">
+        <input type="email" id="edit-email" class="game-input" placeholder="Email (optional)" style="margin-bottom:8px;text-align:left;">
+        <button class="btn-sm btn-full" onclick="App.saveProfile()" data-i18n="saveProfile">💾 Save Profile</button>
+      </div>
+    </div>
+
     <div class="card" style="margin-bottom: 15px;">
       <h3 style="margin:0 0 15px 0; font-size:1rem;" data-i18n="walletBal">💰 Balances</h3>
       <div class="wallet-token-row">
@@ -144,6 +166,7 @@
         </div>
       </div>
     </div>
+
     <div class="card" style="margin-bottom: 15px; border-color: rgba(16, 185, 129, 0.2);">
       <h3 class="section-title" data-i18n="myMachines">⛏️ My Machines</h3>
       <div id="my-machines-list"><p class="small-text" style="text-align:center;" data-i18n="noMachines">No machines yet</p></div>
@@ -181,7 +204,6 @@
         <input type="number" id="swap-to-in" placeholder="0.0" step="any" readonly>
         <div class="token-select" style="background:#333; cursor:default;" id="token-to-display">FTA</div>
       </div>
-
       <div id="swap-details" class="swap-details hidden">
         <div class="swap-detail-row"><span class="swap-detail-label" data-i18n="exchangeRate">Exchange Rate</span><span class="swap-detail-value" id="swap-detail-rate">—</span></div>
         <div class="swap-detail-row"><span class="swap-detail-label" data-i18n="priceImpact">Price Impact</span><span class="swap-detail-value" id="swap-detail-impact">&lt; 0.5%</span></div>
@@ -190,30 +212,74 @@
         <div class="swap-detail-row"><span class="swap-detail-label" data-i18n="slippageTolerance">Slippage Tolerance</span><span class="swap-detail-value swap-slippage">0.5%</span></div>
         <div class="swap-detail-row"><span class="swap-detail-label" data-i18n="networkFee">Network Fee</span><span class="swap-detail-value" id="swap-detail-network">≈ 0.01 POL</span></div>
       </div>
-
-      <!-- ★ Professional Liquidity Display ★ -->
       <div class="liquidity-reserve-box">
-        <span class="liquidity-label">
-          <span class="lq-icon">💧</span>
-          <span data-i18n="liquidityReserve">Protocol Liquidity (FTA)</span>
-        </span>
+        <span class="liquidity-label"><span class="lq-icon">💧</span><span data-i18n="liquidityReserve">Protocol Liquidity (FTA)</span></span>
         <span class="liquidity-value" id="net-fta-sold-display">— FTA</span>
       </div>
       <div class="liquidity-info-hint" data-i18n="liquidityHint">Backed by smart contract reserves on Polygon</div>
-
       <div class="rate-info" id="swap-rate" data-i18n="loading">Loading...</div>
       <button class="btn-primary" onclick="App.executeSwap()" data-i18n="swap">SWAP</button>
     </div>
   </div>
 
+  <!-- ═══ HISTORY (NEW) ═══ -->
+  <div id="view-history" class="view">
+    <h2 class="view-title">📋 Transaction History</h2>
+
+    <!-- Stats summary -->
+    <div class="card tx-summary-card">
+      <div class="tx-summary-grid">
+        <div class="tx-summary-item"><span class="txs-val" id="txs-total">0</span><span class="txs-label" data-i18n="totalTx">Total</span></div>
+        <div class="tx-summary-item"><span class="txs-val" id="txs-swaps">0</span><span class="txs-label" data-i18n="swaps">Swaps</span></div>
+        <div class="tx-summary-item"><span class="txs-val" id="txs-machines">0</span><span class="txs-label" data-i18n="machines">Machines</span></div>
+        <div class="tx-summary-item"><span class="txs-val" id="txs-batteries">0</span><span class="txs-label" data-i18n="batteries">Batteries</span></div>
+        <div class="tx-summary-item"><span class="txs-val" id="txs-claims">0</span><span class="txs-label" data-i18n="claims">Claims</span></div>
+      </div>
+    </div>
+
+    <!-- Filter tabs -->
+    <div class="tx-filter-tabs">
+      <button class="tx-filter-tab active" onclick="App.filterHistory('all')" data-i18n="all">All</button>
+      <button class="tx-filter-tab" onclick="App.filterHistory('swap')" data-i18n="swaps">Swaps</button>
+      <button class="tx-filter-tab" onclick="App.filterHistory('buy_machine')" data-i18n="machines">Machines</button>
+      <button class="tx-filter-tab" onclick="App.filterHistory('buy_battery')" data-i18n="batteries">Batteries</button>
+      <button class="tx-filter-tab" onclick="App.filterHistory('claim')" data-i18n="claims">Claims</button>
+    </div>
+
+    <!-- Transactions list -->
+    <div id="history-list" class="history-list">
+      <div class="history-empty">
+        <span class="history-empty-icon">📭</span>
+        <p data-i18n="noHistory">No transactions yet. Start mining!</p>
+      </div>
+    </div>
+
+    <!-- Activity log -->
+    <div class="card" style="margin-top:15px;">
+      <h3 class="section-title">📊 Recent Activity</h3>
+      <div id="activity-feed" class="activity-feed">
+        <p class="small-text" style="text-align:center;" data-i18n="noActivity">No recent activity</p>
+      </div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="card" style="margin-top:15px;">
+      <h3 class="section-title">🏆 Leaderboard</h3>
+      <div id="leaderboard-list" class="leaderboard-list">
+        <p class="small-text" style="text-align:center;">Loading...</p>
+      </div>
+    </div>
+  </div>
+
 </main>
 
-<!-- BOTTOM NAV -->
-<nav class="bottom-nav">
+<!-- BOTTOM NAV (5 items now) -->
+<nav class="bottom-nav nav-5">
   <button class="nav-item active" onclick="App.nav('dashboard')"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span data-i18n="home">Home</span></button>
   <button class="nav-item" onclick="App.nav('shop')"><svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0 0 20 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg><span data-i18n="shop">Shop</span></button>
   <button class="nav-item" onclick="App.nav('my-rigs')"><svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg><span data-i18n="assets">Wallet</span></button>
   <button class="nav-item" onclick="App.nav('swap')"><svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg><span data-i18n="swapNav">Swap</span></button>
+  <button class="nav-item" onclick="App.nav('history')"><svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg><span data-i18n="historyNav">History</span></button>
 </nav>
 </div>
 
