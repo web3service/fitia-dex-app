@@ -6,466 +6,265 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0f172a">
 <title>FITIA PRO MINER</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src * ws://* wss://*; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://unpkg.com https://relay.walletconnect.com; img-src 'self' data: https://* http://*;">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 <script src="https://unpkg.com/@walletconnect/ethereum-provider@2.11.0/dist/index.umd.js"></script>
-<style>
-:root {
---bg: #0f172a;
---card-bg: #1e293b;
---primary: #F0B90B;
---primary-hover: #FFD43B;
---accent: #3b82f6;
---text: #f8fafc;
---text-muted: #94a3b8;
---danger: #ef4444;
---success: #10b981;
---nav-height: 65px;
---safe-bottom: env(safe-area-inset-bottom, 0px);
-}
-* { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; margin: 0; overscroll-behavior: none; }
-body { background-color: var(--bg); font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text); height: 100dvh; overflow: hidden; }
-.bg-glow { position: fixed; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at 50% 0%, #2a2400, transparent 70%); }
-.app-shell { display: flex; flex-direction: column; height: 100%; max-width: 100%; margin: 0 auto; }
-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(10px); z-index: 10; background: var(--bg); border-bottom: 1px solid rgba(255,255,255,0.05); padding-top: max(15px, env(safe-area-inset-top)); }
-.brand { display: flex; align-items: center; gap: 8px; }
-.logo-icon { font-size: 1.4rem; color: var(--primary); text-shadow: 0 0 15px var(--primary); }
-.brand-text { font-weight: 800; font-size: clamp(0.9rem, 4vw, 1.1rem); letter-spacing: 0.5px; }
-.pro-badge { background: var(--primary); color: #000; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; margin-left: 5px; font-weight: 700; }
-.btn-connect { background: transparent; border: 1px solid var(--primary); color: var(--primary); padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
-.btn-connect:active { background: var(--primary); color: #000; }
-.wallet-status { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 20px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
-.status-dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; box-shadow: 0 0 10px #10b981; }
-.lang-dropdown { position: relative; display: inline-block; }
-.lang-btn { background: rgba(255,255,255,0.1); border: none; color: var(--text); padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
-.lang-content { display: none; position: absolute; right: 0; top: 40px; background: var(--card-bg); min-width: 160px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5); z-index: 100; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); overflow: hidden; }
-.lang-content a { color: var(--text); padding: 12px 16px; text-decoration: none; display: block; font-size: 0.9rem; }
-.lang-content a:hover { background: rgba(255,255,255,0.1); }
-.lang-dropdown:hover .lang-content { display: block; }
-main { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: calc(80px + var(--safe-bottom)); scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-main::-webkit-scrollbar { display: none; }
-.view { display: none; animation: fadeIn 0.3s ease; }
-.view.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-.view-title { font-size: 1.3rem; margin-bottom: 15px; font-weight: 800; }
-.card { background: var(--card-bg); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 15px; margin-bottom: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-.total-balance-card { text-align: center; background: linear-gradient(145deg, #252525, #1a1a1a); border: 1px solid rgba(240, 185, 11, 0.3); box-shadow: 0 10px 30px rgba(240, 185, 11, 0.1); }
-.total-balance-card small { color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
-.total-val { font-size: clamp(2rem, 8vw, 3rem); font-weight: 800; color: var(--primary); font-family: 'JetBrains Mono', monospace; margin-top: 5px; text-shadow: 0 0 20px rgba(240, 185, 11, 0.3); word-break: break-all; }
-.referral-card h3 { margin: 0 0 8px 0; font-size: 1rem; }
-.small-text { font-size: 0.8rem; color: var(--text-muted); margin: 0; }
-.btn-sm { padding: 8px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; margin-top: 5px; }
-.btn-full { width: 100%; background: var(--accent); color: white; }
-.ref-input-group { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-.ref-input-group .game-input { margin-bottom: 0; font-size: 0.85rem; text-align: left; }
-.token-img-lg { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 10px rgba(0,0,0,0.5); flex-shrink: 0; }
-.wallet-token-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-.wallet-token-row:last-child { border-bottom: none; }
-.token-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.token-name { font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
-.token-unit-price { font-size: 0.7rem; color: var(--text-muted); font-weight: normal; font-family: 'JetBrains Mono', monospace; }
-.token-bal { font-family: 'JetBrains Mono', monospace; font-size: clamp(0.9rem, 3.5vw, 1rem); color: var(--text); font-weight: bold; word-break: break-all; }
-.token-bal-usd { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-muted); }
-.wallet-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
-.btn-wallet { padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text); font-weight: bold; font-size: 0.75rem; cursor: pointer; transition: 0.2s; white-space: nowrap; }
-.btn-wallet:active { background: var(--primary); color: #000; }
-.receive-btn { border-color: var(--primary); color: var(--primary); }
-.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1500; justify-content: center; align-items: flex-end; padding: 0; }
-.modal.active { display: flex; }
-.modal-content { background: var(--card-bg); padding: 25px 20px calc(25px + var(--safe-bottom)); border-radius: 20px 20px 0 0; width: 100%; max-width: 100%; box-shadow: 0 -10px 50px rgba(0,0,0,0.5); animation: slideUp 0.3s ease-out; }
-@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-.modal-header h3 { margin: 0; font-size: 1.2rem; }
-.modal-close { background: rgba(255,255,255,0.1); border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-.receive-addr-box { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; border: 1px dashed var(--primary); display: flex; justify-content: space-between; align-items: center; cursor: pointer; word-break: break-all; }
-.receive-addr-box span { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
-.copy-icon { font-size: 1.2rem; margin-left: 10px; }
-.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-.stat-card { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
-.stat-card.accent { border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.1); }
-.stat-val { font-size: clamp(1.2rem, 5vw, 1.6rem); font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; margin: 4px 0; word-break: break-all; }
-.stat-card small { color: var(--text-muted); text-transform: uppercase; font-size: 0.7rem; }
-.btn-mega { width: 100%; background: linear-gradient(135deg, var(--primary), #FFD43B); border: none; padding: 20px; border-radius: 16px; color: #000; font-size: 1.1rem; font-weight: 800; text-transform: uppercase; cursor: pointer; box-shadow: 0 10px 25px rgba(240, 185, 11, 0.4); position: relative; overflow: hidden; transition: transform 0.15s; }
-.btn-mega:active { transform: scale(0.98); }
-.pulse-ring { position: absolute; top:-50%; left:-50%; width:200%; height:200%; background: rgba(255,255,255,0.2); border-radius: 40%; animation: pulse 3s infinite; }
-@keyframes pulse { 0% { transform: scale(0.8); opacity: 0; } 70% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(1.2); opacity: 0; } }
-.btn-primary { width: 100%; background: var(--primary); color: #000; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
-.btn-primary:active { background: var(--primary-hover); transform: scale(0.98); }
-.visualizer-wrap { position: relative; height: 100px; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 20px; border: 1px solid #333; }
-#mining-canvas { width: 100%; height: 100%; display: block; }
-.viz-label { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; letter-spacing: 2px; color: #666; font-size: 0.8rem; }
-.shop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.toggle-pay { display: flex; gap: 4px; background: #1e293b; padding: 4px; border-radius: 8px; }
-.toggle-btn { background: transparent; border: none; color: var(--text-muted); padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
-.toggle-btn.active { background: var(--primary); color: #000; }
-.grid-list { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; overflow: hidden; }
-.rig-item { background: linear-gradient(145deg, #252525, #1a1a1a); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 15px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s; box-shadow: 5px 5px 15px rgba(0,0,0,0.5); position: relative; overflow: hidden; }
-.rig-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%); border-radius: 16px; pointer-events: none; }
-.rig-item:active { transform: scale(0.98); box-shadow: 2px 2px 10px rgba(0,0,0,0.6); z-index: 2; }
-.rig-name { font-weight: bold; font-size: 0.95rem; }
-.rig-power { color: var(--accent); font-size: 0.8rem; margin: 4px 0; }
-.rig-price { color: var(--primary); font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; }
-.plug-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.game-input { width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid #333; border-radius: 10px; color: var(--text); font-size: 16px; text-align: center; margin-bottom: 12px; font-family: 'JetBrains Mono', monospace; transition: border-color 0.2s; }
-.game-input:focus { border-color: var(--primary); }
-.shop-tabs { display: flex; gap: 4px; margin-bottom: 15px; background: #1e293b; padding: 4px; border-radius: 8px; }
-.shop-tab { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; text-align: center; transition: 0.2s; font-size: 0.9rem; }
-.shop-tab.active { background: var(--primary); color: #000; }
-.battery-shop-item { background: linear-gradient(145deg, #252525, #1a1a1a); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 15px 10px; text-align: center; box-shadow: 5px 5px 15px rgba(0,0,0,0.5); transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.battery-shop-item:active { transform: scale(0.98); }
-.real-battery { position: relative; width: 50px; height: 24px; margin: 4px auto; }
-.battery-body { width: 44px; height: 22px; background: linear-gradient(180deg, #cbd5e1, #94a3b8); border-radius: 4px; border: 1px solid #64748b; position: relative; overflow: hidden; box-shadow: inset 0 -2px 4px rgba(0,0,0,0.25); }
-.battery-cap { position: absolute; right: -4px; top: 50%; transform: translateY(-50%); width: 4px; height: 10px; background: #475569; border-radius: 1px 2px 2px 1px; border: 1px solid #334155; }
-.battery-level { height: 100%; background: linear-gradient(180deg, #10b981, #059669); width: 0%; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); border-radius: 3px 0 0 3px; }
-.battery-level.medium { background: linear-gradient(180deg, #f59e0b, #d97706); }
-.battery-level.low { background: linear-gradient(180deg, #ef4444, #dc2626); }
-.battery-level.empty { background: linear-gradient(180deg, #64748b, #475569); }
-.battery-charge-indicator { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.55rem; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); z-index: 2; pointer-events: none; mix-blend-mode: difference; }
-.section-title { margin: 0 0 12px 0; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
-.asset-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-.asset-row:last-child { border-bottom: none; }
-.asset-info { flex: 1; min-width: 0; }
-.asset-name { font-weight: bold; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.asset-detail { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
-.status-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-.status-pill.active { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-.status-pill.expired { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-.status-pill.inactive { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
-.status-pill.available { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
-.battery-bar-wrap { margin-top: 6px; }
-.battery-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-.battery-bar-label { font-size: 0.7rem; color: var(--text-muted); }
-.battery-bar-time { font-size: 0.7rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-.battery-bar-time.green { color: #10b981; }
-.battery-bar-time.yellow { color: #f59e0b; }
-.battery-bar-time.red { color: #ef4444; }
-.battery-bar { width: 100%; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
-.battery-bar-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
-.battery-bar-fill.green { background: linear-gradient(90deg, #059669, #10b981); box-shadow: 0 0 8px rgba(16,185,129,0.4); }
-.battery-bar-fill.yellow { background: linear-gradient(90deg, #d97706, #f59e0b); box-shadow: 0 0 8px rgba(245,158,11,0.4); }
-.battery-bar-fill.red { background: linear-gradient(90deg, #dc2626, #ef4444); box-shadow: 0 0 8px rgba(239,68,68,0.4); }
-.battery-bar-fill.gray { background: #475569; }
-.swap-interface { padding: 15px; }
-.swap-header { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px; padding: 0 4px; }
-.input-wrap { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; height: 52px; margin-bottom: 8px; transition: border-color 0.2s; }
-.input-wrap:focus-within { border-color: var(--primary); }
-.input-wrap input { flex: 1; height: 100%; background: transparent; border: none; color: var(--text); font-size: 1.2rem; padding: 0 0 0 16px; text-align: left; font-family: 'JetBrains Mono', monospace; font-weight: bold; min-width: 0; }
-.token-select { display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.1); border-radius: 10px; margin: 6px; padding: 0 10px; height: calc(100% - 12px); font-weight: bold; cursor: pointer; font-size: 0.9rem; white-space: nowrap; transition: background 0.2s; }
-.token-select:active { background: rgba(255,255,255,0.2); }
-.swap-arrow-wrap { text-align: center; height: 20px; margin: 4px 0; display: flex; justify-content: center; align-items: center; }
-.swap-arrow { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: var(--bg); border: 1px solid #333; border-radius: 50%; cursor: pointer; font-size: 1rem; color: var(--text-muted); transition: all 0.2s; }
-.swap-arrow:active { background: var(--primary); color: #000; border-color: var(--primary); }
-.rate-info { text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 12px; }
-.swap-details { margin-top: 14px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); }
-.swap-detail-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 0.78rem; }
-.swap-detail-row:not(:last-child) { border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 6px; margin-bottom: 2px; }
-.swap-detail-label { color: var(--text-muted); }
-.swap-detail-value { color: var(--text); font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 0.75rem; }
-.swap-slippage { color: var(--accent); }
-.bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: calc(var(--nav-height) + var(--safe-bottom)); background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); border-top: 1px solid #333; display: flex; justify-content: space-around; align-items: center; z-index: 100; padding-bottom: var(--safe-bottom); }
-.nav-item { border: none; background: none; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 0.65rem; cursor: pointer; width: 20%; height: 100%; transition: 0.2s; }
-.nav-item svg { width: 22px; height: 22px; fill: currentColor; }
-.nav-item.active { color: var(--primary); }
-.loader { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; animation: loaderFadeIn 0.3s ease; }
-@keyframes loaderFadeIn { from { opacity: 0; } to { opacity: 1; } }
-.loader.hidden { display: none !important; }
-.fta-loader-wrap { position: relative; width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; }
-.fta-loader-logo { width: 52px; height: 52px; border-radius: 50%; z-index: 2; position: relative; animation: ftaLogoFloat 2s ease-in-out infinite; }
-@keyframes ftaLogoFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-.fta-loader-ring { position: absolute; top: 0; left: 0; width: 90px; height: 90px; border: 3px solid rgba(240, 185, 11, 0.15); border-top-color: var(--primary); border-right-color: var(--primary); border-radius: 50%; animation: ftaRingSpin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite; z-index: 1; }
-@keyframes ftaRingSpin { to { transform: rotate(360deg); } }
-.fta-loader-pulse { position: absolute; top: 50%; left: 50%; width: 52px; height: 52px; transform: translate(-50%, -50%); border-radius: 50%; background: var(--primary); opacity: 0; z-index: 0; animation: ftaPulse 2s ease-out infinite; }
-@keyframes ftaPulse { 0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.4; } 100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; } }
-.loader-text { margin-top: 20px; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; animation: loaderTextPulse 1.5s ease-in-out infinite; }
-@keyframes loaderTextPulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
-.toast { background: #1e293b; color: white; padding: 12px 16px; border-radius: 10px; margin-bottom: 8px; text-align: center; border-left: 4px solid var(--primary); box-shadow: 0 5px 15px rgba(0,0,0,0.5); font-size: 0.85rem; animation: toastIn 0.3s ease, toastOut 0.3s ease 3.7s forwards; pointer-events: auto; white-space: pre-line; }
-.toast.toast-success { border-left-color: var(--success); }
-.toast.toast-error { border-left-color: var(--danger); }
-@keyframes toastIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-@keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-10px); } }
-.machine-svg { display: block; margin: 0 auto 8px; width: 100%; max-width: 200px; height: auto; filter: drop-shadow(0 4px 16px rgba(0,0,0,0.6)); transition: transform 0.3s ease; }
-.rig-item:active .machine-svg { transform: scale(1.04); }
-.machine-svg-mini { display: block; width: 50px; height: auto; flex-shrink: 0; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)); }
-.fan-blades { animation: fanSpin 0.8s linear infinite; }
-@keyframes fanSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-.led-pulse { animation: ledPulse 2s ease-in-out infinite; }
-@keyframes ledPulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
-.rig-item .tier-badge { position: absolute; top: 8px; right: 8px; padding: 2px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; z-index: 2; }
-.chat-fab { position: fixed; bottom: calc(var(--nav-height) + var(--safe-bottom) + 15px); right: 15px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #FFD43B); color: #000; border: none; cursor: pointer; box-shadow: 0 4px 20px rgba(240, 185, 11, 0.5); z-index: 90; transition: transform 0.2s, box-shadow 0.2s; display: flex; align-items: center; justify-content: center; padding: 0; overflow: hidden; }
-.chat-fab:active { transform: scale(0.9); }
-.chat-fab-logo { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; pointer-events: none; }
-.chat-panel { position: fixed; bottom: calc(var(--nav-height) + var(--safe-bottom) + 80px); right: 15px; width: calc(100% - 30px); max-width: 380px; height: 55vh; max-height: 480px; background: var(--card-bg); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 15px 50px rgba(0,0,0,0.7); z-index: 95; display: flex; flex-direction: column; transform: scale(0.5) translateY(20px); opacity: 0; pointer-events: none; transform-origin: bottom right; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); overflow: hidden; }
-.chat-panel.active { transform: scale(1) translateY(0); opacity: 1; pointer-events: auto; }
-.chat-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: linear-gradient(135deg, #1a1a2e, #162032); border-bottom: 1px solid rgba(255,255,255,0.08); font-weight: 700; font-size: 0.95rem; }
-.chat-header-brand { display: flex; align-items: center; gap: 10px; }
-.chat-header-logo { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 8px rgba(240,185,11,0.4); }
-.chat-close { background: rgba(255,255,255,0.1); border: none; color: var(--text-muted); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-.chat-close:active { background: var(--danger); color: #fff; }
-.chat-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; scrollbar-width: thin; scrollbar-color: #333 transparent; }
-.chat-messages::-webkit-scrollbar { width: 4px; }
-.chat-messages::-webkit-scrollbar-track { background: transparent; }
-.chat-messages::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-.chat-bubble { max-width: 85%; padding: 10px 14px; border-radius: 16px; font-size: 0.85rem; line-height: 1.45; word-wrap: break-word; animation: bubbleIn 0.25s ease; white-space: pre-line; }
-@keyframes bubbleIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-.chat-bubble.user { align-self: flex-end; background: var(--primary); color: #000; border-bottom-right-radius: 4px; font-weight: 600; }
-.chat-bubble.assistant { align-self: flex-start; background: rgba(255,255,255,0.08); color: var(--text); border-bottom-left-radius: 4px; }
-.chat-input-area { display: flex; gap: 8px; padding: 12px 14px; background: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05); }
-.chat-input { flex: 1; padding: 10px 14px; background: rgba(0,0,0,0.3); border: 1px solid #333; border-radius: 25px; color: var(--text); font-size: 0.9rem; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.2s; }
-.chat-input:focus { border-color: var(--primary); }
-.chat-send-btn { width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: #000; border: none; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.15s; flex-shrink: 0; }
-.chat-send-btn:active { transform: scale(0.9); }
-.hidden { display: none !important; }
-/* netFtaSold warning banner in swap */
-.swap-nfta-display { margin-top: 6px; padding: 8px 10px; background: rgba(0,0,0,0.25); border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); }
-.swap-nfta-warning { display: none; padding: 10px; margin-top: 10px; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; font-size: 0.78rem; color: #fca5a5; text-align: center; line-height: 1.4; }
-</style>
 </head>
 <body>
 <div class="bg-glow"></div>
-<div id="toast-container"></div>
+<div id="toast-container" style="position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:3000;display:flex;flex-direction:column;align-items:center;gap:8px;max-width:90%;"></div>
 <div class="app-shell">
+
+<!-- HEADER -->
 <header>
-<div class="brand">
-<div class="logo-icon">⚡</div>
-<div class="brand-text">FITIA <span class="pro-badge">PRO</span></div>
-</div>
-<div id="lang-selector" class="lang-dropdown">
-<button class="lang-btn" id="lang-btn-display">🇬🇧 EN</button>
-<div class="lang-content">
-<a href="#" onclick="App.setLanguage('en')">🇬🇧 English</a>
-<a href="#" onclick="App.setLanguage('fr')">🇫🇷 Français</a>
-<a href="#" onclick="App.setLanguage('de')">🇩🇪 Deutsch</a>
-<a href="#" onclick="App.setLanguage('zh')">🇨🇳 中文</a>
-<a href="#" onclick="App.setLanguage('sg')">🇸🇬 English (SG)</a>
-</div>
-</div>
-<button id="btn-connect" class="btn-connect" onclick="App.connect()">Connect</button>
-<div id="wallet-status" class="wallet-status hidden">
-<span id="addr-display">0x...</span>
-<span class="status-dot"></span>
-</div>
+  <div class="brand">
+    <div class="logo-icon">⚡</div>
+    <div class="brand-text">FITIA <span class="pro-badge">PRO</span></div>
+  </div>
+  <div id="lang-selector" class="lang-dropdown">
+    <button class="lang-btn" id="lang-btn-display">🇬🇧 EN</button>
+    <div class="lang-content">
+      <a href="#" onclick="App.setLanguage('en')">🇬🇧 English</a>
+      <a href="#" onclick="App.setLanguage('fr')">🇫🇷 Français</a>
+      <a href="#" onclick="App.setLanguage('de')">🇩🇪 Deutsch</a>
+      <a href="#" onclick="App.setLanguage('zh')">🇨🇳 中文</a>
+      <a href="#" onclick="App.setLanguage('sg')">🇸🇬 English (SG)</a>
+    </div>
+  </div>
+  <button id="btn-connect" class="btn-connect" onclick="App.connect()" data-i18n="connect">Connect</button>
+  <div id="wallet-status" class="wallet-status hidden">
+    <span id="addr-display">0x...</span>
+    <span class="status-dot"></span>
+  </div>
 </header>
 
+<!-- MAIN CONTENT -->
 <main id="main-view">
-<!-- DASHBOARD -->
-<div id="view-dashboard" class="view active">
-<div class="card total-balance-card">
-<small data-i18n="totalBal">Total Balance</small>
-<div class="total-val" id="val-total-usd">$0.00</div>
-</div>
-<div class="stats-grid">
-<div class="stat-card">
-<small data-i18n="power">POWER</small>
-<div class="stat-val" id="val-power">0 H/s</div>
-<small data-i18n="ftaSec">Hashrate</small>
-</div>
-<div class="stat-card accent">
-<small data-i18n="pending">PENDING</small>
-<div class="stat-val" id="val-pending">0.00000</div>
-<small>FTA</small>
-</div>
-</div>
-<div class="visualizer-wrap">
-<canvas id="mining-canvas"></canvas>
-<div class="viz-label" id="viz-status">WAITING</div>
-</div>
-<div id="active-machines-section" class="card" style="margin-bottom:15px;">
-<h3 class="section-title" data-i18n="activeMachines">⛏️ Active Machines</h3>
-<div id="active-machines-list">
-<p class="small-text" style="text-align:center;" data-i18n="noActiveMachines">No active machines</p>
-</div>
-</div>
-<button class="btn-mega" onclick="App.claim()">
-<span class="pulse-ring"></span>
-<span data-i18n="claim">CLAIM</span>
-</button>
-<div class="card referral-card" style="margin-top: 15px;">
-<h3 data-i18n="refTitle">👥 Referral System</h3>
-<p class="small-text" data-i18n="refDesc">Enter your referrer's address to link.</p>
-<div class="ref-input-group">
-<input type="text" id="ref-address-input" class="game-input" placeholder="0x..." data-i18n-placeholder="enterRefAddr">
-<button class="btn-sm btn-full" onclick="App.bindReferrer()" data-i18n="bindRef">BIND</button>
-</div>
-</div>
-</div>
 
-<!-- SHOP -->
-<div id="view-shop" class="view">
-<div class="shop-header">
-<h2 class="view-title" data-i18n="shopTitle">⛏️ Shop</h2>
-<div class="toggle-pay">
-<button id="btn-pay-usdt" class="toggle-btn active" onclick="App.setPayMode('USDT')">USDT</button>
-<button id="btn-pay-fta" class="toggle-btn" onclick="App.setPayMode('FTA')">FTA</button>
-</div>
-</div>
-<div class="shop-tabs">
-<button class="shop-tab active" onclick="App.setShopView('machines')" data-i18n="machines">Machines</button>
-<button class="shop-tab" onclick="App.setShopView('batteries')" data-i18n="batteries">Batteries</button>
-</div>
-<div id="shop-list" class="grid-list"></div>
-</div>
+  <!-- ═══ DASHBOARD ═══ -->
+  <div id="view-dashboard" class="view active">
+    <div class="card total-balance-card">
+      <small data-i18n="totalBal">Total Balance</small>
+      <div class="total-val" id="val-total-usd">$0.00</div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <small data-i18n="power">POWER</small>
+        <div class="stat-val" id="val-power">0 H/s</div>
+        <small data-i18n="ftaSec">Hashrate</small>
+      </div>
+      <div class="stat-card accent">
+        <small data-i18n="pending">PENDING</small>
+        <div class="stat-val" id="val-pending">0.00000</div>
+        <small>FTA</small>
+      </div>
+    </div>
+    <div class="visualizer-wrap">
+      <canvas id="mining-canvas"></canvas>
+      <div class="viz-label" id="viz-status">WAITING</div>
+    </div>
+    <div id="active-machines-section" class="card" style="margin-bottom:15px;">
+      <h3 class="section-title" data-i18n="activeMachines">⛏️ Active Machines</h3>
+      <div id="active-machines-list">
+        <p class="small-text" style="text-align:center;" data-i18n="noActiveMachines">No active machines</p>
+      </div>
+    </div>
+    <button class="btn-mega" onclick="App.claim()">
+      <span class="pulse-ring"></span>
+      <span data-i18n="claim">CLAIM</span>
+    </button>
+    <div class="card referral-card" style="margin-top: 15px;">
+      <h3 data-i18n="refTitle">👥 Referral System</h3>
+      <p class="small-text" data-i18n="refDesc">Enter your referrer's address to link.</p>
+      <div class="ref-input-group">
+        <input type="text" id="ref-address-input" class="game-input" placeholder="0x..." data-i18n-placeholder="enterRefAddr">
+        <button class="btn-sm btn-full" onclick="App.bindReferrer()" data-i18n="bindRef">BIND</button>
+      </div>
+    </div>
+  </div>
 
-<!-- WALLET & ASSETS -->
-<div id="view-my-rigs" class="view">
-<h2 class="view-title" data-i18n="myAssets">⚙️ Wallet & Assets</h2>
-<div class="card" style="margin-bottom: 15px;">
-<h3 style="margin:0 0 15px 0; font-size:1rem;" data-i18n="walletBal">💰 Balances</h3>
-<div class="wallet-token-row">
-<img src="https://i.ibb.co/NdCLLsck/IMG-20260302-131520-512-x-512-pixel.webp" class="token-img-lg">
-<div class="token-info">
-<span class="token-name">POL <small class="token-unit-price" id="price-pol">$0.00</small></span>
-<span class="token-bal" id="bal-pol-2">0.00</span>
-<span class="token-bal-usd" id="bal-pol-2-usd">≈ $0.00</span>
-</div>
-<div class="wallet-actions">
-<button class="btn-wallet" onclick="App.openSend('POL')" data-i18n="send">Send</button>
-<button class="btn-wallet receive-btn" onclick="App.openReceive()" data-i18n="receive">Receive</button>
-</div>
-</div>
-<div class="wallet-token-row">
-<img src="https://i.ibb.co/BRGx1GN/IMG-20260228-134642-512-x-512-pixel.webp" class="token-img-lg">
-<div class="token-info">
-<span class="token-name">USDT <small class="token-unit-price" id="price-usdt">$1.00</small></span>
-<span class="token-bal" id="bal-usdt-2">0.00</span>
-<span class="token-bal-usd" id="bal-usdt-2-usd">≈ $0.00</span>
-</div>
-<div class="wallet-actions">
-<button class="btn-wallet" onclick="App.openSend('USDT')" data-i18n="send">Send</button>
-<button class="btn-wallet receive-btn" onclick="App.openReceive()" data-i18n="receive">Receive</button>
-</div>
-</div>
-<div class="wallet-token-row">
-<img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="token-img-lg">
-<div class="token-info">
-<span class="token-name">FTA <small class="token-unit-price" id="price-fta">$0.00</small></span>
-<span class="token-bal" id="bal-fta-2">0.00</span>
-<span class="token-bal-usd" id="bal-fta-2-usd">≈ $0.00</span>
-</div>
-<div class="wallet-actions">
-<button class="btn-wallet" onclick="App.openSend('FTA')" data-i18n="send">Send</button>
-<button class="btn-wallet receive-btn" onclick="App.openReceive()" data-i18n="receive">Receive</button>
-</div>
-</div>
-</div>
+  <!-- ═══ SHOP ═══ -->
+  <div id="view-shop" class="view">
+    <div class="shop-header">
+      <h2 class="view-title" data-i18n="shopTitle">⛏️ Shop</h2>
+      <div class="toggle-pay">
+        <button id="btn-pay-usdt" class="toggle-btn active" onclick="App.setPayMode('USDT')">USDT</button>
+        <button id="btn-pay-fta" class="toggle-btn" onclick="App.setPayMode('FTA')">FTA</button>
+      </div>
+    </div>
+    <div class="shop-tabs">
+      <button class="shop-tab active" onclick="App.setShopView('machines')" data-i18n="machines">Machines</button>
+      <button class="shop-tab" onclick="App.setShopView('batteries')" data-i18n="batteries">Batteries</button>
+    </div>
+    <div id="shop-list" class="grid-list"></div>
+  </div>
 
-<div class="card" style="margin-bottom: 15px; border-color: rgba(16, 185, 129, 0.2);">
-<h3 class="section-title" data-i18n="myMachines">⛏️ My Machines</h3>
-<div id="my-machines-list"><p class="small-text" style="text-align:center;" data-i18n="noMachines">No machines yet</p></div>
-</div>
-<div class="card" style="margin-bottom: 15px; border-color: rgba(139, 92, 246, 0.2);">
-<h3 class="section-title" data-i18n="myBatteries">🔋 My Batteries</h3>
-<div id="my-batteries-list"><p class="small-text" style="text-align:center;" data-i18n="noBatteries">No batteries yet</p></div>
-</div>
-<div class="card" style="margin-bottom: 15px; border-color: rgba(59, 130, 246, 0.3);">
-<h3 style="margin:0 0 10px 0; font-size:1rem;" data-i18n="plugMachine">🔌 Plug in a machine</h3>
-<p class="small-text" data-i18n="plugDesc">Enter your offline machine ID and choose a battery.</p>
-<div class="plug-grid">
-<input type="number" id="plug-machine-id" class="game-input" placeholder="Machine ID (0, 1...)" min="0" data-i18n-placeholder="machineId">
-<select id="plug-battery-type" class="game-input" style="padding: 10px;">
-<option value="0">3 Days</option><option value="1">7 Days</option><option value="2">15 Days</option><option value="3">30 Days</option>
-<option value="4">90 Days</option><option value="5">180 Days</option><option value="6">270 Days</option><option value="7">365 Days</option>
-</select>
-</div>
-<button class="btn-primary" style="margin-top:10px;" onclick="App.plugInMachine()" data-i18n="plug">PLUG IN ⚡</button>
-</div>
-</div>
+  <!-- ═══ WALLET & ASSETS ═══ -->
+  <div id="view-my-rigs" class="view">
+    <h2 class="view-title" data-i18n="myAssets">⚙️ Wallet & Assets</h2>
+    <div class="card" style="margin-bottom: 15px;">
+      <h3 style="margin:0 0 15px 0; font-size:1rem;" data-i18n="walletBal">💰 Balances</h3>
+      <div class="wallet-token-row">
+        <img src="https://i.ibb.co/NdCLLsck/IMG-20260302-131520-512-x-512-pixel.webp" class="token-img-lg" alt="POL">
+        <div class="token-info">
+          <span class="token-name">POL <small class="token-unit-price" id="price-pol">$0.00</small></span>
+          <span class="token-bal" id="bal-pol-2">0.00</span>
+          <span class="token-bal-usd" id="bal-pol-2-usd">≈ $0.00</span>
+        </div>
+        <div class="wallet-actions">
+          <button class="btn-wallet" onclick="App.openSend('POL')" data-i18n="send">Send</button>
+          <button class="btn-wallet receive-btn" onclick="App.openReceive()" data-i18n="receive">Receive</button>
+        </div>
+      </div>
+      <div class="wallet-token-row">
+        <img src="https://i.ibb.co/BRGx1GN/IMG-20260228-134642-512-x-512-pixel.webp" class="token-img-lg" alt="USDT">
+        <div class="token-info">
+          <span class="token-name">USDT <small class="token-unit-price" id="price-usdt">$1.00</small></span>
+          <span class="token-bal" id="bal-usdt-2">0.00</span>
+          <span class="token-bal-usd" id="bal-usdt-2-usd">≈ $0.00</span>
+        </div>
+        <div class="wallet-actions">
+          <button class="btn-wallet" onclick="App.openSend('USDT')" data-i18n="send">Send</button>
+          <button class="btn-wallet receive-btn" onclick="App.openReceive()" data-i18n="receive">Receive</button>
+        </div>
+      </div>
+      <div class="wallet-token-row">
+        <img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="token-img-lg" alt="FTA">
+        <div class="token-info">
+          <span class="token-name">FTA <small class="token-unit-price" id="price-fta">$0.00</small></span>
+          <span class="token-bal" id="bal-fta-2">0.00</span>
+          <span class="token-bal-usd" id="bal-fta-2-usd">≈ $0.00</span>
+        </div>
+        <div class="wallet-actions">
+          <button class="btn-wallet" onclick="App.openSend('FTA')" data-i18n="send">Send</button>
+          <button class="btn-wallet receive-btn" onclick="App.openReceive()" data-i18n="receive">Receive</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom: 15px; border-color: rgba(16, 185, 129, 0.2);">
+      <h3 class="section-title" data-i18n="myMachines">⛏️ My Machines</h3>
+      <div id="my-machines-list"><p class="small-text" style="text-align:center;" data-i18n="noMachines">No machines yet</p></div>
+    </div>
+    <div class="card" style="margin-bottom: 15px; border-color: rgba(139, 92, 246, 0.2);">
+      <h3 class="section-title" data-i18n="myBatteries">🔋 My Batteries</h3>
+      <div id="my-batteries-list"><p class="small-text" style="text-align:center;" data-i18n="noBatteries">No batteries yet</p></div>
+    </div>
+    <div class="card" style="margin-bottom: 15px; border-color: rgba(59, 130, 246, 0.3);">
+      <h3 style="margin:0 0 10px 0; font-size:1rem;" data-i18n="plugMachine">🔌 Plug in a machine</h3>
+      <p class="small-text" data-i18n="plugDesc">Enter your offline machine ID and choose a battery.</p>
+      <div class="plug-grid">
+        <input type="number" id="plug-machine-id" class="game-input" placeholder="Machine ID (0, 1...)" min="0" data-i18n-placeholder="machineId">
+        <select id="plug-battery-type" class="game-input" style="padding: 10px;">
+          <option value="0">3 Days</option><option value="1">7 Days</option><option value="2">15 Days</option><option value="3">30 Days</option>
+          <option value="4">90 Days</option><option value="5">180 Days</option><option value="6">270 Days</option><option value="7">365 Days</option>
+        </select>
+      </div>
+      <button class="btn-primary" style="margin-top:10px;" onclick="App.plugInMachine()" data-i18n="plug">PLUG IN ⚡</button>
+    </div>
+  </div>
 
-<!-- SWAP -->
-<div id="view-swap" class="view">
-<h2 class="view-title" data-i18n="swapTitle">💱 Swap</h2>
-<div class="card swap-interface">
-<div class="swap-header"><span data-i18n="youPay">You pay</span><span><span data-i18n="balance">Balance:</span> <span id="swap-bal-from">0</span></span></div>
-<div class="input-wrap">
-<input type="number" id="swap-from-in" placeholder="0.0" step="any" oninput="App.calcSwap()">
-<div class="token-select" onclick="App.toggleSwap()" id="token-from-display">USDT</div>
-</div>
-<div class="swap-arrow-wrap"><div class="swap-arrow" onclick="App.toggleSwap()">⇅</div></div>
-<div class="swap-header"><span data-i18n="youReceive">You receive</span><span><span data-i18n="balance">Balance:</span> <span id="swap-bal-to">0</span></span></div>
-<div class="input-wrap">
-<input type="number" id="swap-to-in" placeholder="0.0" step="any" readonly>
-<div class="token-select" style="background:#333; cursor:default;" id="token-to-display">FTA</div>
-</div>
-<div id="swap-details" class="swap-details hidden">
-<div class="swap-detail-row"><span class="swap-detail-label" data-i18n="exchangeRate">Exchange Rate</span><span class="swap-detail-value" id="swap-detail-rate">—</span></div>
-<div class="swap-detail-row"><span class="swap-detail-label" data-i18n="priceImpact">Price Impact</span><span class="swap-detail-value" id="swap-detail-impact">&lt; 0.5%</span></div>
-<div class="swap-detail-row"><span class="swap-detail-label" data-i18n="swapFee">Swap Fee (4%)</span><span class="swap-detail-value" id="swap-detail-fee">—</span></div>
-<div class="swap-detail-row"><span class="swap-detail-label" data-i18n="minimumReceived">Minimum Received</span><span class="swap-detail-value" id="swap-detail-min">—</span></div>
-<div class="swap-detail-row"><span class="swap-detail-label" data-i18n="slippageTolerance">Slippage Tolerance</span><span class="swap-detail-value swap-slippage">0.5%</span></div>
-<div class="swap-detail-row"><span class="swap-detail-label" data-i18n="networkFee">Network Fee</span><span class="swap-detail-value" id="swap-detail-network">≈ 0.01 POL</span></div>
-</div>
-<!-- ★ netFtaSold display + warning (NEW) -->
-<div class="swap-nfta-display">
-<div class="swap-detail-row" style="border:none!important;padding:0!important;margin:0!important;">
-<span class="swap-detail-label" data-i18n="netFtaSoldLabel">Pool (netFtaSold):</span>
-<span class="swap-detail-value" id="net-fta-sold-display" style="font-weight:700;">0.0000 FTA</span>
-</div>
-</div>
-<div id="swap-nfta-warning" class="swap-nfta-warning"></div>
-<!-- ★ end new -->
-<div class="rate-info" id="swap-rate" data-i18n="loading">Loading...</div>
-<button class="btn-primary" onclick="App.executeSwap()" data-i18n="swap">SWAP</button>
-</div>
-</div>
+  <!-- ═══ SWAP ═══ -->
+  <div id="view-swap" class="view">
+    <h2 class="view-title" data-i18n="swapTitle">💱 Swap</h2>
+    <div class="card swap-interface">
+      <div class="swap-header"><span data-i18n="youPay">You pay</span><span><span data-i18n="balance">Balance:</span> <span id="swap-bal-from">0</span></span></div>
+      <div class="input-wrap">
+        <input type="number" id="swap-from-in" placeholder="0.0" step="any" oninput="App.calcSwap()">
+        <div class="token-select" onclick="App.toggleSwap()" id="token-from-display">USDT</div>
+      </div>
+      <div class="swap-arrow-wrap"><div class="swap-arrow" onclick="App.toggleSwap()">⇅</div></div>
+      <div class="swap-header"><span data-i18n="youReceive">You receive</span><span><span data-i18n="balance">Balance:</span> <span id="swap-bal-to">0</span></span></div>
+      <div class="input-wrap">
+        <input type="number" id="swap-to-in" placeholder="0.0" step="any" readonly>
+        <div class="token-select" style="background:#333; cursor:default;" id="token-to-display">FTA</div>
+      </div>
+
+      <div id="swap-details" class="swap-details hidden">
+        <div class="swap-detail-row"><span class="swap-detail-label" data-i18n="exchangeRate">Exchange Rate</span><span class="swap-detail-value" id="swap-detail-rate">—</span></div>
+        <div class="swap-detail-row"><span class="swap-detail-label" data-i18n="priceImpact">Price Impact</span><span class="swap-detail-value" id="swap-detail-impact">&lt; 0.5%</span></div>
+        <div class="swap-detail-row"><span class="swap-detail-label" data-i18n="swapFee">Swap Fee (4%)</span><span class="swap-detail-value" id="swap-detail-fee">—</span></div>
+        <div class="swap-detail-row"><span class="swap-detail-label" data-i18n="minimumReceived">Minimum Received</span><span class="swap-detail-value" id="swap-detail-min">—</span></div>
+        <div class="swap-detail-row"><span class="swap-detail-label" data-i18n="slippageTolerance">Slippage Tolerance</span><span class="swap-detail-value swap-slippage">0.5%</span></div>
+        <div class="swap-detail-row"><span class="swap-detail-label" data-i18n="networkFee">Network Fee</span><span class="swap-detail-value" id="swap-detail-network">≈ 0.01 POL</span></div>
+      </div>
+
+      <!-- ★ Professional Liquidity Display ★ -->
+      <div class="liquidity-reserve-box">
+        <span class="liquidity-label">
+          <span class="lq-icon">💧</span>
+          <span data-i18n="liquidityReserve">Protocol Liquidity (FTA)</span>
+        </span>
+        <span class="liquidity-value" id="net-fta-sold-display">— FTA</span>
+      </div>
+      <div class="liquidity-info-hint" data-i18n="liquidityHint">Backed by smart contract reserves on Polygon</div>
+
+      <div class="rate-info" id="swap-rate" data-i18n="loading">Loading...</div>
+      <button class="btn-primary" onclick="App.executeSwap()" data-i18n="swap">SWAP</button>
+    </div>
+  </div>
+
 </main>
 
+<!-- BOTTOM NAV -->
 <nav class="bottom-nav">
-<button class="nav-item active" onclick="App.nav('dashboard')"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span data-i18n="home">Home</span></button>
-<button class="nav-item" onclick="App.nav('shop')"><svg viewBox="0 0 24 24"><path d="M12 2l-5.5 9h11z"/></svg><span data-i18n="shop">Shop</span></button>
-<button class="nav-item" onclick="App.nav('my-rigs')"><svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg><span data-i18n="assets">Wallet</span></button>
-<button class="nav-item" onclick="App.nav('swap')"><svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg><span data-i18n="swapNav">Swap</span></button>
+  <button class="nav-item active" onclick="App.nav('dashboard')"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span data-i18n="home">Home</span></button>
+  <button class="nav-item" onclick="App.nav('shop')"><svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0 0 20 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg><span data-i18n="shop">Shop</span></button>
+  <button class="nav-item" onclick="App.nav('my-rigs')"><svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg><span data-i18n="assets">Wallet</span></button>
+  <button class="nav-item" onclick="App.nav('swap')"><svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg><span data-i18n="swapNav">Swap</span></button>
 </nav>
 </div>
 
 <!-- MODALS -->
 <div id="modal-send" class="modal">
-<div class="modal-content">
-<div class="modal-header"><h3>Send <span id="send-token-name">TOKEN</span></h3><button class="modal-close" onclick="App.closeModals()">✕</button></div>
-<p class="small-text"><span data-i18n="balance">Balance:</span> <span id="send-bal">0</span></p>
-<input type="text" id="send-to-address" class="game-input" placeholder="Recipient address (0x...)" data-i18n-placeholder="recipientAddr">
-<input type="number" id="send-amount" class="game-input" placeholder="Amount" step="any" data-i18n-placeholder="amount">
-<button class="btn-primary" style="margin-top:10px;" onclick="App.executeSend()" data-i18n="confirmSend">CONFIRM SEND</button>
-</div>
+  <div class="modal-content">
+    <div class="modal-header"><h3>Send <span id="send-token-name">TOKEN</span></h3><button class="modal-close" onclick="App.closeModals()">✕</button></div>
+    <p class="small-text"><span data-i18n="balance">Balance:</span> <span id="send-bal">0</span></p>
+    <input type="text" id="send-to-address" class="game-input" placeholder="Recipient address (0x...)" data-i18n-placeholder="recipientAddr">
+    <input type="number" id="send-amount" class="game-input" placeholder="Amount" step="any" data-i18n-placeholder="amount">
+    <button class="btn-primary" style="margin-top:10px;" onclick="App.executeSend()" data-i18n="confirmSend">CONFIRM SEND</button>
+  </div>
 </div>
 <div id="modal-receive" class="modal">
-<div class="modal-content" style="text-align: center;">
-<div class="modal-header"><h3>Receive Funds</h3><button class="modal-close" onclick="App.closeModals()">✕</button></div>
-<p class="small-text" style="margin-bottom: 15px;">Send only POL, USDT or FTA to this address on Polygon.</p>
-<div class="receive-addr-box" onclick="App.copyReceiveAddress()"><span id="receive-addr-display">0x...</span><span class="copy-icon">📋</span></div>
-<p class="small-text" style="margin-top: 10px; color: var(--primary);">Tap to copy</p>
-</div>
+  <div class="modal-content" style="text-align: center;">
+    <div class="modal-header"><h3 data-i18n="receive">Receive Funds</h3><button class="modal-close" onclick="App.closeModals()">✕</button></div>
+    <p class="small-text" style="margin-bottom: 15px;" data-i18n="receiveHint">Send only POL, USDT or FTA to this address on Polygon.</p>
+    <div class="receive-addr-box" onclick="App.copyReceiveAddress()"><span id="receive-addr-display">0x...</span><span class="copy-icon">📋</span></div>
+    <p class="small-text" style="margin-top: 10px; color: var(--primary);" data-i18n="tapToCopy">Tap to copy</p>
+  </div>
 </div>
 
-<!-- CHAT ASSISTANT -->
+<!-- CHAT FAB -->
 <button class="chat-fab" onclick="App.toggleChat()">
-<img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="chat-fab-logo" alt="FTA">
+  <img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="chat-fab-logo" alt="FTA">
 </button>
+
+<!-- CHAT PANEL -->
 <div id="chat-panel" class="chat-panel">
-<div class="chat-header">
-<div class="chat-header-brand">
-<img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="chat-header-logo" alt="FTA">
-<span>Fitia Assistant</span>
-</div>
-<button class="chat-close" onclick="App.toggleChat()">✕</button>
-</div>
-<div id="chat-messages" class="chat-messages"></div>
-<div class="chat-input-area">
-<input type="text" id="chat-input" class="chat-input" placeholder="Ask me anything..." onkeydown="if(event.key==='Enter')App.sendChatMessage()">
-<button class="chat-send-btn" onclick="App.sendChatMessage()">➤</button>
-</div>
+  <div class="chat-header">
+    <div class="chat-header-brand">
+      <img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="chat-header-logo" alt="FTA">
+      <span>Fitia Assistant</span>
+    </div>
+    <button class="chat-close" onclick="App.toggleChat()">✕</button>
+  </div>
+  <div id="chat-messages" class="chat-messages"></div>
+  <div class="chat-input-area">
+    <input type="text" id="chat-input" class="chat-input" placeholder="Ask me anything..." onkeydown="if(event.key==='Enter')App.sendChatMessage()">
+    <button class="chat-send-btn" onclick="App.sendChatMessage()">➤</button>
+  </div>
 </div>
 
-<!-- FTA LOADER -->
+<!-- LOADER -->
 <div id="loader" class="loader hidden">
-<div class="fta-loader-wrap">
-<div class="fta-loader-ring"></div>
-<img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="fta-loader-logo" alt="FTA">
-<div class="fta-loader-pulse"></div>
-</div>
-<p id="loader-text" class="loader-text">Processing...</p>
+  <div class="fta-loader-wrap">
+    <div class="fta-loader-ring"></div>
+    <img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="fta-loader-logo" alt="FTA">
+    <div class="fta-loader-pulse"></div>
+  </div>
+  <p id="loader-text" class="loader-text">Processing...</p>
 </div>
 
 <script src="app.js"></script>
