@@ -1,8 +1,6 @@
 /**
- * FITIA PRO MINER — app.js v6 (Supabase Edition)
-
-/* ═════════════════════════════════════════════════════════════
-   CONFIG — Remplacer XXX par tes valeurs Supabase
+ * FITIA PRO MINER — app.js v6
+ * ==============================================================
    ═════════════════════════════════════════════════════════════ */
 const CONFIG = {
   MINING:          "0xa70147A41F10e84D25A97997d7e2507096F86BAD",
@@ -522,6 +520,10 @@ class Application {
 
   // ── Supabase Profile Sync ────────────────────────────────────
   async syncProfile() {
+    // ⚡ ALWAYS show wallet info first (even without Supabase)
+    this._ensureProfileVisible();
+
+    // Then try Supabase for richer profile
     if (!this.dbOnline || !this.user) return;
     try {
       let user = await this.db.getUser(this.user);
@@ -537,18 +539,54 @@ class Application {
     } catch (e) { console.warn('syncProfile:', e.message); }
   }
 
+  // ⚡ Always render basic profile from wallet + localStorage
+  _ensureProfileVisible() {
+    if (!this.user) return;
+    // Build minimal profile from local data
+    const localProfile = this.profileData || {};
+    try {
+      const lp = JSON.parse(localStorage.getItem('fitia_profile'));
+      if (lp) Object.assign(localProfile, lp);
+    } catch (e) {}
+    const p = {
+      wallet_address: this.user,
+      username: localProfile.username || null,
+      email: localProfile.email || null,
+      level: localProfile.level || 0,
+      total_invested: localProfile.total_invested || 0,
+      total_earned: localProfile.total_earned || 0,
+      machines_count: this.userMachines ? this.userMachines.length : 0
+    };
+    this.profileData = p;
+    this.updateProfileUI();
+  }
+
   updateProfileUI() {
     const p = this.profileData;
-    if (!p) return;
-    try { document.getElementById('profile-name').innerText = p.username || 'Miner'; } catch (e) { }
-    try { document.getElementById('profile-level').innerText = `Level ${p.level || 0}`; } catch (e) { }
-    try { document.getElementById('profile-addr').innerText = ((p.wallet_address || '') || '').slice(0, 8) + '...'; } catch (e) { }
-    try { document.getElementById('ps-invested').innerText = this.formatUsd(Number(p.total_invested || 0)); } catch (e) { }
-    try { document.getElementById('ps-earned').innerText = this.formatUsd(Number(p.total_earned || 0)); } catch (e) { }
-    try { document.getElementById('ps-machines').innerText = p.machines_count || 0; } catch (e) { }
-    try { document.getElementById('ps-txs').innerText = this.historyStats?.total || this.localTxLog.length; } catch (e) { }
-    try { document.getElementById('btn-profile-edit').style.display = 'flex'; } catch (e) { }
-    try { document.getElementById('profile-avatar').innerText = '🔷'; } catch (e) { }
+    if (!p && !this.user) return; // nothing to show
+
+    const addr = this.user || (p && p.wallet_address) || '';
+    const username = (p && p.username) || '';
+    const level = (p && p.level) || 0;
+    const invested = Number((p && p.total_invested) || 0);
+    const earned = Number((p && p.total_earned) || 0);
+    const machines = (p && p.machines_count) || this.userMachines.length || 0;
+    const txs = this.historyStats?.total || this.localTxLog.length || 0;
+
+    // Update DOM safely
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+    const showEl = (id) => { const el = document.getElementById(id); if (el) el.style.display = ''; };
+
+    setEl('profile-name', username || 'Miner');
+    setEl('profile-level', `Level ${level}`);
+    setEl('profile-addr', addr ? addr.slice(0, 8) + '...' : '');
+    setEl('ps-invested', this.formatUsd(invested));
+    setEl('ps-earned', this.formatUsd(earned));
+    setEl('ps-machines', String(machines));
+    setEl('ps-txs', String(txs));
+    // Show edit button and update avatar
+    try { document.getElementById('btn-profile-edit').style.display = 'flex'; } catch (e) {}
+    try { document.getElementById('profile-avatar').innerText = username ? '🔷' : '👤'; } catch (e) {}
   }
 
   toggleProfileEdit() {
@@ -965,16 +1003,495 @@ class Application {
   _renderShopMachinesHTML(c) { c.innerHTML = ''; c.style.gridTemplateColumns = '1fr 1fr'; const bc = ['background:#64748b;color:#fff', 'background:#3b82f6;color:#fff', 'background:#8b5cf6;color:#fff', 'background:#F0B90B;color:#000', 'background:#f97316;color:#fff', 'background:#ef4444;color:#fff', 'background:#06b6d4;color:#000', 'background:#eab308;color:#000']; const bn = ['STARTER', 'STANDARD', 'ADVANCED', 'PRO', 'ELITE', 'ULTRA', 'SUPREME', 'LEGEND']; for (let i = 0; i < this.shopMachinesData.length; i++) { const d = this.shopMachinesData[i], div = document.createElement('div'); div.className = 'rig-item'; div.innerHTML = `<span class="tier-badge" style="${bc[i % 8]}">${bn[i % 8]}</span>${this.getMachineSVG(i)}<span class="rig-name" style="font-size:0.85rem;">${this.t('rig')} ${i + 1}</span><span class="rig-power" style="font-size:0.75rem;">${this.formatHashrate(d.power)}</span><span class="rig-price" style="font-size:1rem;">${d.price.toFixed(2)} $</span><button class="btn-primary" style="padding:8px;font-size:0.75rem;margin-top:6px;" onclick="App.buyMachine(${i})">${this.t('buy')} (${this.payMode})</button>`; c.appendChild(div); } }
   _renderShopBatteriesHTML(c) { c.innerHTML = ''; c.style.gridTemplateColumns = '1fr 1fr'; for (let i = 0; i < this.shopBatteriesData.length; i++) { const d = this.shopBatteriesData[i], div = document.createElement('div'), cl = Math.floor(Math.random() * 40) + 60; div.className = 'battery-shop-item'; div.innerHTML = `<div class="real-battery"><div class="battery-cap"></div><div class="battery-body"><div class="battery-level" style="width:${cl}%"></div><div class="battery-charge-indicator">${d.days}D</div></div></div><div class="battery-name">${d.days} ${this.t('days')}</div><div class="battery-price">${d.price.toFixed(2)} $</div><button class="btn-primary" style="padding:6px;font-size:0.75rem" onclick="App.buyBattery(${i})">${this.t('buy')} (${this.payMode})</button>`; c.appendChild(div); } }
 
-  /* ═══════════ CHAT ══════════════════════════════════════════ */
-  toggleChat() { const p = document.getElementById('chat-panel'); const a = p.classList.toggle('active'); if (a && !this.chatInitialized) { this.chatInitialized = true; setTimeout(() => this.addChatBubble('assistant', this.getWelcomeMessage()), 400); } if (a) setTimeout(() => document.getElementById('chat-input').focus(), 350); }
-  sendChatMessage() { const i = document.getElementById('chat-input'), m = i.value.trim(); if (!m) return; i.value = ''; this.addChatBubble('user', m); this.chatHistory.push({ role: 'user', text: m }); const tid = this.showTyping(); setTimeout(() => { this.removeTyping(tid); const r = this.generateLocalResponse(m); this.addChatBubble('assistant', r); this.chatHistory.push({ role: 'assistant', text: r }); }, 400 + Math.min(m.length * 25, 1200) + Math.random() * 400); }
-  addChatBubble(role, text) { const c = document.getElementById('chat-messages'), b = document.createElement('div'); b.className = `chat-bubble ${role}`; b.textContent = text; c.appendChild(b); requestAnimationFrame(() => c.scrollTop = c.scrollHeight); }
-  showTyping() { const c = document.getElementById('chat-messages'), t = document.createElement('div'), id = 'typing-' + Date.now(); t.id = id; t.className = 'chat-bubble assistant'; t.innerHTML = '<span style="letter-spacing:3px;animation:loaderTextPulse 1s infinite">● ● ●</span>'; c.appendChild(t); c.scrollTop = c.scrollHeight; return id; }
+  /* ═══════════ INTELLIGENT CHAT ASSISTANT ═══════════════════ */
+  toggleChat() {
+    const p = document.getElementById('chat-panel');
+    const active = p.classList.toggle('active');
+    if (active && !this.chatInitialized) {
+      this.chatInitialized = true;
+      setTimeout(() => this.addChatBubble('assistant', this.getWelcomeMessage()), 400);
+    }
+    if (active) setTimeout(() => document.getElementById('chat-input').focus(), 350);
+  }
+
+  sendChatMessage() {
+    const i = document.getElementById('chat-input'), msg = i.value.trim();
+    if (!msg) return;
+    i.value = '';
+    this.addChatBubble('user', msg);
+    this.chatHistory.push({ role: 'user', text: msg });
+    // Keep last 20 messages for context
+    if (this.chatHistory.length > 20) this.chatHistory = this.chatHistory.slice(-20);
+    const tid = this.showTyping();
+    const delay = 400 + Math.min(msg.length * 20, 1500) + Math.random() * 600;
+    setTimeout(() => {
+      this.removeTyping(tid);
+      const response = this.think(msg);
+      this.addChatBubble('assistant', response);
+      this.chatHistory.push({ role: 'assistant', text: response });
+    }, delay);
+  }
+
+  addChatBubble(role, text) {
+    const c = document.getElementById('chat-messages'), b = document.createElement('div');
+    b.className = `chat-bubble ${role}`;
+    b.textContent = text;
+    c.appendChild(b);
+    requestAnimationFrame(() => c.scrollTop = c.scrollHeight);
+  }
+
+  showTyping() {
+    const c = document.getElementById('chat-messages'), t = document.createElement('div');
+    const id = 'typing-' + Date.now();
+    t.id = id; t.className = 'chat-bubble assistant';
+    t.innerHTML = '<span style="letter-spacing:3px;animation:loaderTextPulse 1s infinite">● ● ●</span>';
+    c.appendChild(t); c.scrollTop = c.scrollHeight;
+    return id;
+  }
+
   removeTyping(id) { const e = document.getElementById(id); if (e) e.remove(); }
-  getWelcomeMessage() { const liq = this.netFtaSold === 0n ? '\n⚠️ Use USDT for purchases — always works!' : `\n💧 Liquidity: ${parseFloat(ethers.formatUnits(this.netFtaSold, this.ftaDecimals)).toFixed(2)} FTA`; const msgs = { en: `👋 Welcome to Fitia Pro!\n🏗️ 4 visions: Mining • Finance • Shop • Store\n💬 Ask me anything!${liq}\n📋 New: History tab for your transactions & leaderboard.`, fr: `👋 Bienvenue ! 🏗️ 4 visions: Mining • Finance • Shop • Store\n💬 Demandez-moi !${liq}` }; return msgs[this.currentLang] || msgs.en; }
-  generateLocalResponse(msg) { const m = msg.toLowerCase().replace(/[?!.,;:'"]/g, '').trim(); const intents = this.detectIntents(m); if (intents.length > 0) return this.craftResponse(intents[0].intent); const def = CHAT_RESPONSES['default']; return def[this.currentLang] || def['en'] || def; }
-  detectIntents(m) { const s = []; for (const [intent, data] of Object.entries(CHAT_INTENTS)) { let sc = 0; for (const lk of ['all', this.currentLang, 'en']) { if (!data.keywords[lk]) continue; for (const kw of data.keywords[lk]) { if (m.includes(kw)) sc += (data.weight || 1); } } if (sc > 0) s.push({ intent, score: sc }); } s.sort((a, b) => b.score - a.score); return s; }
-  craftResponse(intent) { const ctx = { ftaPrice: this.ftaPriceUsd > 0 ? this.ftaPriceUsd.toFixed(6) : '...', liquidity: this.netFtaSold === 0n ? '0' : parseFloat(ethers.formatUnits(this.netFtaSold, this.ftaDecimals)).toFixed(2) + ' FTA', power: this.formatHashrate(this.currentRealPower), active: this.userMachines.filter(m => m.expiresAt > Math.floor(Date.now() / 1000)).length, pending: this.pendingBalance.toFixed(5) }; if (intent === 'greeting') return this.user ? `👋 Connected. ${ctx.active} active at ${ctx.power}.` : '👋 Connect your wallet to start!'; if (intent === 'price' && this.user) return `📊 FTA: $${ctx.ftaPrice} | Liquidity: ${ctx.liquidity} | Pending: ${ctx.pending} FTA`; if (intent === 'fta_problems' && this.user) return `⚠️ Liquidity: ${ctx.liquidity}\n\n💡 Use USDT or swap USDT→FTA first.`; const resp = CHAT_RESPONSES[intent] || CHAT_RESPONSES['default']; return resp[this.currentLang] || resp['en'] || resp; }
+
+  getWelcomeMessage() {
+    const conn = !!this.user;
+    const username = (this.profileData && this.profileData.username) || '';
+    const greeting = username ? `, ${username}` : '';
+    const nfsHuman = parseFloat(ethers.formatUnits(this.netFtaSold, this.ftaDecimals));
+    const liqMsg = this.netFtaSold === 0n
+      ? '\n\n⚠️ Protocol liquidity is currently building. Use USDT for purchases — it always works!'
+      : `\n\n💧 Protocol Liquidity: ${nfsHuman.toFixed(2)} FTA — all operations available.`;
+
+    if (conn) {
+      const active = this.userMachines.filter(m => m.expiresAt > Math.floor(Date.now() / 1000)).length;
+      return `👋 Welcome back${greeting}!\n\n⚡ You have ${active} active machine(s) mining at ${this.formatHashrate(this.currentRealPower)}.\n💎 Pending rewards: ${this.pendingBalance.toFixed(5)} FTA${liqMsg}\n\n💬 I can help you with:\n• Mining strategy & machine selection\n• Swaps & liquidity explained\n• The 4 visions of Fitia Pro\n• Getting started guides for beginners\n• Account, history & troubleshooting\n\nJust ask me anything! 🚀`;
+    }
+
+    const msgs = {
+      en: `👋 Welcome to Fitia Pro! I'm your personal AI assistant.\n\n🏗️ Fitia Pro is built on 4 revolutionary visions:\n⛏️ Mining  •  💱 Finance  •  🛒 Shop  •  🏪 Store\n\n🔗 To get started, connect your wallet first!\n💬 Then ask me anything — I'm here to guide you.\n\n💡 I can explain mining, swaps, strategy, security, and help beginners step by step.`,
+      fr: `👋 Bienvenue sur Fitia Pro ! Je suis votre assistant IA personnel.\n\n🏗️ Fitia Pro repose sur 4 visions révolutionnaires :\n⛏️ Mining  •  💱 Finance  •  🛒 Shop  •  🏪 Store\n\n🔗 Connectez votre wallet pour commencer !\n💬 Posez-moi vos questions — je suis là pour vous guider.\n\n💡 Je peux expliquer le mining, les swaps, la stratégie, la sécurité, et aider les débutants pas à pas.`
+    };
+    return msgs[this.currentLang] || msgs.en;
+  }
+
+  /* ── Think: main AI engine ───────────────────────────────── */
+  think(msg) {
+    const m = msg.toLowerCase().replace(/[?!.,;:'"]/g, '').trim();
+    const L = this.currentLang;
+    const conn = !!this.user;
+
+    // Build rich context
+    const ctx = {
+      ftaPrice: this.ftaPriceUsd > 0 ? this.ftaPriceUsd.toFixed(6) : '...',
+      ftaPriceUsd: this.formatUsd(this.ftaPriceUsd),
+      nfs: parseFloat(ethers.formatUnits(this.netFtaSold, this.ftaDecimals)),
+      liquidity: this.netFtaSold === 0n ? '0 (building)' : parseFloat(ethers.formatUnits(this.netFtaSold, this.ftaDecimals)).toFixed(2) + ' FTA',
+      power: this.formatHashrate(this.currentRealPower),
+      pending: this.pendingBalance.toFixed(5),
+      active: this.userMachines ? this.userMachines.filter(x => x.expiresAt > Math.floor(Date.now() / 1000)).length : 0,
+      totalMachines: this.userMachines ? this.userMachines.length : 0,
+      username: (this.profileData && this.profileData.username) || 'Miner',
+      wallet: this.user ? this.user.slice(0, 6) + '...' + this.user.slice(-4) : '',
+      polPrice: this.formatUsd(this.polPriceUsd),
+      machines: this.shopMachinesData,
+      batteries: this.shopBatteriesData,
+      isFr: L === 'fr', isZh: L === 'zh', isDe: L === 'de',
+      // Conversation context from last 3 messages
+      lastTopic: this.chatHistory.length >= 2 ? this._guessTopic(this.chatHistory[this.chatHistory.length - 2].text) : null
+    };
+
+    // ── Routing ──────────────────────────────────────────
+    if (this._isGreeting(m)) return this._respondGreeting(ctx, L);
+    if (this._isThanks(m)) return this._respondThanks(L);
+    if (this._isGoodbye(m)) return this._respondGoodbye(L);
+
+    // Detect primary intent
+    const intent = this._detectIntent(m, ctx);
+
+    switch (intent) {
+      case 'what_is_fitia': return this._rWhatIsFitia(ctx, L);
+      case 'four_visions': return this._rFourVisions(ctx, L);
+      case 'fitia_revolution': return this._rRevolution(ctx, L);
+      case 'how_mining_works': return this._rMiningHow(ctx, L);
+      case 'buy_machine': return this._rBuyMachine(ctx, L);
+      case 'buy_battery': return this._rBuyBattery(ctx, L);
+      case 'plug_in': return this._rPlugIn(ctx, L);
+      case 'claim': return this._rClaim(ctx, L);
+      case 'how_swap_works': return this._rSwapHow(ctx, L);
+      case 'liquidity': return this._rLiquidity(ctx, L);
+      case 'tokenomics': return this._rTokenomics(ctx, L);
+      case 'beginner': return this._rBeginner(ctx, L);
+      case 'wallet_setup': return this._rWalletSetup(L);
+      case 'what_is_crypto': return this._rCryptoBasics(L);
+      case 'deposit': return this._rDeposit(ctx, L);
+      case 'withdraw': return this._rWithdraw(ctx, L);
+      case 'security': return this._rSecurity(L);
+      case 'investment': return this._rInvestment(ctx, L);
+      case 'strategy': return this._rStrategy(ctx, L);
+      case 'machine_comparison': return this._rCompare(ctx, L);
+      case 'price': return this._rPrice(ctx, L);
+      case 'referral': return this._rReferral(ctx, L);
+      case 'network': return this._rNetwork(L);
+      case 'history': return this._rHistory(ctx, L);
+      case 'profile': return this._rProfile(ctx, L);
+      case 'roadmap': return this._rRoadmap(L);
+      case 'whatsapp': return this._rWhatsapp(L);
+      case 'fta_problems': return this._rProblems(ctx, L);
+      case 'help': return this._rHelp(ctx, L);
+      default: return this._rFallback(ctx, L, m);
+    }
+  }
+
+  /* ── Intent Detection (enhanced) ─────────────────────────── */
+  _detectIntent(m, ctx) {
+    // Quick keyword scoring across all topics
+    const topics = {
+      what_is_fitia: ['what is fitia','c quoi fitia','fitia c\'est quoi','about fitia','explain fitia','presente fitia','介绍','fitia是什么','tell me about fitia','overview','fitia project','what is this','c\'est quoi ce projet','was ist fitia','quel est ce projet'],
+      four_visions: ['4 vision','four vision','fitia mining','fitia finance','fitia shop','fitia store','quatre vision','4 piliers','four pillars','四大愿景','4 pillars','ecosystem','ecosysteme','生态系统'],
+      fitia_revolution: ['revolution','revolutionnaire','革命','vision','mission','objective','goal','but','pourquoi fitia','why fitia','what makes fitia special','special','unique','different'],
+      how_mining_works: ['how does mining work','how mining works','explain mining','comment miner','comment ca marche le minage','挖矿怎么','how to mine','how to start mining','mining explained','understand mining','comprendre le minage'],
+      buy_machine: ['buy machine','best machine','which machine','quelle machine','哪个矿机','acheter machine','machine a acheter','recommend machine','machine price','prix machine','machine cost'],
+      buy_battery: ['buy battery','best battery','which battery','quelle batterie','哪个电池','acheter batterie','battery price','prix batterie','battery duration','duree batterie','电池多久'],
+      plug_in: ['plug in','plug','brancher','插入','activate','activer','start machine','demarrer machine','turn on','how to plug','how to activate','comment activer'],
+      claim: ['claim','reward','reclamer','领取','harvest','collect','claim rewards','how to claim','comment reclamer','recuperer gains','get rewards'],
+      how_swap_works: ['how swap works','how does swap work','explain swap','comment echanger','兑换怎么','how to swap','how to trade','swap explain','swap tutorial','convert','conversion'],
+      liquidity: ['liquidity','liquidite','liquidity pool','protocol liquidity','netFtaSold','pool','reserve','why fta rejected','why swap rejected','pourquoi refuse','为什么被拒绝','not enough liquidity','pas assez de liquidite'],
+      tokenomics: ['tokenomics','fta token','what is fta','c\'est quoi le fta','fta是什么','token fta','fta price','fta value','valeur fta','token supply','max supply','fta explained'],
+      beginner: ['beginner','debutant','新手','how to start','getting started','commencer','开始','first time','new user','nouveau','je sais pas','我不知道','je comprends rien','i don\'t know','no idea','first step','premier pas','new to crypto','never used','jamais utilise','step by step','pas a pas','guide','tutorial','tuto'],
+      wallet_setup: ['wallet','metamask','trust wallet','钱包','portefeuille','how to connect','comment connecter','create wallet','install wallet','setup wallet','installer metamask','creer un portefeuille','configurer wallet'],
+      what_is_crypto: ['what is crypto','what is cryptocurrency','what is blockchain','c\'est quoi la crypto','什么是加密','什么是区块链','explain blockchain','crypto explained','crypto basics','base crypto','crypto pour les nuls'],
+      deposit: ['deposit','add funds','fund','充值','入金','how to deposit','add money','send funds','transfer to','top up','recharger','deposer des fonds','ajouter argent'],
+      withdraw: ['withdraw','cash out','提现','retirer','retrait','take profit','how to withdraw','convert to cash','withdraw fta','withdraw usdt','how to cash out','retirer argent'],
+      security: ['security','safe','secure','securite','安全','scam','arnaque','escroquerie','is it safe','est ce sur','hack','protect','seed phrase','private key','is it legit','trust','fiable','danger','risk','risque'],
+      investment: ['invest','investment','investir','投资','roi','return','profit','gain','earn','earning','收益','回报','profitable','rentable','is it worth','ca vaut le coup','worth it'],
+      strategy: ['strategy','strategie','策略','best way','meilleure facon','how to maximize','maximiser','optimize','optimiser','tips','astuce','conseil','advice','recommendation'],
+      machine_comparison: ['compare','comparison','which is better','différence','区别','vs','versus','mk-i','mk-ii','mk-iii','which rig','which tier','best tier','quelle machine est la meilleure'],
+      price: ['price','prix','preis','价格','rate','cost','combien','valeur','how much','current rate','current price','what is the price'],
+      referral: ['referral','referrer','parrain','parrainage','推荐','invite','inviter','affiliate','commission','bonus','sponsor'],
+      network: ['network','polygon','matic','pol','chain','网络','réseau','gas fee','frais','gas','why polygon','which network','what chain'],
+      history: ['history','historique','历史','transactions','transaction','activity','activite','leaderboard','classement','排名','my transactions','my history','past transactions','recent activity'],
+      profile: ['profile','profil','account','compte','username','email','my account','mon compte','edit profile','modifier profil','save profile','change name'],
+      roadmap: ['roadmap','future','upcoming','next','plan','路线图','futur','avenir','when','quand','phase','timeline','coming soon','bientot','what\'s next'],
+      whatsapp: ['whatsapp','community','group','社群','群','contact','support','join','rejoindre','telegram','discord','social'],
+      fta_problems: ['not working','doesn\'t work','rejected','refuse','failed','error','problem','bug','broken','marche pas','不工作','失败','报错','issue','cannot buy','cannot swap','impossible','blocked','bloque'],
+      help: ['help','aide','hilfe','帮助','commands','what can you do','que peux tu faire','capabilities','features','fonctionnalites','options']
+    };
+
+    let best = null, bestScore = 0;
+    for (const [topic, keywords] of Object.entries(topics)) {
+      let score = 0;
+      for (const kw of keywords) {
+        if (m.includes(kw)) score += kw.length >= 8 ? 3 : (kw.length >= 5 ? 2 : 1);
+      }
+      // Boost if topic matches conversation context
+      if (ctx.lastTopic === topic) score += 2;
+      if (score > bestScore) { bestScore = score; best = topic; }
+    }
+
+    // Also check CHAT_INTENTS for backward compatibility
+    if (bestScore < 2) {
+      for (const [intent, data] of Object.entries(CHAT_INTENTS)) {
+        let sc = 0;
+        for (const lk of ['all', this.currentLang, 'en']) {
+          if (!data.keywords[lk]) continue;
+          for (const kw of data.keywords[lk]) {
+            if (m.includes(kw)) sc += (data.weight || 1);
+          }
+        }
+        if (sc > bestScore) { bestScore = sc; best = intent; }
+      }
+    }
+
+    return bestScore >= 2 ? best : 'default';
+  }
+
+  _guessTopic(text) {
+    const topics = ['mining','swap','beginner','price','security','tokenomics','liquidity','investment','strategy'];
+    const m = text.toLowerCase();
+    for (const t of topics) {
+      const kw = this._getTopicKeywords(t);
+      for (const k of kw) { if (m.includes(k)) return t; }
+    }
+    return null;
+  }
+  _getTopicKeywords(t) {
+    const map = {
+      mining: ['mine','mining','machine','rig','battery','power','hashrate','miner','claim','reward'],
+      swap: ['swap','exchange','trade','convert','usdt','fta'],
+      beginner: ['beginner','start','new','first','guide','how to','dont know'],
+      price: ['price','cost','rate','value','worth'],
+      security: ['safe','secure','scam','hack','trust','seed'],
+      liquidity: ['liquidity','pool','reserve','netfta'],
+      investment: ['invest','roi','profit','earn','gain','return'],
+      strategy: ['strategy','best','tips','optimize','maximize']
+    };
+    return map[t] || [];
+  }
+
+  /* ── Basic detection helpers ──────────────────────────────── */
+  _isGreeting(m) {
+    const g = ['hello','hi','hey','hola','bonjour','salut','coucou','bonsoir','hallo','guten tag','moin','你好','您好','yo','sup','what\'s up','wassup','good morning','good evening','good afternoon','ola'];
+    return g.some(w => m.includes(w)) || m.length <= 4;
+  }
+  _isThanks(m) {
+    return ['thanks','thank you','thx','ty','merci','danke','谢谢','cheers','gracias','appreciate'].some(w => m.includes(w));
+  }
+  _isGoodbye(m) {
+    return ['bye','goodbye','see you','au revoir','adieu','tschüss','再见','later','ciao','a plus','a bientot'].some(w => m.includes(w));
+  }
+
+  /* ═══════════ RESPONSE GENERATORS ══════════════════════════ */
+
+  _respondGreeting(ctx, L) {
+    if (!this.user) {
+      const msgs = {
+        en: `👋 Hello! Welcome to Fitia Pro.\n\nI'm your AI assistant — I can help you understand mining, swapping, the 4 visions, and guide you step by step.\n\n🔗 To get started, connect your wallet using the button at the top!\n💬 Then ask me anything.`,
+        fr: `👋 Bonjour ! Bienvenue sur Fitia Pro.\n\nJe suis votre assistant IA — je peux vous expliquer le mining, les swaps, les 4 visions, et vous guider pas à pas.\n\n🔗 Commencez par connecter votre wallet en haut !\n💬 Ensuite, posez-moi vos questions.`
+      };
+      return msgs[L] || msgs.en;
+    }
+    const tips = [
+      `💡 Want to buy your first machine? Just ask: "Which machine should I buy?"`,
+      `💡 Curious about the 4 visions? Say: "Tell me about Fitia's 4 visions"`,
+      `💡 Having issues with FTA purchases? Ask: "Why can't I swap FTA?"`,
+      `💡 Want to maximize earnings? Say: "Best mining strategy"`,
+      `💡 New to crypto? Say: "I'm a beginner, help me start"`
+    ];
+    const tip = tips[Math.floor(Math.random() * tips.length)];
+    const msgs = {
+      en: `👋 Welcome back${ctx.username !== 'Miner' ? ', ' + ctx.username : ''}!\n\n⚡ ${ctx.active} active machine(s) | ⛏️ ${ctx.power} | 💎 ${ctx.pending} FTA pending\n\n${tip}`,
+      fr: `👋 Bon retour${ctx.username !== 'Miner' ? ', ' + ctx.username : ''}!\n\n⚡ ${ctx.active} machine(s) active(s) | ⛏️ ${ctx.power} | 💎 ${ctx.pending} FTA en attente\n\n${tip}`
+    };
+    return msgs[L] || msgs.en;
+  }
+
+  _respondThanks(L) {
+    const msgs = {
+      en: ["You're welcome! 😊 Happy mining! ⛏️", "Glad I could help! 🚀 Need anything else?", "Anytime! 💎 Keep earning that FTA!"],
+      fr: ["De rien ! 😊 Bon minage ! ⛏️", "Avec plaisir ! 🚀 Besoin d'autre chose ?", "Tout le plaisir est pour moi ! 💎"]
+    };
+    const arr = msgs[L] || msgs.en;
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  _respondGoodbye(L) {
+    const msgs = {
+      en: ["👋 See you soon! Keep mining! ⛏️", "Bye! Come back anytime. 🚀", "Happy mining! 👋💎"],
+      fr: ["👋 À bientôt ! Bon minage ! ⛏️", "Au revoir ! Revenez quand vous voulez. 🚀"]
+    };
+    const arr = msgs[L] || msgs.en;
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  /* ── Topic-specific responses ────────────────────────────── */
+
+  _rWhatIsFitia(ctx, L) {
+    if (L === 'fr') {
+      return `🪙 *Fitia Pro* est un écosystème Web3 révolutionnaire construit sur Polygon — combinant mining crypto, finance décentralisée (DeFi) et e-commerce.\n\n✨ *4 Visions Fondamentales :*\n① *Fitia Mining* — Achetez des machines NFT, gagnez des FTA passivement\n② *Fitia Finance* — Protocole DeFi : swap USDT ↔ FTA via bonding curve\n③ *Fitia Shop* — Marketplace de biens numériques et équipement\n④ *Fitia Store* — Boutique e-commerce acceptant FTA & crypto\n\n🔒 Sur Polygon Mainnet : frais bas (~0.01$), rapidité, transparence totale.\n\n💬 Dites-moi "explique les 4 visions" pour plus de détails !`;
+    }
+    return `🪙 *Fitia Pro* is a revolutionary Web3 ecosystem built on Polygon — combining crypto mining, decentralized finance (DeFi), and e-commerce into one unified platform.\n\n✨ *4 Core Visions:*\n① *Fitia Mining* — Purchase NFT mining machines, earn FTA tokens passively\n② *Fitia Finance* — DeFi protocol: swap USDT ↔ FTA via bonding curve\n③ *Fitia Shop* — Marketplace for digital goods & mining gear\n④ *Fitia Store* — E-commerce accepting FTA & crypto payments\n\n🔒 Built on Polygon Mainnet: low fees (~$0.01/tx), high speed, full transparency.\n\n💬 Say "tell me about the 4 visions" for more details!`;
+  }
+
+  _rFourVisions(ctx, L) {
+    if (L === 'fr') {
+      return `🏗️ *Les 4 Piliers de Fitia Pro*\n\n⛏️ *① Fitia Mining* — Le moteur. Achetez des machines NFT (MK-I à MK-VIII), alimentez-les avec des batteries (3-365 jours), gagnez du FTA chaque seconde.\n\n💱 *② Fitia Finance* — Notre protocole DeFi. Swap USDT ↔ FTA via bonding curve. La liquidité croît avec chaque transaction.\n\n🛒 *③ Fitia Shop* — Marketplace numérique. Équipement, upgrades, objets exclusifs dans l'écosystème.\n\n🏪 *④ Fitia Store* — E-commerce réel. Payez en FTA pour des produits physiques et services.\n\n🌐 Ces 4 piliers créent une économie circulaire auto-entretenue.`;
+    }
+    return `🏗️ *Fitia Pro's 4 Pillars*\n\n⛏️ *① Fitia Mining* — The engine. Buy NFT machines (MK-I to MK-VIII), power them with batteries (3-365 days), earn FTA every second.\n\n💱 *② Fitia Finance* — Our DeFi protocol. Swap USDT ↔ FTA via bonding curve. Liquidity grows with every trade.\n\n🛒 *③ Fitia Shop* — Digital marketplace for equipment, upgrades, exclusive items.\n\n🏪 *④ Fitia Store* — Real-world e-commerce. Pay with FTA for physical products & services.\n\n🌐 These 4 pillars create a self-sustaining circular economy where every activity feeds the others.`;
+  }
+
+  _rRevolution(ctx, L) {
+    if (L === 'fr') {
+      return `⚡ *Pourquoi Fitia Pro est Révolutionnaire*\n\n🌍 *Démocratise le mining* — Pas de matériel coûteux, juste un smartphone\n🔄 *Économie circulaire* — Les 4 visions se nourrissent mutuellement\n🔓 *Non-custodial* — Vos fonds sont TOUJOURS dans votre wallet\n📊 *Transparent* — 100% on-chain, auditable sur Polygonscan\n🌱 *Croissance organique* — Pas de pré-mine, chaque token est gagné\n\n🚀 Nous construisons une nouvelle économie numérique.`;
+    }
+    return `⚡ *Why Fitia Pro is Revolutionary*\n\n🌍 *Democratizes mining* — No expensive hardware, just a smartphone\n🔄 *Circular economy* — The 4 visions feed into each other\n🔓 *Non-custodial* — Your funds ALWAYS in your wallet\n📊 *Transparent* — 100% on-chain, auditable on Polygonscan\n🌱 *Organic growth* — No pre-mine, every token is earned\n\n🚀 We're building a new digital economy.`;
+  }
+
+  _rMiningHow(ctx, L) {
+    if (L === 'fr') {
+      return `⛏️ *Comment fonctionne le Mining Fitia*\n\n1️⃣ *Achetez une Machine* → Onglet Shop → Choisissez (MK-I à MK-VIII) → Payez en USDT (recommandé)\n2️⃣ *Achetez une Batterie* → Les machines ont besoin de batteries (3 à 365 jours)\n3️⃣ *Branchez-la* → Onglet Wallet → "Brancher une machine" → ID + type de batterie\n4️⃣ *Minage automatique* → Votre machine génère des FTA chaque seconde\n5️⃣ *Réclamez* → Bouton doré RÉCLAMER sur l'Accueil\n\n⚡ Niveau supérieur = plus de puissance\n🔋 Batterie plus longue = meilleur rapport qualité/prix\n💡 *Astuce :* Payez en USDT — ça marche toujours !`;
+    }
+    return `⛏️ *How Fitia Mining Works*\n\n1️⃣ *Buy a Machine* → Shop tab → Choose tier (MK-I to MK-VIII) → Pay in USDT (recommended)\n2️⃣ *Buy a Battery* → Machines need batteries to run (3 to 365 days)\n3️⃣ *Plug It In* → Wallet tab → "Plug in a machine" → Machine ID + battery type\n4️⃣ *Auto-Mining* → Your machine generates FTA every second\n5️⃣ *Claim* → Gold CLAIM button on Home to collect earnings\n\n⚡ Higher tier = more hashrate = more FTA/sec\n🔋 Longer battery = better value per day\n💡 *Tip:* Use USDT for purchases — it always works instantly!`;
+  }
+
+  _rBuyMachine(ctx, L) {
+    const machines = ctx.machines.slice(0, 5);
+    if (!machines.length) return ctx.isFr ? "📡 Chargement des machines... Revenez dans un instant." : "📡 Loading machine data... Check back in a moment.";
+
+    const list = machines.map((m, i) => {
+      const name = ['MK-I STARTER','MK-II STANDARD','MK-III ADVANCED','MK-IV PRO','MK-V ELITE'][i] || `MK-${String.fromCharCode(73+i)}`;
+      return `${name}: ${this.formatHashrate(m.power)} — ${m.price.toFixed(2)} USDT`;
+    }).join('\n');
+
+    if (L === 'fr') {
+      return `⛏️ *Machines disponibles dans le Shop :*\n\n${list}\n\n💡 *Recommandation :* Commencez avec la MK-I STARTER pour tester le système.\n💳 Payez en USDT (recommendé) — les achats FTA nécessitent de la liquidité.\n\nAllez dans l'onglet Shop pour acheter !`;
+    }
+    return `⛏️ *Available Machines in Shop:*\n\n${list}\n\n💡 *Recommendation:* Start with MK-I STARTER to learn the system.\n💳 Pay in USDT (recommended) — FTA purchases require liquidity.\n\nGo to the Shop tab to buy!`;
+  }
+
+  _rSwapHow(ctx, L) {
+    const liq = ctx.nfs;
+    const liqStatus = ctx.netFtaSold === 0n
+      ? '🔴 Protocol liquidity is currently 0 — USDT→FTA swaps build the pool. Use USDT for purchases.'
+      : `🟢 Protocol liquidity: ${liq.toFixed(2)} FTA — all swap operations available.`;
+
+    if (L === 'fr') {
+      return `💱 *Comment fonctionne le Swap*\n\n🔹 *USDT → FTA :* Vous payez en USDT, recevez du FTA. Ceci alimente la liquidité du protocole.\n🔹 *FTA → USDT :* Vous vendez du FTA, recevez de l'USDT. Nécessite que la liquidité soit disponible.\n\n📊 Le swap utilise une *bonding curve* — le prix s'ajuste selon l'offre et la demande.\n💰 Frais de swap : 4%\n\n${liqStatus}\n\n💡 Allez dans l'onglet Swap pour échanger !`;
+    }
+    return `💱 *How the Swap Works*\n\n🔹 *USDT → FTA:* Pay USDT, receive FTA. This adds to protocol liquidity — great for the ecosystem!\n🔹 *FTA → USDT:* Sell FTA, receive USDT. Requires protocol liquidity to be available.\n\n📊 The swap uses a *bonding curve* — price adjusts based on supply & demand.\n💰 Swap fee: 4%\n\n${liqStatus}\n\n💡 Go to the Swap tab to exchange!`;
+  }
+
+  _rLiquidity(ctx, L) {
+    if (L === 'fr') {
+      return `💧 *Liquidité du Protocole*\n\nLa liquidité affichée (${ctx.liquidity}) représente les réserves FTA dans la bonding curve du protocole.\n\n🟢 *Élevée :* Toutes les opérations fonctionnent\n🟡 *Faible :* Certaines limites\n🔴 *Zéro :* Utilisez USDT ou swap USDT→FTA d'abord\n\n💡 Chaque swap USDT→FTA augmente la liquidité pour tous les utilisateurs.`;
+    }
+    return `💧 *Protocol Liquidity*\n\nThe displayed liquidity (${ctx.liquidity}) represents the FTA reserves in the protocol's bonding curve.\n\n🟢 *High:* All operations work\n🟡 *Low:* Some limits apply\n🔴 *Zero:* Use USDT or swap USDT→FTA first\n\n💡 Every USDT→FTA swap increases liquidity for all users.`;
+  }
+
+  _rTokenomics(ctx, L) {
+    if (L === 'fr') {
+      return `🪙 *Économie du Token FTA*\n\n⚡ *Utilité :*\n• Récompense de mining — gagné chaque seconde\n• Paiement — machines, batteries, shop\n• Swap — trade USDT ↔ FTA\n• Gouvernance — futurs droits DAO\n\n📊 *Supply :*\n• Pas de pré-mine — chaque FTA est gagné par le mining\n• Plafonné par le protocole\n• Croissance organique avec l'écosystème\n\n💹 *Facteurs de valeur :* Demande de mining, liquidité, expansion de l'écosystème, base d'utilisateurs.`;
+    }
+    return `🪙 *FTA Token Economics*\n\n⚡ *Utility:*\n• Mining reward — earned every second from active machines\n• Payment — buy machines, batteries, shop items\n• Swap — trade USDT ↔ FTA via DeFi protocol\n• Governance — future DAO voting rights\n\n📊 *Supply:*\n• No pre-mine — every FTA is earned through mining\n• Capped by protocol parameters & bonding curve\n• Supply grows organically with ecosystem activity\n\n💹 *Value Drivers:* Mining demand, liquidity growth, ecosystem expansion, user base.`;
+  }
+
+  _rBeginner(ctx, L) {
+    if (L === 'fr') {
+      return `🚀 *Guide Débutant Fitia Pro*\n\nMême sans connaître la crypto, suivez ces étapes :\n\n📱 *1. Installez MetaMask* — Sur votre téléphone ou PC. Notez votre phrase de récupération sur PAPIER.\n\n💰 *2. Achetez des fonds* — Achetez du POL et USDT sur Binance ou Coinbase → envoyez à votre adresse MetaMask sur le réseau *Polygon*.\n\n🔗 *3. Connectez-vous* — Ouvrez Fitia, appuyez sur Connecter, approuvez.\n\n⛏️ *4. Achetez une Machine* — Shop → MK-I STARTER → payez en USDT.\n\n🔋 *5. Batterie + Branchez* — Achetez une batterie 30 jours, puis Wallet → Brancher.\n\n🎉 *C'est tout !* Votre machine mine du FTA automatiquement. Cliquez RÉCLAMER pour collecter.\n\n💬 Besoin d'aide à n'importe quelle étape ? Demandez-moi !`;
+    }
+    return `🚀 *Beginner's Guide to Fitia Pro*\n\nEven if you've never used crypto, follow these steps:\n\n📱 *1. Install MetaMask* — On your phone or computer. WRITE DOWN your recovery phrase on paper.\n\n💰 *2. Get Funds* — Buy POL and USDT on Binance or Coinbase → send to your MetaMask address on the *Polygon network*.\n\n🔗 *3. Connect* — Open Fitia, tap Connect, approve.\n\n⛏️ *4. Buy a Machine* — Shop → MK-I STARTER → pay in USDT.\n\n🔋 *5. Battery + Plug In* — Buy a 30-day battery, then Wallet → Plug In.\n\n🎉 *Done!* Your machine mines FTA automatically. Tap CLAIM to collect.\n\n💬 Need help at any step? Just ask me!`;
+  }
+
+  _rSecurity(L) {
+    if (L === 'fr') {
+      return `🛡️ *Fitia Pro est-il sûr ?*\n\n✅ *OUI — Voici pourquoi :*\n\n🔒 *Smart Contract* sur Polygon Mainnet — code open-source, auditable\n🔓 *Non-custodial* — vos fonds sont TOUJOURS dans votre wallet\n📊 *Transparent* — chaque transaction visible sur Polygonscan\n\n⚠️ *Règles de sécurité essentielles :*\n• NE PARTAGEZ JAMAIS votre phrase de récupération\n• Vérifiez toujours les adresses des contrats\n• La crypto est volatile — investissez raisonnablement\n• Personne de l'équipe ne vous demandera vos clés privées\n\n🤝 Rejoignez notre communauté WhatsApp pour vérifier avec de vrais utilisateurs.`;
+    }
+    return `🛡️ *Is Fitia Pro Safe?*\n\n✅ *YES — Here's why:*\n\n🔒 *Smart Contract* on Polygon Mainnet — open-source, auditable code\n🔓 *Non-custodial* — your funds are ALWAYS in your wallet\n📊 *Transparent* — every transaction visible on Polygonscan\n\n⚠️ *Essential Security Rules:*\n• NEVER share your recovery phrase with anyone\n• Always verify contract addresses\n• Crypto is volatile — invest responsibly\n• No team member will ever ask for your private keys\n\n🤝 Join our WhatsApp community to verify with real users.`;
+  }
+
+  _rInvestment(ctx, L) {
+    const pending = ctx.pending;
+    const rate = ctx.ftaPrice;
+    if (L === 'fr') {
+      return `📈 *Vue d'ensemble de votre investissement*\n\n⚡ Machines actives : ${ctx.active}\n💎 Récompenses en attente : ${pending} FTA\n💹 Taux actuel : 1 FTA = ${ctx.ftaPriceUsd}\n\n💡 *Conseils :*\n• Commencez avec MK-I et réinvestissez vos gains\n• Les batteries longues (90-365 jours) = meilleur rapport\n• Faites tourner plusieurs machines en parallèle\n• Réclamez régulièrement vos récompenses\n\n⚠️ Ceci n'est pas un conseil financier. Faites vos propres recherches.`;
+    }
+    return `📈 *Your Investment Overview*\n\n⚡ Active Machines: ${ctx.active}\n💎 Pending Rewards: ${pending} FTA\n💹 Current Rate: ${ctx.ftaPriceUsd} per FTA\n🪙 Protocol Liquidity: ${ctx.liquidity}\n\n💡 *Tips:*\n• Start with MK-I and reinvest earnings\n• Longer batteries (90-365 days) = best value/day\n• Run multiple machines in parallel\n• Claim rewards regularly to compound\n\n⚠️ This is not financial advice. Do your own research.`;
+  }
+
+  _rStrategy(ctx, L) {
+    if (L === 'fr') {
+      return `💎 *Stratégie pour Maximiser vos Gains*\n\n1️⃣ *Commencez petit* — Achetez MK-I, comprenez le système\n2️⃣ *Réinvestissez* — Utilisez vos premiers FTA pour une meilleure machine\n3️⃣ *Batteries longues* — 90 ou 365 jours = coût par jour minimal\n4️⃣ *Multi-machines* — Faites tourner plusieurs rigs en parallèle\n5️⃣ *Timing* — Surveillez le taux FTA/USDT pour optimiser vos swaps\n6️⃣ *Parrainage* — Invitez des amis pour des commissions passives\n\n💡 La clé : patience et réinvestissement.`;
+    }
+    return `💎 *Strategy to Maximize Earnings*\n\n1️⃣ *Start small* — Buy MK-I, learn the system\n2️⃣ *Reinvest* — Use your first FTA earnings for better machines\n3️⃣ *Long batteries* — 90 or 365-day = lowest cost per day\n4️⃣ *Multi-machine* — Run multiple rigs in parallel for compound hashrate\n5️⃣ *Timing* — Watch FTA/USDT rate to optimize swap timing\n6️⃣ *Referrals* — Invite friends for passive commissions\n\n💡 The key: patience + reinvestment = compound growth.`;
+  }
+
+  _rWalletSetup(L) {
+    if (L === 'fr') {
+      return `🦊 *Configurer votre Wallet*\n\n1️⃣ Allez sur metamask.io → Installez\n2️⃣ Créez un wallet → ✍️ NOTEZ la phrase de 12 mots sur PAPIER\n3️⃣ Ne la partagez JAMAIS. Pas de screenshot.\n4️⃣ Ajoutez Polygon : RPC https://polygon-rpc.com, Chain ID 137, Symbole POL\n\n💰 Achetez du POL (pour le gas) et USDT sur un exchange, retirez vers MetaMask sur Polygon.\n\n⚠️ JAMAIS de seed phrase à quiconque. Même pas au "support".`;
+    }
+    return `🦊 *Setting Up Your Wallet*\n\n1️⃣ Go to metamask.io → Install\n2️⃣ Create wallet → ✍️ WRITE DOWN the 12-word phrase on PAPER\n3️⃣ NEVER share it. No screenshots.\n4️⃣ Add Polygon: RPC https://polygon-rpc.com, Chain ID 137, Symbol POL\n\n💰 Buy POL (for gas) and USDT on an exchange, withdraw to MetaMask on Polygon.\n\n⚠️ NEVER give your seed phrase to anyone. Not even "support".`;
+  }
+
+  _rCryptoBasics(L) {
+    if (L === 'fr') {
+      return `🔰 *La Crypto Expliquée Simplement*\n\n📒 *Blockchain* = un registre numérique partagé. Une fois écrit, c'est immuable.\n💰 *Cryptomonnaie* = argent numérique. Pas de banque — vous contrôlez tout.\n🔑 *Wallet* = votre trousseau de clés. Comme un compte bancaire que VOUS SEUL contrôlez.\n📜 *Smart Contract* = règles automatisées sur la blockchain. Le mining et les swaps Fitia fonctionnent via smart contracts.\n🌐 *Polygon* = réseau rapide et économique (~0.01$ par transaction).\n\n💡 Fitia utilise ces technologies pour vous permettre de miner, échanger et dépenser — de façon transparente et sécurisée.`;
+    }
+    return `🔰 *Crypto Made Simple*\n\n📒 *Blockchain* = a shared digital ledger. Once written, it can't be changed.\n💰 *Cryptocurrency* = digital money. No bank — you control everything.\n🔑 *Wallet* = your keychain. Like a bank account that ONLY you can access.\n📜 *Smart Contract* = automated rules on the blockchain. Fitia's mining & swaps run on smart contracts.\n🌐 *Polygon* = a fast, cheap network (~$0.01 per transaction).\n\n💡 Fitia uses these technologies to let you mine, trade, and spend — transparently and securely.`;
+  }
+
+  _rDeposit(ctx, L) { return ctx.isFr ? `💰 *Ajouter des Fonds*\n1. Achetez POL+USDT sur Binance/Coinbase\n2. Retirez vers votre adresse MetaMask\n3. *Sélectionnez POLYGON !*\n4. Votre adresse : ${ctx.wallet} (Wallet → Recevoir)` : `💰 *Add Funds*\n1. Buy POL+USDT on Binance/Coinbase\n2. Withdraw to your MetaMask address\n3. *SELECT POLYGON NETWORK!*\n4. Your address: ${ctx.wallet} (Wallet → Receive)`; }
+  _rWithdraw(ctx, L) { return ctx.isFr ? `💸 *Retirer vos Gains*\n1. Réclamez FTA (Accueil → RÉCLAMER)\n2. Swap FTA→USDT (Swap)\n3. Envoyez USDT vers exchange (sur Polygon !)\n4. Vendez → retirez en banque` : `💸 *Cash Out*\n1. Claim FTA (Home → CLAIM)\n2. Swap FTA→USDT (Swap tab)\n3. Send USDT to exchange (on Polygon!)\n4. Sell USDT → withdraw to bank`; }
+  _rNetwork(L) { return ctx.isFr ? `🌐 Fitia sur *Polygon* (Chain ID 137).\n✅ Rapide (2-5s) | 💰 Frais ~0.01$ | 🔒 Sécurisé par Ethereum.` : `🌐 Fitia on *Polygon* (Chain ID 137).\n✅ Fast (2-5s) | 💰 ~$0.01 fees | 🔒 Secured by Ethereum.`; }
+  _rWhatsapp(L) { return ctx.isFr ? `📱 Groupe: ${CONFIG.WHATSAPP_GROUP}\n📢 Chaîne: ${CONFIG.WHATSAPP_CHANNEL}` : `📱 Group: ${CONFIG.WHATSAPP_GROUP}\n📢 Channel: ${CONFIG.WHATSAPP_CHANNEL}`; }
+  _rRoadmap(L) { return ctx.isFr ? `🗺️ Phase 1 ✅ (mining, swaps, parrainage) → Phase 2 🔜 (Shop, staking) → Phase 3 (Store, DAO, bridges).` : `🗺️ Phase 1 ✅ (mining, swaps, referrals) → Phase 2 🔜 (Shop, staking) → Phase 3 (Store, DAO, bridges).`; }
+  _rReferral(ctx, L) { return ctx.isFr ? `👥 Votre code de parrainage = ${ctx.wallet}\n\nPartagez-le ! Vous gagnez des commissions sur les achats de vos filleuls.` : `👥 Your referral code = ${ctx.wallet}\n\nShare it! You earn commissions on your referrals' purchases.`; }
+
+  _rBuyBattery(ctx, L) {
+    const batteries = ctx.batteries.slice(0, 5);
+    if (!batteries.length) return ctx.isFr ? "📡 Données batteries en cours de chargement..." : "📡 Battery data loading...";
+    const list = batteries.map(b => `${b.days} days: ${b.price.toFixed(2)} USDT`).join('\n');
+    return ctx.isFr
+      ? `🔋 *Batteries disponibles:*\n${list}\n\n💡 Les batteries 30+ jours offrent le meilleur rapport qualité/prix. Payez en USDT.`
+      : `🔋 *Available Batteries:*\n${list}\n\n💡 30+ day batteries offer best value. Pay in USDT.`;
+  }
+
+  _rPlugIn(ctx, L) {
+    return ctx.isFr
+      ? `🔌 *Brancher une Machine*\n1. Allez dans Wallet\n2. Section "Brancher une machine"\n3. Entrez l'ID (0, 1, 2...)\n4. Choisissez le type de batterie\n5. Cliquez BRANCHER\n\n⚡ La machine commence à miner immédiatement !`
+      : `🔌 *Plug In a Machine*\n1. Go to Wallet tab\n2. "Plug in a machine" section\n3. Enter machine ID (0, 1, 2...)\n4. Choose battery type\n5. Click PLUG IN\n\n⚡ Machine starts mining immediately!`;
+  }
+
+  _rClaim(ctx, L) {
+    return ctx.isFr
+      ? `🎁 ${ctx.active > 0 ? `Vous avez ${ctx.pending} FTA en attente. Cliquez le bouton RÉCLAMER sur l'Accueil pour les collecter !` : "Vous n'avez pas de machine active. Achetez-en une d'abord !"}`
+      : `🎁 ${ctx.active > 0 ? `You have ${ctx.pending} FTA pending. Click the CLAIM button on Home to collect!` : "You have no active machines. Buy one first!"}`;
+  }
+
+  _rPrice(ctx, L) {
+    if (!this.user) return L==='fr' ? '🔗 Connectez votre wallet pour voir les prix en direct.' : '🔗 Connect your wallet to see live prices.';
+    return L==='fr'
+      ? `📊 *Prix en direct*\n• FTA : ${ctx.ftaPriceUsd}\n• USDT : $1.00\n• POL : ${ctx.polPrice}\n💧 Liquidité : ${ctx.liquidity}`
+      : `📊 *Live Prices*\n• FTA: ${ctx.ftaPriceUsd}\n• USDT: $1.00\n• POL: ${ctx.polPrice}\n💧 Liquidity: ${ctx.liquidity}`;
+  }
+
+  _rHistory(ctx, L) {
+    return L==='fr'
+      ? `📋 *Historique & Activité*\n\n📊 ${ctx.totalMachines} machines | 📝 ${ctx.pending} FTA pending\n\nL'onglet History affiche :\n• Toutes vos transactions (swaps, achats, claims)\n• Filtres par type\n• Liens Polygonscan\n• Classement leaderboard\n\n💡 Cliquez sur History dans la barre du bas !`
+      : `📋 *History & Activity*\n\n📊 ${ctx.totalMachines} machines | 📝 ${ctx.pending} FTA pending\n\nThe History tab shows:\n• All your transactions (swaps, purchases, claims)\n• Filter by type\n• Polygonscan links\n• Leaderboard rankings\n\n💡 Tap History in the bottom nav!`;
+  }
+
+  _rProfile(ctx, L) {
+    return L==='fr'
+      ? `👤 *Votre Profil*\n\n🔷 ${ctx.username}\n📊 Level ${0} | ${ctx.totalMachines} machines\n💰 Investi: $${0} | Gagné: $${0}\n\nPour modifier votre profil, allez dans Wallet → cliquez ✏️.`
+      : `👤 *Your Profile*\n\n🔷 ${ctx.username}\n📊 Level ${0} | ${ctx.totalMachines} machines\n💰 Invested: $${0} | Earned: $${0}\n\nTo edit your profile, go to Wallet → tap ✏️.`;
+  }
+
+  _rProblems(ctx, L) {
+    if (!this.user) return L==='fr' ? "🔗 Connectez d'abord votre wallet." : "🔗 Connect your wallet first.";
+    if (ctx.netFtaSold === 0n) {
+      return L==='fr'
+        ? `⚠️ *Problème FTA détecté*\n\nLa liquidité du protocole est actuellement à 0.\n\n✅ *Solution :* Utilisez USDT pour les achats — ça marche toujours !\n✅ Ou faites un swap USDT→FTA d'abord pour créer la liquidité.`
+        : `⚠️ *FTA Issue Detected*\n\nProtocol liquidity is currently 0.\n\n✅ *Solution:* Use USDT for purchases — always works!\n✅ Or swap USDT→FTA first to build liquidity.`;
+    }
+    return L==='fr'
+      ? `🔍 Liquidité actuelle : ${ctx.liquidity}\n\nSi vos transactions FTA échouent :\n• Vérifiez votre solde FTA\n• Assurez-vous d'avoir assez de POL pour le gas\n• Rafraîchissez la page et réessayez`
+      : `🔍 Current liquidity: ${ctx.liquidity}\n\nIf FTA transactions fail:\n• Check your FTA balance\n• Make sure you have POL for gas\n• Refresh and retry`;
+  }
+
+  _rCompare(ctx, L) {
+    const machines = ctx.machines.slice(0, 5);
+    if (!machines.length) return ctx.isFr ? "📡 Chargement..." : "📡 Loading...";
+    const list = machines.map((m, i) => {
+      const name = ['MK-I','MK-II','MK-III','MK-IV','MK-V'][i];
+      return `${name}: ${this.formatHashrate(m.power)} — $${m.price.toFixed(2)}`;
+    }).join('\n');
+    return L === 'fr'
+      ? `⚖️ *Comparaison des Machines*\n\n${list}\n\n💡 MK-I pour débuter, MK-III+ pour des gains sérieux.`
+      : `⚖️ *Machine Comparison*\n\n${list}\n\n💡 MK-I to start, MK-III+ for serious earnings.`;
+  }
+
+  _rHelp(ctx, L) {
+    const topics = L==='fr'
+      ? '⛏️ Mining • 💱 Swap • 🏗️ 4 Visions • 🚀 Débutant • 🔒 Sécurité\n💰 Investissement • 📊 Prix • 🦊 Wallet • 📋 Historique\n💡 Dites "explique les 4 visions" ou "comment miner" !'
+      : '⛏️ Mining • 💱 Swap • 🏗️ 4 Visions • 🚀 Beginner • 🔒 Security\n💰 Investment • 📊 Prices • 🦊 Wallet • 📋 History\n💡 Try "explain the 4 visions" or "how do I mine"!';
+    return `${L==='fr' ? '🛠️ *Que puis-je expliquer ?*' : '🛠️ *What can I explain?*'}\n\n${topics}`;
+  }
+
+  _rFallback(ctx, L, msg) {
+    // Smart fallback — analyze what the user might be asking
+    const hasKeywords = (words) => words.some(w => msg.includes(w));
+
+    if (hasKeywords(['earn','gagner','money','argent','income','revenue'])) return this._rStrategy(ctx, L);
+    if (hasKeywords(['buy','acheter','purchase'])) return this._rBuyMachine(ctx, L);
+    if (hasKeywords(['swap','exchange','trade','echange','convert'])) return this._rSwapHow(ctx, L);
+    if (hasKeywords(['connect','link','metamask'])) return ctx.isFr ? '🔗 Cliquez sur Connecter en haut à droite.' : '🔗 Click Connect at the top right.';
+    if (hasKeywords(['where','ou','find','trouver'])) return this._rHelp(ctx, L);
+    if (hasKeywords(['how','comment','explain','explique','what','pourquoi','why'])) return this._rHelp(ctx, L);
+
+    // Generic but helpful fallback
+    const suggestions = L === 'fr'
+      ? "💡 Essayez :\n• \"Comment fonctionne le mining ?\"\n• \"Quelles sont les 4 visions ?\"\n• \"Je suis débutant, aide-moi\"\n• \"Quelle machine acheter ?\"\n• \"Pourquoi le swap FTA ne marche pas ?\""
+      : "💡 Try asking:\n• \"How does mining work?\"\n• \"What are the 4 visions?\"\n• \"I'm a beginner, help me start\"\n• \"Which machine should I buy?\"\n• \"Why isn't my FTA swap working?\"";
+
+    return `${L === 'fr' ? "🤔 Je n'ai pas bien compris. Je suis là pour vous aider avec tout sur Fitia Pro !\n\n" : "🤔 I didn't quite catch that. I'm here to help with everything Fitia Pro!\n\n"}${suggestions}`;
+  }
 }
 
 const App = new Application();
