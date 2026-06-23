@@ -1,5 +1,6 @@
 /* =========================================================
-   FITIA PRO MINER — style.css v2
+   FITIA PRO MINER v3 — style.css
+   Dual-contract (Core + Mine) • Internal balances
    Professional DeFi-grade styling. Dark theme, gold accent.
    ========================================================= */
 
@@ -9,10 +10,12 @@
   --primary: #F0B90B;
   --primary-hover: #FFD43B;
   --accent: #3b82f6;
+  --accent2: #8b5cf6;
   --text: #f8fafc;
   --text-muted: #94a3b8;
   --danger: #ef4444;
   --success: #10b981;
+  --warning: #f59e0b;
   --nav-height: 65px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -65,6 +68,7 @@ main::-webkit-scrollbar { display: none; }
 .view.active { display: block; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .view-title { font-size: 1.3rem; margin-bottom: 15px; font-weight: 800; }
+.section-title { margin: 0 0 12px 0; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
 
 /* ── Cards ────────────────────────────────────────────── */
 .card { background: var(--card-bg); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 15px; margin-bottom: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
@@ -80,19 +84,55 @@ main::-webkit-scrollbar { display: none; }
 .ref-input-group { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
 .ref-input-group .game-input { margin-bottom: 0; font-size: 0.85rem; text-align: left; }
 
-/* ── Wallet Tokens ────────────────────────────────────── */
+/* ── Wallet Tokens (v3: Internal + Wallet balances) ──── */
 .token-img-lg { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 10px rgba(0,0,0,0.5); flex-shrink: 0; }
-.wallet-token-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.wallet-token-row { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
 .wallet-token-row:last-child { border-bottom: none; }
 .token-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .token-name { font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
 .token-unit-price { font-size: 0.7rem; color: var(--text-muted); font-weight: normal; font-family: 'JetBrains Mono', monospace; }
-.token-bal { font-family: 'JetBrains Mono', monospace; font-size: clamp(0.9rem, 3.5vw, 1rem); color: var(--text); font-weight: bold; word-break: break-all; }
-.token-bal-usd { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-muted); }
-.wallet-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
-.btn-wallet { padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text); font-weight: bold; font-size: 0.75rem; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+.token-balances { display: flex; flex-direction: column; gap: 3px; margin-top: 2px; }
+.token-bal-row { display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+.token-bal-label { color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase; }
+.token-bal-val { color: var(--text); font-weight: 700; }
+.token-bal-internal { color: var(--primary); }
+.token-bal-wallet { color: var(--accent); }
+.wallet-actions { display: flex; flex-wrap: wrap; gap: 4px; flex-shrink: 0; min-width: 120px; }
+.btn-wallet { padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text); font-weight: bold; font-size: 0.7rem; cursor: pointer; transition: 0.2s; white-space: nowrap; }
 .btn-wallet:active { background: var(--primary); color: #000; }
-.receive-btn { border-color: var(--primary); color: var(--primary); }
+.btn-deposit { border-color: var(--success); color: var(--success); }
+.btn-deposit:active { background: var(--success); color: #fff; }
+.btn-withdraw { border-color: var(--warning); color: var(--warning); }
+.btn-withdraw:active { background: var(--warning); color: #000; }
+.btn-receive { border-color: var(--accent); color: var(--accent); }
+.btn-receive:active { background: var(--accent); color: #fff; }
+
+/* ── Deposit / Withdraw Panel ─────────────────────────── */
+.deposit-panel {
+  background: rgba(0,0,0,0.2); border: 1px solid rgba(16,185,129,0.2);
+  border-radius: 12px; padding: 12px; margin-top: 10px; display: none;
+}
+.deposit-panel.active { display: block; }
+.deposit-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.deposit-panel-header h4 { margin: 0; font-size: 0.9rem; color: var(--success); }
+.deposit-actions { display: flex; gap: 8px; margin-top: 10px; }
+.btn-approve { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--accent); background: transparent; color: var(--accent); font-weight: 700; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
+.btn-approve:active { background: var(--accent); color: #fff; }
+.btn-confirm-deposit { flex: 1; padding: 10px; border-radius: 8px; border: none; background: var(--success); color: #fff; font-weight: 700; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
+.btn-confirm-deposit:active { transform: scale(0.98); }
+.btn-confirm-deposit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.withdraw-panel {
+  background: rgba(0,0,0,0.2); border: 1px solid rgba(245,158,11,0.2);
+  border-radius: 12px; padding: 12px; margin-top: 10px; display: none;
+}
+.withdraw-panel.active { display: block; }
+.withdraw-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.withdraw-panel-header h4 { margin: 0; font-size: 0.9rem; color: var(--warning); }
+.withdraw-info { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 8px; }
+.btn-confirm-withdraw { width: 100%; padding: 10px; border-radius: 8px; border: none; background: var(--warning); color: #000; font-weight: 700; cursor: pointer; font-size: 0.8rem; margin-top: 8px; transition: all 0.2s; }
+.btn-confirm-withdraw:active { transform: scale(0.98); }
+.btn-confirm-withdraw:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── Modals ───────────────────────────────────────────── */
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1500; justify-content: center; align-items: flex-end; padding: 0; }
@@ -141,11 +181,14 @@ main::-webkit-scrollbar { display: none; }
 .plug-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .game-input { width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid #333; border-radius: 10px; color: var(--text); font-size: 16px; text-align: center; margin-bottom: 12px; font-family: 'JetBrains Mono', monospace; transition: border-color 0.2s; }
 .game-input:focus { border-color: var(--primary); }
+select.game-input { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
 .shop-tabs { display: flex; gap: 4px; margin-bottom: 15px; background: #1e293b; padding: 4px; border-radius: 8px; }
 .shop-tab { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; text-align: center; transition: 0.2s; font-size: 0.9rem; }
 .shop-tab.active { background: var(--primary); color: #000; }
 .battery-shop-item { background: linear-gradient(145deg, #252525, #1a1a1a); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 15px 10px; text-align: center; box-shadow: 5px 5px 15px rgba(0,0,0,0.5); transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .battery-shop-item:active { transform: scale(0.98); }
+.battery-name { font-weight: 700; font-size: 0.9rem; color: var(--text); }
+.battery-price { font-weight: 700; font-size: 1rem; color: var(--primary); font-family: 'JetBrains Mono', monospace; }
 .real-battery { position: relative; width: 50px; height: 24px; margin: 4px auto; }
 .battery-body { width: 44px; height: 22px; background: linear-gradient(180deg, #cbd5e1, #94a3b8); border-radius: 4px; border: 1px solid #64748b; position: relative; overflow: hidden; box-shadow: inset 0 -2px 4px rgba(0,0,0,0.25); }
 .battery-cap { position: absolute; right: -4px; top: 50%; transform: translateY(-50%); width: 4px; height: 10px; background: #475569; border-radius: 1px 2px 2px 1px; border: 1px solid #334155; }
@@ -154,7 +197,8 @@ main::-webkit-scrollbar { display: none; }
 .battery-level.low { background: linear-gradient(180deg, #ef4444, #dc2626); }
 .battery-level.empty { background: linear-gradient(180deg, #64748b, #475569); }
 .battery-charge-indicator { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.55rem; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); z-index: 2; pointer-events: none; mix-blend-mode: difference; }
-.section-title { margin: 0 0 12px 0; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+
+/* ── Asset Rows ───────────────────────────────────────── */
 .asset-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
 .asset-row:last-child { border-bottom: none; }
 .asset-info { flex: 1; min-width: 0; }
@@ -210,9 +254,7 @@ main::-webkit-scrollbar { display: none; }
   font-size: 0.78rem; color: var(--text-muted);
   display: flex; align-items: center; gap: 6px;
 }
-.liquidity-reserve-box .liquidity-label .lq-icon {
-  font-size: 0.9rem; color: var(--primary);
-}
+.liquidity-reserve-box .liquidity-label .lq-icon { font-size: 0.9rem; color: var(--primary); }
 .liquidity-reserve-box .liquidity-value {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.85rem; font-weight: 700;
@@ -231,6 +273,8 @@ main::-webkit-scrollbar { display: none; }
 .nav-item { border: none; background: none; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 0.65rem; cursor: pointer; width: 20%; height: 100%; transition: 0.2s; }
 .nav-item svg { width: 22px; height: 22px; fill: currentColor; }
 .nav-item.active { color: var(--primary); }
+.nav-5 .nav-item { width: 20%; }
+.nav-5 .nav-item span { font-size: 0.55rem; }
 
 /* ── Loader ───────────────────────────────────────────── */
 .loader { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; animation: loaderFadeIn 0.3s ease; }
@@ -330,6 +374,8 @@ main::-webkit-scrollbar { display: none; }
 .tx-type-badge.send { background: rgba(239,68,68,0.2); color: #f87171; }
 .tx-type-badge.receive { background: rgba(59,130,246,0.2); color: #60a5fa; }
 .tx-type-badge.plug_in { background: rgba(6,182,212,0.2); color: #22d3ee; }
+.tx-type-badge.deposit { background: rgba(16,185,129,0.2); color: #34d399; }
+.tx-type-badge.withdraw { background: rgba(245,158,11,0.2); color: #fbbf24; }
 .tx-time { font-size: 0.7rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
 .tx-item-detail { display: flex; justify-content: space-between; align-items: center; }
 .tx-amount { display: flex; flex-direction: column; }
@@ -354,6 +400,8 @@ main::-webkit-scrollbar { display: none; }
 .activity-dot.register { background: #3b82f6; box-shadow: 0 0 6px #3b82f6; }
 .activity-dot.swap, .activity-dot.buy_machine, .activity-dot.buy_battery { background: #F0B90B; box-shadow: 0 0 6px #F0B90B; }
 .activity-dot.claim { background: #8b5cf6; box-shadow: 0 0 6px #8b5cf6; }
+.activity-dot.deposit { background: #10b981; box-shadow: 0 0 6px #10b981; }
+.activity-dot.withdraw { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
 .activity-dot.default { background: #64748b; }
 .activity-text { flex: 1; min-width: 0; }
 .activity-time { font-size: 0.65rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
@@ -375,9 +423,104 @@ main::-webkit-scrollbar { display: none; }
 .lb-earned-val { font-weight: 800; font-size: 0.85rem; color: var(--primary); font-family: 'JetBrains Mono', monospace; }
 .lb-earned-label { font-size: 0.6rem; color: var(--text-muted); display: block; }
 
-/* ── Nav 5 items ──────────────────────────────────────── */
-.nav-5 .nav-item { width: 20%; }
-.nav-5 .nav-item span { font-size: 0.55rem; }
+/* ── Deposit Hint Banner ──────────────────────────────── */
+.deposit-hint-banner {
+  background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(59,130,246,0.1));
+  border: 1px solid rgba(16,185,129,0.25); border-radius: 12px;
+  padding: 12px 14px; margin-bottom: 15px;
+  display: flex; align-items: center; gap: 10px; font-size: 0.8rem;
+}
+.deposit-hint-banner .hint-icon { font-size: 1.2rem; flex-shrink: 0; }
+.deposit-hint-banner .hint-text { color: var(--text-muted); }
+.deposit-hint-banner .hint-text strong { color: var(--success); }
+
+/* ── Tab bar for balance types ────────────────────────── */
+.balance-tabs { display: flex; gap: 4px; margin-bottom: 12px; background: #1e293b; padding: 4px; border-radius: 8px; }
+.balance-tab { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 6px 8px; border-radius: 6px; font-weight: bold; cursor: pointer; text-align: center; transition: 0.2s; font-size: 0.75rem; }
+.balance-tab.active { background: var(--primary); color: #000; }
+
+/* ── Info Row ─────────────────────────────────────────── */
+.info-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 0.78rem; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.info-row:last-child { border-bottom: none; }
+.info-label { color: var(--text-muted); }
+.info-value { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+
+/* ── Wallet Modal (Embedded) ─────────────────────────── */
+.wallet-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+  z-index: 2500; display: flex; align-items: center; justify-content: center;
+  padding: 20px; animation: fadeIn 0.2s ease;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.wallet-modal {
+  background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px; padding: 30px 24px; width: 100%; max-width: 380px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  display: flex; flex-direction: column; gap: 14px;
+  animation: slideUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.wallet-modal-header { text-align: center; }
+.wallet-modal-logo {
+  font-size: 2.5rem; margin-bottom: 8px;
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, rgba(240,185,11,0.15), rgba(59,130,246,0.15));
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px; border: 1px solid rgba(240,185,11,0.2);
+}
+.wallet-modal-header h2 { margin: 0 0 6px 0; font-size: 1.2rem; }
+.wallet-modal-header p { font-size: 0.8rem; color: var(--text-muted); margin: 0; }
+.wallet-modal .game-input {
+  text-align: center; font-size: 1.5rem; letter-spacing: 12px;
+  padding: 14px; border-radius: 12px;
+}
+.wallet-modal .btn-primary {
+  padding: 14px; font-size: 1rem; border-radius: 12px;
+}
+.btn-wallet-modal-secondary {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text); padding: 12px; border-radius: 12px;
+  font-weight: 600; cursor: pointer; font-size: 0.85rem;
+  transition: all 0.2s; display: flex; align-items: center;
+  justify-content: center; gap: 8px; width: 100%;
+}
+.btn-wallet-modal-secondary:active { background: rgba(255,255,255,0.1); }
+.btn-danger-outline {
+  background: transparent; border: 1px solid var(--danger);
+  color: var(--danger); padding: 12px; border-radius: 12px;
+  font-weight: 600; cursor: pointer; font-size: 0.8rem;
+  transition: all 0.2s; width: 100%; text-align: center;
+}
+.btn-danger-outline:active { background: rgba(239,68,68,0.15); }
+.wallet-modal-divider {
+  display: flex; align-items: center; gap: 12px;
+  color: var(--text-muted); font-size: 0.7rem;
+}
+.wallet-modal-divider::before, .wallet-modal-divider::after {
+  content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.08);
+}
+.backup-warning {
+  font-size: 0.72rem; color: var(--warning);
+  text-align: center; margin: 0; padding: 8px;
+  background: rgba(245,158,11,0.08); border-radius: 8px;
+}
+.backup-key-box {
+  background: rgba(0,0,0,0.3); border: 1px solid var(--primary);
+  border-radius: 10px; padding: 14px; font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem; word-break: break-all; color: var(--primary);
+  text-align: center; line-height: 1.6; max-height: 100px; overflow-y: auto;
+}
+
+/* ── Embedded Wallet Status ───────────────────────────── */
+.btn-embedded-status {
+  display: flex; align-items: center; gap: 6px;
+  background: linear-gradient(135deg, rgba(240,185,11,0.15), rgba(59,130,246,0.1));
+  border: 1px solid rgba(240,185,11,0.25); padding: 6px 12px;
+  border-radius: 20px; font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem; cursor: pointer; transition: all 0.2s;
+  color: var(--text);
+}
+.btn-embedded-status:active { background: rgba(240,185,11,0.25); }
+.embedded-dot { width: 7px; height: 7px; background: var(--success); border-radius: 50%; box-shadow: 0 0 8px var(--success); }
 
 /* ── Utilities ────────────────────────────────────────── */
 .hidden { display: none !important; }

@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0f172a">
-<title>FITIA PRO MINER</title>
+<title>FITIA PRO MINER v3</title>
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -23,6 +27,7 @@
   <div class="brand">
     <div class="logo-icon">⚡</div>
     <div class="brand-text">FITIA <span class="pro-badge">PRO</span></div>
+    <span style="font-size:0.55rem;color:var(--text-muted);margin-left:4px;">v3</span>
   </div>
   <div id="lang-selector" class="lang-dropdown">
     <button class="lang-btn" id="lang-btn-display">🇬🇧 EN</button>
@@ -38,6 +43,11 @@
   <div id="wallet-status" class="wallet-status hidden">
     <span id="addr-display">0x...</span>
     <span class="status-dot"></span>
+  </div>
+  <div id="embedded-status" class="btn-embedded-status hidden" onclick="App.showEmbeddedMenu()">
+    <span class="embedded-dot"></span>
+    <span id="embedded-addr">0x...</span>
+    <span style="font-size:0.65rem;color:var(--text-muted);">▼</span>
   </div>
 </header>
 
@@ -95,6 +105,10 @@
       <button class="shop-tab active" onclick="App.setShopView('machines')" data-i18n="machines">Machines</button>
       <button class="shop-tab" onclick="App.setShopView('batteries')" data-i18n="batteries">Batteries</button>
     </div>
+    <div id="deposit-hint-shop" class="deposit-hint-banner hidden">
+      <span class="hint-icon">💡</span>
+      <span class="hint-text" data-i18n="depositHint">Deposit USDT first in the Wallet tab to start buying.</span>
+    </div>
     <div id="shop-list" class="grid-list"></div>
   </div>
 
@@ -102,7 +116,7 @@
   <div id="view-my-rigs" class="view">
     <h2 class="view-title" data-i18n="myAssets">⚙️ Wallet & Assets</h2>
 
-    <!-- Profile card (NEW) -->
+    <!-- Profile card -->
     <div class="card profile-card" id="profile-section">
       <div class="profile-header">
         <div class="profile-avatar" id="profile-avatar">👤</div>
@@ -119,7 +133,6 @@
         <div class="profile-stat"><span class="ps-val" id="ps-machines">0</span><span class="ps-label" data-i18n="machines">Machines</span></div>
         <div class="profile-stat"><span class="ps-val" id="ps-txs">0</span><span class="ps-label" data-i18n="txCount">Tx</span></div>
       </div>
-      <!-- Profile Edit Form (hidden by default) -->
       <div id="profile-edit-form" class="profile-edit-form hidden">
         <input type="text" id="edit-username" class="game-input" placeholder="Username" style="margin-bottom:8px;text-align:left;">
         <input type="email" id="edit-email" class="game-input" placeholder="Email (optional)" style="margin-bottom:8px;text-align:left;">
@@ -127,54 +140,117 @@
       </div>
     </div>
 
+    <!-- Deposit Hint -->
+    <div id="deposit-hint-wallet" class="deposit-hint-banner hidden">
+      <span class="hint-icon">📥</span>
+      <span class="hint-text" data-i18n="depositFirst">Deposit tokens into the protocol to start mining & swapping. Your funds stay secure in the Core contract.</span>
+    </div>
+
+    <!-- Balance Type Tabs -->
+    <div class="balance-tabs" id="balance-tabs" style="display:none;">
+      <button class="balance-tab active" onclick="App.setBalanceView('protocol')" data-i18n="protocolBal">Protocol</button>
+      <button class="balance-tab" onclick="App.setBalanceView('wallet')" data-i18n="walletBal">Wallet</button>
+    </div>
+
+    <!-- Balances Card -->
     <div class="card" style="margin-bottom: 15px;">
-      <h3 style="margin:0 0 15px 0; font-size:1rem;" data-i18n="walletBal">💰 Balances</h3>
+      <h3 style="margin:0 0 15px 0; font-size:1rem;" data-i18n="balances">💰 Balances</h3>
+
+      <!-- POL Row -->
       <div class="wallet-token-row">
         <img src="https://i.ibb.co/NdCLLsck/IMG-20260302-131520-512-x-512-pixel.webp" class="token-img-lg" alt="POL">
         <div class="token-info">
           <span class="token-name">POL <small class="token-unit-price" id="price-pol">$0.00</small></span>
-          <span class="token-bal" id="bal-pol-2">0.00</span>
-          <span class="token-bal-usd" id="bal-pol-2-usd">≈ $0.00</span>
+          <div class="token-balances">
+            <div class="token-bal-row"><span class="token-bal-label" data-i18n="protocol">Protocol</span><span class="token-bal-val token-bal-internal" id="bal-pol-core">0.0000</span></div>
+            <div class="token-bal-row"><span class="token-bal-label" data-i18n="wallet">Wallet</span><span class="token-bal-val token-bal-wallet" id="bal-pol-wallet">0.0000</span></div>
+          </div>
+          <span class="token-bal-usd" id="bal-pol-usd">≈ $0.00</span>
         </div>
         <div class="wallet-actions">
-          <button class="btn-wallet" onclick="App.openSend('POL')" data-i18n="send">Send</button>
-          <button class="btn-wallet receive-btn" onclick="App.openReceive()" data-i18n="receive">Receive</button>
+          <button class="btn-wallet btn-deposit" onclick="App.openDeposit('POL')" data-i18n="deposit">Deposit</button>
+          <button class="btn-wallet btn-withdraw" onclick="App.openWithdraw('POL')" data-i18n="withdraw">Withdraw</button>
+          <button class="btn-wallet btn-receive" onclick="App.openReceive()" data-i18n="receive">Receive</button>
         </div>
       </div>
+
+      <!-- USDT Row -->
       <div class="wallet-token-row">
         <img src="https://i.ibb.co/BRGx1GN/IMG-20260228-134642-512-x-512-pixel.webp" class="token-img-lg" alt="USDT">
         <div class="token-info">
           <span class="token-name">USDT <small class="token-unit-price" id="price-usdt">$1.00</small></span>
-          <span class="token-bal" id="bal-usdt-2">0.00</span>
-          <span class="token-bal-usd" id="bal-usdt-2-usd">≈ $0.00</span>
+          <div class="token-balances">
+            <div class="token-bal-row"><span class="token-bal-label" data-i18n="protocol">Protocol</span><span class="token-bal-val token-bal-internal" id="bal-usdt-core">0.00</span></div>
+            <div class="token-bal-row"><span class="token-bal-label" data-i18n="wallet">Wallet</span><span class="token-bal-val token-bal-wallet" id="bal-usdt-wallet">0.00</span></div>
+          </div>
+          <span class="token-bal-usd" id="bal-usdt-usd">≈ $0.00</span>
         </div>
         <div class="wallet-actions">
+          <button class="btn-wallet btn-deposit" onclick="App.openDeposit('USDT')" data-i18n="deposit">Deposit</button>
+          <button class="btn-wallet btn-withdraw" onclick="App.openWithdraw('USDT')" data-i18n="withdraw">Withdraw</button>
           <button class="btn-wallet" onclick="App.openSend('USDT')" data-i18n="send">Send</button>
-          <button class="btn-wallet receive-btn" onclick="App.openReceive()" data-i18n="receive">Receive</button>
         </div>
       </div>
+
+      <!-- FTA Row -->
       <div class="wallet-token-row">
         <img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="token-img-lg" alt="FTA">
         <div class="token-info">
           <span class="token-name">FTA <small class="token-unit-price" id="price-fta">$0.00</small></span>
-          <span class="token-bal" id="bal-fta-2">0.00</span>
-          <span class="token-bal-usd" id="bal-fta-2-usd">≈ $0.00</span>
+          <div class="token-balances">
+            <div class="token-bal-row"><span class="token-bal-label" data-i18n="protocol">Protocol</span><span class="token-bal-val token-bal-internal" id="bal-fta-core">0.0000</span></div>
+            <div class="token-bal-row"><span class="token-bal-label" data-i18n="wallet">Wallet</span><span class="token-bal-val token-bal-wallet" id="bal-fta-wallet">0.0000</span></div>
+          </div>
+          <span class="token-bal-usd" id="bal-fta-usd">≈ $0.00</span>
         </div>
         <div class="wallet-actions">
+          <button class="btn-wallet btn-deposit" onclick="App.openDeposit('FTA')" data-i18n="deposit">Deposit</button>
+          <button class="btn-wallet btn-withdraw" onclick="App.openWithdraw('FTA')" data-i18n="withdraw">Withdraw</button>
           <button class="btn-wallet" onclick="App.openSend('FTA')" data-i18n="send">Send</button>
-          <button class="btn-wallet receive-btn" onclick="App.openReceive()" data-i18n="receive">Receive</button>
         </div>
       </div>
     </div>
 
+    <!-- Deposit Panel (dynamic) -->
+    <div id="deposit-panel" class="deposit-panel">
+      <div class="deposit-panel-header">
+        <h4 id="deposit-panel-title">Deposit TOKEN</h4>
+        <button class="modal-close" style="width:24px;height:24px;font-size:0.8rem;" onclick="App.closeDeposit()">✕</button>
+      </div>
+      <input type="number" id="deposit-amount" class="game-input" placeholder="0.0" step="any" style="text-align:left;">
+      <div class="info-row"><span class="info-label" data-i18n="walletBal">Wallet Balance:</span><span class="info-value" id="deposit-wallet-bal">0</span></div>
+      <div class="info-row"><span class="info-label" data-i18n="protocolBal">Protocol Balance:</span><span class="info-value token-bal-internal" id="deposit-protocol-bal">0</span></div>
+      <div class="deposit-actions">
+        <button class="btn-approve" id="btn-deposit-approve" onclick="App.approveDeposit()" data-i18n="approve">Approve</button>
+        <button class="btn-confirm-deposit" id="btn-deposit-confirm" onclick="App.executeDeposit()" data-i18n="confirmDeposit" disabled>Deposit</button>
+      </div>
+    </div>
+
+    <!-- Withdraw Panel (dynamic) -->
+    <div id="withdraw-panel" class="withdraw-panel">
+      <div class="withdraw-panel-header">
+        <h4 id="withdraw-panel-title">Withdraw TOKEN</h4>
+        <button class="modal-close" style="width:24px;height:24px;font-size:0.8rem;" onclick="App.closeWithdraw()">✕</button>
+      </div>
+      <input type="number" id="withdraw-amount" class="game-input" placeholder="0.0" step="any" style="text-align:left;">
+      <div class="info-row"><span class="info-label" data-i18n="protocolBal">Protocol Balance:</span><span class="info-value token-bal-internal" id="withdraw-protocol-bal">0</span></div>
+      <div class="withdraw-info" data-i18n="withdrawFeeInfo">3% withdrawal fee applies</div>
+      <button class="btn-confirm-withdraw" id="btn-withdraw-confirm" onclick="App.executeWithdraw()" data-i18n="confirmWithdraw" disabled>Withdraw</button>
+    </div>
+
+    <!-- My Machines -->
     <div class="card" style="margin-bottom: 15px; border-color: rgba(16, 185, 129, 0.2);">
       <h3 class="section-title" data-i18n="myMachines">⛏️ My Machines</h3>
       <div id="my-machines-list"><p class="small-text" style="text-align:center;" data-i18n="noMachines">No machines yet</p></div>
     </div>
+
+    <!-- My Batteries -->
     <div class="card" style="margin-bottom: 15px; border-color: rgba(139, 92, 246, 0.2);">
       <h3 class="section-title" data-i18n="myBatteries">🔋 My Batteries</h3>
       <div id="my-batteries-list"><p class="small-text" style="text-align:center;" data-i18n="noBatteries">No batteries yet</p></div>
     </div>
+
+    <!-- Plug In -->
     <div class="card" style="margin-bottom: 15px; border-color: rgba(59, 130, 246, 0.3);">
       <h3 style="margin:0 0 10px 0; font-size:1rem;" data-i18n="plugMachine">🔌 Plug in a machine</h3>
       <p class="small-text" data-i18n="plugDesc">Enter your offline machine ID and choose a battery.</p>
@@ -214,7 +290,7 @@
       </div>
       <div class="liquidity-reserve-box">
         <span class="liquidity-label"><span class="lq-icon">💧</span><span data-i18n="liquidityReserve">Protocol Liquidity (FTA)</span></span>
-        <span class="liquidity-value" id="net-fta-sold-display">— FTA</span>
+        <span class="liquidity-value" id="net-fta-display">— FTA</span>
       </div>
       <div class="liquidity-info-hint" data-i18n="liquidityHint">Backed by smart contract reserves on Polygon</div>
       <div class="rate-info" id="swap-rate" data-i18n="loading">Loading...</div>
@@ -222,11 +298,10 @@
     </div>
   </div>
 
-  <!-- ═══ HISTORY (NEW) ═══ -->
+  <!-- ═══ HISTORY ═══ -->
   <div id="view-history" class="view">
     <h2 class="view-title">📋 Transaction History</h2>
 
-    <!-- Stats summary -->
     <div class="card tx-summary-card">
       <div class="tx-summary-grid">
         <div class="tx-summary-item"><span class="txs-val" id="txs-total">0</span><span class="txs-label" data-i18n="totalTx">Total</span></div>
@@ -237,7 +312,6 @@
       </div>
     </div>
 
-    <!-- Filter tabs -->
     <div class="tx-filter-tabs">
       <button class="tx-filter-tab active" onclick="App.filterHistory('all')" data-i18n="all">All</button>
       <button class="tx-filter-tab" onclick="App.filterHistory('swap')" data-i18n="swaps">Swaps</button>
@@ -246,7 +320,6 @@
       <button class="tx-filter-tab" onclick="App.filterHistory('claim')" data-i18n="claims">Claims</button>
     </div>
 
-    <!-- Transactions list -->
     <div id="history-list" class="history-list">
       <div class="history-empty">
         <span class="history-empty-icon">📭</span>
@@ -254,7 +327,6 @@
       </div>
     </div>
 
-    <!-- Activity log -->
     <div class="card" style="margin-top:15px;">
       <h3 class="section-title">📊 Recent Activity</h3>
       <div id="activity-feed" class="activity-feed">
@@ -262,7 +334,6 @@
       </div>
     </div>
 
-    <!-- Leaderboard -->
     <div class="card" style="margin-top:15px;">
       <h3 class="section-title">🏆 Leaderboard</h3>
       <div id="leaderboard-list" class="leaderboard-list">
@@ -273,7 +344,7 @@
 
 </main>
 
-<!-- BOTTOM NAV (5 items now) -->
+<!-- BOTTOM NAV -->
 <nav class="bottom-nav nav-5">
   <button class="nav-item active" onclick="App.nav('dashboard')"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span data-i18n="home">Home</span></button>
   <button class="nav-item" onclick="App.nav('shop')"><svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0 0 20 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg><span data-i18n="shop">Shop</span></button>
@@ -334,5 +405,10 @@
 </div>
 
 <script src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+</script>
 </body>
 </html>
