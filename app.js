@@ -680,10 +680,13 @@ class Application {
       this.currentRealPower = parseFloat(ethers.formatUnits(rawPower, this.ftaDecimals));
 
       // ─── Récupération du taux FTA via le Core ────────────────────
+      // La fonction rate() retourne le prix en unités USDT (6 décimales)
+      // car le contrat calcule en USDT → FTA, pas l'inverse.
       let rateRaw;
       try {
         rateRaw = await this.core.rate();
-        this.ftaPriceUsd = parseFloat(ethers.formatUnits(rateRaw, this.ftaDecimals));
+        // ⚠️ Correction : on utilise usdtDecimals (6) et non ftaDecimals (18)
+        this.ftaPriceUsd = parseFloat(ethers.formatUnits(rateRaw, this.usdtDecimals));
       } catch (e) {
         // Fallback : utilise la dernière valeur connue
       }
