@@ -43,7 +43,8 @@ const i18n = {
     exchangeRate: "Exchange Rate", priceImpact: "Price Impact",
     swapFee: "Swap Fee (4%)", minimumReceived: "Minimum Received",
     slippageTolerance: "Slippage Tolerance", networkFee: "Network Fee",
-    depositBtn: "DEPOSIT", depositing: "Depositing...", depositSuccess: "Deposit successful!",
+    depositBtn: "DEPOSIT", withdrawBtn: "WITHDRAW", depositing: "Depositing...", depositSuccess: "Deposit successful!", withdrawing: "Withdrawing...", withdrawSuccess: "Withdrawal successful!",
+    send: "Send", receive: "Receive", sending: "Sending...", sentSuccess: "Sent successfully!", addrCopied: "Address copied!", confirmSend: "CONFIRM SEND", invalidAddr: "Invalid address", recipientAddr: "Recipient address (0x...)", amount: "Amount",
     errRejected: "Transaction cancelled", errInsufficientFunds: "Insufficient balance",
     errNetwork: "Network error. Please try again.", errTimeout: "Transaction timed out.",
     errContract: "Transaction failed. Please try again.", errGeneric: "An error occurred.",
@@ -79,7 +80,8 @@ const i18n = {
     exchangeRate: "Taux de change", priceImpact: "Impact prix",
     swapFee: "Frais swap (4%)", minimumReceived: "Minimum reçu",
     slippageTolerance: "Tolérance slippage", networkFee: "Frais réseau",
-    depositBtn: "DÉPOSER", depositing: "Dépôt...", depositSuccess: "Dépôt réussi!",
+    depositBtn: "DÉPOSER", withdrawBtn: "RETIRER", depositing: "Dépôt...", depositSuccess: "Dépôt réussi!", withdrawing: "Retrait...", withdrawSuccess: "Retrait réussi!",
+    send: "Envoyer", receive: "Recevoir", sending: "Envoi...", sentSuccess: "Envoi réussi!", addrCopied: "Adresse copiée!", confirmSend: "CONFIRMER L'ENVOI", invalidAddr: "Adresse invalide", recipientAddr: "Adresse destinataire (0x...)", amount: "Montant",
     errRejected: "Transaction annulée", errInsufficientFunds: "Solde insuffisant",
     errNetwork: "Erreur réseau. Réessayez.", errTimeout: "Délai expiré.",
     errContract: "Transaction échouée. Réessayez.", errGeneric: "Une erreur est survenue.",
@@ -773,27 +775,22 @@ class Application {
     }
   }
 
-  // ─── Dépôt dans le Core V3 ───────────────────────────────────────
-  async deposit(tokenType) {
+  // ─── Dépôt dans le Core V3 (support USDT et FTA) ───────────────
+  async deposit() {
     if (!this.user) return this.connect();
-    const inputEl = document.getElementById('deposit-amount-usdt');
-    const amount = parseFloat(inputEl.value);
+    const tokenType = document.getElementById('deposit-token-select').value;
+    const amount = parseFloat(document.getElementById('deposit-amount').value);
     if (!amount || amount <= 0) return this.showToast(this.t('invalidAmount'), true);
 
     this.setLoader(true, this.t('depositing'));
     try {
       if (tokenType === 'USDT') {
-        // Le Core utilise transferFrom, il faut d'abord approuver
-        // Le wallet détient l'USDT réel, le contrat l'appelle via transferFrom
-        // Note: le Core V3 n'utilise pas l'approve standard ERC20 — il fait un call bas niveau
-        // On doit vérifier si l'USDT a déjà été approuvé pour le Core
+        // Le Core V3 utilise transferFrom — il faut d'abord approuver
         const usdtContract = new ethers.Contract(CONFIG.USDT, [
           "function approve(address,uint256) returns (bool)",
           "function allowance(address,address) view returns (uint256)"
         ], this.signer);
-
-        const decimals = this.usdtDecimals;
-        const amountBN = ethers.parseUnits(amount.toString(), decimals);
+        const amountBN = ethers.parseUnits(amount.toString(), this.usdtDecimals);
         const allowance = await usdtContract.allowance(this.user, CONFIG.CORE);
         if (allowance < amountBN) {
           this.setLoader(true, "Approbation USDT...");
@@ -801,9 +798,104 @@ class Application {
         }
         this.setLoader(true, this.t('confirming'));
         await (await this.core.depositUsdt(amountBN)).wait();
+      } else {
+        // Dépôt FTA — même logique avec approve
+        const ftaContract = new ethers.Contract(CONFIG.FTA, [
+          "function approve(address,uint256) returns (bool)",
+          "function allowance(address,address) view returns (uint256)"
+        ], this.signer);
+        const amountBN = ethers.parseUnits(amount.toString(), this.ftaDecimals);
+        const allowance = await ftaContract.allowance(this.user, CONFIG.CORE);
+        if (allowance < amountBN) {
+          this.setLoader(true, "Approbation FTA...");
+          await (await ftaContract.approve(CONFIG.CORE, amountBN)).wait();
+        }
+        this.setLoader(true, this.t('confirming'));
+        await (await this.core.depositFta(amountBN)).wait();
       }
       this.showToast(this.t('depositSuccess'));
-      document.getElementById('deposit-amount-usdt').value = '';
+      document.getElementById('deposit-amount').value = '';
+      this.updateData();
+    } catch (e) { this.showError(e); }
+    this.setLoader(false);
+  }
+
+  // ─── Retrait depuis le Core V3 ────────────────────────────────
+  async withdraw() {
+    if (!this.user) return this.connect();
+    const tokenType = document.getElementById('deposit-token-select').value;
+    const amount = parseFloat(document.getElementById('deposit-amount').value);
+    if (!amount || amount <= 0) return this.showToast(this.t('invalidAmount'), true);
+
+    this.setLoader(true, this.t('withdrawing'));
+    try {
+      if (tokenType === 'USDT') {
+        const amountBN = ethers.parseUnits(amount.toString(), this.usdtDecimals);
+        await (await this.core.withdrawUsdt(amountBN)).wait();
+      } else {
+        const amountBN = ethers.parseUnits(amount.toString(), this.ftaDecimals);
+        await (await this.core.withdrawFta(amountBN)).wait();
+      }
+      this.showToast(this.t('withdrawSuccess'));
+      document.getElementById('deposit-amount').value = '';
+      this.updateData();
+    } catch (e) { this.showError(e); }
+    this.setLoader(false);
+  }
+
+  // ─── Ouvrir la modale d'envoi ────────────────────────────────────
+  openSend(tokenSymbol) {
+    this.sendTokenSymbol = tokenSymbol;
+    document.getElementById('send-token-name').innerText = tokenSymbol;
+    document.getElementById('send-to-address').value = '';
+    document.getElementById('send-amount').value = '';
+    let balId = 'bal-pol';
+    if (tokenSymbol === 'USDT') balId = 'bal-usdt';
+    if (tokenSymbol === 'FTA') balId = 'bal-fta';
+    document.getElementById('send-bal').innerText = document.getElementById(balId).innerText;
+    document.getElementById('modal-send').classList.add('active');
+  }
+
+  // ─── Ouvrir la modale de réception ───────────────────────────────
+  openReceive() {
+    if (!this.user) return this.showToast(this.t('connFirst'), true);
+    document.getElementById('receive-addr-display').innerText = this.user;
+    document.getElementById('modal-receive').classList.add('active');
+  }
+
+  // ─── Fermer les modales ────────────────────────────────────────
+  closeModals() {
+    document.getElementById('modal-send').classList.remove('active');
+    document.getElementById('modal-receive').classList.remove('active');
+  }
+
+  // ─── Copier l'adresse ─────────────────────────────────────────
+  copyReceiveAddress() {
+    navigator.clipboard.writeText(this.user);
+    this.showToast(this.t('addrCopied'));
+  }
+
+  // ─── Exécuter l'envoi ─────────────────────────────────────────
+  async executeSend() {
+    const to = document.getElementById('send-to-address').value;
+    const amt = document.getElementById('send-amount').value;
+    if (!ethers.isAddress(to)) return this.showToast(this.t('invalidAddr'), true);
+    if (!amt || Number(amt) <= 0) return this.showToast(this.t('invalidAmount'), true);
+    this.setLoader(true, this.t('sending'));
+    try {
+      let tx;
+      if (this.sendTokenSymbol === 'POL') {
+        tx = await this.signer.sendTransaction({ to, value: ethers.parseEther(amt) });
+      } else {
+        // Envoi via le contrat de token (pas le Core — c'est un transfer standard)
+        const tokenAddr = this.sendTokenSymbol === 'USDT' ? CONFIG.USDT : CONFIG.FTA;
+        const dec = this.sendTokenSymbol === 'USDT' ? this.usdtDecimals : this.ftaDecimals;
+        const tokenContract = new ethers.Contract(tokenAddr, ["function transfer(address,uint256) returns (bool)"], this.signer);
+        tx = await tokenContract.transfer(to, ethers.parseUnits(amt, dec));
+      }
+      await tx.wait();
+      this.showToast(this.t('sentSuccess'));
+      this.closeModals();
       this.updateData();
     } catch (e) { this.showError(e); }
     this.setLoader(false);
@@ -1185,6 +1277,111 @@ class Application {
     const container = document.getElementById('toast-container');
     container.appendChild(div);
     setTimeout(() => div.remove(), 4000);
+  }
+
+  // ═══ CHAT ASSISTANT ══════════════════════════════════════════════
+  toggleChat() {
+    const panel = document.getElementById('chat-panel');
+    const isActive = panel.classList.toggle('active');
+    if (isActive && !this.chatInitialized) {
+      this.chatInitialized = true;
+      setTimeout(() => this.addChatBubble('assistant', this.getWelcomeMessage()), 400);
+    }
+    if (isActive) setTimeout(() => document.getElementById('chat-input').focus(), 350);
+  }
+
+  sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+    this.addChatBubble('user', msg);
+    this.chatHistory.push({ role: 'user', text: msg });
+    const typingId = this.showTyping();
+    const delay = 400 + Math.min(msg.length * 25, 1200) + Math.random() * 400;
+    setTimeout(() => {
+      this.removeTyping(typingId);
+      const response = this.generateLocalResponse(msg);
+      this.addChatBubble('assistant', response);
+      this.chatHistory.push({ role: 'assistant', text: response });
+    }, delay);
+  }
+
+  addChatBubble(role, text) {
+    const container = document.getElementById('chat-messages');
+    const bubble = document.createElement('div');
+    bubble.className = `chat-bubble ${role}`;
+    bubble.textContent = text;
+    container.appendChild(bubble);
+    requestAnimationFrame(() => container.scrollTop = container.scrollHeight);
+  }
+
+  showTyping() {
+    const container = document.getElementById('chat-messages');
+    const typing = document.createElement('div');
+    const id = 'typing-' + Date.now();
+    typing.id = id;
+    typing.className = 'chat-bubble assistant';
+    typing.innerHTML = '<span style="letter-spacing:3px;animation:loaderTextPulse 1s infinite">● ● ●</span>';
+    container.appendChild(typing);
+    container.scrollTop = container.scrollHeight;
+    return id;
+  }
+
+  removeTyping(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  }
+
+  getWelcomeMessage() {
+    const m = {
+      en: "👋 Welcome to FITIA PRO! I'm your crypto assistant.\nAsk me about: Mining, Swap, Wallet, Security, Community!",
+      fr: "👋 Bienvenue sur FITIA PRO ! Je suis votre assistant crypto.\nDemandez-moi : Minage, Échange, Wallet, Sécurité, Communauté !",
+      de: "👋 Willkommen bei FITIA PRO! Dein Krypto-Assistent.\nFrag mich zu: Mining, Tausch, Wallet, Sicherheit!",
+      zh: "👋 欢迎使用 FITIA PRO！你的加密助手。\n问我：挖矿、兑换、钱包、安全！",
+      sg: "👋 Welcome to FITIA PRO! Your crypto assistant.\nAsk about: Mining, Swap, Wallet, Security!"
+    };
+    return m[this.currentLang] || m.en;
+  }
+
+  generateLocalResponse(msg) {
+    const m = msg.toLowerCase().replace(/[?!.,;:'"]/g, '').trim();
+    const conn = !!this.user;
+    const power = this.currentRealPower || 0;
+    const pending = this.pendingBalance || 0;
+    const ftaP = this.ftaPriceUsd || 0;
+
+    // Détection des intentions simplifiée
+    if (m.includes('salut') || m.includes('bonjour') || m.includes('hello') || m.includes('hi') || m.includes('你好')) {
+      return conn
+        ? `👋 Salut ! Puissance actuelle : ${this.formatHashrate(power)}. ${this.userMachines.filter(m => m.exp > Math.floor(Date.now()/1000)).length} machine(s) active(s). Comment puis-je vous aider ?`
+        : "👋 Bienvenue ! Connectez votre wallet pour commencer. Besoin d'aide ?";
+    }
+    if (m.includes('merci') || m.includes('thanks') || m.includes('谢谢')) return "De rien ! 😊 Besoin d'autre chose ?";
+    if (m.includes('aide') || m.includes('help') || m.includes('帮助')) return "🛠️ Je peux vous aider avec :\n⛏️ Minage — Acheter machine, batterie, brancher\n💱 Échange — USDT ↔ FTA\n💰 Wallet — Dépôt, retrait, solde\n👥 Parrainage — Gagner avec les références\n🛡️ Sécurité — Conseils\n📱 Communauté — WhatsApp";
+    if (m.includes('minage') || m.includes('mine') || m.includes('miner') || m.includes('挖矿')) {
+      return conn
+        ? `⛏️ Minage FITIA :\n1️⃣ Achetez une machine (Boutique)\n2️⃣ Achetez une batterie\n3️⃣ Branchez la machine (Wallet)\n4️⃣ Gagnez du FTA automatiquement !\n5️⃣ Réclamez vos gains\nPuissance : ${this.formatHashrate(power)}\nEn attente : ${pending.toFixed(5)} FTA`
+        : "⛏️ Connectez votre wallet pour commencer le minage !";
+    }
+    if (m.includes('swap') || m.includes('échange') || m.includes('echange') || m.includes('兑换')) {
+      return `💱 Échange USDT ↔ FTA :\nAllez dans l'onglet Swap, choisissez la direction, entrez le montant et cliquez ÉCHANGER.\nTaux actuel : 1 FTA = ${ftaP > 0 ? ftaP.toFixed(6) : '...'} USDT\nFrais : 4%`;
+    }
+    if (m.includes('wallet') || m.includes('solde') || m.includes('dépôt') || m.includes('depot') || m.includes('余额')) {
+      return "💰 Wallet :\n• Déposez USDT ou FTA pour les utiliser dans la dApp\n• Retirez à tout moment\n• Envoyez/recevez des tokens\n• Tout se passe sur Polygon (frais très bas)";
+    }
+    if (m.includes('sécurité') || m.includes('securite') || m.includes('security') || m.includes('安全')) {
+      return "🛡️ Sécurité :\n✅ Ne partagez JAMAIS votre phrase de récupération\n✅ Personne de FITIA ne vous la demandera\n✅ Vérifiez les adresses avant d'envoyer\n✅ Utilisez uniquement les liens officiels";
+    }
+    if (m.includes('communauté') || m.includes('whatsapp') || m.includes('groupe') || m.includes('社群')) {
+      return `📱 Communautés officielles :\n👥 Groupe WhatsApp : ${CONFIG.WHATSAPP_GROUP}\n📢 Chaîne WhatsApp : ${CONFIG.WHATSAPP_CHANNEL}`;
+    }
+    if (m.includes('parrain') || m.includes('parrainage') || m.includes('référence') || m.includes('推荐')) {
+      return conn
+        ? `👥 Parrainage : Votre adresse est votre code de parrainage : ${this.user.slice(0, 6)}...${this.user.slice(-4)}\nPartagez-la pour gagner des bonus !`
+        : "👥 Connectez votre wallet pour voir votre code de parrainage !";
+    }
+    return "Je ne suis pas sûr de comprendre. Essayez : 'minage', 'swap', 'wallet', 'sécurité', 'communauté', ou 'parrainage'. Je suis là pour vous aider !";
   }
 }
 

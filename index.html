@@ -41,7 +41,7 @@
 </header>
 
 <main id="main-view">
-<!-- DASHBOARD -->
+<!-- ═══ DASHBOARD ═══ -->
 <div id="view-dashboard" class="view active">
 <div class="card total-balance-card">
 <small data-i18n="totalBal">Solde Total</small>
@@ -83,7 +83,7 @@
 </div>
 </div>
 
-<!-- SHOP -->
+<!-- ═══ SHOP ═══ -->
 <div id="view-shop" class="view">
 <div class="shop-header">
 <h2 class="view-title" data-i18n="shopTitle">⛏️ Boutique</h2>
@@ -99,11 +99,15 @@
 <div id="shop-list" class="grid-list"></div>
 </div>
 
-<!-- WALLET & ASSETS -->
+<!-- ═══ WALLET & ASSETS ═══ -->
 <div id="view-my-rigs" class="view">
 <h2 class="view-title" data-i18n="myAssets">⚙️ Wallet & Actifs</h2>
+
+<!-- Soldes -->
 <div class="card" style="margin-bottom: 15px;">
-<h3 style="margin:0 0 15px 0; font-size:1rem;" data-i18n="walletBal">💰 Soldes</h3>
+<h3 style="margin:0 0 12px 0; font-size:1rem;" data-i18n="walletBal">💰 Soldes</h3>
+
+<!-- POL -->
 <div class="wallet-token-row">
 <img src="https://i.ibb.co/NdCLLsck/IMG-20260302-131520-512-x-512-pixel.webp" class="token-img-lg">
 <div class="token-info">
@@ -111,7 +115,13 @@
 <span class="token-bal" id="bal-pol">0.00</span>
 <span class="token-bal-usd" id="bal-pol-usd">≈ $0.00</span>
 </div>
+<div class="wallet-actions">
+<button class="btn-wallet" onclick="App.openSend('POL')" data-i18n="send">Envoyer</button>
+<button class="btn-wallet receive-btn" onclick="App.openReceive()" data-i18n="receive">Recevoir</button>
 </div>
+</div>
+
+<!-- USDT -->
 <div class="wallet-token-row">
 <img src="https://i.ibb.co/BRGx1GN/IMG-20260228-134642-512-x-512-pixel.webp" class="token-img-lg">
 <div class="token-info">
@@ -119,7 +129,13 @@
 <span class="token-bal" id="bal-usdt">0.00</span>
 <span class="token-bal-usd" id="bal-usdt-usd">≈ $0.00</span>
 </div>
+<div class="wallet-actions">
+<button class="btn-wallet" onclick="App.openSend('USDT')" data-i18n="send">Envoyer</button>
+<button class="btn-wallet receive-btn" onclick="App.openReceive()" data-i18n="receive">Recevoir</button>
 </div>
+</div>
+
+<!-- FTA -->
 <div class="wallet-token-row">
 <img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="token-img-lg">
 <div class="token-info">
@@ -127,27 +143,42 @@
 <span class="token-bal" id="bal-fta">0.00</span>
 <span class="token-bal-usd" id="bal-fta-usd">≈ $0.00</span>
 </div>
-</div>
-<!-- Dépôt interne V3 -->
-<div style="display:flex;gap:8px;margin-top:10px;">
-<input type="number" id="deposit-amount-usdt" class="game-input" placeholder="Montant USDT" step="any" style="flex:1;margin-bottom:0;">
-<button class="btn-primary" style="flex:0 0 auto;padding:10px 14px;" onclick="App.deposit('USDT')" data-i18n="depositBtn">DÉPOSER</button>
+<div class="wallet-actions">
+<button class="btn-wallet" onclick="App.openSend('FTA')" data-i18n="send">Envoyer</button>
+<button class="btn-wallet receive-btn" onclick="App.openReceive()" data-i18n="receive">Recevoir</button>
 </div>
 </div>
 
+<!-- Dépôt / Retrait -->
+<div style="display:flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+<select id="deposit-token-select" class="game-input" style="flex: 1 1 70px; min-width: 70px; margin-bottom: 0; padding: 10px; font-size: 14px;">
+<option value="USDT">USDT</option>
+<option value="FTA">FTA</option>
+</select>
+<input type="number" id="deposit-amount" class="game-input" placeholder="Montant" step="any" style="flex: 2 1 100px; min-width: 80px; margin-bottom: 0;">
+<button class="btn-wallet-action btn-wallet-deposit" onclick="App.deposit()" data-i18n="depositBtn">DÉPOSER</button>
+<button class="btn-wallet-action btn-wallet-withdraw" onclick="App.withdraw()" data-i18n="withdrawBtn">RETIRER</button>
+</div>
+</div>
+
+<!-- Mes Machines -->
 <div class="card" style="margin-bottom: 15px; border-color: rgba(16, 185, 129, 0.2);">
 <h3 class="section-title" data-i18n="myMachines">⛏️ Mes Machines</h3>
 <div id="my-machines-list"><p class="small-text" style="text-align:center;" data-i18n="noMachines">Aucune machine</p></div>
 </div>
+
+<!-- Mes Batteries -->
 <div class="card" style="margin-bottom: 15px; border-color: rgba(139, 92, 246, 0.2);">
 <h3 class="section-title" data-i18n="myBatteries">🔋 Mes Batteries</h3>
 <div id="my-batteries-list"><p class="small-text" style="text-align:center;" data-i18n="noBatteries">Aucune batterie</p></div>
 </div>
+
+<!-- Brancher une machine -->
 <div class="card" style="margin-bottom: 15px; border-color: rgba(59, 130, 246, 0.3);">
 <h3 style="margin:0 0 10px 0; font-size:1rem;" data-i18n="plugMachine">🔌 Brancher une machine</h3>
 <p class="small-text" data-i18n="plugDesc">Choisissez l'index d'une machine et le type de batterie.</p>
 <div class="plug-grid">
-<input type="number" id="plug-machine-id" class="game-input" placeholder="Index Machine (0, 1...)" min="0" data-i18n-placeholder="machineId">
+<input type="number" id="plug-machine-id" class="game-input" placeholder="Index (0, 1...)" min="0" data-i18n-placeholder="machineId">
 <select id="plug-battery-type" class="game-input" style="padding: 10px;">
 <option value="0">3 Jours</option><option value="1">7 Jours</option><option value="2">15 Jours</option><option value="3">30 Jours</option>
 <option value="4">90 Jours</option><option value="5">180 Jours</option><option value="6">270 Jours</option><option value="7">365 Jours</option>
@@ -157,7 +188,7 @@
 </div>
 </div>
 
-<!-- SWAP -->
+<!-- ═══ SWAP ═══ -->
 <div id="view-swap" class="view">
 <h2 class="view-title" data-i18n="swapTitle">💱 Échange</h2>
 <div class="card swap-interface">
@@ -185,6 +216,7 @@
 </div>
 </main>
 
+<!-- ═══ NAVIGATION BASSE ═══ -->
 <nav class="bottom-nav">
 <button class="nav-item active" onclick="App.nav('dashboard')"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span data-i18n="home">Accueil</span></button>
 <button class="nav-item" onclick="App.nav('shop')"><svg viewBox="0 0 24 24"><path d="M12 2l-5.5 9h11z"/></svg><span data-i18n="shop">Boutique</span></button>
@@ -193,7 +225,49 @@
 </nav>
 </div>
 
-<!-- FTA LOADER -->
+<!-- ═══ MODALES ═══ -->
+
+<!-- Envoyer -->
+<div id="modal-send" class="modal">
+<div class="modal-content">
+<div class="modal-header"><h3>Envoyer <span id="send-token-name">TOKEN</span></h3><button class="modal-close" onclick="App.closeModals()">✕</button></div>
+<p class="small-text"><span data-i18n="balance">Solde:</span> <span id="send-bal">0</span></p>
+<input type="text" id="send-to-address" class="game-input" placeholder="Adresse destinataire (0x...)" data-i18n-placeholder="recipientAddr">
+<input type="number" id="send-amount" class="game-input" placeholder="Montant" step="any" data-i18n-placeholder="amount">
+<button class="btn-primary" style="margin-top:10px;" onclick="App.executeSend()" data-i18n="confirmSend">CONFIRMER L'ENVOI</button>
+</div>
+</div>
+
+<!-- Recevoir -->
+<div id="modal-receive" class="modal">
+<div class="modal-content" style="text-align: center;">
+<div class="modal-header"><h3>Recevoir</h3><button class="modal-close" onclick="App.closeModals()">✕</button></div>
+<p class="small-text" style="margin-bottom: 15px;">Envoyez uniquement POL, USDT ou FTA à cette adresse sur Polygon.</p>
+<div class="receive-addr-box" onclick="App.copyReceiveAddress()"><span id="receive-addr-display">0x...</span><span class="copy-icon">📋</span></div>
+<p class="small-text" style="margin-top: 10px; color: var(--primary);">Appuyez pour copier</p>
+</div>
+</div>
+
+<!-- ═══ CHAT ASSISTANT ═══ -->
+<button class="chat-fab" onclick="App.toggleChat()">
+<img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="chat-fab-logo" alt="FTA">
+</button>
+<div id="chat-panel" class="chat-panel">
+<div class="chat-header">
+<div class="chat-header-brand">
+<img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="chat-header-logo" alt="FTA">
+<span>Fitia Assistant</span>
+</div>
+<button class="chat-close" onclick="App.toggleChat()">✕</button>
+</div>
+<div id="chat-messages" class="chat-messages"></div>
+<div class="chat-input-area">
+<input type="text" id="chat-input" class="chat-input" placeholder="Posez votre question..." onkeydown="if(event.key==='Enter')App.sendChatMessage()">
+<button class="chat-send-btn" onclick="App.sendChatMessage()">➤</button>
+</div>
+</div>
+
+<!-- ═══ LOADER ═══ -->
 <div id="loader" class="loader hidden">
 <div class="fta-loader-wrap">
 <div class="fta-loader-ring"></div>
