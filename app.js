@@ -318,6 +318,10 @@ class Application {
     // ─── Chat assistant ───
     this.chatInitialized = false;
     this.chatHistory = [];
+
+    // ─── Historique des prix pour calculer l'évolution ───
+    // Stocke les prix précédents : { pol: number, fta: number, usdt: number }
+    this.previousPrices = {};
   }
 
   // ─── Traduction ──────────────────────────────────────────────────
@@ -713,6 +717,11 @@ class Application {
       document.getElementById('price-pol').innerText = this.formatUsd(this.polPriceUsd);
       document.getElementById('price-usdt').innerText = this.formatUsd(1);
       document.getElementById('price-fta').innerText = this.formatUsd(this.ftaPriceUsd);
+
+      // ─── Indicateurs de variation en pourcentage ────────────────
+      this.updatePriceChange('pol', this.polPriceUsd);
+      this.updatePriceChange('usdt', 1); // USDT est stable, mais on garde le mécanisme
+      this.updatePriceChange('fta', this.ftaPriceUsd);
 
       document.getElementById('bal-pol-usd').innerText = '≈ ' + this.formatUsd((pB + nB) * this.polPriceUsd);
       document.getElementById('bal-usdt-usd').innerText = '≈ ' + this.formatUsd(uB);
@@ -1286,6 +1295,38 @@ class Application {
     const container = document.getElementById('toast-container');
     container.appendChild(div);
     setTimeout(() => div.remove(), 4000);
+  }
+
+  // ─── Mise à jour de l'indicateur de pourcentage d'évolution ─────
+  updatePriceChange(token, newPrice) {
+    const el = document.getElementById('change-' + token);
+    if (!el) return;
+    const prev = this.previousPrices[token];
+    if (prev === undefined || prev === null || prev === 0) {
+      // Première lecture : on stocke le prix sans afficher de variation
+      this.previousPrices[token] = newPrice;
+      el.textContent = '0.00%';
+      el.className = 'token-change flat';
+      return;
+    }
+    // Calcul de l'évolution en pourcentage
+    const change = ((newPrice - prev) / prev) * 100;
+    const absChange = Math.abs(change);
+    let sign, cssClass;
+    if (absChange < 0.01) {
+      sign = '';
+      cssClass = 'flat';
+    } else if (change > 0) {
+      sign = '+';
+      cssClass = 'up';
+    } else {
+      sign = '';
+      cssClass = 'down';
+    }
+    el.textContent = sign + change.toFixed(2) + '%';
+    el.className = 'token-change ' + cssClass;
+    // Met à jour le prix précédent seulement si ça a vraiment bougé
+    this.previousPrices[token] = newPrice;
   }
 
   // ═══ CHAT ASSISTANT ══════════════════════════════════════════════
