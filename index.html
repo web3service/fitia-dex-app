@@ -104,58 +104,62 @@
 <h2 class="view-title" data-i18n="myAssets">⚙️ Wallet & Actifs</h2>
 
 <!-- Soldes -->
-<div class="card" style="margin-bottom: 15px;">
-<h3 style="margin:0 0 12px 0; font-size:1rem;" data-i18n="walletBal">💰 Soldes</h3>
+<div class="card wallet-main-card">
+<div class="wallet-card-header">
+<h3 data-i18n="walletBal">💰 Soldes</h3>
+<!-- Boutons Envoyer / Recevoir -->
+<div class="wallet-main-actions">
+<button class="btn-wallet-main btn-wallet-send" onclick="App.openSend()" data-i18n="send"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Envoyer</button>
+<button class="btn-wallet-main btn-wallet-recv" onclick="App.openReceive()" data-i18n="receive"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z" transform="rotate(180 12 12)"/></svg> Recevoir</button>
+</div>
+</div>
 
 <!-- POL -->
 <div class="wallet-token-row">
-<img src="https://i.ibb.co/NdCLLsck/IMG-20260302-131520-512-x-512-pixel.webp" class="token-img-lg">
+<img src="https://i.ibb.co/NdCLLsck/IMG-20260302-131520-512-x-512-pixel.webp" class="token-img-lg" alt="POL">
 <div class="token-info">
-<span class="token-name">POL <small class="token-unit-price" id="price-pol">$0.00</small></span>
+<span class="token-name">POL</span>
 <span class="token-bal" id="bal-pol">0.00</span>
 <span class="token-bal-usd" id="bal-pol-usd">≈ $0.00</span>
 </div>
-<div class="wallet-actions">
-<button class="btn-wallet" onclick="App.openSend('POL')" data-i18n="send">Envoyer</button>
-<button class="btn-wallet receive-btn" onclick="App.openReceive()" data-i18n="receive">Recevoir</button>
+<div class="token-price-mini">
+<span class="token-unit-price" id="price-pol">$0.00</span>
 </div>
 </div>
 
 <!-- USDT -->
 <div class="wallet-token-row">
-<img src="https://i.ibb.co/BRGx1GN/IMG-20260228-134642-512-x-512-pixel.webp" class="token-img-lg">
+<img src="https://i.ibb.co/BRGx1GN/IMG-20260228-134642-512-x-512-pixel.webp" class="token-img-lg" alt="USDT">
 <div class="token-info">
-<span class="token-name">USDT <small class="token-unit-price" id="price-usdt">$1.00</small></span>
+<span class="token-name">USDT</span>
 <span class="token-bal" id="bal-usdt">0.00</span>
 <span class="token-bal-usd" id="bal-usdt-usd">≈ $0.00</span>
 </div>
-<div class="wallet-actions">
-<button class="btn-wallet" onclick="App.openSend('USDT')" data-i18n="send">Envoyer</button>
-<button class="btn-wallet receive-btn" onclick="App.openReceive()" data-i18n="receive">Recevoir</button>
+<div class="token-price-mini">
+<span class="token-unit-price" id="price-usdt">$1.00</span>
 </div>
 </div>
 
 <!-- FTA -->
 <div class="wallet-token-row">
-<img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="token-img-lg">
+<img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="token-img-lg" alt="FTA">
 <div class="token-info">
-<span class="token-name">FTA <small class="token-unit-price" id="price-fta">$0.00</small></span>
+<span class="token-name">FTA</span>
 <span class="token-bal" id="bal-fta">0.00</span>
 <span class="token-bal-usd" id="bal-fta-usd">≈ $0.00</span>
 </div>
-<div class="wallet-actions">
-<button class="btn-wallet" onclick="App.openSend('FTA')" data-i18n="send">Envoyer</button>
-<button class="btn-wallet receive-btn" onclick="App.openReceive()" data-i18n="receive">Recevoir</button>
+<div class="token-price-mini">
+<span class="token-unit-price" id="price-fta">$0.00</span>
 </div>
 </div>
 
 <!-- Dépôt / Retrait -->
-<div style="display:flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
-<select id="deposit-token-select" class="game-input" style="flex: 1 1 70px; min-width: 70px; margin-bottom: 0; padding: 10px; font-size: 14px;">
+<div class="wallet-action-bar">
+<select id="deposit-token-select" class="game-input wallet-token-select">
 <option value="USDT">USDT</option>
 <option value="FTA">FTA</option>
 </select>
-<input type="number" id="deposit-amount" class="game-input" placeholder="Montant" step="any" style="flex: 2 1 100px; min-width: 80px; margin-bottom: 0;">
+<input type="number" id="deposit-amount" class="game-input wallet-amount-input" placeholder="Montant" step="any">
 <button class="btn-wallet-action btn-wallet-deposit" onclick="App.deposit()" data-i18n="depositBtn">DÉPOSER</button>
 <button class="btn-wallet-action btn-wallet-withdraw" onclick="App.withdraw()" data-i18n="withdrawBtn">RETIRER</button>
 </div>
@@ -230,7 +234,12 @@
 <!-- Envoyer -->
 <div id="modal-send" class="modal">
 <div class="modal-content">
-<div class="modal-header"><h3>Envoyer <span id="send-token-name">TOKEN</span></h3><button class="modal-close" onclick="App.closeModals()">✕</button></div>
+<div class="modal-header"><h3 data-i18n="send">Envoyer</h3><button class="modal-close" onclick="App.closeModals()">✕</button></div>
+<select id="send-token-select" class="game-input" style="margin-bottom: 12px;" onchange="App.updateSendBalance()">
+<option value="POL">POL</option>
+<option value="USDT">USDT</option>
+<option value="FTA">FTA</option>
+</select>
 <p class="small-text"><span data-i18n="balance">Solde:</span> <span id="send-bal">0</span></p>
 <input type="text" id="send-to-address" class="game-input" placeholder="Adresse destinataire (0x...)" data-i18n-placeholder="recipientAddr">
 <input type="number" id="send-amount" class="game-input" placeholder="Montant" step="any" data-i18n-placeholder="amount">

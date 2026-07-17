@@ -227,12 +227,74 @@ main::-webkit-scrollbar { display: none; }
 .btn-wallet-withdraw { background: rgba(239, 68, 68, 0.12); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
 .btn-wallet-withdraw:active { background: rgba(239, 68, 68, 0.25); transform: scale(0.97); }
 
+/* ─── Wallet — carte professionnelle ─── */
+.wallet-main-card { padding: 16px; }
+.wallet-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.wallet-card-header h3 { margin: 0; font-size: 1rem; flex-shrink: 0; }
+.wallet-main-actions { display: flex; gap: 8px; }
+.btn-wallet-main {
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.btn-wallet-send { background: var(--primary); color: #000; }
+.btn-wallet-send:active { background: var(--primary-hover); transform: scale(0.97); }
+.btn-wallet-recv { background: var(--accent); color: #fff; }
+.btn-wallet-recv:active { background: #2563eb; transform: scale(0.97); }
+
+/* ─── Lignes token simplifiées ─── */
+.token-price-mini {
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.04);
+  padding: 4px 10px;
+  border-radius: 8px;
+  min-width: 55px;
+  text-align: center;
+}
+.wallet-token-row { align-items: center; padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.wallet-token-row:last-of-type { border-bottom: none; padding-bottom: 8px; }
+
+/* ─── Barre dépôt/retrait ─── */
+.wallet-action-bar {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  flex-wrap: wrap;
+}
+.wallet-token-select { flex: 0 0 72px; min-width: 68px; margin-bottom: 0; padding: 10px 8px; font-size: 14px; }
+.wallet-amount-input { flex: 2 1 90px; min-width: 70px; margin-bottom: 0; }
+
 /* ─── Améliorations mobiles ─── */
 @media screen and (max-width: 380px) {
   .wallet-token-row { flex-wrap: wrap; gap: 6px; }
   .wallet-actions { flex-direction: row; gap: 4px; }
   .btn-wallet { padding: 5px 8px; font-size: 0.68rem; }
   .btn-wallet-action { padding: 8px 4px; font-size: 0.68rem; min-width: 48px; }
+  .btn-wallet-main { padding: 6px 10px; font-size: 0.7rem; }
+  .wallet-card-header { gap: 8px; }
+  .wallet-token-select { flex: 0 0 60px; min-width: 58px; padding: 8px 6px; }
+  .wallet-amount-input { min-width: 60px; }
+  .token-price-mini { font-size: 0.65rem; padding: 3px 8px; min-width: 48px; }
   .plug-grid { grid-template-columns: 1fr; }
   .game-input { font-size: 14px; padding: 10px; }
   header { padding: 10px 8px; }

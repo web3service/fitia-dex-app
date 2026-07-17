@@ -846,17 +846,22 @@ class Application {
     this.setLoader(false);
   }
 
-  // ─── Ouvrir la modale d'envoi ────────────────────────────────────
-  openSend(tokenSymbol) {
-    this.sendTokenSymbol = tokenSymbol;
-    document.getElementById('send-token-name').innerText = tokenSymbol;
+  // ─── Ouvrir la modale d'envoi (avec sélecteur de token) ─────────
+  openSend() {
     document.getElementById('send-to-address').value = '';
     document.getElementById('send-amount').value = '';
-    let balId = 'bal-pol';
-    if (tokenSymbol === 'USDT') balId = 'bal-usdt';
-    if (tokenSymbol === 'FTA') balId = 'bal-fta';
-    document.getElementById('send-bal').innerText = document.getElementById(balId).innerText;
     document.getElementById('modal-send').classList.add('active');
+    this.updateSendBalance();
+  }
+
+  // ─── Met à jour le solde affiché dans la modale d'envoi ────────
+  updateSendBalance() {
+    const token = document.getElementById('send-token-select').value;
+    this.sendTokenSymbol = token;
+    let balId = 'bal-pol';
+    if (token === 'USDT') balId = 'bal-usdt';
+    if (token === 'FTA') balId = 'bal-fta';
+    document.getElementById('send-bal').innerText = document.getElementById(balId)?.innerText || '0';
   }
 
   // ─── Ouvrir la modale de réception ───────────────────────────────
@@ -886,13 +891,14 @@ class Application {
     if (!amt || Number(amt) <= 0) return this.showToast(this.t('invalidAmount'), true);
     this.setLoader(true, this.t('sending'));
     try {
+      const token = document.getElementById('send-token-select').value;
       let tx;
-      if (this.sendTokenSymbol === 'POL') {
+      if (token === 'POL') {
         tx = await this.signer.sendTransaction({ to, value: ethers.parseEther(amt) });
       } else {
-        // Envoi via le contrat de token (pas le Core — c'est un transfer standard)
-        const tokenAddr = this.sendTokenSymbol === 'USDT' ? CONFIG.USDT : CONFIG.FTA;
-        const dec = this.sendTokenSymbol === 'USDT' ? this.usdtDecimals : this.ftaDecimals;
+        // Envoi via le contrat de token
+        const tokenAddr = token === 'USDT' ? CONFIG.USDT : CONFIG.FTA;
+        const dec = token === 'USDT' ? this.usdtDecimals : this.ftaDecimals;
         const tokenContract = new ethers.Contract(tokenAddr, ["function transfer(address,uint256) returns (bool)"], this.signer);
         tx = await tokenContract.transfer(to, ethers.parseUnits(amt, dec));
       }
