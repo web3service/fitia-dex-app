@@ -1,3 +1,6 @@
+//  📱 Compatible export APK via Capacitor (voir MOBILE_BUILD.md).
+//
+//  Toutes les fonctions sont commentées en français.
 // ═══════════════════════════════════════════════════════════════════
 
 // ─── Configuration ─────────────────────────────────────────────────
@@ -7,11 +10,27 @@ const CONFIG = {
   MINE: "0x9eEaBEf8369812932B5f846949861fEBcFC37E73",  // FitiaMiningV3_Mine
   USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // USDT Polygon (officiel)
   FTA:  "0x5c418b12c7e9c2A8e9A71A68c6d9b319E7B1d1fd",  // Token FTA
+
   CHAIN_ID: 137,              // Polygon Mainnet
+  POLYGON_RPC: "https://polygon-rpc.com", // RPC public Polygon (read fallback / Capacitor)
+
+  // ─── Web3Auth (connexion Email / Google / Apple / Twitter / Facebook) ───
+ 
+  WEB3AUTH_CLIENT_ID: "BB8-sW8_NENPty92A-Mx0_yXq2MVZUK9yg3Y8RpuClJO8x-L_N7n_IlXR5b230lFeEJaIGSEV1i2q8HoK3dTEwA", // ex: "BJef..."
+  WEB3AUTH_NETWORK: "sapphire_mainnet",      // réseau gratuit par défaut
+
   WC_PROJECT_ID: "2c10ee910a836551fbabbf7c8cc4542a",   // WalletConnect Project ID
   WHATSAPP_GROUP: "https://chat.whatsapp.com/BDsvPCB6xp8H8X0YaRmPFP",
   WHATSAPP_CHANNEL: "https://whatsapp.com/channel/0029VbCQhI38PgsPLbBJdV1e"
 };
+
+// ─── Détection de l'environnement (Capacitor / navigateur) ─────────
+// Capacitor injecte un objet global Capacitor quand l'app tourne en APK.
+const IS_CAPACITOR = (typeof window !== 'undefined') &&
+  !!window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+// Détecte si on a affaire à un injecté EIP-1193 natif (MetaMask extension).
+const HAS_INJECTED_EIP1193 = (typeof window !== 'undefined') &&
+  (!!window.ethereum || (typeof window.ethereum !== 'undefined'));
 
 // ─── Traductions i18n (5 langues) ──────────────────────────────────
 const i18n = {
@@ -51,6 +70,18 @@ const i18n = {
     errAlreadyPending: "Transaction pending. Please wait.", errNonce: "Nonce error. Restart the app.",
     errNoMachine: "No machine", errRunning: "Machine already running",
     errNoBattery: "No battery of this type", errMaxMachine: "Max machines reached",
+    // ─── Connexion (modale Web3Auth) ───
+    connTitle: "🔐 Login to FITIA", connSubtitle: "Choose your login method. No seed phrase to remember.",
+    connEmail: "Continue with Email", connOr: "OR", connWallet: "Connect a Wallet (MetaMask)",
+    errW3aMissingId: "Web3Auth not configured. Add your clientId in app.js.",
+    errW3aClosed: "Login window closed.", errW3aFailed: "Login failed. Please retry.",
+    errW3aSessionExpired: "Session expired. Please reconnect.",
+    errGasInsufficient: "Insufficient gas (POL) for this transaction.",
+    errGasPriceLow: "Gas price too low. Increase fees and retry.",
+    errTxBroadcast: "Transaction could not be broadcast.",
+    errTxConflict: "Conflicting transaction. Wait and retry.",
+    errSimulation: "Transaction would fail: ",
+    disconnecting: "Disconnecting...", disconnected: "Disconnected",
   },
   fr: {
     connect: "Connecter", refTitle: "👥 Parrainage", refDesc: "Entrez l'adresse ou l'ID du parrain.", bindRef: "LIER",
@@ -88,6 +119,18 @@ const i18n = {
     errAlreadyPending: "Transaction en cours. Patientez.", errNonce: "Erreur nonce. Redémarrez l'app.",
     errNoMachine: "Aucune machine", errRunning: "Machine déjà en marche",
     errNoBattery: "Pas de batterie de ce type", errMaxMachine: "Maximum de machines atteint",
+    // ─── Connexion (modale Web3Auth) ───
+    connTitle: "🔐 Connexion à FITIA", connSubtitle: "Choisissez votre méthode de connexion. Aucune phrase secrète à retenir.",
+    connEmail: "Continuer avec Email", connOr: "OU", connWallet: "Connecter un Wallet (MetaMask)",
+    errW3aMissingId: "Web3Auth non configuré. Ajoutez votre clientId dans app.js.",
+    errW3aClosed: "Fenêtre de connexion fermée.", errW3aFailed: "Échec de la connexion. Réessayez.",
+    errW3aSessionExpired: "Session expirée. Reconnectez-vous.",
+    errGasInsufficient: "Gaz (POL) insuffisant pour cette transaction.",
+    errGasPriceLow: "Prix du gaz trop bas. Augmentez les frais et réessayez.",
+    errTxBroadcast: "La transaction n'a pas pu être diffusée.",
+    errTxConflict: "Transaction en conflit. Patientez et réessayez.",
+    errSimulation: "La transaction échouerait : ",
+    disconnecting: "Déconnexion...", disconnected: "Déconnecté",
   },
   de: {
     connect: "Verbinden", refTitle: "👥 Empfehlung", refDesc: "Empfehler-Adresse oder ID eingeben.", bindRef: "BINDEN",
@@ -124,6 +167,18 @@ const i18n = {
     errAlreadyPending: "Transaktion ausstehend.", errNonce: "Nonce-Fehler. App neustarten.",
     errNoMachine: "Keine Maschine", errRunning: "Maschine läuft bereits",
     errNoBattery: "Keine Batterie dieses Typs", errMaxMachine: "Maximale Maschinen erreicht",
+    // ─── Connexion (modale Web3Auth) ───
+    connTitle: "🔐 Anmeldung bei FITIA", connSubtitle: "Wähle deine Anmeldemethode. Keine Seed-Phrase nötig.",
+    connEmail: "Mit E-Mail fortfahren", connOr: "ODER", connWallet: "Wallet verbinden (MetaMask)",
+    errW3aMissingId: "Web3Auth nicht konfiguriert. ClientId in app.js eintragen.",
+    errW3aClosed: "Anmeldefenster geschlossen.", errW3aFailed: "Anmeldung fehlgeschlagen. Erneut versuchen.",
+    errW3aSessionExpired: "Sitzung abgelaufen. Bitte neu anmelden.",
+    errGasInsufficient: "Unzureichendes Gas (POL) für diese Transaktion.",
+    errGasPriceLow: "Gaspreis zu niedrig. Gebühren erhöhen und erneut versuchen.",
+    errTxBroadcast: "Transaktion konnte nicht gesendet werden.",
+    errTxConflict: "Transaktionskonflikt. Warten und erneut versuchen.",
+    errSimulation: "Transaktion würde fehlschlagen: ",
+    disconnecting: "Abmelden...", disconnected: "Abgemeldet",
   },
   zh: {
     connect: "连接", refTitle: "👥 推荐系统", refDesc: "输入推荐人地址或ID进行绑定。", bindRef: "绑定",
@@ -160,6 +215,18 @@ const i18n = {
     errAlreadyPending: "交易待处理。", errNonce: "Nonce错误，请重启应用。",
     errNoMachine: "没有矿机", errRunning: "矿机已在运行",
     errNoBattery: "没有此类型电池", errMaxMachine: "矿机数量已达上限",
+    // ─── Connexion (modale Web3Auth) ───
+    connTitle: "🔐 登录 FITIA", connSubtitle: "选择登录方式。无需记住助记词。",
+    connEmail: "使用邮箱继续", connOr: "或", connWallet: "连接钱包 (MetaMask)",
+    errW3aMissingId: "Web3Auth 未配置。请在 app.js 中添加 clientId。",
+    errW3aClosed: "登录窗口已关闭。", errW3aFailed: "登录失败，请重试。",
+    errW3aSessionExpired: "会话已过期，请重新登录。",
+    errGasInsufficient: "此交易需要更多 POL 作为 Gas。",
+    errGasPriceLow: "Gas 价格过低。请提高费用后重试。",
+    errTxBroadcast: "交易无法广播。",
+    errTxConflict: "交易冲突。请稍后重试。",
+    errSimulation: "交易将失败：",
+    disconnecting: "正在断开...", disconnected: "已断开",
   },
   sg: {
     connect: "Connect", refTitle: "👥 Referral System", refDesc: "Enter referrer address or ID to link.", bindRef: "BIND",
@@ -196,6 +263,18 @@ const i18n = {
     errAlreadyPending: "Transaction pending.", errNonce: "Nonce error. Restart app.",
     errNoMachine: "No machine", errRunning: "Machine already running",
     errNoBattery: "No battery of this type", errMaxMachine: "Max machines reached",
+    // ─── Connexion (modale Web3Auth) ───
+    connTitle: "🔐 Login to FITIA", connSubtitle: "Choose your login method. No seed phrase to remember.",
+    connEmail: "Continue with Email", connOr: "OR", connWallet: "Connect a Wallet (MetaMask)",
+    errW3aMissingId: "Web3Auth not configured. Add your clientId in app.js.",
+    errW3aClosed: "Login window closed.", errW3aFailed: "Login failed. Please retry.",
+    errW3aSessionExpired: "Session expired. Please reconnect.",
+    errGasInsufficient: "Insufficient gas (POL) for this transaction.",
+    errGasPriceLow: "Gas price too low. Increase fees and retry.",
+    errTxBroadcast: "Transaction could not be broadcast.",
+    errTxConflict: "Conflicting transaction. Wait and retry.",
+    errSimulation: "Transaction would fail: ",
+    disconnecting: "Disconnecting...", disconnected: "Disconnected",
   }
 };
 
@@ -271,6 +350,11 @@ class Application {
     this.signer = null;
     this.user = null;
 
+    // ─── Web3Auth (instance réutilisée) ───
+    this.web3auth = null;        // instance @web3auth/modal
+    this.w3aReady = false;       // init() a réussi
+    this.connectionMode = null;  // 'web3auth' | 'external' (pour le logout adapté)
+
     // ─── Contrats ───
     this.core = null;    // FitiaMiningV3_Core
     this.mine = null;    // FitiaMiningV3_Mine
@@ -318,10 +402,6 @@ class Application {
     // ─── Chat assistant ───
     this.chatInitialized = false;
     this.chatHistory = [];
-
-    // ─── Historique des prix pour calculer l'évolution ───
-    // Stocke les prix précédents : { pol: number, fta: number, usdt: number }
-    this.previousPrices = {};
   }
 
   // ─── Traduction ──────────────────────────────────────────────────
@@ -415,7 +495,59 @@ class Application {
   }
 
   // ─── Initialisation ──────────────────────────────────────────────
-  async init() { this.setLanguage(this.currentLang); }
+  async init() {
+    this.setLanguage(this.currentLang);
+    this._setupMobileBackButton();
+    // Reconnexion automatique si une session Web3Auth existe déjà
+    this._tryAutoReconnect();
+  }
+
+  // ─── Bouton retour Android (Capacitor) : fermer modales au lieu de quitter ──
+  _setupMobileBackButton() {
+    if (!IS_CAPACITOR) return;
+    // Capacitor expose App.addListener via @capacitor/app (plugin natif).
+    // On tente plusieurs chemins pour rester robuste.
+    const App = (typeof window !== 'undefined') && window.Capacitor
+      && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+    if (App && App.addListener) {
+      App.addListener('backButton', () => {
+        // 1) Fermer les modales ouvertes
+        const openModals = document.querySelectorAll('.modal.active');
+        if (openModals.length > 0) {
+          this.closeModals();
+          const cm = document.getElementById('modal-connect');
+          if (cm) cm.classList.remove('active');
+          return;
+        }
+        // 2) Si chat ouvert, le fermer
+        const chat = document.getElementById('chat-panel');
+        if (chat && chat.classList.contains('active')) { chat.classList.remove('active'); return; }
+        // 3) Sinon, quitter l'app
+        if (App.exitApp) App.exitApp();
+      });
+    }
+  }
+
+  // ─── Reconnexion auto à une session Web3Auth existante ───────────
+  async _tryAutoReconnect() {
+    try {
+      // On n'init Web3Auth que si le SDK est chargé ET un clientId est présent,
+      // pour ne pas bloquer le chargement de l'app en mode démo.
+      if (!this._getW3AClass()) return;
+      if (!CONFIG.WEB3AUTH_CLIENT_ID || CONFIG.WEB3AUTH_CLIENT_ID === "VOTRE_CLIENT_ID_ICI") return;
+      await this.initWeb3Auth();
+      if (this.web3auth && this.web3auth.connected && this.web3auth.provider) {
+        this.provider = new ethers.BrowserProvider(this.web3auth.provider);
+        this.signer = await this.provider.getSigner();
+        this.user = await this.signer.getAddress();
+        this.connectionMode = 'web3auth';
+        await this.initContracts();
+      }
+    } catch (e) {
+      // Échec silencieux : l'utilisateur cliquera sur "Connecter"
+      console.warn("Auto-reconnect Web3Auth échoué:", e?.message || e);
+    }
+  }
 
   // ─── Récupération du prix POL ────────────────────────────────────
   async fetchMarketPrices() {
@@ -435,43 +567,206 @@ class Application {
     if (!this.polPriceUsd) this.polPriceUsd = 0.70;
   }
 
-  // ─── Connexion wallet ────────────────────────────────────────────
-  async connect() {
-    // Si MetaMask est disponible
-    if (window.ethereum) {
-      this.setLoader(true, this.t('connWallet'));
-      try {
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        this.provider = new ethers.BrowserProvider(window.ethereum);
-        this.signer = await this.provider.getSigner();
-        this.user = await this.signer.getAddress();
-        const network = await this.provider.getNetwork();
-        if (Number(network.chainId) !== CONFIG.CHAIN_ID) await this.switchNetwork();
-        await this.initContracts();
-        window.ethereum.on('accountsChanged', () => window.location.reload());
-        window.ethereum.on('chainChanged', () => window.location.reload());
-      } catch (e) { this.showError(e); } finally { this.setLoader(false); }
+  // ─── Ouvrir la modale de choix de connexion ─────────────────────
+  openConnectModal() {
+    // Si déjà connecté, on ne fait rien
+    if (this.user) return;
+    document.getElementById('modal-connect').classList.add('active');
+  }
+
+  // ─── Récupère la classe Web3Auth quelle que soit la structure UMD ──
+  _getW3AClass() {
+    // @web3auth/modal UMD expose selon les versions :
+    //   window.Modal.Web3Auth  (v8+)
+    //   window.Web3Auth.Modal.Web3Auth
+    //   window.Web3AuthNoModal.Web3Auth
+    const w = (typeof window !== 'undefined') ? window : null;
+    if (!w) return null;
+    if (w.Modal && w.Modal.Web3Auth) return w.Modal.Web3Auth;
+    if (w.Web3Auth && w.Web3Auth.Modal && w.Web3Auth.Modal.Web3Auth) return w.Web3Auth.Modal.Web3Auth;
+    if (w.Web3AuthNoModal && w.Web3AuthNoModal.Web3Auth) return w.Web3AuthNoModal.Web3Auth;
+    return null;
+  }
+
+  // ─── Nom de l'adapter OpenLogin (constante UMD ou fallback chaîne) ──
+  _getOpenLoginAdapterName() {
+    const w = (typeof window !== 'undefined') ? window : null;
+    if (w && w.Modal && w.Modal.WALLET_ADAPTERS && w.Modal.WALLET_ADAPTERS.OPENLOGIN) {
+      return w.Modal.WALLET_ADAPTERS.OPENLOGIN;
     }
-    // Si WalletConnect est disponible
-    else if (typeof EthereumProvider !== 'undefined' && CONFIG.WC_PROJECT_ID && !CONFIG.WC_PROJECT_ID.includes("...")) {
+    return "openlogin"; // valeur canonique utilisée par @web3auth/modal
+  }
+
+  // ─── Initialise (lazy) l'instance Web3Auth ──────────────────────
+  async initWeb3Auth() {
+    if (this.w3aReady && this.web3auth) return this.web3auth;
+
+    const W3AClass = this._getW3AClass();
+    if (!W3AClass) {
+      throw new Error("WEB3AUTH_NOT_LOADED");
+    }
+    if (!CONFIG.WEB3AUTH_CLIENT_ID || CONFIG.WEB3AUTH_CLIENT_ID === "VOTRE_CLIENT_ID_ICI") {
+      throw new Error("WEB3AUTH_NO_CLIENT_ID");
+    }
+
+    const chainConfig = {
+      chainNamespace: "eip155",
+      chainId: "0x" + CONFIG.CHAIN_ID.toString(16),   // 0x89 = Polygon
+      rpcTarget: CONFIG.POLYGON_RPC,
+      displayName: "Polygon",
+      blockExplorerUrl: "https://polygonscan.com",
+      ticker: "POL",
+      tickerName: "Polygon",
+      logo: "https://i.ibb.co/NdCLLsck/IMG-20260302-131520-512-x-512-pixel.webp"
+    };
+
+    const uiConfig = {
+      theme: { isDark: true, primary: "#F0B90B" },
+      appName: "FITIA PRO MINER",
+      // Langue de la modale suit celle de l'app quand possible
+      modalZIndex: "99999",
+      logoLight: "https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp",
+      logoDark: "https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp",
+      defaultLanguage: this.currentLang === 'fr' ? "fr" :
+                       this.currentLang === 'de' ? "de" :
+                       this.currentLang === 'zh' ? "zh" : "en",
+      loginMethodsOrder: ["google", "email_passwordless", "apple", "twitter", "facebook"]
+    };
+
+    this.web3auth = new W3AClass({
+      clientId: CONFIG.WEB3AUTH_CLIENT_ID,
+      web3AuthNetwork: CONFIG.WEB3AUTH_NETWORK,
+      chainConfig,
+      uiConfig
+    });
+
+    await this.web3auth.init();
+    this.w3aReady = true;
+
+    // Reconnexion auto si une session existe déjà
+    if (this.web3auth.connected && this.web3auth.provider) {
+      // On ne force pas la reconnexion ici : laissée à connectWithWeb3Auth()
+    }
+    return this.web3auth;
+  }
+
+  // ─── Connexion via Web3Auth (Email / Google / Apple / Twitter / FB) ──
+  async connectWithWeb3Auth(loginProvider = null) {
+    this.closeModals();
+    this.setLoader(true, this.t('connWallet'));
+
+    try {
+      await this.initWeb3Auth();
+
+      // connectTo(adapter, params) : login direct (google, email_passwordless, ...)
+      // connect()                 : ouvre la modale complète si loginProvider est null
+      if (!this.web3auth.connected) {
+        if (loginProvider) {
+          // Nom d'adapter OpenLogin : "openlogin" en chaîne. On tente la constante
+          // globale (window.Modal.WALLET_ADAPTERS) si elle existe, sinon fallback.
+          const openloginAdapter = this._getOpenLoginAdapterName();
+          await this.web3auth.connectTo(openloginAdapter, { login_provider: loginProvider });
+        } else {
+          await this.web3auth.connect();
+        }
+      }
+
+      if (!this.web3auth.provider) throw new Error("W3A_NO_PROVIDER");
+
+      // On enrobe le provider EIP-1193 Web3Auth avec ethers v6
+      this.provider = new ethers.BrowserProvider(this.web3auth.provider);
+      this.signer = await this.provider.getSigner();
+      this.user = await this.signer.getAddress();
+      this.connectionMode = 'web3auth';
+
+      // Web3Auth force déjà la chaîne configurée (Polygon) ; on vérifie quand même
+      const network = await this.provider.getNetwork();
+      if (Number(network.chainId) !== CONFIG.CHAIN_ID) {
+        this.showToast("Réseau incorrect — reconnexion requise.", true);
+        await this._w3aLogout();
+        return;
+      }
+
+      await this.initContracts();
+    } catch (e) {
+      this._handleConnectError(e);
+    } finally {
+      this.setLoader(false);
+    }
+  }
+
+    // ─── Connexion via Web3Auth (Email / Google / Apple / Twitter / Facebook) ────
+    async connectWithWeb3Auth(loginProvider = null) {
+      this.closeModals();
       this.setLoader(true, this.t('connWallet'));
       try {
-        const wc = await EthereumProvider.init({
-          projectId: CONFIG.WC_PROJECT_ID,
-          chains: [CONFIG.CHAIN_ID],
-          showQrModal: true,
-          methods: ['eth_sendTransaction', 'personal_sign'],
-          metadata: { name: 'FITIA PRO MINER', description: 'Mining DApp', url: window.location.origin, icons: [window.location.origin + '/logo.png'] }
-        });
-        await wc.enable();
-        this.provider = new ethers.BrowserProvider(wc);
+        await this.initWeb3Auth();
+        if (loginProvider) {
+          const openloginAdapter = this._getOpenLoginAdapterName();
+          await this.web3auth.connectTo(openloginAdapter, { login_provider: loginProvider });
+        } else {
+          await this.web3auth.connect();
+        }
+        if (!this.web3auth.provider) throw new Error("W3A_NO_PROVIDER");
+        this.provider = new ethers.BrowserProvider(this.web3auth.provider);
         this.signer = await this.provider.getSigner();
         this.user = await this.signer.getAddress();
+        this.connectionMode = 'web3auth';
+        const network = await this.provider.getNetwork();
+        if (Number(network.chainId) !== CONFIG.CHAIN_ID) {
+          this.showToast("Réseau incorrect — reconnexion requise.", true);
+          await this._w3aLogout();
+          return;
+        }
         await this.initContracts();
-        wc.on("disconnect", () => window.location.reload());
-      } catch (e) { this.showError(e); } finally { this.setLoader(false); }
+      } catch (e) {
+        this._handleConnectError(e);
+      } finally {
+        this.setLoader(false);
+      }
+    }
+
+  // ─── Handler d'erreur commun aux 2 modes de connexion ───────────
+  _handleConnectError(e) {
+    const msg = (e?.message || '').toLowerCase();
+    if (msg.includes('no_client_id') || msg.includes('web3auth_no_client_id')) {
+      this.showToast(this.t('errW3aMissingId'), true);
+    } else if (msg.includes('user closed') || msg.includes('user rejected') || msg.includes('cancelled') || e?.code === 4001) {
+      this.showToast(this.t('errW3aClosed'), true);
+    } else if (msg.includes('not_loaded') || msg.includes('web3auth_not_loaded')) {
+      this.showToast("Web3Auth indisponible. Vérifiez votre connexion internet.", true);
     } else {
-      this.showToast("Installez MetaMask ou utilisez un navigateur Web3.", true);
+      this.showError(e);
+    }
+  }
+
+  // ─── Déconnexion propre selon le mode ────────────────────────────
+  async disconnect() {
+    this.setLoader(true, this.t('disconnecting'));
+    try {
+      await this._w3aLogout();
+    } catch (e) { /* silencieux */ }
+    // Reset d'état
+    this.provider = null;
+    this.signer = null;
+    this.user = null;
+    this.core = null;
+    this.mine = null;
+    this.connectionMode = null;
+    this.stopMiningCounter();
+    document.getElementById('btn-connect').classList.remove('hidden');
+    const ws = document.getElementById('wallet-status');
+    if (ws) ws.classList.add('hidden');
+    this.showToast(this.t('disconnected'));
+    // Recharge pour repartir d'un état propre
+    setTimeout(() => window.location.reload(), 800);
+    this.setLoader(false);
+  }
+
+  // Logout Web3Auth (si applicable) — protégé contre les erreurs
+  async _w3aLogout() {
+    if (this.web3auth && this.w3aReady && this.web3auth.connected) {
+      try { await this.web3auth.logout(); } catch (e) { /* ignore */ }
     }
   }
 
@@ -516,8 +811,14 @@ class Application {
     } catch (e) { /* ignore si bCount échoue */ }
   }
 
-  // ─── Changement de réseau ────────────────────────────────────────
+  // ─── Changement de réseau (uniquement si wallet injecté) ─────────
+  // Note : Web3Auth force déjà le bon réseau via chainConfig, donc cette
+  // méthode n'est appelée que pour l'option "wallet externe" (MetaMask).
   async switchNetwork() {
+    if (!HAS_INJECTED_EIP1193 || !window.ethereum) {
+      // Pas de wallet injecté : rien à faire (Web3Auth gère son réseau seul)
+      return;
+    }
     try {
       await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] });
     } catch (e) {
@@ -526,11 +827,13 @@ class Application {
           method: 'wallet_addEthereumChain',
           params: [{
             chainId: '0x89', chainName: 'Polygon',
-            nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+            nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
             rpcUrls: ['https://polygon-rpc.com/'],
             blockExplorerUrls: ['https://polygonscan.com/']
           }]
         });
+      } else {
+        throw e;
       }
     }
   }
@@ -718,11 +1021,6 @@ class Application {
       document.getElementById('price-usdt').innerText = this.formatUsd(1);
       document.getElementById('price-fta').innerText = this.formatUsd(this.ftaPriceUsd);
 
-      // ─── Indicateurs de variation en pourcentage ────────────────
-      this.updatePriceChange('pol', this.polPriceUsd);
-      this.updatePriceChange('usdt', 1); // USDT est stable, mais on garde le mécanisme
-      this.updatePriceChange('fta', this.ftaPriceUsd);
-
       document.getElementById('bal-pol-usd').innerText = '≈ ' + this.formatUsd((pB + nB) * this.polPriceUsd);
       document.getElementById('bal-usdt-usd').innerText = '≈ ' + this.formatUsd(uB);
       document.getElementById('bal-fta-usd').innerText = '≈ ' + this.formatUsd(fB * this.ftaPriceUsd);
@@ -806,10 +1104,10 @@ class Application {
         const allowance = await usdtContract.allowance(this.user, CONFIG.CORE);
         if (allowance < amountBN) {
           this.setLoader(true, "Approbation USDT...");
-          await (await usdtContract.approve(CONFIG.CORE, amountBN)).wait();
+          await this.safeTx(() => usdtContract.approve(CONFIG.CORE, amountBN), "Approve USDT");
         }
         this.setLoader(true, this.t('confirming'));
-        await (await this.core.depositUsdt(amountBN)).wait();
+        await this.safeTx(() => this.core.depositUsdt(amountBN), "Deposit USDT");
       } else {
         // Dépôt FTA — même logique avec approve
         const ftaContract = new ethers.Contract(CONFIG.FTA, [
@@ -820,15 +1118,15 @@ class Application {
         const allowance = await ftaContract.allowance(this.user, CONFIG.CORE);
         if (allowance < amountBN) {
           this.setLoader(true, "Approbation FTA...");
-          await (await ftaContract.approve(CONFIG.CORE, amountBN)).wait();
+          await this.safeTx(() => ftaContract.approve(CONFIG.CORE, amountBN), "Approve FTA");
         }
         this.setLoader(true, this.t('confirming'));
-        await (await this.core.depositFta(amountBN)).wait();
+        await this.safeTx(() => this.core.depositFta(amountBN), "Deposit FTA");
       }
       this.showToast(this.t('depositSuccess'));
       document.getElementById('deposit-amount').value = '';
       this.updateData();
-    } catch (e) { this.showError(e); }
+    } catch (e) { /* showError déjà appelé dans safeTx */ }
     this.setLoader(false);
   }
 
@@ -843,15 +1141,15 @@ class Application {
     try {
       if (tokenType === 'USDT') {
         const amountBN = ethers.parseUnits(amount.toString(), this.usdtDecimals);
-        await (await this.core.withdrawUsdt(amountBN)).wait();
+        await this.safeTx(() => this.core.withdrawUsdt(amountBN), "Withdraw USDT");
       } else {
         const amountBN = ethers.parseUnits(amount.toString(), this.ftaDecimals);
-        await (await this.core.withdrawFta(amountBN)).wait();
+        await this.safeTx(() => this.core.withdrawFta(amountBN), "Withdraw FTA");
       }
       this.showToast(this.t('withdrawSuccess'));
       document.getElementById('deposit-amount').value = '';
       this.updateData();
-    } catch (e) { this.showError(e); }
+    } catch (e) { /* showError déjà appelé dans safeTx */ }
     this.setLoader(false);
   }
 
@@ -882,14 +1180,41 @@ class Application {
 
   // ─── Fermer les modales ────────────────────────────────────────
   closeModals() {
-    document.getElementById('modal-send').classList.remove('active');
-    document.getElementById('modal-receive').classList.remove('active');
+    ['modal-send', 'modal-receive', 'modal-connect'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('active');
+    });
   }
 
-  // ─── Copier l'adresse ─────────────────────────────────────────
+  // ─── Copier l'adresse (compatible WebView/Capacitor) ────────────
   copyReceiveAddress() {
-    navigator.clipboard.writeText(this.user);
-    this.showToast(this.t('addrCopied'));
+    const text = this.user;
+    // 1) API moderne (navigateurs)
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(
+        () => this.showToast(this.t('addrCopied')),
+        () => this._fallbackCopy(text)
+      );
+      return;
+    }
+    this._fallbackCopy(text);
+  }
+
+  // Fallback (WebView Android où clipboard API peut être absente)
+  _fallbackCopy(text) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      this.showToast(ok ? this.t('addrCopied') : "Copie impossible");
+    } catch (e) {
+      this.showToast("Copie impossible", true);
+    }
   }
 
   // ─── Exécuter l'envoi ─────────────────────────────────────────
@@ -901,21 +1226,20 @@ class Application {
     this.setLoader(true, this.t('sending'));
     try {
       const token = document.getElementById('send-token-select').value;
-      let tx;
+      let receipt;
       if (token === 'POL') {
-        tx = await this.signer.sendTransaction({ to, value: ethers.parseEther(amt) });
+        receipt = await this.safeTx(() => this.signer.sendTransaction({ to, value: ethers.parseEther(amt) }), "Send POL");
       } else {
         // Envoi via le contrat de token
         const tokenAddr = token === 'USDT' ? CONFIG.USDT : CONFIG.FTA;
         const dec = token === 'USDT' ? this.usdtDecimals : this.ftaDecimals;
         const tokenContract = new ethers.Contract(tokenAddr, ["function transfer(address,uint256) returns (bool)"], this.signer);
-        tx = await tokenContract.transfer(to, ethers.parseUnits(amt, dec));
+        receipt = await this.safeTx(() => tokenContract.transfer(to, ethers.parseUnits(amt, dec)), "Send " + token);
       }
-      await tx.wait();
       this.showToast(this.t('sentSuccess'));
       this.closeModals();
       this.updateData();
-    } catch (e) { this.showError(e); }
+    } catch (e) { /* showError déjà appelé dans safeTx */ }
     this.setLoader(false);
   }
 
@@ -930,15 +1254,15 @@ class Application {
       if (this.payMode === 'USDT') {
         // Le contrat Mine appelle mDebitU sur le Core pour débiter le solde USDT interne
         // Pas besoin d'approve puisque les fonds sont déjà dans le Core
-        await (await this.mine.buyMachine(typeId)).wait();
+        await this.safeTx(() => this.mine.buyMachine(typeId), "Buy Machine");
       } else {
         // Paiement en FTA via le solde interne
-        await (await this.mine.buyMachineFTA(typeId)).wait();
+        await this.safeTx(() => this.mine.buyMachineFTA(typeId), "Buy Machine FTA");
       }
       this.showToast(this.t('machineBought'));
       this.shopMachinesData = [];
       this.updateData();
-    } catch (e) { this.showError(e); }
+    } catch (e) { /* showError déjà appelé dans safeTx */ }
     this.setLoader(false);
   }
 
@@ -948,14 +1272,14 @@ class Application {
     this.setLoader(true, `${this.t('buyingBattery')} (${this.payMode})...`);
     try {
       if (this.payMode === 'USDT') {
-        await (await this.mine.buyBattery(typeId)).wait();
+        await this.safeTx(() => this.mine.buyBattery(typeId), "Buy Battery");
       } else {
-        await (await this.mine.buyBatteryFTA(typeId)).wait();
+        await this.safeTx(() => this.mine.buyBatteryFTA(typeId), "Buy Battery FTA");
       }
       this.showToast(this.t('batteryBought'));
       this.shopBatteriesData = [];
       this.updateData();
-    } catch (e) { this.showError(e); }
+    } catch (e) { /* showError déjà appelé dans safeTx */ }
     this.setLoader(false);
   }
 
@@ -972,12 +1296,10 @@ class Application {
 
     this.setLoader(true, this.t('pluggingIn'));
     try {
-      await (await this.mine.plugInMachine(machineIndex, batteryTypeId)).wait();
+      await this.safeTx(() => this.mine.plugInMachine(machineIndex, batteryTypeId), "Plug In");
       this.showToast(this.t('pluggedIn'));
       this.updateData();
-    } catch (e) {
-      this.showError(e);
-    }
+    } catch (e) { /* showError déjà appelé dans safeTx */ }
     this.setLoader(false);
   }
 
@@ -987,14 +1309,13 @@ class Application {
     this.stopMiningCounter();
     this.setLoader(true, this.t('claiming'));
     try {
-      await (await this.mine.claimRewards()).wait();
+      await this.safeTx(() => this.mine.claimRewards(), "Claim");
       this.pendingBalance = 0;
       localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
       this.showToast(this.t('claimed'));
       this.updateData();
       if (this.currentRealPower > 0) this.startMiningCounter();
     } catch (e) {
-      this.showError(e);
       if (this.currentRealPower > 0) this.startMiningCounter();
     }
     this.setLoader(false);
@@ -1010,16 +1331,16 @@ class Application {
     try {
       // Si l'adresse ressemble à une adresse Ethereum, on utilise setReferrer
       if (input.startsWith('0x') && input.length === 42) {
-        await (await this.core.setReferrer(input)).wait();
+        await this.safeTx(() => this.core.setReferrer(input), "Set Referrer");
       } else {
         // Sinon on traite comme un ID numérique
         const refId = parseInt(input);
         if (isNaN(refId)) throw new Error("Format invalide");
-        await (await this.core.setReferrerById(refId)).wait();
+        await this.safeTx(() => this.core.setReferrerById(refId), "Set Referrer by ID");
       }
       this.showToast(this.t('refLinked'));
       document.getElementById('ref-address-input').value = '';
-    } catch (e) { this.showError(e); }
+    } catch (e) { /* showError déjà appelé dans safeTx pour les tx ; format invalide reste silencieux */ }
     this.setLoader(false);
   }
 
@@ -1196,19 +1517,19 @@ class Application {
       // Deadline : 20 minutes dans le futur
       const deadline = Math.floor(Date.now() / 1000) + 1200;
 
-      let tx;
+      let txPromise;
       if (isUsdtTo) {
-        tx = await this.core.swapUForF(amount, minOut, deadline);
+        txPromise = () => this.core.swapUForF(amount, minOut, deadline);
       } else {
-        tx = await this.core.swapFForU(amount, minOut, deadline);
+        txPromise = () => this.core.swapFForU(amount, minOut, deadline);
       }
-      await tx.wait();
+      await this.safeTx(txPromise, "Swap");
       this.showToast(this.t('swapSuccess'));
       document.getElementById('swap-from-in').value = '';
       document.getElementById('swap-to-in').value = '';
       document.getElementById('swap-details').classList.add('hidden');
       this.updateData();
-    } catch (e) { this.showError(e); }
+    } catch (e) { /* showError déjà appelé dans safeTx */ }
     this.setLoader(false);
   }
 
@@ -1266,68 +1587,147 @@ class Application {
     if (show) { loader.classList.remove('hidden'); } else { loader.classList.add('hidden'); }
   }
 
-  // ─── Gestion des erreurs ─────────────────────────────────────────
-  getErrorMessage(e) {
-    const errStr = (e?.message || '').toLowerCase() + ' ' + (e?.code || '').toLowerCase() + ' ' + (e?.reason || '').toLowerCase();
-    if (errStr.includes('user rejected') || errStr.includes('user denied') || errStr.includes('action_rejected') || e?.code === 4001) return this.t('errRejected');
-    if (errStr.includes('insufficient') || errStr.includes('not enough') || errStr.includes('insf')) return this.t('errInsufficientFunds');
-    if (errStr.includes('nonce')) return this.t('errNonce');
-    if (errStr.includes('pending')) return this.t('errAlreadyPending');
-    if (errStr.includes('timeout') || errStr.includes('deadline')) return this.t('errTimeout');
-    if (errStr.includes('network') || errStr.includes('fetch') || errStr.includes('call revert')) return this.t('errNetwork');
-    if (errStr.includes('revert') || errStr.includes('execution')) return this.t('errContract');
-    if (errStr.includes('nom') || errStr.includes('no machine')) return this.t('errNoMachine');
-    if (errStr.includes('running')) return this.t('errRunning');
-    if (errStr.includes('nobat') || errStr.includes('no battery')) return this.t('errNoBattery');
-    if (errStr.includes('maxm') || errStr.includes('max machine')) return this.t('errMaxMachine');
-    return this.t('errGeneric');
+  // ─── Extraction du reason d'une revert Solidity (ethers v6) ──────
+  // Renvoie une chaîne lisible si elle est trouvée, sinon "".
+  decodeRevertReason(e) {
+    try {
+      // ethers v6 range souvent le revert dans error.data ou error.reason
+      if (e?.reason && typeof e.reason === 'string') return e.reason;
+      if (e?.shortMessage && typeof e.shortMessage === 'string' && e.shortMessage !== "execution reverted (unknown reason)") {
+        return e.shortMessage;
+      }
+      // Cas du data hex contenant la chaîne de revert (Offset 0xa0... etc)
+      const data = e?.data || e?.error?.data || e?.info?.error?.data;
+      if (typeof data === 'string' && data.startsWith('0x')) {
+        // Error(string) selector : 0x08c379a0 + offset (32) + length (32) + UTF-8
+        if (data.length >= 138 && data.slice(2, 10) === '08c379a0') {
+          const len = parseInt(data.slice(74, 138), 16);
+          if (len > 0) {
+            const hex = data.slice(138, 138 + len * 2);
+            try { return decodeURIComponent(hex.replace(/\s+/g, '').replace(/[0-9a-f]{2}/g, '%$&')); }
+            catch (_) { /* ignore */ }
+          }
+        }
+        // Panic selector (0x4e487b71, code à l'offset 4) : on renvoie juste "Panic"
+        if (data.slice(2, 10) === '4e487b71') return "EVM panic";
+        // Custom errors : on ne peut pas décoder sans ABI, on renvoie le sélecteur
+        if (data.length >= 10) return "erreur contrat 0x" + data.slice(2, 10);
+      }
+    } catch (_) { /* ignore */ }
+    return "";
   }
 
-  showError(e) {
-    console.error("Transaction Error:", e);
-    this.showToast(this.getErrorMessage(e), true);
-  }
+    // ─── Gestion des erreurs ─────────────────────────────────────────
+    getErrorMessage(e) {
+      const errStr = (e?.message || '').toLowerCase() + ' ' + (e?.code || '').toLowerCase() + ' ' + (e?.reason || '').toLowerCase() + ' ' + (e?.shortMessage || '').toLowerCase();
 
-  showToast(msg, isError = false) {
-    const div = document.createElement('div');
-    div.className = 'toast' + (isError ? ' toast-error' : ' toast-success');
-    div.innerText = msg;
-    const container = document.getElementById('toast-container');
-    container.appendChild(div);
-    setTimeout(() => div.remove(), 4000);
-  }
+      // ── Annulation utilisateur ──
+      if (errStr.includes('user rejected') || errStr.includes('user denied') || errStr.includes('action_rejected') || errStr.includes('user closed') || e?.code === 4001 || e?.code === 'ACTION_REJECTED') return this.t('errRejected');
 
-  // ─── Mise à jour de l'indicateur de pourcentage d'évolution ─────
-  updatePriceChange(token, newPrice) {
-    const el = document.getElementById('change-' + token);
-    if (!el) return;
-    const prev = this.previousPrices[token];
-    if (prev === undefined || prev === null || prev === 0) {
-      // Première lecture : on stocke le prix sans afficher de variation
-      this.previousPrices[token] = newPrice;
-      el.textContent = '0.00%';
-      el.className = 'token-change flat';
-      return;
+      // ── Gaz insuffisant (le point demandé : "pas assez de gaz") ──
+      if (errStr.includes('insufficient funds for gas') || errStr.includes('gas required exceeds allowance') ||
+          errStr.includes('insufficient gas') || errStr.includes('intrinsic gas too low') ||
+          errStr.includes('max fee per gas less') || errStr.includes('insufficient funds')) {
+        return this.t('errGasInsufficient');
+      }
+      // ── Prix du gaz trop bas ──
+      if (errStr.includes('max priority fee') || errStr.includes('fee cap') || errStr.includes('gas price too low')) {
+        return this.t('errGasPriceLow');
+      }
+      // ── Conflit de transaction (remplacement sous-évalué) ──
+      if (errStr.includes('replacement transaction underpriced') || errStr.includes('nonce too low')) {
+        return this.t('errTxConflict');
+      }
+      // ── Solde token insuffisant (filtre distinct du gaz) ──
+      if (errStr.includes('insufficient') || errStr.includes('not enough') || errStr.includes('insf')) return this.t('errInsufficientFunds');
+
+      // ── Erreurs Web3Auth spécifiques ──
+      if (errStr.includes('session expired') || errStr.includes('token expired')) return this.t('errW3aSessionExpired');
+      if (errStr.includes('user closed') || errStr.includes('login cancelled')) return this.t('errW3aClosed');
+      if (errStr.includes('provider not initialized') || errStr.includes('not connected')) return this.t('errW3aFailed');
+
+      // ── Erreurs contrat : on tente de décoder le reason ──
+      if (errStr.includes('revert') || errStr.includes('execution')) {
+        const reason = this.decodeRevertReason(e);
+        if (reason && !reason.startsWith('erreur contrat')) return this.t('errSimulation') + reason;
+        return this.t('errContract');
+      }
+      if (errStr.includes('broadcast') || errStr.includes('mempool')) return this.t('errTxBroadcast');
+
+      // ── Cas existants conservés ──
+      if (errStr.includes('nonce')) return this.t('errNonce');
+      if (errStr.includes('pending')) return this.t('errAlreadyPending');
+      if (errStr.includes('timeout') || errStr.includes('deadline')) return this.t('errTimeout');
+      if (errStr.includes('network') || errStr.includes('fetch') || errStr.includes('call revert')) return this.t('errNetwork');
+      if (errStr.includes('nom') || errStr.includes('no machine')) return this.t('errNoMachine');
+      if (errStr.includes('running')) return this.t('errRunning');
+      if (errStr.includes('nobat') || errStr.includes('no battery')) return this.t('errNoBattery');
+      if (errStr.includes('maxm') || errStr.includes('max machine')) return this.t('errMaxMachine');
+      return this.t('errGeneric');
     }
-    // Calcul de l'évolution en pourcentage
-    const change = ((newPrice - prev) / prev) * 100;
-    const absChange = Math.abs(change);
-    let sign, cssClass;
-    if (absChange < 0.01) {
-      sign = '';
-      cssClass = 'flat';
-    } else if (change > 0) {
-      sign = '+';
-      cssClass = 'up';
-    } else {
-      sign = '';
-      cssClass = 'down';
+
+    // ─── Exécution sécurisée d'une transaction (pré-vol + wait timeout) ──
+    // Utilisation :  await this.safeTx(() => this.mine.buyMachine(id), "Achat machine");
+    // Le callback est appelé une seule fois ; ethers estime le gaz en interne.
+    // En cas d'échec de simulation, on n'envoie rien et on toast l'erreur.
+    async safeTx(txFactory, label = "") {
+      if (!this.signer) {
+        this.openConnectModal();
+        throw new Error("NOT_CONNECTED");
+      }
+      let tx;
+      try {
+        // txFactory() renvoie soit la tx (si pas d'args), soit une promesse de tx
+        tx = await txFactory();
+      } catch (e) {
+        // Échec AVANT broadcast (estimation gaz / simulation)
+        this.showError(e);
+        throw e;
+      }
+      if (!tx || typeof tx.wait !== 'function') {
+        // Cas où le contrat ne renvoie pas de tx (lecture seule mal appelée)
+        return tx;
+      }
+      // On attend la confirmation avec un timeout (5 min) pour ne pas bloquer indéfiniment
+      try {
+        const receipt = await Promise.race([
+          tx.wait(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 300000))
+        ]);
+        return receipt;
+      } catch (e) {
+        this.showError(e);
+        throw e;
+      }
     }
-    el.textContent = sign + change.toFixed(2) + '%';
-    el.className = 'token-change ' + cssClass;
-    // Met à jour le prix précédent seulement si ça a vraiment bougé
-    this.previousPrices[token] = newPrice;
-  }
+
+    showError(e) {
+      console.error("Transaction Error:", e);
+      this.showToast(this.getErrorMessage(e), true);
+    }
+
+    showToast(msg, isError = false) {
+      const div = document.createElement('div');
+      div.className = 'toast' + (isError ? ' toast-error' : ' toast-success');
+      div.innerText = msg;
+      const container = document.getElementById('toast-container');
+      container.appendChild(div);
+      setTimeout(() => div.remove(), 4000);
+    }
+
+    // ─── Gestion des erreurs spécifiques à Web3Auth ──
+    _handleConnectError(e) {
+      const msg = (e?.message || '').toLowerCase();
+      if (msg.includes('no_client_id') || msg.includes('web3auth_no_client_id')) {
+        this.showToast(this.t('errW3aMissingId'), true);
+      } else if (msg.includes('user closed') || msg.includes('user rejected') || msg.includes('cancelled') || e?.code === 4001) {
+        this.showToast(this.t('errW3aClosed'), true);
+      } else if (msg.includes('not_loaded') || msg.includes('web3auth_not_loaded')) {
+        this.showToast("Web3Auth indisponible. Vérifiez votre connexion internet.", true);
+      } else {
+        this.showError(e);
+      }
+    }
 
   // ═══ CHAT ASSISTANT ══════════════════════════════════════════════
   toggleChat() {
