@@ -227,6 +227,7 @@ const CORE_ABI = [
   "function costFta(uint256 a) view returns (uint256)",
   // ─── Admin (read-only pour le frontend) ───
   "function swapFee() view returns (uint256)",
+  "function difficulty() view returns (uint256)",
   "function uid(address) view returns (uint256)",
   "function aToId(uint256) view returns (address)",
   // ─── Balances internes ───
@@ -680,8 +681,19 @@ class Application {
     if (!this.user) return;
     try {
       // ─── Récupération de la puissance active ─────────────────────
+      // ⚠️ powerOf() retourne un entier brut (pas en wei/18 décimales).
+      // La formule de reward dans le contrat Mine est :
+      //   reward = elapsed * power * difficulty / 1e18
+      // Donc FTA/seconde = power * difficulty / 1e18
       const rawPower = await this.mine.powerOf(this.user);
-      this.currentRealPower = parseFloat(ethers.formatUnits(rawPower, this.ftaDecimals));
+      let powNum = Number(rawPower);
+      let diffNum = 2e12; // fallback si la lecture échoue
+      try {
+        const difficultyRaw = await this.core.difficulty();
+        diffNum = Number(difficultyRaw);
+      } catch (e) { /* utilise la valeur par défaut */ }
+      // Puissance effective en FTA par seconde (déjà en unités humaines)
+      this.currentRealPower = powNum > 0 ? (powNum * diffNum) / 1e18 : 0;
 
       // ─── Récupération du taux FTA via le Core ────────────────────
       // La fonction rate() retourne le prix en unités USDT (6 décimales)
@@ -814,9 +826,13 @@ class Application {
         // Dépôt FTA — même logique avec approve
         const ftaContract = new ethers.Contract(CONFIG.FTA, [
           "function approve(address,uint256) returns (bool)",
-          "function allowance(address,address) view returns (uint256)"
+          "function allowance(address,address) view returns (uint256)",
+          "function decimals() view returns (uint8)"
         ], this.signer);
-        const amountBN = ethers.parseUnits(amount.toString(), this.ftaDecimals);
+        // Récupérer les décimales réelles du token FTA (probablement 18)
+        let tokDec;
+        try { tokDec = Number(await ftaContract.decimals()); } catch (e) { tokDec = 18; }
+        const amountBN = ethers.parseUnits(amount.toString(), tokDec);
         const allowance = await ftaContract.allowance(this.user, CONFIG.CORE);
         if (allowance < amountBN) {
           this.setLoader(true, "Approbation FTA...");
@@ -984,17 +1000,29 @@ class Application {
   // ─── Récupération des gains (claim) ──────────────────────────────
   async claim() {
     if (!this.user) return;
+    if (!this.currentRealPower || this.currentRealPower <= 0) {
+      // Pas de puissance active : le claim ne fera rien, mais on peut quand même essayer
+      // (le contrat mettra juste à jour le timestamp sans erreur si pw==0)
+    }
     this.stopMiningCounter();
     this.setLoader(true, this.t('claiming'));
     try {
-      await (await this.mine.claimRewards()).wait();
+      const tx = await this.mine.claimRewards();
+      await tx.wait();
       this.pendingBalance = 0;
       localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
       this.showToast(this.t('claimed'));
       this.updateData();
       if (this.currentRealPower > 0) this.startMiningCounter();
     } catch (e) {
-      this.showError(e);
+      const errStr = (e?.message || '').toLowerCase();
+      if (errStr.includes('tfee') || errStr.includes('transfer')) {
+        // Le contrat Mine essaie de transférer des FTA pour le fee
+        // mais le Mine n'a pas de balance FTA — bug contrat, pas frontend
+        this.showToast('⚠️ Le contrat Mine n\'a pas assez de liquidité FTA pour payer les frais de claim. Contactez l\'admin (fix: mCreditF au lieu de transfer).', true);
+      } else {
+        this.showError(e);
+      }
       if (this.currentRealPower > 0) this.startMiningCounter();
     }
     this.setLoader(false);
