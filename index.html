@@ -4,20 +4,36 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FITIA PRO">
 <meta name="theme-color" content="#0f172a">
 <title>FITIA PRO MINER</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src * ws://* wss://*; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://unpkg.com https://relay.walletconnect.com https://*.web3auth.com https://authjs.web3auth.org https://*.tor.us https://*.sapphirefog.com https://*.openlogin.com; img-src 'self' data: https://* http://*; frame-src https://*.web3auth.com https://*.tor.us https://authjs.web3auth.org https://*.openlogin.com;">
+
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline';
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.web3auth.org;
+  font-src 'self' https://fonts.gstatic.com data:;
+  img-src 'self' data: https://* http://*;
+  connect-src * ws://* wss://* https://*.web3auth.org https://*.web3auth.com
+              https://*.tor.us https://*.auth0.com https://accounts.google.com
+              https://*.googleapis.com https://api.ipify.org https://api.coingecko.com
+              https://api.dexscreener.com;
+  frame-src https://*.web3auth.org https://*.tor.us https://*.auth0.com
+            https://accounts.google.com https://*.firebaseapp.com;
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com
+             https://unpkg.com https://*.web3auth.org https://*.tor.us;
+">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://authjs.web3auth.org" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<!-- Web3Auth Modal (login Email / Google / Apple / Facebook / Twitter) -->
-<script src="https://unpkg.com/@web3auth/modal@8.13.2/dist/index.umd.min.js"></script>
-<!-- ethers v6 (interaction avec les contrats) -->
+
+<!-- Librairies JS -->
+<script src="https://unpkg.com/@web3auth/modal@7.1.0/dist/index.umd.min.js"></script>
+<script src="https://unpkg.com/@web3auth/base-plugin@7.1.0/dist/index.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
-<!-- WalletConnect v2 (option "wallet externe", utilisé directement en fallback) -->
-<script src="https://unpkg.com/@walletconnect/ethereum-provider@2.11.0/dist/index.umd.js"></script>
 </head>
 <body>
 <div class="bg-glow"></div>
@@ -38,8 +54,8 @@
 <a href="#" onclick="App.setLanguage('sg')">🇸🇬 English (SG)</a>
 </div>
 </div>
-<button id="btn-connect" class="btn-connect" onclick="App.openConnectModal()">Connecter</button>
-<div id="wallet-status" class="wallet-status hidden" onclick="App.disconnect()" title="Se déconnecter">
+<button id="btn-connect" class="btn-connect" onclick="App.connect()">Connecter</button>
+<div id="wallet-status" class="wallet-status hidden">
 <span id="addr-display">0x...</span>
 <span class="status-dot"></span>
 </div>
@@ -108,18 +124,15 @@
 <div id="view-my-rigs" class="view">
 <h2 class="view-title" data-i18n="myAssets">⚙️ Wallet & Actifs</h2>
 
-<!-- Soldes -->
 <div class="card wallet-main-card">
 <div class="wallet-card-header">
 <h3 data-i18n="walletBal">💰 Soldes</h3>
-<!-- Boutons Envoyer / Recevoir -->
 <div class="wallet-main-actions">
 <button class="btn-wallet-main btn-wallet-send" onclick="App.openSend()" data-i18n="send"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Envoyer</button>
 <button class="btn-wallet-main btn-wallet-recv" onclick="App.openReceive()" data-i18n="receive"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z" transform="rotate(180 12 12)"/></svg> Recevoir</button>
 </div>
 </div>
 
-<!-- POL -->
 <div class="wallet-token-row">
 <img src="https://i.ibb.co/NdCLLsck/IMG-20260302-131520-512-x-512-pixel.webp" class="token-img-lg" alt="POL">
 <div class="token-info">
@@ -127,12 +140,12 @@
 <span class="token-bal" id="bal-pol">0.00</span>
 <span class="token-bal-usd" id="bal-pol-usd">≈ $0.00</span>
 </div>
-<div class="token-price-mini">
+<div class="token-price-col">
 <span class="token-unit-price" id="price-pol">$0.00</span>
+<span class="token-change" id="change-pol">0.00%</span>
 </div>
 </div>
 
-<!-- USDT -->
 <div class="wallet-token-row">
 <img src="https://i.ibb.co/BRGx1GN/IMG-20260228-134642-512-x-512-pixel.webp" class="token-img-lg" alt="USDT">
 <div class="token-info">
@@ -140,12 +153,12 @@
 <span class="token-bal" id="bal-usdt">0.00</span>
 <span class="token-bal-usd" id="bal-usdt-usd">≈ $0.00</span>
 </div>
-<div class="token-price-mini">
+<div class="token-price-col">
 <span class="token-unit-price" id="price-usdt">$1.00</span>
+<span class="token-change" id="change-usdt">0.00%</span>
 </div>
 </div>
 
-<!-- FTA -->
 <div class="wallet-token-row">
 <img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="token-img-lg" alt="FTA">
 <div class="token-info">
@@ -153,12 +166,12 @@
 <span class="token-bal" id="bal-fta">0.00</span>
 <span class="token-bal-usd" id="bal-fta-usd">≈ $0.00</span>
 </div>
-<div class="token-price-mini">
+<div class="token-price-col">
 <span class="token-unit-price" id="price-fta">$0.00</span>
+<span class="token-change" id="change-fta">0.00%</span>
 </div>
 </div>
 
-<!-- Dépôt / Retrait -->
 <div class="wallet-action-bar">
 <select id="deposit-token-select" class="game-input wallet-token-select">
 <option value="USDT">USDT</option>
@@ -170,19 +183,16 @@
 </div>
 </div>
 
-<!-- Mes Machines -->
 <div class="card" style="margin-bottom: 15px; border-color: rgba(16, 185, 129, 0.2);">
 <h3 class="section-title" data-i18n="myMachines">⛏️ Mes Machines</h3>
 <div id="my-machines-list"><p class="small-text" style="text-align:center;" data-i18n="noMachines">Aucune machine</p></div>
 </div>
 
-<!-- Mes Batteries -->
 <div class="card" style="margin-bottom: 15px; border-color: rgba(139, 92, 246, 0.2);">
 <h3 class="section-title" data-i18n="myBatteries">🔋 Mes Batteries</h3>
 <div id="my-batteries-list"><p class="small-text" style="text-align:center;" data-i18n="noBatteries">Aucune batterie</p></div>
 </div>
 
-<!-- Brancher une machine -->
 <div class="card" style="margin-bottom: 15px; border-color: rgba(59, 130, 246, 0.3);">
 <h3 style="margin:0 0 10px 0; font-size:1rem;" data-i18n="plugMachine">🔌 Brancher une machine</h3>
 <p class="small-text" data-i18n="plugDesc">Choisissez l'index d'une machine et le type de batterie.</p>
@@ -225,7 +235,6 @@
 </div>
 </main>
 
-<!-- ═══ NAVIGATION BASSE ═══ -->
 <nav class="bottom-nav">
 <button class="nav-item active" onclick="App.nav('dashboard')"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span data-i18n="home">Accueil</span></button>
 <button class="nav-item" onclick="App.nav('shop')"><svg viewBox="0 0 24 24"><path d="M12 2l-5.5 9h11z"/></svg><span data-i18n="shop">Boutique</span></button>
@@ -234,9 +243,6 @@
 </nav>
 </div>
 
-<!-- ═══ MODALES ═══ -->
-
-<!-- Envoyer -->
 <div id="modal-send" class="modal">
 <div class="modal-content">
 <div class="modal-header"><h3 data-i18n="send">Envoyer</h3><button class="modal-close" onclick="App.closeModals()">✕</button></div>
@@ -252,7 +258,6 @@
 </div>
 </div>
 
-<!-- Recevoir -->
 <div id="modal-receive" class="modal">
 <div class="modal-content" style="text-align: center;">
 <div class="modal-header"><h3>Recevoir</h3><button class="modal-close" onclick="App.closeModals()">✕</button></div>
@@ -262,7 +267,6 @@
 </div>
 </div>
 
-<!-- ═══ CHAT ASSISTANT ═══ -->
 <button class="chat-fab" onclick="App.toggleChat()">
 <img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="chat-fab-logo" alt="FTA">
 </button>
@@ -281,37 +285,6 @@
 </div>
 </div>
 
-<!-- ═══ MODALE DE CHOIX DE CONNEXION ═══ -->
-<div id="modal-connect" class="modal">
-  <div class="modal-content" style="text-align:center; max-width:360px;">
-    <div class="modal-header"><h3 data-i18n="connTitle">🔐 Connexion à FITIA</h3><button class="modal-close" onclick="App.closeModals()">✕</button></div>
-    <p class="small-text" style="margin-bottom:18px;" data-i18n="connSubtitle">Choisissez votre méthode de connexion. Aucune phrase secrète à retenir.</p>
-    <button class="btn-connect-choice btn-google" onclick="App.connectWithWeb3Auth('google')">
-      <span class="provider-icon">🟢</span><span>Google</span>
-    </button>
-    <button class="btn-connect-choice btn-email" onclick="App.connectWithWeb3Auth('email_passwordless')">
-      <span class="provider-icon">📧</span><span data-i18n="connEmail">Continuer avec Email</span>
-    </button>
-    <button class="btn-connect-choice btn-apple" onclick="App.connectWithWeb3Auth('apple')">
-      <span class="provider-icon">🍎</span><span>Apple</span>
-    </button>
-    <button class="btn-connect-choice btn-twitter" onclick="App.connectWithWeb3Auth('twitter')">
-      <span class="provider-icon">🐦</span><span>X / Twitter</span>
-    </button>
-    <button class="btn-connect-choice btn-facebook" onclick="App.connectWithWeb3Auth('facebook')">
-      <span class="provider-icon">📘</span><span>Facebook</span>
-    </button>
-    <div class="connect-divider"><span data-i18n="connOr">OU</span></div>
-    <button class="btn-connect-choice btn-wallet" onclick="App.connectWithWeb3Auth()">
-      <span class="provider-icon">🦊</span><span data-i18n="connWallet">Connecter un Wallet (MetaMask)</span>
-    </button>
-    <p class="small-text" style="margin-top:14px; font-size:0.7rem; color:#666;">
-      🔒 Connexion sécurisée via Web3Auth. En continuant, vous acceptez les conditions d'utilisation.
-    </p>
-  </div>
-</div>
-
-<!-- ═══ LOADER ═══ -->
 <div id="loader" class="loader hidden">
 <div class="fta-loader-wrap">
 <div class="fta-loader-ring"></div>

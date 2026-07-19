@@ -1,21 +1,21 @@
 :root {
---bg: #0f172a;
---card-bg: #1e293b;
---primary: #F0B90B;
---primary-hover: #FFD43B;
---accent: #3b82f6;
---text: #f8fafc;
---text-muted: #94a3b8;
---danger: #ef4444;
---success: #10b981;
---nav-height: 65px;
---safe-bottom: env(safe-area-inset-bottom, 0px);
+  --bg: #0f172a;
+  --card-bg: #1e293b;
+  --primary: #F0B90B;
+  --primary-hover: #FFD43B;
+  --accent: #3b82f6;
+  --text: #f8fafc;
+  --text-muted: #94a3b8;
+  --danger: #ef4444;
+  --success: #10b981;
+  --nav-height: 65px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; margin: 0; overscroll-behavior: none; }
 body { background-color: var(--bg); font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text); height: 100dvh; overflow: hidden; }
 .bg-glow { position: fixed; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at 50% 0%, #2a2400, transparent 70%); }
-.app-shell { display: flex; flex-direction: column; height: 100%; max-width: 100%; margin: 0 auto; }
+.app-shell { display: flex; flex-direction: column; height: 100%; max-width: 100%; margin: 0 auto; padding-top: env(safe-area-inset-top); }
 header { padding: 15px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(10px); z-index: 10; background: var(--bg); border-bottom: 1px solid rgba(255,255,255,0.05); padding-top: max(15px, env(safe-area-inset-top)); }
 .brand { display: flex; align-items: center; gap: 8px; }
 .logo-icon { font-size: 1.4rem; color: var(--primary); text-shadow: 0 0 15px var(--primary); }
@@ -101,7 +101,6 @@ main::-webkit-scrollbar { display: none; }
 .shop-tab { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; text-align: center; transition: 0.2s; font-size: 0.9rem; }
 .shop-tab.active { background: var(--primary); color: #000; }
 
-/* 🔋 BATTERIE RÉALISTE PRO */
 .battery-shop-item { background: linear-gradient(145deg, #252525, #1a1a1a); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 15px 10px; text-align: center; box-shadow: 5px 5px 15px rgba(0,0,0,0.5); transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .battery-shop-item:active { transform: scale(0.98); }
 .real-battery { position: relative; width: 50px; height: 24px; margin: 4px auto; }
@@ -154,7 +153,7 @@ main::-webkit-scrollbar { display: none; }
 .swap-detail-label { color: var(--text-muted); }
 .swap-detail-value { color: var(--text); font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 0.75rem; }
 .swap-slippage { color: var(--accent); }
-.bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: calc(var(--nav-height) + var(--safe-bottom)); background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); border-top: 1px solid #333; display: flex; justify-content: space-around; align-items: center; z-index: 100; padding-bottom: var(--safe-bottom); }
+.bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: calc(var(--nav-height) + var(--safe-bottom)); background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); border-top: 1px solid #333; display: flex; justify-content: space-around; align-items: center; z-index: 100; padding-bottom: max(var(--safe-bottom), env(safe-area-inset-bottom)); }
 .nav-item { border: none; background: none; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 0.65rem; cursor: pointer; width: 20%; height: 100%; transition: 0.2s; }
 .nav-item svg { width: 22px; height: 22px; fill: currentColor; }
 .nav-item.active { color: var(--primary); }
@@ -208,83 +207,60 @@ main::-webkit-scrollbar { display: none; }
 .chat-send-btn:active { transform: scale(0.9); }
 .hidden { display: none !important; }
 
-/* ─── Boutons dépôt/retrait (Wallet) ─── */
 .btn-wallet-action {
-  flex: 1 1 80px;
-  min-width: 60px;
-  padding: 10px 6px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 0.75rem;
-  text-align: center;
-  transition: all 0.15s;
-  white-space: nowrap;
+  flex: 1 1 80px; min-width: 60px; padding: 10px 6px; border-radius: 10px; border: none;
+  cursor: pointer; font-weight: 700; font-size: 0.75rem; text-align: center;
+  transition: all 0.15s; white-space: nowrap;
 }
 .btn-wallet-deposit { background: var(--primary); color: #000; }
 .btn-wallet-deposit:active { background: var(--primary-hover); transform: scale(0.97); }
 .btn-wallet-withdraw { background: rgba(239, 68, 68, 0.12); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
 .btn-wallet-withdraw:active { background: rgba(239, 68, 68, 0.25); transform: scale(0.97); }
 
-/* ─── Wallet — carte professionnelle ─── */
 .wallet-main-card { padding: 16px; }
-.wallet-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-  gap: 10px;
-}
+.wallet-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
 .wallet-card-header h3 { margin: 0; font-size: 1rem; flex-shrink: 0; }
 .wallet-main-actions { display: flex; gap: 8px; }
 .btn-wallet-main {
-  padding: 7px 14px;
-  border-radius: 20px;
-  border: none;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 0.78rem;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: all 0.15s;
-  white-space: nowrap;
+  padding: 7px 14px; border-radius: 20px; border: none; cursor: pointer;
+  font-weight: 700; font-size: 0.78rem; display: flex; align-items: center; gap: 5px;
+  transition: all 0.15s; white-space: nowrap;
 }
 .btn-wallet-send { background: var(--primary); color: #000; }
 .btn-wallet-send:active { background: var(--primary-hover); transform: scale(0.97); }
 .btn-wallet-recv { background: var(--accent); color: #fff; }
 .btn-wallet-recv:active { background: #2563eb; transform: scale(0.97); }
 
-/* ─── Lignes token simplifiées ─── */
-.token-price-mini {
-  flex-shrink: 0;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  background: rgba(255,255,255,0.04);
-  padding: 4px 10px;
-  border-radius: 8px;
-  min-width: 55px;
-  text-align: center;
-}
+.token-price-col { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 65px; }
+.token-price-mini, .token-unit-price { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-muted); }
+.token-change { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
+.token-change.up { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.token-change.down { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.token-change.flat { background: rgba(148, 163, 184, 0.1); color: #94a3b8; }
 .wallet-token-row { align-items: center; padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
 .wallet-token-row:last-of-type { border-bottom: none; padding-bottom: 8px; }
 
-/* ─── Barre dépôt/retrait ─── */
-.wallet-action-bar {
-  display: flex;
-  gap: 8px;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  flex-wrap: wrap;
-}
+.wallet-action-bar { display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); flex-wrap: wrap; }
 .wallet-token-select { flex: 0 0 72px; min-width: 68px; margin-bottom: 0; padding: 10px 8px; font-size: 14px; }
 .wallet-amount-input { flex: 2 1 90px; min-width: 70px; margin-bottom: 0; }
 
-/* ─── Améliorations mobiles ─── */
+/* ─── AMÉLIORATIONS MOBILES / APK ─── */
+html, body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+input, textarea, select, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+input, select { font-size: 16px; } /* Évite le zoom auto iOS */
+img { -webkit-user-drag: none; }
+
 @media screen and (max-width: 380px) {
   .wallet-token-row { flex-wrap: wrap; gap: 6px; }
   .wallet-actions { flex-direction: row; gap: 4px; }
