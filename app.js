@@ -285,7 +285,7 @@ class Application {
 
     // ─── Décimales des tokens ───
     this.usdtDecimals = 6;
-    this.ftaDecimals = 18;
+    this.ftaDecimals = 8;  // ⚠️ Le token FTA utilise 8 décimales
 
     // ─── Données en cache ───
     this.polPriceUsd = 0;
@@ -482,8 +482,11 @@ class Application {
     this.core = new ethers.Contract(CONFIG.CORE, CORE_ABI, this.signer);
     // Instanciation du Mine V3
     this.mine = new ethers.Contract(CONFIG.MINE, MINE_ABI, this.signer);
-    // Récupération des décimales FTA (supposé 18 par défaut)
-    try { this.ftaDecimals = 18; } catch (e) { /* fallback 18 */ }
+    // Récupération dynamique des décimales du token FTA
+    try {
+      const ftaContract = new ethers.Contract(CONFIG.FTA, ["function decimals() view returns (uint8)"], this.provider);
+      this.ftaDecimals = Number(await ftaContract.decimals());
+    } catch (e) { /* garde la valeur par défaut 8 */ }
     // Met à jour l'interface
     document.getElementById('btn-connect').classList.add('hidden');
     document.getElementById('wallet-status').classList.remove('hidden');
@@ -861,6 +864,7 @@ class Application {
         const amountBN = ethers.parseUnits(amount.toString(), this.usdtDecimals);
         await (await this.core.withdrawUsdt(amountBN)).wait();
       } else {
+        // Retrait FTA — utiliser les décimales réelles du token (8)
         const amountBN = ethers.parseUnits(amount.toString(), this.ftaDecimals);
         await (await this.core.withdrawFta(amountBN)).wait();
       }
@@ -1084,7 +1088,8 @@ class Application {
       for (let i = 0; i < count; i++) {
         const d = results[i];
         const priceUsdt = parseFloat(ethers.formatUnits(d.price, this.usdtDecimals));
-        const power = parseFloat(ethers.formatUnits(d.power, this.ftaDecimals));
+        // ⚠️ power est un entier brut (pas de décimales) — le contrat stocke la puissance en unités naturelles
+        const power = Number(d.power);
         this.shopMachinesData.push({ price: priceUsdt, power: power, priceRaw: d.price });
       }
     } catch (e) { console.error("Erreur fetchMachines:", e); }
@@ -1219,7 +1224,9 @@ class Application {
       // Calcul du minimum reçu pour le slippage
       const netInput = parseFloat(val) * (1 - SWAP_FEE_RATE);
       const expectedOut = isUsdtTo ? (netInput / this.ftaPriceUsd) : (netInput * this.ftaPriceUsd);
-      const minOut = ethers.parseUnits((expectedOut * (1 - SLIPPAGE)).toFixed(6), isUsdtTo ? this.ftaDecimals : this.usdtDecimals);
+      // minOut : si USDT→FTA alors decimals=FTA (8), si FTA→USDT alors decimals=USDT (6)
+      const outDec = isUsdtTo ? this.ftaDecimals : this.usdtDecimals;
+      const minOut = ethers.parseUnits((expectedOut * (1 - SLIPPAGE)).toFixed(outDec), outDec);
 
       // Deadline : 20 minutes dans le futur
       const deadline = Math.floor(Date.now() / 1000) + 1200;
