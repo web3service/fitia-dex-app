@@ -3,8 +3,8 @@
 // ─── Configuration ─────────────────────────────────────────────────
 const CONFIG = {
   // ⚠️ À REMPLACER avec les adresses réelles déployées sur Polygon
-  CORE: "0xAaba9Ae712d501474351C252C931f95189895126",  // FitiaMiningV3_Core
-  MINE: "0x8b5931e481Cc4cDBBfcD27cd08900f9429AfdAeA",  // FitiaMiningV3_Mine
+  CORE: "0xa16571137A8F95ac290dE61A25462ea7827e7c7D",  // FitiaMiningV3_Core
+  MINE: "0x7D3B8aC9044E612f30e368b77c2c1f6a038c95F1",  // FitiaMiningV3_Mine
   USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // USDT Polygon (officiel)
   FTA:  "0x5c418b12c7e9c2A8e9A71A68c6d9b319E7B1d1fd",  // Token FTA
   CHAIN_ID: 137,              // Polygon Mainnet
