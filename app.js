@@ -3,10 +3,10 @@
 // ─── Configuration ─────────────────────────────────────────────────
 const CONFIG = {
   // ⚠️ À REMPLACER avec les adresses réelles déployées sur Polygon
-  CORE: "0xa16571137A8F95ac290dE61A25462ea7827e7c7D",  // FitiaMiningV3_Core
-  MINE: "0x7D3B8aC9044E612f30e368b77c2c1f6a038c95F1",  // FitiaMiningV3_Mine
+  CORE: "0x1b8EdFb91168Fb233F8CA7cf1631038AC193D743",  // FitiaMiningV3_Core
+  MINE: "0xBd9FA9801eDA247b28B3BB9dDBf1CF52cA563Bc6",  // FitiaMiningV3_Mine
   USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // USDT Polygon (officiel)
-  FTA:  "0x5c418b12c7e9c2A8e9A71A68c6d9b319E7B1d1fd",  // Token FTA
+  FTA:  "0x5c418b12c7e9c2A8e9A71A68c6d9b319E7B1d1f",  // Token FTA
   CHAIN_ID: 137,              // Polygon Mainnet
   WC_PROJECT_ID: "2c10ee910a836551fbabbf7c8cc4542a",   // WalletConnect Project ID
   WHATSAPP_GROUP: "https://chat.whatsapp.com/BDsvPCB6xp8H8X0YaRmPFP",
@@ -250,8 +250,8 @@ const MINE_ABI = [
   "function powerOf(address u) view returns (uint256)",
   "function mCount() view returns (uint256)",
   "function bCount() view returns (uint256)",
-  "function mTypes(uint256) view returns (uint256 price, uint256 power)",
-  "function bTypes(uint256) view returns (uint256 price, uint256 dur)",
+  "function getMType(uint256) view returns (uint256 price, uint256 power, uint256 shopExpiry)",
+  "function getBType(uint256) view returns (uint256 price, uint256 dur)",
   "function myMachines(address u) view returns (tuple(uint256 tid, uint256 exp)[])",
   "function myBattery(address u, uint256 t) view returns (uint256)",
   "function myInfo(address u) view returns (uint256 mc, uint256 ap, uint256 lc)"
@@ -512,7 +512,7 @@ class Application {
       const count = Number(await this.mine.bCount());
       for (let i = 0; i < count; i++) {
         try {
-          const b = await this.mine.bTypes(i);
+          const b = await this.mine.getBType(i);
           // La durée est en secondes, on convertit en jours
           this.batteryTypeDurations[i] = Number(b.dur) / 86400;
         } catch (e) { /* ignore les erreurs individuelles */ }
@@ -942,17 +942,19 @@ class Application {
   // ─── Achat d'une machine ─────────────────────────────────────────
   async buyMachine(typeId) {
     if (!this.user) return this.connect();
+
+    // Vérifie l'expiration shop côté frontend (sécurité)
+    const mData = this.shopMachinesData[typeId];
+    if (!mData) return this.showToast("Machine indisponible", true);
+    if (mData.shopExpiry > 0 && Math.floor(Date.now() / 1000) > mData.shopExpiry) {
+      return this.showToast("Cette machine n'est plus disponible", true);
+    }
+
     this.setLoader(true, `${this.t('buyingMachine')} (${this.payMode})...`);
     try {
-      const mData = this.shopMachinesData[typeId];
-      if (!mData) throw new Error("Données machine non disponibles");
-
       if (this.payMode === 'USDT') {
-        // Le contrat Mine appelle mDebitU sur le Core pour débiter le solde USDT interne
-        // Pas besoin d'approve puisque les fonds sont déjà dans le Core
         await (await this.mine.buyMachine(typeId)).wait();
       } else {
-        // Paiement en FTA via le solde interne
         await (await this.mine.buyMachineFTA(typeId)).wait();
       }
       this.showToast(this.t('machineBought'));
@@ -1082,15 +1084,17 @@ class Application {
     try {
       const count = Number(await this.mine.mCount());
       const promises = [];
-      for (let i = 0; i < count; i++) promises.push(this.mine.mTypes(i));
+      for (let i = 0; i < count; i++) promises.push(this.mine.getMType(i));
       const results = await Promise.all(promises);
       this.shopMachinesData = [];
       for (let i = 0; i < count; i++) {
         const d = results[i];
         const priceUsdt = parseFloat(ethers.formatUnits(d.price, this.usdtDecimals));
-        // ⚠️ power est un entier brut (pas de décimales) — le contrat stocke la puissance en unités naturelles
+        // power est un entier brut (pas de décimales)
         const power = Number(d.power);
-        this.shopMachinesData.push({ price: priceUsdt, power: power, priceRaw: d.price });
+        // shopExpiry : 0 = jamais, >0 = timestamp d'expiration
+        const shopExpiry = Number(d.shopExpiry ?? 0);
+        this.shopMachinesData.push({ price: priceUsdt, power: power, priceRaw: d.price, shopExpiry: shopExpiry });
       }
     } catch (e) { console.error("Erreur fetchMachines:", e); }
     this.isLoadingShop = false;
@@ -1102,7 +1106,7 @@ class Application {
     try {
       const count = Number(await this.mine.bCount());
       const promises = [];
-      for (let i = 0; i < count; i++) promises.push(this.mine.bTypes(i));
+      for (let i = 0; i < count; i++) promises.push(this.mine.getBType(i));
       const results = await Promise.all(promises);
       this.shopBatteriesData = [];
       for (let i = 0; i < count; i++) {
