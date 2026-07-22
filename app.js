@@ -6,7 +6,7 @@ const CONFIG = {
   CORE: "0x1b8EdFb91168Fb233F8CA7cf1631038AC193D743",  // FitiaMiningV3_Core
   MINE: "0xBd9FA9801eDA247b28B3BB9dDBf1CF52cA563Bc6",  // FitiaMiningV3_Mine
   USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // USDT Polygon (officiel)
-  FTA:  "0x5c418b12c7e9c2A8e9A71A68c6d9b319E7B1d1f",  // Token FTA
+  FTA:  "0x5c418b12c7e9c2A8e9A71A68c6d9b319E7B1d1fd",  // Token FTA
   CHAIN_ID: 137,              // Polygon Mainnet
   WC_PROJECT_ID: "2c10ee910a836551fbabbf7c8cc4542a",   // WalletConnect Project ID
   WHATSAPP_GROUP: "https://chat.whatsapp.com/BDsvPCB6xp8H8X0YaRmPFP",
@@ -809,36 +809,63 @@ class Application {
     const amount = parseFloat(document.getElementById('deposit-amount').value);
     if (!amount || amount <= 0) return this.showToast(this.t('invalidAmount'), true);
 
+    // Vérification rapide que l'adresse du token est configurée
+    const tokenAddr = tokenType === 'USDT' ? CONFIG.USDT : CONFIG.FTA;
+    if (!tokenAddr || tokenAddr === '0x0000000000000000000000000000000000000000') {
+      return this.showToast('❌ Adresse du token ' + tokenType + ' non configurée dans CONFIG. Veuillez définir CONFIG.' + tokenType, true);
+    }
+
     this.setLoader(true, this.t('depositing'));
     try {
       if (tokenType === 'USDT') {
-        // Le Core V3 utilise transferFrom — il faut d'abord approuver
         const usdtContract = new ethers.Contract(CONFIG.USDT, [
           "function approve(address,uint256) returns (bool)",
-          "function allowance(address,address) view returns (uint256)"
-        ], this.signer);
+          "function allowance(address,address) view returns (uint256)",
+          "function balanceOf(address) view returns (uint256)",
+          "function decimals() view returns (uint8)"
+        ], this.provider);
         const amountBN = ethers.parseUnits(amount.toString(), this.usdtDecimals);
+        // Vérifier le solde wallet avant d'essayer
+        const walletBal = await usdtContract.balanceOf(this.user);
+        if (walletBal < amountBN) {
+          const walletFormatted = parseFloat(ethers.formatUnits(walletBal, this.usdtDecimals));
+          return this.showToast(`❌ Solde USDT insuffisant dans votre wallet. Vous avez ${walletFormatted.toFixed(2)} USDT, vous essayez de déposer ${amount.toFixed(2)} USDT.`, true);
+        }
         const allowance = await usdtContract.allowance(this.user, CONFIG.CORE);
         if (allowance < amountBN) {
           this.setLoader(true, "Approbation USDT...");
-          await (await usdtContract.approve(CONFIG.CORE, amountBN)).wait();
+          await (await usdtContract.connect(this.signer).approve(CONFIG.CORE, amountBN)).wait();
         }
         this.setLoader(true, this.t('confirming'));
         await (await this.core.depositUsdt(amountBN)).wait();
       } else {
-        // Dépôt FTA — même logique avec approve
+        // Dépôt FTA
         const ftaContract = new ethers.Contract(CONFIG.FTA, [
           "function approve(address,uint256) returns (bool)",
           "function allowance(address,address) view returns (uint256)",
+          "function balanceOf(address) view returns (uint256)",
           "function decimals() view returns (uint8)"
-        ], this.signer);
+        ], this.provider);
         // Lire les décimales depuis le contrat FTA
-        try { this.ftaDecimals = Number(await ftaContract.decimals()); } catch (e) { /* garde 8 */ }
+        try {
+          const dec = await ftaContract.decimals();
+          this.ftaDecimals = Number(dec);
+        } catch (e) {
+          console.warn("Impossible de lire decimals() sur FTA, fallback à 8");
+          this.ftaDecimals = 8;
+        }
         const amountBN = ethers.parseUnits(amount.toString(), this.ftaDecimals);
+        // Vérifier le solde wallet avant d'essayer
+        const walletBal = await ftaContract.balanceOf(this.user);
+        if (walletBal < amountBN) {
+          const walletFormatted = parseFloat(ethers.formatUnits(walletBal, this.ftaDecimals));
+          return this.showToast(`❌ Solde FTA insuffisant dans votre wallet. Vous avez ${walletFormatted.toFixed(4)} FTA, vous essayez de déposer ${amount.toFixed(4)} FTA.`, true);
+        }
+        // Vérifier l'allowance et approuver si nécessaire (utiliser le signer pour les tx)
         const allowance = await ftaContract.allowance(this.user, CONFIG.CORE);
         if (allowance < amountBN) {
           this.setLoader(true, "Approbation FTA...");
-          await (await ftaContract.approve(CONFIG.CORE, amountBN)).wait();
+          await (await ftaContract.connect(this.signer).approve(CONFIG.CORE, amountBN)).wait();
         }
         this.setLoader(true, this.t('confirming'));
         await (await this.core.depositFta(amountBN)).wait();
@@ -846,7 +873,13 @@ class Application {
       this.showToast(this.t('depositSuccess'));
       document.getElementById('deposit-amount').value = '';
       this.updateData();
-    } catch (e) { this.showError(e); }
+    } catch (e) {
+      // Si le loader est encore actif après une erreur pendant approve,
+      // on désactive le loader avant d'afficher l'erreur
+      this.setLoader(false);
+      this.showError(e);
+      return; // Évite d'appeler setLoader(false) deux fois
+    }
     this.setLoader(false);
   }
 
@@ -1306,10 +1339,16 @@ class Application {
 
   // ─── Gestion des erreurs ─────────────────────────────────────────
   getErrorMessage(e) {
-    const errStr = (e?.message || '').toLowerCase() + ' ' + (e?.code || '').toLowerCase() + ' ' + (e?.reason || '').toLowerCase();
+    // Extraire le message court ethers v6 (contient la raison du revert)
+    const shortMsg = e?.shortMessage || e?.reason || '';
+    const errStr = ((e?.message || '') + ' ' + shortMsg + ' ' + (e?.code || '') + ' ' + (e?.reason || '')).toLowerCase();
+
     if (errStr.includes('user rejected') || errStr.includes('user denied') || errStr.includes('action_rejected') || e?.code === 4001) return this.t('errRejected');
     if (errStr.includes('insufficient') || errStr.includes('not enough') || errStr.includes('insf')) return this.t('errInsufficientFunds');
+    // Erreurs de transfert : approve manquant, solde insuffisant, etc.
+    if (errStr.includes('tff') || errStr.includes('transferfrom') || errStr.includes('erc20: transfer amount exceeds')) return '❌ Transfert échoué. Vérifiez que vous avez approuvé le contrat et que votre solde wallet FTA est suffisant.';
     if (errStr.includes('nonce')) return this.t('errNonce');
+    if (errStr.includes('reentrant')) return '⚠️ Une transaction est déjà en cours. Patientez quelques secondes.';
     if (errStr.includes('pending')) return this.t('errAlreadyPending');
     if (errStr.includes('timeout') || errStr.includes('deadline')) return this.t('errTimeout');
     if (errStr.includes('network') || errStr.includes('fetch') || errStr.includes('call revert')) return this.t('errNetwork');
@@ -1318,11 +1357,21 @@ class Application {
     if (errStr.includes('running')) return this.t('errRunning');
     if (errStr.includes('nobat') || errStr.includes('no battery')) return this.t('errNoBattery');
     if (errStr.includes('maxm') || errStr.includes('max machine')) return this.t('errMaxMachine');
+
+    // Fallback : afficher le vrai message ethers si disponible, sinon générique
+    if (shortMsg) return 'Erreur contrat : ' + shortMsg;
     return this.t('errGeneric');
   }
 
   showError(e) {
-    console.error("Transaction Error:", e);
+    // Log complet pour débogage console
+    console.error("═══ Transaction Error ═══");
+    console.error("Message:", e?.message);
+    console.error("Short:", e?.shortMessage);
+    console.error("Reason:", e?.reason);
+    console.error("Code:", e?.code);
+    console.error("Data:", e?.data);
+    console.error("Full:", e);
     this.showToast(this.getErrorMessage(e), true);
   }
 
