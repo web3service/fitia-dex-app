@@ -832,10 +832,9 @@ class Application {
           "function allowance(address,address) view returns (uint256)",
           "function decimals() view returns (uint8)"
         ], this.signer);
-        // Récupérer les décimales réelles du token FTA (probablement 18)
-        let tokDec;
-        try { tokDec = Number(await ftaContract.decimals()); } catch (e) { tokDec = 18; }
-        const amountBN = ethers.parseUnits(amount.toString(), tokDec);
+        // Lire les décimales depuis le contrat FTA
+        try { this.ftaDecimals = Number(await ftaContract.decimals()); } catch (e) { /* garde 8 */ }
+        const amountBN = ethers.parseUnits(amount.toString(), this.ftaDecimals);
         const allowance = await ftaContract.allowance(this.user, CONFIG.CORE);
         if (allowance < amountBN) {
           this.setLoader(true, "Approbation FTA...");
