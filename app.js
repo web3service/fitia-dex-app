@@ -321,8 +321,10 @@ class Application {
     this.chatHistory = [];
 
     // ─── Historique des prix pour calculer l'évolution ───
-    // Stocke les prix précédents : { pol: number, fta: number, usdt: number }
-    this.previousPrices = {};
+    // On compare le prix actuel avec un checkpoint pris toutes les 5 minutes
+    // (comparer toutes les 15s donne toujours ~0.00% car la bonding curve bouge trop peu)
+    this.prevPriceCheckpoint = {};  // { pol: number, fta: number, usdt: number }
+    this.priceCheckpointTime = 0;    // timestamp du dernier checkpoint
   }
 
   // ─── Traduction ──────────────────────────────────────────────────
@@ -752,10 +754,17 @@ class Application {
       this.lastClaimTimestamp = parseInt(localStorage.getItem(this.storageKey) || '0');
       const elapsed = Math.floor(Date.now() / 1000) - this.lastClaimTimestamp;
 
+      // ⚠️ CORRECTION : le contrat Mine crédite des unités brutes de FTA (8 décimales).
+      // La formule Solidity est : rw = elapsed * power * difficulty / 1e18
+      // rw est en unités brutes (×1e8 pour avoir des vrais FTA).
+      // Le frontend doit diviser par 1e8 pour afficher le vrai nombre de FTA.
+      // Sans ça, le pending est 100 millions de fois trop élevé (mirage).
       if (this.currentRealPower > 0) {
         if (!this.miningTimer) {
-          this.pendingBalance = this.currentRealPower * elapsed;
-          document.getElementById('val-pending').innerText = this.pendingBalance.toFixed(5);
+          // currentRealPower = power * difficulty / 1e18 = unités brutes/seconde
+          // On divise par 1e8 pour avoir des vrais FTA
+          const pendingFtaRaw = this.currentRealPower * elapsed;
+          document.getElementById('val-pending').innerText = (pendingFtaRaw / 1e8).toFixed(8);
           this.startMiningCounter();
         }
         document.getElementById('viz-status').innerText = this.t('miningActive');
@@ -765,8 +774,7 @@ class Application {
         this.stopMiningCounter();
         document.getElementById('viz-status').innerText = this.t('noMachine');
         document.getElementById('viz-status').style.color = "#666";
-        this.pendingBalance = 0;
-        document.getElementById('val-pending').innerText = "0.00000";
+        document.getElementById('val-pending').innerText = "0.00000000";
       }
 
       // ─── Rafraîchit la boutique et les assets ────────────────────
@@ -785,10 +793,12 @@ class Application {
   // ─── Compteur de minage local (simulation côté client) ───────────
   startMiningCounter() {
     if (this.miningTimer) return;
+    // pendingBalance = accumulateur en unités brutes de FTA (÷1e8 pour vrais FTA)
+    this.pendingBalance = parseFloat(document.getElementById('val-pending').innerText) * 1e8 || 0;
     this.miningTimer = setInterval(() => {
       if (this.currentRealPower > 0) {
-        this.pendingBalance += this.currentRealPower;
-        document.getElementById('val-pending').innerText = this.pendingBalance.toFixed(5);
+        this.pendingBalance += this.currentRealPower; // unités brutes par seconde
+        document.getElementById('val-pending').innerText = (this.pendingBalance / 1e8).toFixed(8);
         document.getElementById('val-pending').style.color = 'var(--primary)';
         setTimeout(() => document.getElementById('val-pending').style.color = 'var(--text)', 500);
       }
@@ -1038,26 +1048,24 @@ class Application {
   // ─── Récupération des gains (claim) ──────────────────────────────
   async claim() {
     if (!this.user) return;
-    if (!this.currentRealPower || this.currentRealPower <= 0) {
-      // Pas de puissance active : le claim ne fera rien, mais on peut quand même essayer
-      // (le contrat mettra juste à jour le timestamp sans erreur si pw==0)
-    }
     this.stopMiningCounter();
     this.setLoader(true, this.t('claiming'));
     try {
       const tx = await this.mine.claimRewards();
       await tx.wait();
+      // Réinitialise le pending affiché et le compteur de temps
       this.pendingBalance = 0;
+      document.getElementById('val-pending').innerText = "0.00000000";
       localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
       this.showToast(this.t('claimed'));
-      this.updateData();
+      await this.updateData();
       if (this.currentRealPower > 0) this.startMiningCounter();
     } catch (e) {
       const errStr = (e?.message || '').toLowerCase();
       if (errStr.includes('tfee') || errStr.includes('transfer')) {
-        // Le contrat Mine essaie de transférer des FTA pour le fee
-        // mais le Mine n'a pas de balance FTA — bug contrat, pas frontend
-        this.showToast('⚠️ Le contrat Mine n\'a pas assez de liquidité FTA pour payer les frais de claim. Contactez l\'admin (fix: mCreditF au lieu de transfer).', true);
+        this.showToast('⚠️ Le contrat Mine n\'a pas assez de liquidité FTA pour payer les frais de claim. Contactez l\'admin.', true);
+      } else if (errStr.includes('nom') || errStr.includes('no machine')) {
+        this.showToast('⚠️ Aucune machine trouvée. Achetez une machine et branchez-la d\'abord.', true);
       } else {
         this.showError(e);
       }
@@ -1385,19 +1393,30 @@ class Application {
   }
 
   // ─── Mise à jour de l'indicateur de pourcentage d'évolution ─────
+  // Compare le prix actuel avec un checkpoint pris toutes les 5 minutes.
+  // Sans ça, comparer toutes les 15 secondes donne toujours ~0.00%
+  // car la bonding curve ne bouge pas assez vite.
   updatePriceChange(token, newPrice) {
     const el = document.getElementById('change-' + token);
     if (!el) return;
-    const prev = this.previousPrices[token];
-    if (prev === undefined || prev === null || prev === 0) {
-      // Première lecture : on stocke le prix sans afficher de variation
-      this.previousPrices[token] = newPrice;
+    const now = Date.now();
+    const interval = 5 * 60 * 1000; // checkpoint toutes les 5 minutes
+    const checkpoint = this.prevPriceCheckpoint[token];
+
+    // Premier passage ou reset périodique : on pose un nouveau checkpoint
+    if (checkpoint === undefined || checkpoint === null || checkpoint === 0
+        || now - this.priceCheckpointTime > interval) {
+      this.prevPriceCheckpoint[token] = newPrice;
+      if (this.priceCheckpointTime === 0 || now - this.priceCheckpointTime > interval * 2) {
+        this.priceCheckpointTime = now;
+      }
       el.textContent = '0.00%';
       el.className = 'token-change flat';
       return;
     }
-    // Calcul de l'évolution en pourcentage
-    const change = ((newPrice - prev) / prev) * 100;
+
+    // Calcul de l'évolution depuis le dernier checkpoint
+    const change = ((newPrice - checkpoint) / checkpoint) * 100;
     const absChange = Math.abs(change);
     let sign, cssClass;
     if (absChange < 0.01) {
@@ -1412,8 +1431,6 @@ class Application {
     }
     el.textContent = sign + change.toFixed(2) + '%';
     el.className = 'token-change ' + cssClass;
-    // Met à jour le prix précédent seulement si ça a vraiment bougé
-    this.previousPrices[token] = newPrice;
   }
 
   // ═══ CHAT ASSISTANT ══════════════════════════════════════════════
