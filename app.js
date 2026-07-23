@@ -325,6 +325,14 @@ class Application {
     // (comparer toutes les 15s donne toujours ~0.00% car la bonding curve bouge trop peu)
     this.prevPriceCheckpoint = {};  // { pol: number, fta: number, usdt: number }
     this.priceCheckpointTime = 0;    // timestamp du dernier checkpoint
+
+    // ─── Activité & Notifications ───
+    this.activityKey = "fitia_v3_activity";  // Historique dans localStorage
+    this.notifKey = "fitia_v3_notifications"; // Notifications dans localStorage
+    this.activityCache = [];       // [{id,type,title,detail,amount,amountSign,tx,ts}, ...]
+    this.notifCache = [];          // [{id,type,icon,title,desc,ts,read}, ...]
+    this.activityFilter = 'all';   // Filtre actif pour l'historique
+    this.loadActivityData();
   }
 
   // ─── Traduction ──────────────────────────────────────────────────
@@ -847,7 +855,9 @@ class Application {
           await (await usdtContract.connect(this.signer).approve(CONFIG.CORE, amountBN)).wait();
         }
         this.setLoader(true, this.t('confirming'));
-        await (await this.core.depositUsdt(amountBN)).wait();
+        const tx = await this.core.depositUsdt(amountBN);
+        await tx.wait();
+        this.logActivity('deposit', 'Dépôt USDT', amount.toFixed(2) + ' USDT → balance interne', amount.toFixed(2) + ' USDT', '+', tx.hash);
       } else {
         // Dépôt FTA
         const ftaContract = new ethers.Contract(CONFIG.FTA, [
@@ -878,7 +888,9 @@ class Application {
           await (await ftaContract.connect(this.signer).approve(CONFIG.CORE, amountBN)).wait();
         }
         this.setLoader(true, this.t('confirming'));
-        await (await this.core.depositFta(amountBN)).wait();
+        const tx = await this.core.depositFta(amountBN);
+        await tx.wait();
+        this.logActivity('deposit', 'Dépôt FTA', amount.toFixed(4) + ' FTA → balance interne', amount.toFixed(4) + ' FTA', '+', tx.hash);
       }
       this.showToast(this.t('depositSuccess'));
       document.getElementById('deposit-amount').value = '';
@@ -904,11 +916,14 @@ class Application {
     try {
       if (tokenType === 'USDT') {
         const amountBN = ethers.parseUnits(amount.toString(), this.usdtDecimals);
-        await (await this.core.withdrawUsdt(amountBN)).wait();
+        const tx = await this.core.withdrawUsdt(amountBN);
+        await tx.wait();
+        this.logActivity('withdraw', 'Retrait USDT', amount.toFixed(2) + ' USDT → wallet', amount.toFixed(2) + ' USDT', '-', tx.hash);
       } else {
-        // Retrait FTA — utiliser les décimales réelles du token (8)
         const amountBN = ethers.parseUnits(amount.toString(), this.ftaDecimals);
-        await (await this.core.withdrawFta(amountBN)).wait();
+        const tx = await this.core.withdrawFta(amountBN);
+        await tx.wait();
+        this.logActivity('withdraw', 'Retrait FTA', amount.toFixed(4) + ' FTA → wallet', amount.toFixed(4) + ' FTA', '-', tx.hash);
       }
       this.showToast(this.t('withdrawSuccess'));
       document.getElementById('deposit-amount').value = '';
@@ -985,7 +1000,6 @@ class Application {
   async buyMachine(typeId) {
     if (!this.user) return this.connect();
 
-    // Vérifie l'expiration shop côté frontend (sécurité)
     const mData = this.shopMachinesData[typeId];
     if (!mData) return this.showToast("Machine indisponible", true);
     if (mData.shopExpiry > 0 && Math.floor(Date.now() / 1000) > mData.shopExpiry) {
@@ -994,11 +1008,15 @@ class Application {
 
     this.setLoader(true, `${this.t('buyingMachine')} (${this.payMode})...`);
     try {
+      let tx;
       if (this.payMode === 'USDT') {
-        await (await this.mine.buyMachine(typeId)).wait();
+        tx = await this.mine.buyMachine(typeId);
       } else {
-        await (await this.mine.buyMachineFTA(typeId)).wait();
+        tx = await this.mine.buyMachineFTA(typeId);
       }
+      await tx.wait();
+      const price = this.payMode === 'USDT' ? mData.price.toFixed(2) + ' USDT' : ('\u2248 ' + mData.price.toFixed(2) + ' USDT');
+      this.logActivity('buy', 'Achat Machine', 'Machine #' + (typeId+1) + ' (' + this.formatHashrate(mData.power) + ')', price, '-', tx.hash);
       this.showToast(this.t('machineBought'));
       this.shopMachinesData = [];
       this.updateData();
@@ -1536,6 +1554,207 @@ class Application {
         : "👥 Connectez votre wallet pour voir votre code de parrainage !";
     }
     return "Je ne suis pas sûr de comprendre. Essayez : 'minage', 'swap', 'wallet', 'sécurité', 'communauté', ou 'parrainage'. Je suis là pour vous aider !";
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  ACTIVITÉ & NOTIFICATIONS — Système de traçabilité pro
+  // ═══════════════════════════════════════════════════════════════
+
+  // Charge l'historique depuis localStorage
+  loadActivityData() {
+    try {
+      const raw = localStorage.getItem(this.activityKey);
+      this.activityCache = raw ? JSON.parse(raw) : [];
+    } catch(e) { this.activityCache = []; }
+    try {
+      const rawN = localStorage.getItem(this.notifKey);
+      this.notifCache = rawN ? JSON.parse(rawN) : [];
+    } catch(e) { this.notifCache = []; }
+  }
+
+  // Enregistre une activité et génère une notification
+  logActivity(type, title, detail, amount, amountSign, tx) {
+    const now = Date.now();
+    const id = 'a' + now + '_' + Math.random().toString(36).slice(2,6);
+    const entry = { id, type, title, detail, amount, amountSign, tx: tx || '', ts: now };
+    this.activityCache.unshift(entry);
+    // Garde max 500 entrées pour éviter de saturer localStorage
+    if (this.activityCache.length > 500) this.activityCache.length = 500;
+    localStorage.setItem(this.activityKey, JSON.stringify(this.activityCache));
+    // Notification associée
+    const icons = { deposit:'💰', withdraw:'📤', swap:'💱', claim:'⛏️', buy:'🛒', plug:'🔌', send:'📨', referral:'👥' };
+    const nTitle = title + (amount ? ' • ' + (amountSign === '+' ? '+' : '') + amount : '');
+    const nEntry = { id:'n'+now, type, icon:icons[type]||'📋', title:nTitle, desc:detail, ts:now, read:false };
+    this.notifCache.unshift(nEntry);
+    if (this.notifCache.length > 200) this.notifCache.length = 200;
+    localStorage.setItem(this.notifKey, JSON.stringify(this.notifCache));
+    this.updateNotifBadge();
+  }
+
+  // Met à jour le badge de notifications non lues
+  updateNotifBadge() {
+    const badge = document.getElementById('notif-badge');
+    if (!badge) return;
+    const unread = this.notifCache.filter(n => n.read).length;
+    if (unread > 0) {
+      badge.textContent = unread > 99 ? '99+' : unread;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+
+  // Ouvre/ferme le panneau de notifications
+  toggleNotifications() {
+    const panel = document.getElementById('notif-panel');
+    const isActive = panel.classList.toggle('active');
+    if (isActive) {
+      this.renderNotifications();
+      // Marque tout comme lu
+      this.notifCache.forEach(n => n.read = true);
+      localStorage.setItem(this.notifKey, JSON.stringify(this.notifCache));
+      this.updateNotifBadge();
+    }
+  }
+
+  // Marque toutes les notifications comme lues
+  clearNotifications() {
+    this.notifCache.forEach(n => n.read = true);
+    localStorage.setItem(this.notifKey, JSON.stringify(this.notifCache));
+    this.updateNotifBadge();
+    this.renderNotifications();
+  }
+
+  // Affiche les notifications dans le panneau
+  renderNotifications() {
+    const list = document.getElementById('notif-list');
+    if (!list) return;
+    if (!this.notifCache.length) {
+      list.innerHTML = '<p class="notif-empty">Aucune notification</p>';
+      return;
+    }
+    const recent = this.notifCache.slice(0, 50);
+    list.innerHTML = recent.map(n => {
+      const timeAgo = this.getTimeAgo(n.ts);
+      return `<div class="notif-item${n.read ? '' : ' unread'}" onclick="App.nav('profile')">
+        <div class="notif-icon ${n.type}">${n.icon}</div>
+        <div class="notif-body">
+          <div class="notif-title">${n.title}</div>
+          <div class="notif-desc">${n.desc}</div>
+        </div>
+        <div class="notif-time">${timeAgo}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Formate un timestamp en "il y a X"
+  getTimeAgo(ts) {
+    const diff = Math.floor((Date.now() - ts) / 1000);
+    if (diff < 60) return 'À l\'instant';
+    if (diff < 3600) return Math.floor(diff/60) + 'm';
+    if (diff < 86400) return Math.floor(diff/3600) + 'h';
+    if (diff < 604800) return Math.floor(diff/86400) + 'j';
+    const d = new Date(ts);
+    return d.toLocaleDateString('fr');
+  }
+
+  // Filtre l'historique par type
+  filterActivity(type) {
+    this.activityFilter = type;
+    document.querySelectorAll('.activity-filter-btn').forEach(b => b.classList.remove('active'));
+    event?.currentTarget?.classList.add('active');
+    this.renderActivity();
+  }
+
+  // Calcule et affiche les stats du profil
+  renderProfileStats() {
+    const all = this.activityCache;
+    document.getElementById('profile-stat-tx').textContent = all.length;
+    const machines = this.userMachines ? this.userMachines.length : 0;
+    document.getElementById('profile-stat-machines').textContent = machines;
+    const claims = all.filter(a => a.type === 'claim').length;
+    document.getElementById('profile-stat-claims').textContent = claims;
+    // Volume total estimé
+    let totalVol = 0;
+    all.forEach(a => { if (a.amount) totalVol += Math.abs(parseFloat(a.amount)) || 0; });
+    document.getElementById('profile-stat-volume').textContent = '$' + totalVol.toFixed(2);
+
+    if (this.user) {
+      document.getElementById('profile-avatar').textContent = this.user.slice(2, 4).toUpperCase();
+      document.getElementById('profile-addr').textContent = this.user;
+    }
+    // Récupère l'ID utilisateur
+    try {
+      if (this.core && this.user) {
+        this.core.uid(this.user).then(uidRaw => {
+          const uid = Number(uidRaw);
+          if (uid > 0) document.getElementById('profile-uid').textContent = '#' + uid;
+        }).catch(() => {});
+        this.core.refr(this.user).then(refAddr => {
+          if (refAddr && refAddr !== '0x0000000000000000000000000000000000000000') {
+            document.getElementById('profile-ref').textContent = refAddr.slice(0,6)+'...'+refAddr.slice(-4);
+          } else {
+            document.getElementById('profile-ref').textContent = 'Aucun';
+          }
+        }).catch(() => {});
+      }
+    } catch(e) {}
+  }
+
+  // Affiche l'historique d'activité
+  renderActivity() {
+    const list = document.getElementById('activity-list');
+    if (!list) return;
+    let filtered = this.activityCache;
+    if (this.activityFilter !== 'all') {
+      filtered = this.activityCache.filter(a => a.type === this.activityFilter);
+    }
+    if (!filtered.length) {
+      list.innerHTML = '<p class="activity-empty">Aucune activité pour ce filtre.</p>';
+      return;
+    }
+    const icons = { deposit:'💰', withdraw:'📤', swap:'💱', claim:'⛏️', buy:'🛒', plug:'🔌', send:'📨', referral:'👥' };
+    list.innerHTML = filtered.map(a => {
+      const timeAgo = this.getTimeAgo(a.ts);
+      const sign = a.amountSign === '+' ? 'positive' : a.amountSign === '-' ? 'negative' : '';
+      const amountHtml = a.amount
+        ? `<div class="activity-amount ${sign}">${a.amountSign === '+' ? '+' : a.amountSign === '-' ? '-' : ''}${a.amount}</div>`
+        : '';
+      const txHtml = a.tx
+        ? `<div class="activity-tx" onclick="window.open('https://polygonscan.com/tx/${a.tx}','_blank')">${a.tx.slice(0,10)}...</div>`
+        : '';
+      return `<div class="activity-item">
+        <div class="activity-icon ${a.type}">${icons[a.type] || '📋'}</div>
+        <div class="activity-info">
+          <div class="activity-title">${a.title}</div>
+          <div class="activity-detail">${a.detail}</div>
+        </div>
+        <div class="activity-right">
+          ${amountHtml}
+          <div class="activity-time">${timeAgo}</div>
+          ${txHtml}
+        </div>
+      </div>`;
+    }).join('');
+    this.renderProfileStats();
+  }
+
+  // Export CSV de l'historique
+  exportActivity() {
+    if (!this.activityCache.length) return this.showToast('Aucune donnée à exporter', true);
+    let csv = 'Date,Type,Titre,Détail,Montant,Tx\n';
+    this.activityCache.forEach(a => {
+      const d = new Date(a.ts).toISOString();
+      csv += `"${d}","${a.type}","${a.title}","${a.detail}","${a.amount||''}","${a.tx||''}"\n`;
+    });
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'fitia_activite_' + new Date().toISOString().slice(0,10) + '.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+    this.showToast('Export CSV téléchargé !');
   }
 }
 
