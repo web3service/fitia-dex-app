@@ -2,12 +2,13 @@
 
 // ─── Configuration ─────────────────────────────────────────────────
 const CONFIG = {
-  CORE: "0x1b8EdFb91168Fb233F8CA7cf1631038AC193D743",
-  MINE: "0xBd9FA9801eDA247b28B3BB9dDBf1CF52cA563Bc6",
-  USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
-  FTA:  "0x5c418b12c7e9c2A8e9A71A68c6d9b319E7B1d1fd",
-  CHAIN_ID: 137,
-  WC_PROJECT_ID: "2c10ee910a836551fbabbf7c8cc4542a",
+  // ⚠️ À REMPLACER avec les adresses réelles déployées sur Polygon
+  CORE: "0x1b8EdFb91168Fb233F8CA7cf1631038AC193D743",  // FitiaMiningV3_Core
+  MINE: "0xBd9FA9801eDA247b28B3BB9dDBf1CF52cA563Bc6",  // FitiaMiningV3_Mine
+  USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // USDT Polygon (officiel)
+  FTA:  "0x5c418b12c7e9c2A8e9A71A68c6d9b319E7B1d1fd",  // Token FTA
+  CHAIN_ID: 137,              // Polygon Mainnet
+  WC_PROJECT_ID: "2c10ee910a836551fbabbf7c8cc4542a",   // WalletConnect Project ID
   WHATSAPP_GROUP: "https://chat.whatsapp.com/BDsvPCB6xp8H8X0YaRmPFP",
   WHATSAPP_CHANNEL: "https://whatsapp.com/channel/0029VbCQhI38PgsPLbBJdV1e"
 };
@@ -257,9 +258,9 @@ const MINE_ABI = [
 ];
 
 // ─── Constantes ────────────────────────────────────────────────────
-const SWAP_FEE_RATE = 0.04;
-const SLIPPAGE = 0.005;
-const ONE_18 = 10n ** 18n;
+const SWAP_FEE_RATE = 0.04;    // 4% de frais de swap dans le contrat V3
+const SLIPPAGE = 0.005;        // 0.5% de tolérance
+const ONE_18 = 10n ** 18n;     // BigInt pour les calculs ethers v6
 
 // ═══════════════════════════════════════════════════════════════════
 //  CLASSE PRINCIPALE : Application
@@ -272,15 +273,15 @@ class Application {
     this.user = null;
 
     // ─── Contrats ───
-    this.core = null;
-    this.mine = null;
+    this.core = null;    // FitiaMiningV3_Core
+    this.mine = null;    // FitiaMiningV3_Mine
 
     // ─── Mode de paiement ───
-    this.payMode = 'USDT';
-    this.shopViewMode = 'machines';
+    this.payMode = 'USDT';       // 'USDT' ou 'FTA'
+    this.shopViewMode = 'machines'; // 'machines' ou 'batteries'
 
     // ─── Direction du swap ───
-    this.swapDirection = 'USDT_TO_FTA';
+    this.swapDirection = 'USDT_TO_FTA'; // 'USDT_TO_FTA' ou 'FTA_TO_USDT'
 
     // ─── Décimales des tokens ───
     this.usdtDecimals = 6;
@@ -298,13 +299,13 @@ class Application {
     this.isLoadingShop = false;
 
     // ─── Données utilisateur ───
-    this.userMachines = [];
-    this.batteryInventory = {};
-    this.batteryTypeDurations = {};
+    this.userMachines = [];     // [{tid, exp}, ...]
+    this.batteryInventory = {}; // {typeId: quantity}
+    this.batteryTypeDurations = {}; // {typeId: daysNumber}
 
     // ─── Minage local ───
     this.miningTimer = null;
-    this.lastClaimTimestamp = 0;
+    this.lastClaimTimestamp = 0; // Stocké en localStorage
     this.storageKey = "fitia_v3_last_claim";
 
     // ─── Visualiseur ───
@@ -320,8 +321,33 @@ class Application {
     this.chatHistory = [];
 
     // ─── Historique des prix pour calculer l'évolution ───
-    this.prevPriceCheckpoint = {};
-    this.priceCheckpointTime = 0;
+    // On compare le prix actuel avec un checkpoint pris toutes les 5 minutes
+    // (comparer toutes les 15s donne toujours ~0.00% car la bonding curve bouge trop peu)
+    this.prevPriceCheckpoint = {};  // { pol: number, fta: number, usdt: number }
+    this.priceCheckpointTime = 0;    // timestamp du dernier checkpoint
+
+    // ─── Activité & Notifications ───
+    this.activityKey = "fitia_v3_activity";  // Historique dans localStorage
+    this.notifKey = "fitia_v3_notifications"; // Notifications dans localStorage
+    this.activityCache = [];       // [{id,type,title,detail,amount,amountSign,tx,ts}, ...]
+    this.notifCache = [];          // [{id,type,icon,title,desc,ts,read}, ...]
+    this.activityFilter = 'all';   // Filtre actif pour l'historique
+    this.loadActivityData();
+  }
+
+  // ─── Sécurité : échappe le HTML pour éviter les failles XSS ───────
+  // Utilisé partout où l'on affiche via innerHTML une valeur qui peut
+  // contenir une saisie utilisateur (ex: adresse de parrain, adresse
+  // destinataire...). Sans cela, un utilisateur malveillant pourrait
+  // injecter du HTML/JS dans le champ "Lier parrain" par exemple.
+  escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   // ─── Traduction ──────────────────────────────────────────────────
@@ -415,7 +441,13 @@ class Application {
   }
 
   // ─── Initialisation ──────────────────────────────────────────────
-  async init() { this.setLanguage(this.currentLang); }
+  async init() {
+    this.setLanguage(this.currentLang);
+    // FIX : initialise le badge de notifications et l'historique dès le chargement,
+    // pour ne pas dépendre uniquement du premier clic sur un filtre.
+    this.updateNotifBadge();
+    this.renderActivity();
+  }
 
   // ─── Récupération du prix POL ────────────────────────────────────
   async fetchMarketPrices() {
@@ -503,6 +535,9 @@ class Application {
     // Initialise le visualiseur de minage
     this.initVisualizer();
     window.addEventListener('resize', () => this.resizeCanvas());
+    // FIX : une fois le wallet connecté, on a l'adresse (this.user) et les contrats (this.core)
+    // nécessaires pour afficher l'UID, le parrain et les stats du profil correctement.
+    this.renderActivity();
   }
 
   // ─── Cache des durées de batterie ────────────────────────────────
@@ -844,7 +879,9 @@ class Application {
           await (await usdtContract.connect(this.signer).approve(CONFIG.CORE, amountBN)).wait();
         }
         this.setLoader(true, this.t('confirming'));
-        await (await this.core.depositUsdt(amountBN)).wait();
+        const tx = await this.core.depositUsdt(amountBN);
+        await tx.wait();
+        this.logActivity('deposit', 'Dépôt USDT', amount.toFixed(2) + ' USDT → balance interne', amount.toFixed(2) + ' USDT', '+', tx.hash);
       } else {
         // Dépôt FTA
         const ftaContract = new ethers.Contract(CONFIG.FTA, [
@@ -875,7 +912,9 @@ class Application {
           await (await ftaContract.connect(this.signer).approve(CONFIG.CORE, amountBN)).wait();
         }
         this.setLoader(true, this.t('confirming'));
-        await (await this.core.depositFta(amountBN)).wait();
+        const tx = await this.core.depositFta(amountBN);
+        await tx.wait();
+        this.logActivity('deposit', 'Dépôt FTA', amount.toFixed(4) + ' FTA → balance interne', amount.toFixed(4) + ' FTA', '+', tx.hash);
       }
       this.showToast(this.t('depositSuccess'));
       document.getElementById('deposit-amount').value = '';
@@ -901,11 +940,14 @@ class Application {
     try {
       if (tokenType === 'USDT') {
         const amountBN = ethers.parseUnits(amount.toString(), this.usdtDecimals);
-        await (await this.core.withdrawUsdt(amountBN)).wait();
+        const tx = await this.core.withdrawUsdt(amountBN);
+        await tx.wait();
+        this.logActivity('withdraw', 'Retrait USDT', amount.toFixed(2) + ' USDT → wallet', amount.toFixed(2) + ' USDT', '-', tx.hash);
       } else {
-        // Retrait FTA — utiliser les décimales réelles du token (8)
         const amountBN = ethers.parseUnits(amount.toString(), this.ftaDecimals);
-        await (await this.core.withdrawFta(amountBN)).wait();
+        const tx = await this.core.withdrawFta(amountBN);
+        await tx.wait();
+        this.logActivity('withdraw', 'Retrait FTA', amount.toFixed(4) + ' FTA → wallet', amount.toFixed(4) + ' FTA', '-', tx.hash);
       }
       this.showToast(this.t('withdrawSuccess'));
       document.getElementById('deposit-amount').value = '';
@@ -971,6 +1013,8 @@ class Application {
         tx = await tokenContract.transfer(to, ethers.parseUnits(amt, dec));
       }
       await tx.wait();
+      // FIX : on enregistre l'activité d'envoi (manquante auparavant).
+      this.logActivity('send', 'Envoi ' + token, parseFloat(amt).toFixed(4) + ' ' + token + ' → ' + to.slice(0,6) + '...' + to.slice(-4), parseFloat(amt).toFixed(4) + ' ' + token, '-', tx.hash);
       this.showToast(this.t('sentSuccess'));
       this.closeModals();
       this.updateData();
@@ -982,7 +1026,6 @@ class Application {
   async buyMachine(typeId) {
     if (!this.user) return this.connect();
 
-    // Vérifie l'expiration shop côté frontend (sécurité)
     const mData = this.shopMachinesData[typeId];
     if (!mData) return this.showToast("Machine indisponible", true);
     if (mData.shopExpiry > 0 && Math.floor(Date.now() / 1000) > mData.shopExpiry) {
@@ -991,11 +1034,15 @@ class Application {
 
     this.setLoader(true, `${this.t('buyingMachine')} (${this.payMode})...`);
     try {
+      let tx;
       if (this.payMode === 'USDT') {
-        await (await this.mine.buyMachine(typeId)).wait();
+        tx = await this.mine.buyMachine(typeId);
       } else {
-        await (await this.mine.buyMachineFTA(typeId)).wait();
+        tx = await this.mine.buyMachineFTA(typeId);
       }
+      await tx.wait();
+      const price = this.payMode === 'USDT' ? mData.price.toFixed(2) + ' USDT' : ('\u2248 ' + mData.price.toFixed(2) + ' USDT');
+      this.logActivity('buy', 'Achat Machine', 'Machine #' + (typeId+1) + ' (' + this.formatHashrate(mData.power) + ')', price, '-', tx.hash);
       this.showToast(this.t('machineBought'));
       this.shopMachinesData = [];
       this.updateData();
@@ -1008,11 +1055,15 @@ class Application {
     if (!this.user) return this.connect();
     this.setLoader(true, `${this.t('buyingBattery')} (${this.payMode})...`);
     try {
+      let tx;
       if (this.payMode === 'USDT') {
-        await (await this.mine.buyBattery(typeId)).wait();
+        tx = await (await this.mine.buyBattery(typeId)).wait();
       } else {
-        await (await this.mine.buyBatteryFTA(typeId)).wait();
+        tx = await (await this.mine.buyBatteryFTA(typeId)).wait();
       }
+      // FIX : on enregistre l'activité d'achat de batterie (manquante auparavant).
+      const days = this.getBatteryDuration(typeId);
+      this.logActivity('buy', 'Achat Batterie', 'Batterie ' + days + ' jours', '', '-', tx?.hash || '');
       this.showToast(this.t('batteryBought'));
       this.shopBatteriesData = [];
       this.updateData();
@@ -1033,7 +1084,10 @@ class Application {
 
     this.setLoader(true, this.t('pluggingIn'));
     try {
-      await (await this.mine.plugInMachine(machineIndex, batteryTypeId)).wait();
+      const receipt = await (await this.mine.plugInMachine(machineIndex, batteryTypeId)).wait();
+      // FIX : on enregistre l'activité de branchement (manquante auparavant).
+      const days = this.getBatteryDuration(Number(batteryTypeId));
+      this.logActivity('plug', 'Machine branchée', 'Machine #' + (Number(machineIndex)+1) + ' + batterie ' + days + ' jours', '', '', receipt?.hash || '');
       this.showToast(this.t('pluggedIn'));
       this.updateData();
     } catch (e) {
@@ -1050,6 +1104,10 @@ class Application {
     try {
       const tx = await this.mine.claimRewards();
       await tx.wait();
+      // FIX : on enregistre l'activité AVANT de remettre pendingBalance à 0,
+      // pour garder une trace du montant réellement réclamé.
+      const claimedAmount = this.pendingBalance || 0;
+      this.logActivity('claim', 'Claim FTA', 'Récompenses de minage réclamées', claimedAmount.toFixed(8) + ' FTA', '+', tx.hash);
       // Réinitialise le pending affiché et le compteur de temps
       this.pendingBalance = 0;
       document.getElementById('val-pending').innerText = "0.00000000";
@@ -1080,16 +1138,21 @@ class Application {
     this.setLoader(true, this.t('linking'));
     try {
       // Si l'adresse ressemble à une adresse Ethereum, on utilise setReferrer
+      let receipt;
       if (input.startsWith('0x') && input.length === 42) {
-        await (await this.core.setReferrer(input)).wait();
+        receipt = await (await this.core.setReferrer(input)).wait();
       } else {
         // Sinon on traite comme un ID numérique
         const refId = parseInt(input);
         if (isNaN(refId)) throw new Error("Format invalide");
-        await (await this.core.setReferrerById(refId)).wait();
+        receipt = await (await this.core.setReferrerById(refId)).wait();
       }
+      // FIX : on enregistre l'activité de parrainage (manquante auparavant).
+      this.logActivity('referral', 'Parrain lié', 'Parrain : ' + input, '', '', receipt?.hash || '');
       this.showToast(this.t('refLinked'));
       document.getElementById('ref-address-input').value = '';
+      // Rafraîchit immédiatement les stats du profil (UID / parrain affiché)
+      this.renderProfileStats();
     } catch (e) { this.showError(e); }
     this.setLoader(false);
   }
@@ -1279,6 +1342,10 @@ class Application {
         tx = await this.core.swapFForU(amount, minOut, deadline);
       }
       await tx.wait();
+      // FIX : on enregistre l'activité de swap (manquante auparavant).
+      const fromLabel = isUsdtTo ? 'USDT' : 'FTA';
+      const toLabel = isUsdtTo ? 'FTA' : 'USDT';
+      this.logActivity('swap', 'Échange ' + fromLabel + ' → ' + toLabel, parseFloat(val).toFixed(4) + ' ' + fromLabel + ' → ' + toLabel, parseFloat(val).toFixed(4) + ' ' + fromLabel, '-', tx.hash);
       this.showToast(this.t('swapSuccess'));
       document.getElementById('swap-from-in').value = '';
       document.getElementById('swap-to-in').value = '';
@@ -1333,6 +1400,13 @@ class Application {
     if (activeView) { activeView.classList.add('active'); activeView.style.display = 'block'; }
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     if (event?.currentTarget) event.currentTarget.classList.add('active');
+
+    // ─── FIX : rafraîchit l'historique + les stats à chaque ouverture de l'onglet Profil ───
+    // Avant : renderActivity()/renderProfileStats() n'étaient jamais appelées ici,
+    // donc l'onglet Profil restait figé sur le texte statique du HTML.
+    if (viewId === 'profile') {
+      this.renderActivity();      // appelle aussi renderProfileStats() en interne
+    }
   }
 
   // ─── Loader plein écran ──────────────────────────────────────────
@@ -1533,6 +1607,208 @@ class Application {
         : "👥 Connectez votre wallet pour voir votre code de parrainage !";
     }
     return "Je ne suis pas sûr de comprendre. Essayez : 'minage', 'swap', 'wallet', 'sécurité', 'communauté', ou 'parrainage'. Je suis là pour vous aider !";
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  ACTIVITÉ & NOTIFICATIONS — Système de traçabilité pro
+  // ═══════════════════════════════════════════════════════════════
+
+  // Charge l'historique depuis localStorage
+  loadActivityData() {
+    try {
+      const raw = localStorage.getItem(this.activityKey);
+      this.activityCache = raw ? JSON.parse(raw) : [];
+    } catch(e) { this.activityCache = []; }
+    try {
+      const rawN = localStorage.getItem(this.notifKey);
+      this.notifCache = rawN ? JSON.parse(rawN) : [];
+    } catch(e) { this.notifCache = []; }
+  }
+
+  // Enregistre une activité et génère une notification
+  logActivity(type, title, detail, amount, amountSign, tx) {
+    const now = Date.now();
+    const id = 'a' + now + '_' + Math.random().toString(36).slice(2,6);
+    const entry = { id, type, title, detail, amount, amountSign, tx: tx || '', ts: now };
+    this.activityCache.unshift(entry);
+    // Garde max 500 entrées pour éviter de saturer localStorage
+    if (this.activityCache.length > 500) this.activityCache.length = 500;
+    localStorage.setItem(this.activityKey, JSON.stringify(this.activityCache));
+    // Notification associée
+    const icons = { deposit:'💰', withdraw:'📤', swap:'💱', claim:'⛏️', buy:'🛒', plug:'🔌', send:'📨', referral:'👥' };
+    const nTitle = title + (amount ? ' • ' + (amountSign === '+' ? '+' : '') + amount : '');
+    const nEntry = { id:'n'+now, type, icon:icons[type]||'📋', title:nTitle, desc:detail, ts:now, read:false };
+    this.notifCache.unshift(nEntry);
+    if (this.notifCache.length > 200) this.notifCache.length = 200;
+    localStorage.setItem(this.notifKey, JSON.stringify(this.notifCache));
+    this.updateNotifBadge();
+  }
+
+  // Met à jour le badge de notifications non lues
+  updateNotifBadge() {
+    const badge = document.getElementById('notif-badge');
+    if (!badge) return;
+    // FIX : on veut compter les notifications NON lues (read === false), pas l'inverse.
+    const unread = this.notifCache.filter(n => !n.read).length;
+    if (unread > 0) {
+      badge.textContent = unread > 99 ? '99+' : unread;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+
+  // Ouvre/ferme le panneau de notifications
+  toggleNotifications() {
+    const panel = document.getElementById('notif-panel');
+    const isActive = panel.classList.toggle('active');
+    if (isActive) {
+      this.renderNotifications();
+      // Marque tout comme lu
+      this.notifCache.forEach(n => n.read = true);
+      localStorage.setItem(this.notifKey, JSON.stringify(this.notifCache));
+      this.updateNotifBadge();
+    }
+  }
+
+  // Marque toutes les notifications comme lues
+  clearNotifications() {
+    this.notifCache.forEach(n => n.read = true);
+    localStorage.setItem(this.notifKey, JSON.stringify(this.notifCache));
+    this.updateNotifBadge();
+    this.renderNotifications();
+  }
+
+  // Affiche les notifications dans le panneau
+  renderNotifications() {
+    const list = document.getElementById('notif-list');
+    if (!list) return;
+    if (!this.notifCache.length) {
+      list.innerHTML = '<p class="notif-empty">Aucune notification</p>';
+      return;
+    }
+    const recent = this.notifCache.slice(0, 50);
+    list.innerHTML = recent.map(n => {
+      const timeAgo = this.getTimeAgo(n.ts);
+      return `<div class="notif-item${n.read ? '' : ' unread'}" onclick="App.nav('profile')">
+        <div class="notif-icon ${n.type}">${n.icon}</div>
+        <div class="notif-body">
+          <div class="notif-title">${this.escapeHtml(n.title)}</div>
+          <div class="notif-desc">${this.escapeHtml(n.desc)}</div>
+        </div>
+        <div class="notif-time">${timeAgo}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Formate un timestamp en "il y a X"
+  getTimeAgo(ts) {
+    const diff = Math.floor((Date.now() - ts) / 1000);
+    if (diff < 60) return 'À l\'instant';
+    if (diff < 3600) return Math.floor(diff/60) + 'm';
+    if (diff < 86400) return Math.floor(diff/3600) + 'h';
+    if (diff < 604800) return Math.floor(diff/86400) + 'j';
+    const d = new Date(ts);
+    return d.toLocaleDateString('fr');
+  }
+
+  // Filtre l'historique par type
+  filterActivity(type) {
+    this.activityFilter = type;
+    document.querySelectorAll('.activity-filter-btn').forEach(b => b.classList.remove('active'));
+    event?.currentTarget?.classList.add('active');
+    this.renderActivity();
+  }
+
+  // Calcule et affiche les stats du profil
+  renderProfileStats() {
+    const all = this.activityCache;
+    document.getElementById('profile-stat-tx').textContent = all.length;
+    const machines = this.userMachines ? this.userMachines.length : 0;
+    document.getElementById('profile-stat-machines').textContent = machines;
+    const claims = all.filter(a => a.type === 'claim').length;
+    document.getElementById('profile-stat-claims').textContent = claims;
+    // Volume total estimé
+    let totalVol = 0;
+    all.forEach(a => { if (a.amount) totalVol += Math.abs(parseFloat(a.amount)) || 0; });
+    document.getElementById('profile-stat-volume').textContent = '$' + totalVol.toFixed(2);
+
+    if (this.user) {
+      document.getElementById('profile-avatar').textContent = this.user.slice(2, 4).toUpperCase();
+      document.getElementById('profile-addr').textContent = this.user;
+    }
+    // Récupère l'ID utilisateur
+    try {
+      if (this.core && this.user) {
+        this.core.uid(this.user).then(uidRaw => {
+          const uid = Number(uidRaw);
+          if (uid > 0) document.getElementById('profile-uid').textContent = '#' + uid;
+        }).catch(() => {});
+        this.core.refr(this.user).then(refAddr => {
+          if (refAddr && refAddr !== '0x0000000000000000000000000000000000000000') {
+            document.getElementById('profile-ref').textContent = refAddr.slice(0,6)+'...'+refAddr.slice(-4);
+          } else {
+            document.getElementById('profile-ref').textContent = 'Aucun';
+          }
+        }).catch(() => {});
+      }
+    } catch(e) {}
+  }
+
+  // Affiche l'historique d'activité
+  renderActivity() {
+    const list = document.getElementById('activity-list');
+    if (!list) return;
+    let filtered = this.activityCache;
+    if (this.activityFilter !== 'all') {
+      filtered = this.activityCache.filter(a => a.type === this.activityFilter);
+    }
+    if (!filtered.length) {
+      list.innerHTML = '<p class="activity-empty">Aucune activité pour ce filtre.</p>';
+      return;
+    }
+    const icons = { deposit:'💰', withdraw:'📤', swap:'💱', claim:'⛏️', buy:'🛒', plug:'🔌', send:'📨', referral:'👥' };
+    list.innerHTML = filtered.map(a => {
+      const timeAgo = this.getTimeAgo(a.ts);
+      const sign = a.amountSign === '+' ? 'positive' : a.amountSign === '-' ? 'negative' : '';
+      const amountHtml = a.amount
+        ? `<div class="activity-amount ${sign}">${a.amountSign === '+' ? '+' : a.amountSign === '-' ? '-' : ''}${a.amount}</div>`
+        : '';
+      const txHtml = a.tx
+        ? `<div class="activity-tx" onclick="window.open('https://polygonscan.com/tx/${a.tx}','_blank')">${a.tx.slice(0,10)}...</div>`
+        : '';
+      return `<div class="activity-item">
+        <div class="activity-icon ${a.type}">${icons[a.type] || '📋'}</div>
+        <div class="activity-info">
+          <div class="activity-title">${this.escapeHtml(a.title)}</div>
+          <div class="activity-detail">${this.escapeHtml(a.detail)}</div>
+        </div>
+        <div class="activity-right">
+          ${amountHtml}
+          <div class="activity-time">${timeAgo}</div>
+          ${txHtml}
+        </div>
+      </div>`;
+    }).join('');
+    this.renderProfileStats();
+  }
+
+  // Export CSV de l'historique
+  exportActivity() {
+    if (!this.activityCache.length) return this.showToast('Aucune donnée à exporter', true);
+    let csv = 'Date,Type,Titre,Détail,Montant,Tx\n';
+    this.activityCache.forEach(a => {
+      const d = new Date(a.ts).toISOString();
+      csv += `"${d}","${a.type}","${a.title}","${a.detail}","${a.amount||''}","${a.tx||''}"\n`;
+    });
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'fitia_activite_' + new Date().toISOString().slice(0,10) + '.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+    this.showToast('Export CSV téléchargé !');
   }
 }
 
