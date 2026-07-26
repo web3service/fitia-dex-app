@@ -8,7 +8,17 @@ const CONFIG = {
   USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // USDT Polygon (officiel)
   FTA:  "0x5c418b12c7e9c2A8e9A71A68c6d9b319E7B1d1fd",  // Token FTA
   CHAIN_ID: 137,              // Polygon Mainnet
+  CHAIN_ID_HEX: "0x89",       // 137 en hexadécimal (requis par Web3Auth)
+  RPC_URL: "https://polygon-rpc.com",  // RPC public Polygon (peut être remplacé par Infura/Alchemy)
   WC_PROJECT_ID: "2c10ee910a836551fbabbf7c8cc4542a",   // WalletConnect Project ID
+
+  // ─── Web3Auth (connexion Email / Google — plan GRATUIT jusqu'à 1000 MAU/mois) ───
+  // 1) Créez un projet sur https://dashboard.web3auth.io (gratuit)
+  // 2) Copiez le "Client ID" du projet ci-dessous
+  // 3) "sapphire_mainnet" = production, "sapphire_devnet" = tests/dev
+  WEB3AUTH_CLIENT_ID: "BB8-sW8_NENPty92A-Mx0_yXq2MVZUK9yg3Y8RpuClJO8x-L_N7n_IlXR5b230lFeEJaIGSEV1i2q8HoK3dTEwA",
+  WEB3AUTH_NETWORK: "sapphire_mainnet",
+
   WHATSAPP_GROUP: "https://chat.whatsapp.com/BDsvPCB6xp8H8X0YaRmPFP",
   WHATSAPP_CHANNEL: "https://whatsapp.com/channel/0029VbCQhI38PgsPLbBJdV1e"
 };
@@ -218,6 +228,7 @@ const CORE_ABI = [
   // ─── Parrainage ───
   "function setReferrer(address r)",
   "function setReferrerById(uint256 rid)",
+  "function refr(address) view returns (address)",
   // ─── Swaps (courbe de liaison) ───
   "function rate() view returns (uint256)",
   "function swapUForF(uint256 a, uint256 m, uint256 d)",
@@ -261,6 +272,24 @@ const MINE_ABI = [
 const SWAP_FEE_RATE = 0.04;    // 4% de frais de swap dans le contrat V3
 const SLIPPAGE = 0.005;        // 0.5% de tolérance
 const ONE_18 = 10n ** 18n;     // BigInt pour les calculs ethers v6
+
+// ═══════════════════════════════════════════════════════════════════
+//  WEB3AUTH — Chargement paresseux du SDK (Email / Google)
+//  Ce projet n'utilise pas de bundler (Webpack/Vite), donc on charge
+//  le SDK Web3Auth sous forme de module ESM directement depuis un CDN
+//  (jsDelivr), UNIQUEMENT au moment où l'utilisateur clique sur
+//  "Continuer avec Email/Google" (pas au chargement de la page, pour
+//  ne pas ralentir le premier affichage de l'app).
+// ═══════════════════════════════════════════════════════════════════
+let _web3authModule = null;
+async function loadWeb3AuthSDK() {
+  if (_web3authModule) return _web3authModule;
+  // ⚠️ Si vous préférez héberger le SDK vous-même (recommandé en prod
+  // pour ne pas dépendre d'un CDN tiers), téléchargez le bundle ESM de
+  // "@web3auth/modal" et remplacez cette URL par un chemin local.
+  _web3authModule = await import('https://cdn.jsdelivr.net/npm/@web3auth/modal@9/+esm');
+  return _web3authModule;
+}
 
 // ═══════════════════════════════════════════════════════════════════
 //  CLASSE PRINCIPALE : Application
@@ -333,6 +362,10 @@ class Application {
     this.notifCache = [];          // [{id,type,icon,title,desc,ts,read}, ...]
     this.activityFilter = 'all';   // Filtre actif pour l'historique
     this.loadActivityData();
+
+    // ─── Authentification (wallet classique OU Web3Auth Email/Google) ───
+    this.web3auth = null;      // Instance du SDK Web3Auth (créée à la demande)
+    this.authMode = null;      // 'injected' (MetaMask) | 'walletconnect' | 'web3auth'
   }
 
   // ─── Sécurité : échappe le HTML pour éviter les failles XSS ───────
@@ -348,6 +381,14 @@ class Application {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  // ─── Mobile : détecte si l'app tourne dans un conteneur natif ─────
+  // (ex: Capacitor, une fois exportée en APK). Utile car certains flux
+  // Web3Auth (popups OAuth) doivent être adaptés dans une WebView native
+  // — voir le commentaire détaillé dans connectWeb3Auth().
+  isNativeApp() {
+    return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   }
 
   // ─── Traduction ──────────────────────────────────────────────────
@@ -447,6 +488,9 @@ class Application {
     // pour ne pas dépendre uniquement du premier clic sur un filtre.
     this.updateNotifBadge();
     this.renderActivity();
+    // Tente de restaurer une session Web3Auth existante (Email/Google déjà connecté)
+    // sans bloquer l'affichage initial de l'app.
+    this.restoreWeb3AuthSession();
   }
 
   // ─── Récupération du prix POL ────────────────────────────────────
@@ -467,9 +511,24 @@ class Application {
     if (!this.polPriceUsd) this.polPriceUsd = 0.70;
   }
 
-  // ─── Connexion wallet ────────────────────────────────────────────
-  async connect() {
-    // Si MetaMask est disponible
+  // ═══════════════════════════════════════════════════════════════
+  //  CONNEXION — Choix du mode : Wallet Web3 (MetaMask/WalletConnect)
+  //  ou Web3Auth (Email / Google, sans extension à installer)
+  // ═══════════════════════════════════════════════════════════════
+
+  // ─── Ouvre la modale de choix du mode de connexion ─────────────
+  openConnectModal() {
+    if (this.user) return; // déjà connecté
+    document.getElementById('modal-connect').classList.add('active');
+  }
+
+  // Alias conservé pour compatibilité (anciens onclick="App.connect()")
+  connect() { this.openConnectModal(); }
+
+  // ─── Option A : Wallet Web3 classique (MetaMask / WalletConnect) ──
+  async connectInjectedWallet() {
+    this.closeModals();
+    // Si MetaMask (ou tout wallet injecté compatible EIP-1193) est disponible
     if (window.ethereum) {
       this.setLoader(true, this.t('connWallet'));
       try {
@@ -477,6 +536,7 @@ class Application {
         this.provider = new ethers.BrowserProvider(window.ethereum);
         this.signer = await this.provider.getSigner();
         this.user = await this.signer.getAddress();
+        this.authMode = 'injected';
         const network = await this.provider.getNetwork();
         if (Number(network.chainId) !== CONFIG.CHAIN_ID) await this.switchNetwork();
         await this.initContracts();
@@ -484,7 +544,7 @@ class Application {
         window.ethereum.on('chainChanged', () => window.location.reload());
       } catch (e) { this.showError(e); } finally { this.setLoader(false); }
     }
-    // Si WalletConnect est disponible
+    // Sinon, si WalletConnect est disponible (mobile, ou pas d'extension installée)
     else if (typeof EthereumProvider !== 'undefined' && CONFIG.WC_PROJECT_ID && !CONFIG.WC_PROJECT_ID.includes("...")) {
       this.setLoader(true, this.t('connWallet'));
       try {
@@ -499,11 +559,152 @@ class Application {
         this.provider = new ethers.BrowserProvider(wc);
         this.signer = await this.provider.getSigner();
         this.user = await this.signer.getAddress();
+        this.authMode = 'walletconnect';
         await this.initContracts();
         wc.on("disconnect", () => window.location.reload());
       } catch (e) { this.showError(e); } finally { this.setLoader(false); }
     } else {
-      this.showToast("Installez MetaMask ou utilisez un navigateur Web3.", true);
+      this.showToast("Installez MetaMask, ou utilisez la connexion Email/Google.", true);
+    }
+  }
+
+  // ─── Option B : Web3Auth (Email / Google — pas d'extension requise) ──
+  // Crée un wallet non-custodial (clé privée générée et chiffrée côté
+  // Web3Auth via MPC) à partir d'une simple connexion Email ou Google.
+  // Idéal pour les utilisateurs non-crypto natifs.
+  async connectWeb3Auth() {
+    this.closeModals();
+
+    // ⚠️ Vérification de config : évite un plantage silencieux si le
+    // développeur a oublié de renseigner son Client ID Web3Auth.
+    if (!CONFIG.WEB3AUTH_CLIENT_ID || CONFIG.WEB3AUTH_CLIENT_ID.includes('REMPLACER')) {
+      this.showToast("⚠️ Web3Auth n'est pas configuré (CONFIG.WEB3AUTH_CLIENT_ID manquant). Voir dashboard.web3auth.io", true);
+      return;
+    }
+
+    // ─── Préparation mobile / APK (Capacitor) ───────────────────────
+    // Le SDK Web3Auth "Modal" (web) ouvre une popup OAuth classique.
+    // Dans une WebView native (APK exporté via Capacitor), les popups
+    // OAuth ne fonctionnent pas de façon fiable : il faut alors utiliser
+    // le SDK dédié "@web3auth/capacitor-provider" (deep-link natif) à la
+    // place de ce module web. On prévient l'utilisateur/développeur ici
+    // plutôt que de laisser échouer silencieusement.
+    if (this.isNativeApp()) {
+      this.showToast("⚠️ Application native détectée : utilisez le SDK @web3auth/capacitor-provider pour la connexion Email/Google en APK (voir commentaires du code).", true);
+      // On continue quand même la tentative — sur certains Android récents
+      // avec Chrome Custom Tabs, la popup peut malgré tout fonctionner.
+    }
+
+    this.setLoader(true, this.t('connWallet'));
+    try {
+      const { Web3Auth, WEB3AUTH_NETWORK, CHAIN_NAMESPACES } = await loadWeb3AuthSDK();
+
+      if (!this.web3auth) {
+        this.web3auth = new Web3Auth({
+          clientId: CONFIG.WEB3AUTH_CLIENT_ID,
+          web3AuthNetwork: WEB3AUTH_NETWORK[CONFIG.WEB3AUTH_NETWORK.toUpperCase()] || CONFIG.WEB3AUTH_NETWORK,
+          chainConfig: {
+            chainNamespace: CHAIN_NAMESPACES.EIP155,
+            chainId: CONFIG.CHAIN_ID_HEX,      // "0x89" = Polygon (137)
+            rpcTarget: CONFIG.RPC_URL,
+            displayName: "Polygon Mainnet",
+            blockExplorerUrl: "https://polygonscan.com",
+            ticker: "POL",
+            tickerName: "Polygon",
+          },
+          uiConfig: {
+            appName: "FITIA PRO MINER",
+            theme: { primary: "#F0B90B" },
+            loginMethodsOrder: ["google", "email_passwordless"],
+          },
+        });
+        await this.web3auth.init();
+      }
+
+      // Ouvre le modal Web3Auth : l'utilisateur choisit Email ou Google
+      const web3authProvider = await this.web3auth.connect();
+      if (!web3authProvider) throw new Error("Connexion Web3Auth annulée");
+
+      this.provider = new ethers.BrowserProvider(web3authProvider);
+      this.signer = await this.provider.getSigner();
+      this.user = await this.signer.getAddress();
+      this.authMode = 'web3auth';
+      await this.initContracts();
+      this.showToast("Connecté via Email/Google ✅");
+    } catch (e) {
+      // Si l'init ou la connexion échoue, on réinitialise l'instance pour que
+      // le prochain clic reparte sur une base saine (évite un état "cassé" figé).
+      if (!this.web3auth?.connected) this.web3auth = null;
+      this.showError(e);
+    } finally {
+      this.setLoader(false);
+    }
+  }
+
+  // ─── Restaure automatiquement une session Web3Auth existante ──────
+  // Évite à l'utilisateur de refaire "Se connecter" à chaque visite :
+  // Web3Auth garde une session chiffrée ; on la reconnecte en silence.
+  async restoreWeb3AuthSession() {
+    if (!CONFIG.WEB3AUTH_CLIENT_ID || CONFIG.WEB3AUTH_CLIENT_ID.includes('REMPLACER')) return;
+    try {
+      const { Web3Auth, WEB3AUTH_NETWORK, CHAIN_NAMESPACES } = await loadWeb3AuthSDK();
+      this.web3auth = new Web3Auth({
+        clientId: CONFIG.WEB3AUTH_CLIENT_ID,
+        web3AuthNetwork: WEB3AUTH_NETWORK[CONFIG.WEB3AUTH_NETWORK.toUpperCase()] || CONFIG.WEB3AUTH_NETWORK,
+        chainConfig: {
+          chainNamespace: CHAIN_NAMESPACES.EIP155,
+          chainId: CONFIG.CHAIN_ID_HEX,
+          rpcTarget: CONFIG.RPC_URL,
+          displayName: "Polygon Mainnet",
+          blockExplorerUrl: "https://polygonscan.com",
+          ticker: "POL",
+          tickerName: "Polygon",
+        },
+      });
+      await this.web3auth.init();
+      if (this.web3auth.connected && this.web3auth.provider) {
+        this.provider = new ethers.BrowserProvider(this.web3auth.provider);
+        this.signer = await this.provider.getSigner();
+        this.user = await this.signer.getAddress();
+        this.authMode = 'web3auth';
+        await this.initContracts();
+      }
+    } catch (e) {
+      // Silencieux : si la restauration échoue, l'utilisateur reclique simplement sur "Connecter"
+      // On réinitialise l'instance pour qu'une tentative manuelle reparte de zéro proprement.
+      this.web3auth = null;
+      console.warn("Restauration session Web3Auth impossible :", e);
+    }
+  }
+
+  // ─── Déconnexion (wallet classique ou Web3Auth) ────────────────────
+  async disconnectWallet() {
+    if (!this.user) return;
+    if (!confirm(this.currentLang === 'fr' ? 'Se déconnecter ?' : 'Disconnect?')) return;
+    try {
+      if (this.authMode === 'web3auth' && this.web3auth?.connected) {
+        await this.web3auth.logout();
+      }
+    } catch (e) { console.warn('Erreur logout Web3Auth:', e); }
+    // Nettoyage local puis rechargement complet (état propre garanti)
+    window.location.reload();
+  }
+
+  // ─── Vérifie que le wallet a bien du POL pour payer le gas ─────────
+  // Cas fréquent avec Web3Auth : le wallet généré est tout neuf et vide.
+  // On prévient clairement l'utilisateur au lieu de le laisser face à
+  // une erreur "insufficient funds for gas" incompréhensible.
+  async ensureGasBalance() {
+    try {
+      const bal = await this.provider.getBalance(this.user);
+      if (bal === 0n) {
+        this.showToast('⚠️ Votre wallet ne contient pas de POL (frais de réseau Polygon). Déposez un peu de POL sur votre adresse avant de continuer.', true);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      // Ne bloque jamais l'action si la simple vérification échoue (ex: RPC lent)
+      return true;
     }
   }
 
@@ -521,7 +722,8 @@ class Application {
     // Met à jour l'interface
     document.getElementById('btn-connect').classList.add('hidden');
     document.getElementById('wallet-status').classList.remove('hidden');
-    document.getElementById('addr-display').innerText = this.user.slice(0, 6) + "..." + this.user.slice(38);
+    const modeIcon = this.authMode === 'web3auth' ? '📧 ' : '🦊 ';
+    document.getElementById('addr-display').innerText = modeIcon + this.user.slice(0, 6) + "..." + this.user.slice(38);
     // Initialise le cache de temps de claim
     if (!localStorage.getItem(this.storageKey)) localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
     // Récupère les prix de marché
@@ -985,6 +1187,7 @@ class Application {
   closeModals() {
     document.getElementById('modal-send').classList.remove('active');
     document.getElementById('modal-receive').classList.remove('active');
+    document.getElementById('modal-connect')?.classList.remove('active');
   }
 
   // ─── Copier l'adresse ─────────────────────────────────────────
@@ -999,6 +1202,7 @@ class Application {
     const amt = document.getElementById('send-amount').value;
     if (!ethers.isAddress(to)) return this.showToast(this.t('invalidAddr'), true);
     if (!amt || Number(amt) <= 0) return this.showToast(this.t('invalidAmount'), true);
+    if (!(await this.ensureGasBalance())) return;
     this.setLoader(true, this.t('sending'));
     try {
       const token = document.getElementById('send-token-select').value;
@@ -1031,6 +1235,7 @@ class Application {
     if (mData.shopExpiry > 0 && Math.floor(Date.now() / 1000) > mData.shopExpiry) {
       return this.showToast("Cette machine n'est plus disponible", true);
     }
+    if (!(await this.ensureGasBalance())) return;
 
     this.setLoader(true, `${this.t('buyingMachine')} (${this.payMode})...`);
     try {
@@ -1053,6 +1258,7 @@ class Application {
   // ─── Achat d'une batterie ────────────────────────────────────────
   async buyBattery(typeId) {
     if (!this.user) return this.connect();
+    if (!(await this.ensureGasBalance())) return;
     this.setLoader(true, `${this.t('buyingBattery')} (${this.payMode})...`);
     try {
       let tx;
@@ -1081,6 +1287,7 @@ class Application {
     if (!this.batteryInventory || !this.batteryInventory[Number(batteryTypeId)] || this.batteryInventory[Number(batteryTypeId)] <= 0) {
       return this.showToast(this.t('errNoBattery'), true);
     }
+    if (!(await this.ensureGasBalance())) return;
 
     this.setLoader(true, this.t('pluggingIn'));
     try {
@@ -1099,6 +1306,7 @@ class Application {
   // ─── Récupération des gains (claim) ──────────────────────────────
   async claim() {
     if (!this.user) return;
+    if (!(await this.ensureGasBalance())) return;
     this.stopMiningCounter();
     this.setLoader(true, this.t('claiming'));
     try {
@@ -1134,6 +1342,7 @@ class Application {
     const input = document.getElementById('ref-address-input').value.trim();
     if (!input) return this.showToast(this.t('invalidAddr'), true);
     if (!this.user) return this.showToast(this.t('connFirst'), true);
+    if (!(await this.ensureGasBalance())) return;
 
     this.setLoader(true, this.t('linking'));
     try {
@@ -1318,6 +1527,7 @@ class Application {
   async executeSwap() {
     const val = document.getElementById('swap-from-in').value;
     if (!val || val <= 0) return this.showToast(this.t('invalidAmount'), true);
+    if (!(await this.ensureGasBalance())) return;
     this.setLoader(true, this.t('swapping'));
     const isUsdtTo = this.swapDirection === 'USDT_TO_FTA';
 
@@ -1423,6 +1633,23 @@ class Application {
     const errStr = ((e?.message || '') + ' ' + shortMsg + ' ' + (e?.code || '') + ' ' + (e?.reason || '')).toLowerCase();
 
     if (errStr.includes('user rejected') || errStr.includes('user denied') || errStr.includes('action_rejected') || e?.code === 4001) return this.t('errRejected');
+
+    // ─── Erreurs liées au GAS (frais de réseau en POL) ─────────────
+    // Distinct du solde applicatif (USDT/FTA interne) : ici c'est le
+    // wallet lui-même qui n'a pas assez de POL pour payer la transaction.
+    if (errStr.includes('insufficient funds for gas') || errStr.includes('insufficient funds for intrinsic') || (errStr.includes('insufficient funds') && errStr.includes('gas'))) {
+      return '⛽ Solde POL insuffisant pour payer les frais de réseau. Déposez un peu de POL sur votre adresse.';
+    }
+    if (errStr.includes('intrinsic gas too low') || errStr.includes('out of gas')) {
+      return '⛽ Transaction à court de gas. Réessayez, ou augmentez la limite de gas dans votre wallet.';
+    }
+    if (errStr.includes('cannot estimate gas') || errStr.includes('unpredictable_gas_limit') || errStr.includes('gas required exceeds')) {
+      return '⛽ Impossible d\'estimer le gas — la transaction échouerait probablement (vérifiez vos soldes et autorisations).';
+    }
+    if (errStr.includes('replacement fee too low') || errStr.includes('underpriced')) {
+      return '⛽ Une transaction précédente est encore en attente avec des frais plus élevés. Patientez ou réessayez.';
+    }
+
     if (errStr.includes('insufficient') || errStr.includes('not enough') || errStr.includes('insf')) return this.t('errInsufficientFunds');
     // Erreurs de transfert : approve manquant, solde insuffisant, etc.
     if (errStr.includes('tff') || errStr.includes('transferfrom') || errStr.includes('erc20: transfer amount exceeds')) return '❌ Transfert échoué. Vérifiez que vous avez approuvé le contrat et que votre solde wallet FTA est suffisant.';

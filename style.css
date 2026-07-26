@@ -418,3 +418,11 @@ main::-webkit-scrollbar { display: none; }
   .activity-filters{gap:4px;}
   .activity-filter-btn{padding:5px 8px;font-size:.63rem;}
 }
+/* ─── Connexion : boutons de choix (Email/Google vs Wallet Web3) ─── */
+.connect-option-btn{display:flex;align-items:center;gap:14px;width:100%;padding:16px;margin-bottom:12px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--text);cursor:pointer;transition:.15s;text-align:left;}
+.connect-option-btn:active{background:rgba(240,185,11,.12);border-color:var(--primary);transform:scale(.98);}
+.connect-option-icon{font-size:1.6rem;flex-shrink:0;}
+.connect-option-text{display:flex;flex-direction:column;gap:2px;}
+.connect-option-text strong{font-size:.92rem;font-weight:700;}
+.connect-option-text small{font-size:.72rem;color:var(--text-muted);}
+.wallet-status{cursor:pointer;}

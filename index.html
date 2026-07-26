@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0f172a">
 <title>FITIA PRO MINER</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src * ws://* wss://*; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://unpkg.com https://relay.walletconnect.com; img-src 'self' data: https://* http://*;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src * ws://* wss://*; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://unpkg.com https://relay.walletconnect.com https://cdn.jsdelivr.net; frame-src 'self' https:; img-src 'self' data: https://* http://*;">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -33,8 +33,8 @@
 <a href="#" onclick="App.setLanguage('sg')">🇸🇬 English (SG)</a>
 </div>
 </div>
-<button id="btn-connect" class="btn-connect" onclick="App.connect()">Connecter</button>
-<div id="wallet-status" class="wallet-status hidden">
+<button id="btn-connect" class="btn-connect" onclick="App.openConnectModal()">Connecter</button>
+<div id="wallet-status" class="wallet-status hidden" onclick="App.disconnectWallet()" title="Cliquer pour se déconnecter">
 <span id="addr-display">0x...</span>
 <span class="status-dot"></span>
 </div>
@@ -306,6 +306,28 @@
 <p class="small-text" style="margin-bottom: 15px;">Envoyez uniquement POL, USDT ou FTA à cette adresse sur Polygon.</p>
 <div class="receive-addr-box" onclick="App.copyReceiveAddress()"><span id="receive-addr-display">0x...</span><span class="copy-icon">📋</span></div>
 <p class="small-text" style="margin-top: 10px; color: var(--primary);">Appuyez pour copier</p>
+</div>
+</div>
+
+<!-- Connexion : choix du mode -->
+<div id="modal-connect" class="modal">
+<div class="modal-content" style="text-align: center;">
+<div class="modal-header"><h3>Se connecter</h3><button class="modal-close" onclick="App.closeModals()">✕</button></div>
+<p class="small-text" style="margin-bottom: 15px;">Choisissez votre méthode de connexion.</p>
+<button class="connect-option-btn" onclick="App.connectWeb3Auth()">
+<span class="connect-option-icon">📧</span>
+<span class="connect-option-text">
+<strong>Email / Google</strong>
+<small>Rapide, sans extension à installer</small>
+</span>
+</button>
+<button class="connect-option-btn" onclick="App.connectInjectedWallet()">
+<span class="connect-option-icon">🦊</span>
+<span class="connect-option-text">
+<strong>Wallet Web3</strong>
+<small>MetaMask, WalletConnect...</small>
+</span>
+</button>
 </div>
 </div>
 
