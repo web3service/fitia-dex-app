@@ -276,19 +276,62 @@ const ONE_18 = 10n ** 18n;     // BigInt pour les calculs ethers v6
 // ═══════════════════════════════════════════════════════════════════
 //  WEB3AUTH — Chargement paresseux du SDK (Email / Google)
 //  Ce projet n'utilise pas de bundler (Webpack/Vite), donc on charge
-//  le SDK Web3Auth sous forme de module ESM directement depuis un CDN
-//  (jsDelivr), UNIQUEMENT au moment où l'utilisateur clique sur
-//  "Continuer avec Email/Google" (pas au chargement de la page, pour
-//  ne pas ralentir le premier affichage de l'app).
+//  le SDK Web3Auth sous forme de module ESM directement depuis un CDN,
+//  UNIQUEMENT au moment où l'utilisateur clique sur "Continuer avec
+//  Email/Google" (pas au chargement de la page, pour ne pas ralentir
+//  le premier affichage de l'app).
+//
+//  ⚠️ CAUSE FRÉQUENTE DE "Une erreur est survenue" AU CLIC :
+//  Les dépendances crypto de Web3Auth (elliptic, bs58, torus-utils...)
+//  utilisent en interne l'objet global Node.js "Buffer", qui N'EXISTE
+//  PAS nativement dans un navigateur sans bundler (Webpack/Vite
+//  l'injectent automatiquement d'habitude — nous ne l'avons pas ici).
+//  Sans ce polyfill, le SDK plante dès son chargement avec une erreur
+//  du type "Buffer is not defined" ou "process is not defined".
+//  → On charge donc un polyfill léger AVANT le SDK Web3Auth.
 // ═══════════════════════════════════════════════════════════════════
 let _web3authModule = null;
+async function ensureNodePolyfills() {
+  // N'installe le polyfill qu'une seule fois
+  if (window.Buffer && window.process) return;
+  try {
+    const bufferMod = await import('https://esm.sh/buffer@6.0.3');
+    window.Buffer = window.Buffer || bufferMod.Buffer;
+    window.process = window.process || { env: {}, browser: true, version: '', nextTick: (fn) => setTimeout(fn, 0) };
+    window.global = window.global || window; // certaines libs attendent aussi "global"
+  } catch (e) {
+    console.warn('Polyfill Buffer/process non chargé (le SDK Web3Auth pourrait échouer) :', e);
+  }
+}
+
 async function loadWeb3AuthSDK() {
   if (_web3authModule) return _web3authModule;
+  await ensureNodePolyfills();
+
   // ⚠️ Si vous préférez héberger le SDK vous-même (recommandé en prod
   // pour ne pas dépendre d'un CDN tiers), téléchargez le bundle ESM de
-  // "@web3auth/modal" et remplacez cette URL par un chemin local.
-  _web3authModule = await import('https://cdn.jsdelivr.net/npm/@web3auth/modal@9/+esm');
-  return _web3authModule;
+  // "@web3auth/modal" et remplacez ces URLs par un chemin local.
+  // On essaie plusieurs CDN dans l'ordre : esm.sh gère mieux les
+  // dépendances "Node" que jsDelivr pour les paquets complexes comme
+  // Web3Auth, donc on le tente en premier, avec jsDelivr en secours.
+  const sources = [
+    'https://esm.sh/@web3auth/modal@9',
+    'https://cdn.jsdelivr.net/npm/@web3auth/modal@9/+esm',
+  ];
+  let lastErr = null;
+  for (const url of sources) {
+    try {
+      _web3authModule = await import(url);
+      // Vérifie que le module a bien exporté ce dont on a besoin
+      if (!_web3authModule?.Web3Auth) throw new Error("Export 'Web3Auth' introuvable dans le module chargé depuis " + url);
+      return _web3authModule;
+    } catch (e) {
+      lastErr = e;
+      console.warn('Échec de chargement du SDK Web3Auth depuis ' + url, e);
+      _web3authModule = null;
+    }
+  }
+  throw new Error("Impossible de charger le SDK Web3Auth (toutes les sources CDN ont échoué) : " + (lastErr?.message || lastErr));
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -597,32 +640,50 @@ class Application {
 
     this.setLoader(true, this.t('connWallet'));
     try {
-      const { Web3Auth, WEB3AUTH_NETWORK, CHAIN_NAMESPACES } = await loadWeb3AuthSDK();
+      // ─── Étape 1 : chargement du SDK ───
+      let sdk;
+      try {
+        sdk = await loadWeb3AuthSDK();
+      } catch (e) {
+        throw new Error('[Chargement SDK] ' + (e?.message || e));
+      }
+      const { Web3Auth, WEB3AUTH_NETWORK, CHAIN_NAMESPACES } = sdk;
 
+      // ─── Étape 2 : création + initialisation de l'instance ───
       if (!this.web3auth) {
-        this.web3auth = new Web3Auth({
-          clientId: CONFIG.WEB3AUTH_CLIENT_ID,
-          web3AuthNetwork: WEB3AUTH_NETWORK[CONFIG.WEB3AUTH_NETWORK.toUpperCase()] || CONFIG.WEB3AUTH_NETWORK,
-          chainConfig: {
-            chainNamespace: CHAIN_NAMESPACES.EIP155,
-            chainId: CONFIG.CHAIN_ID_HEX,      // "0x89" = Polygon (137)
-            rpcTarget: CONFIG.RPC_URL,
-            displayName: "Polygon Mainnet",
-            blockExplorerUrl: "https://polygonscan.com",
-            ticker: "POL",
-            tickerName: "Polygon",
-          },
-          uiConfig: {
-            appName: "FITIA PRO MINER",
-            theme: { primary: "#F0B90B" },
-            loginMethodsOrder: ["google", "email_passwordless"],
-          },
-        });
-        await this.web3auth.init();
+        try {
+          this.web3auth = new Web3Auth({
+            clientId: CONFIG.WEB3AUTH_CLIENT_ID,
+            web3AuthNetwork: WEB3AUTH_NETWORK?.[CONFIG.WEB3AUTH_NETWORK.toUpperCase()] || CONFIG.WEB3AUTH_NETWORK,
+            chainConfig: {
+              chainNamespace: CHAIN_NAMESPACES?.EIP155 || 'eip155', // 'eip155' = valeur brute documentée par Web3Auth (sécurité si l'export change)
+              chainId: CONFIG.CHAIN_ID_HEX,      // "0x89" = Polygon (137)
+              rpcTarget: CONFIG.RPC_URL,
+              displayName: "Polygon Mainnet",
+              blockExplorerUrl: "https://polygonscan.com",
+              ticker: "POL",
+              tickerName: "Polygon",
+            },
+            uiConfig: {
+              appName: "FITIA PRO MINER",
+              theme: { primary: "#F0B90B" },
+              loginMethodsOrder: ["google", "email_passwordless"],
+            },
+          });
+          await this.web3auth.init();
+        } catch (e) {
+          this.web3auth = null; // repart de zéro au prochain essai
+          throw new Error('[Initialisation Web3Auth] ' + (e?.message || e));
+        }
       }
 
-      // Ouvre le modal Web3Auth : l'utilisateur choisit Email ou Google
-      const web3authProvider = await this.web3auth.connect();
+      // ─── Étape 3 : ouverture du modal + connexion ───
+      let web3authProvider;
+      try {
+        web3authProvider = await this.web3auth.connect();
+      } catch (e) {
+        throw new Error('[Connexion Web3Auth] ' + (e?.message || e));
+      }
       if (!web3authProvider) throw new Error("Connexion Web3Auth annulée");
 
       this.provider = new ethers.BrowserProvider(web3authProvider);
@@ -650,9 +711,9 @@ class Application {
       const { Web3Auth, WEB3AUTH_NETWORK, CHAIN_NAMESPACES } = await loadWeb3AuthSDK();
       this.web3auth = new Web3Auth({
         clientId: CONFIG.WEB3AUTH_CLIENT_ID,
-        web3AuthNetwork: WEB3AUTH_NETWORK[CONFIG.WEB3AUTH_NETWORK.toUpperCase()] || CONFIG.WEB3AUTH_NETWORK,
+        web3AuthNetwork: WEB3AUTH_NETWORK?.[CONFIG.WEB3AUTH_NETWORK.toUpperCase()] || CONFIG.WEB3AUTH_NETWORK,
         chainConfig: {
-          chainNamespace: CHAIN_NAMESPACES.EIP155,
+          chainNamespace: CHAIN_NAMESPACES?.EIP155 || 'eip155', // 'eip155' = valeur brute documentée par Web3Auth (sécurité si l'export change)
           chainId: CONFIG.CHAIN_ID_HEX,
           rpcTarget: CONFIG.RPC_URL,
           displayName: "Polygon Mainnet",
@@ -1632,6 +1693,14 @@ class Application {
     const shortMsg = e?.shortMessage || e?.reason || '';
     const errStr = ((e?.message || '') + ' ' + shortMsg + ' ' + (e?.code || '') + ' ' + (e?.reason || '')).toLowerCase();
 
+    // ─── Erreurs "étape par étape" (ex: [Chargement SDK], [Connexion Web3Auth]) ───
+    // On les affiche telles quelles en priorité : elles sont déjà écrites
+    // pour être lisibles et précises, pas besoin de les faire passer par
+    // les règles génériques ci-dessous (qui perdraient le détail utile).
+    if (e?.message && /^\[[^\]]+\]/.test(e.message)) {
+      return '⚠️ ' + e.message;
+    }
+
     if (errStr.includes('user rejected') || errStr.includes('user denied') || errStr.includes('action_rejected') || e?.code === 4001) return this.t('errRejected');
 
     // ─── Erreurs liées au GAS (frais de réseau en POL) ─────────────
@@ -1664,8 +1733,14 @@ class Application {
     if (errStr.includes('nobat') || errStr.includes('no battery')) return this.t('errNoBattery');
     if (errStr.includes('maxm') || errStr.includes('max machine')) return this.t('errMaxMachine');
 
-    // Fallback : afficher le vrai message ethers si disponible, sinon générique
+    // Fallback : afficher le vrai message si disponible, sinon générique.
+    // FIX : avant, seul le "shortMessage" d'ethers était utilisé ici — donc
+    // toute erreur JS "brute" (ex: SDK Web3Auth mal chargé, propriété
+    // undefined...) retombait sur le message générique opaque "Une erreur
+    // est survenue", impossible à diagnostiquer. On expose maintenant le
+    // vrai message technique (tronqué) pour pouvoir corriger le problème.
     if (shortMsg) return 'Erreur contrat : ' + shortMsg;
+    if (e?.message) return this.t('errGeneric') + ' (' + String(e.message).slice(0, 140) + ')';
     return this.t('errGeneric');
   }
 
