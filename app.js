@@ -18,6 +18,10 @@ const CONFIG = {
   // 3) "sapphire_mainnet" = production, "sapphire_devnet" = tests/dev
   WEB3AUTH_CLIENT_ID: "BB8-sW8_NENPty92A-Mx0_yXq2MVZUK9yg3Y8RpuClJO8x-L_N7n_IlXR5b230lFeEJaIGSEV1i2q8HoK3dTEwA",
   WEB3AUTH_NETWORK: "sapphire_mainnet",
+  // Laisser vide : le nom de variable globale exposée par le script Web3Auth
+  // est détecté automatiquement. Ne renseigner que si la détection échoue
+  // (voir instructions affichées dans la console dans ce cas précis).
+  WEB3AUTH_GLOBAL_NAME: "",
 
   WHATSAPP_GROUP: "https://chat.whatsapp.com/BDsvPCB6xp8H8X0YaRmPFP",
   WHATSAPP_CHANNEL: "https://whatsapp.com/channel/0029VbCQhI38PgsPLbBJdV1e"
@@ -276,62 +280,109 @@ const ONE_18 = 10n ** 18n;     // BigInt pour les calculs ethers v6
 // ═══════════════════════════════════════════════════════════════════
 //  WEB3AUTH — Chargement paresseux du SDK (Email / Google)
 //  Ce projet n'utilise pas de bundler (Webpack/Vite), donc on charge
-//  le SDK Web3Auth sous forme de module ESM directement depuis un CDN,
+//  le SDK Web3Auth via un simple tag <script> (build "UMD", tout-en-un),
 //  UNIQUEMENT au moment où l'utilisateur clique sur "Continuer avec
-//  Email/Google" (pas au chargement de la page, pour ne pas ralentir
-//  le premier affichage de l'app).
+//  Email/Google" (pas au chargement de la page).
 //
-//  ⚠️ CAUSE FRÉQUENTE DE "Une erreur est survenue" AU CLIC :
-//  Les dépendances crypto de Web3Auth (elliptic, bs58, torus-utils...)
-//  utilisent en interne l'objet global Node.js "Buffer", qui N'EXISTE
-//  PAS nativement dans un navigateur sans bundler (Webpack/Vite
-//  l'injectent automatiquement d'habitude — nous ne l'avons pas ici).
-//  Sans ce polyfill, le SDK plante dès son chargement avec une erreur
-//  du type "Buffer is not defined" ou "process is not defined".
-//  → On charge donc un polyfill léger AVANT le SDK Web3Auth.
+//  ⚠️ HISTORIQUE DU BUG : la première version utilisait un import()
+//  ESM via un convertisseur CDN générique (esm.sh / jsDelivr "+esm"),
+//  qui essaie de reconstruire TOUTES les sous-dépendances une par une.
+//  Pour un SDK aussi complexe que Web3Auth (dizaines de dépendances
+//  internes), cette reconstruction casse régulièrement (ex: l'erreur
+//  rencontrée sur le module interne "loglevel"). La documentation
+//  OFFICIELLE de Web3Auth recommande justement, pour un projet sans
+//  bundler, un simple tag <script> pointant vers le build UMD —
+//  un seul fichier qui embarque déjà toutes ses dépendances, donc
+//  aucune reconstruction fragile côté navigateur. C'est cette méthode
+//  qu'on utilise maintenant.
+//
+//  Comme le nom exact de la variable globale exposée par ce script
+//  peut varier selon la version du SDK, on ne le fixe pas en dur :
+//  on scanne "window" juste après le chargement pour trouver l'objet
+//  qui expose une fonction ".Web3Auth" (peu importe son nom).
 // ═══════════════════════════════════════════════════════════════════
 let _web3authModule = null;
+
+// Polyfill défensif (certaines dépendances internes peuvent s'attendre
+// à trouver Buffer/process même dans un build "navigateur").
 async function ensureNodePolyfills() {
-  // N'installe le polyfill qu'une seule fois
   if (window.Buffer && window.process) return;
   try {
     const bufferMod = await import('https://esm.sh/buffer@6.0.3');
     window.Buffer = window.Buffer || bufferMod.Buffer;
     window.process = window.process || { env: {}, browser: true, version: '', nextTick: (fn) => setTimeout(fn, 0) };
-    window.global = window.global || window; // certaines libs attendent aussi "global"
+    window.global = window.global || window;
   } catch (e) {
-    console.warn('Polyfill Buffer/process non chargé (le SDK Web3Auth pourrait échouer) :', e);
+    console.warn('Polyfill Buffer/process non chargé :', e);
   }
+}
+
+// Injecte un tag <script src="..."> classique et attend son chargement
+function injectScriptTag(url) {
+  return new Promise((resolve, reject) => {
+    // Évite de charger deux fois le même script
+    if (document.querySelector(`script[data-web3auth-src="${url}"]`)) return resolve();
+    const s = document.createElement('script');
+    s.src = url;
+    s.async = true;
+    s.dataset.web3authSrc = url;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("Échec de chargement du script : " + url));
+    document.head.appendChild(s);
+  });
+}
+
+// Cherche dans "window" l'objet exposé par le SDK (peu importe son nom
+// de variable globale exacte) : on reconnaît sa "forme" (a une fonction
+// .Web3Auth), pas son nom.
+function findWeb3AuthGlobal() {
+  // Si le développeur a renseigné le nom exact (trouvé via la console,
+  // voir instructions plus bas en cas d'échec), on l'utilise en priorité.
+  if (CONFIG.WEB3AUTH_GLOBAL_NAME && window[CONFIG.WEB3AUTH_GLOBAL_NAME]?.Web3Auth) {
+    return window[CONFIG.WEB3AUTH_GLOBAL_NAME];
+  }
+  for (const key of Object.keys(window)) {
+    try {
+      const val = window[key];
+      if (val && typeof val === 'object' && typeof val.Web3Auth === 'function') return val;
+    } catch (e) { /* certaines propriétés de window sont protégées, on ignore */ }
+  }
+  return null;
 }
 
 async function loadWeb3AuthSDK() {
   if (_web3authModule) return _web3authModule;
   await ensureNodePolyfills();
 
-  // ⚠️ Si vous préférez héberger le SDK vous-même (recommandé en prod
-  // pour ne pas dépendre d'un CDN tiers), téléchargez le bundle ESM de
-  // "@web3auth/modal" et remplacez ces URLs par un chemin local.
-  // On essaie plusieurs CDN dans l'ordre : esm.sh gère mieux les
-  // dépendances "Node" que jsDelivr pour les paquets complexes comme
-  // Web3Auth, donc on le tente en premier, avec jsDelivr en secours.
+  // Méthode officielle Web3Auth pour un projet sans bundler : tag <script>
+  // pointant vers le build UMD (voir web3auth.io/docs, section "Web (vanilla JS)").
+  // ⚠️ Si vous préférez héberger le SDK vous-même (recommandé en prod pour ne
+  // pas dépendre d'un CDN tiers), téléchargez "dist/modal.umd.min.js" depuis
+  // https://unpkg.com/@web3auth/modal et remplacez ces URLs par un chemin local.
   const sources = [
-    'https://esm.sh/@web3auth/modal@9',
-    'https://cdn.jsdelivr.net/npm/@web3auth/modal@9/+esm',
+    'https://cdn.jsdelivr.net/npm/@web3auth/modal@10',
+    'https://unpkg.com/@web3auth/modal@10',
   ];
   let lastErr = null;
   for (const url of sources) {
     try {
-      _web3authModule = await import(url);
-      // Vérifie que le module a bien exporté ce dont on a besoin
-      if (!_web3authModule?.Web3Auth) throw new Error("Export 'Web3Auth' introuvable dans le module chargé depuis " + url);
-      return _web3authModule;
+      await injectScriptTag(url);
+      const found = findWeb3AuthGlobal();
+      if (found) { _web3authModule = found; return found; }
+      throw new Error("Script chargé mais aucun objet '.Web3Auth' trouvé dans window (voir note ci-dessous).");
     } catch (e) {
       lastErr = e;
       console.warn('Échec de chargement du SDK Web3Auth depuis ' + url, e);
-      _web3authModule = null;
     }
   }
-  throw new Error("Impossible de charger le SDK Web3Auth (toutes les sources CDN ont échoué) : " + (lastErr?.message || lastErr));
+  // Diagnostic utile affiché en console pour trouver le vrai nom global
+  console.error(
+    "Web3Auth introuvable dans window après chargement du script.\n" +
+    "Pour trouver le nom exact de la variable globale exposée, ouvrez la console\n" +
+    "et tapez : Object.keys(window).filter(k => /web3|modal/i.test(k))\n" +
+    "Puis renseignez ce nom dans CONFIG.WEB3AUTH_GLOBAL_NAME (app.js)."
+  );
+  throw new Error("Impossible de charger le SDK Web3Auth (toutes les sources ont échoué) : " + (lastErr?.message || lastErr));
 }
 
 // ═══════════════════════════════════════════════════════════════════
