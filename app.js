@@ -350,6 +350,29 @@ function findWeb3AuthGlobal() {
   return null;
 }
 
+// ─── Initialise une instance Web3Auth de façon robuste ────────────
+// Selon la version du SDK, l'initialisation du modal se fait via
+// initModal() (API historique, nécessaire pour que connect() ouvre le
+// modal — sinon erreur "Login modal is not initialized") ou via init()
+// seul (API plus récente qui gère tout en un appel). On essaie les deux
+// dans l'ordre, sans avoir besoin de connaître la version exacte chargée.
+async function readyWeb3AuthInstance(instance) {
+  if (typeof instance.initModal === 'function') {
+    await instance.initModal();
+  } else if (typeof instance.init === 'function') {
+    await instance.init();
+  } else {
+    throw new Error("Ni initModal() ni init() ne sont disponibles sur l'instance Web3Auth chargée.");
+  }
+  // Filet de sécurité : si l'instance expose un statut interne et qu'il
+  // n'est pas encore "ready"/"connected" juste après l'init, on laisse
+  // une très courte marge (certaines versions finalisent l'état du
+  // modal de façon légèrement asynchrone après la résolution de la promesse).
+  if (instance.status && !['ready', 'connected'].includes(instance.status)) {
+    await new Promise(r => setTimeout(r, 300));
+  }
+}
+
 async function loadWeb3AuthSDK() {
   if (_web3authModule) return _web3authModule;
   await ensureNodePolyfills();
@@ -721,7 +744,7 @@ class Application {
               loginMethodsOrder: ["google", "email_passwordless"],
             },
           });
-          await this.web3auth.init();
+          await readyWeb3AuthInstance(this.web3auth);
         } catch (e) {
           this.web3auth = null; // repart de zéro au prochain essai
           throw new Error('[Initialisation Web3Auth] ' + (e?.message || e));
@@ -773,7 +796,7 @@ class Application {
           tickerName: "Polygon",
         },
       });
-      await this.web3auth.init();
+      await readyWeb3AuthInstance(this.web3auth);
       if (this.web3auth.connected && this.web3auth.provider) {
         this.provider = new ethers.BrowserProvider(this.web3auth.provider);
         this.signer = await this.provider.getSigner();
