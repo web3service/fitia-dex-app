@@ -15,14 +15,38 @@
 html, body { height: 100%; margin: 0; overscroll-behavior: none; }
 body { background-color: var(--bg); font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text); height: 100dvh; overflow: hidden; }
 .bg-glow { position: fixed; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at 50% 0%, #2a2400, transparent 70%); }
+
+/* ═══ AUTH SCREEN ═══ */
+.auth-screen { display: flex; align-items: center; justify-content: center; height: 100dvh; padding: 20px; }
+.auth-screen.hidden { display: none !important; }
+.auth-card { background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 30px 24px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.auth-logo { margin-bottom: 25px; }
+.auth-logo-img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 20px rgba(240,185,11,0.4); margin-bottom: 10px; }
+.auth-title { font-size: 1.6rem; font-weight: 800; margin: 5px 0; letter-spacing: 1px; }
+.auth-subtitle { color: var(--text-muted); font-size: 0.85rem; margin: 0; }
+.auth-desc { color: var(--text-muted); font-size: 0.85rem; margin: 15px 0; line-height: 1.5; }
+.auth-connected-addr { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin: 15px 0; color: var(--primary); word-break: break-all; }
+.auth-disclaimer { font-size: 0.7rem; color: var(--text-muted); margin-top: 15px; opacity: 0.7; }
+.auth-step { display: none; animation: fadeIn 0.3s ease; }
+.auth-step.active { display: block; }
+.btn-auth { width: 100%; padding: 14px; border-radius: 12px; border: none; cursor: pointer; font-weight: 700; font-size: 0.95rem; margin-bottom: 10px; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-auth:active { transform: scale(0.97); }
+.btn-connect-wallet { background: linear-gradient(135deg, var(--primary), #FFD43B); color: #000; }
+.btn-connect-wc { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; }
+.btn-register { background: var(--primary); color: #000; }
+.btn-login { background: var(--accent); color: #fff; }
+.btn-disconnect { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+
+/* ═══ APP SHELL ═══ */
 .app-shell { display: flex; flex-direction: column; height: 100%; max-width: 100%; margin: 0 auto; }
+.hidden { display: none !important; }
 header { padding: 15px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(10px); z-index: 10; background: var(--bg); border-bottom: 1px solid rgba(255,255,255,0.05); padding-top: max(15px, env(safe-area-inset-top)); }
 .brand { display: flex; align-items: center; gap: 8px; }
 .logo-icon { font-size: 1.4rem; color: var(--primary); text-shadow: 0 0 15px var(--primary); }
 .brand-text { font-weight: 800; font-size: clamp(0.9rem, 4vw, 1.1rem); letter-spacing: 0.5px; }
 .pro-badge { background: var(--primary); color: #000; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; margin-left: 5px; font-weight: 700; }
-.btn-connect { background: transparent; border: 1px solid var(--primary); color: var(--primary); padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
-.btn-connect:active { background: var(--primary); color: #000; }
+.btn-logout { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: var(--danger); padding: 8px 14px; border-radius: 20px; font-weight: 600; cursor: pointer; font-size: 1rem; transition: 0.15s; }
+.btn-logout:active { background: rgba(239,68,68,0.3); }
 .wallet-status { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 20px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
 .status-dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; box-shadow: 0 0 10px #10b981; }
 .lang-dropdown { position: relative; display: inline-block; }
@@ -55,10 +79,8 @@ main::-webkit-scrollbar { display: none; }
 .token-unit-price { font-size: 0.7rem; color: var(--text-muted); font-weight: normal; font-family: 'JetBrains Mono', monospace; }
 .token-bal { font-family: 'JetBrains Mono', monospace; font-size: clamp(0.9rem, 3.5vw, 1rem); color: var(--text); font-weight: bold; word-break: break-all; }
 .token-bal-usd { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-muted); }
-.wallet-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
 .btn-wallet { padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text); font-weight: bold; font-size: 0.75rem; cursor: pointer; transition: 0.2s; white-space: nowrap; }
 .btn-wallet:active { background: var(--primary); color: #000; }
-.receive-btn { border-color: var(--primary); color: var(--primary); }
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1500; justify-content: center; align-items: flex-end; padding: 0; }
 .modal.active { display: flex; }
 .modal-content { background: var(--card-bg); padding: 25px 20px calc(25px + var(--safe-bottom)); border-radius: 20px 20px 0 0; width: 100%; max-width: 100%; box-shadow: 0 -10px 50px rgba(0,0,0,0.5); animation: slideUp 0.3s ease-out; }
@@ -124,6 +146,9 @@ main::-webkit-scrollbar { display: none; }
 .status-pill.expired { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
 .status-pill.inactive { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
 .status-pill.available { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+.status-pill.confirmed { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+.status-pill.pending { background: rgba(240, 185, 11, 0.2); color: #f0b90b; }
+.status-pill.failed { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
 .battery-bar-wrap { margin-top: 6px; }
 .battery-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 .battery-bar-label { font-size: 0.7rem; color: var(--text-muted); }
@@ -155,7 +180,7 @@ main::-webkit-scrollbar { display: none; }
 .swap-detail-value { color: var(--text); font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 0.75rem; }
 .swap-slippage { color: var(--accent); }
 .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: calc(var(--nav-height) + var(--safe-bottom)); background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); border-top: 1px solid #333; display: flex; justify-content: space-around; align-items: center; z-index: 100; padding-bottom: var(--safe-bottom); }
-.nav-item { border: none; background: none; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 0.65rem; cursor: pointer; width: 20%; height: 100%; transition: 0.2s; }
+.nav-item { border: none; background: none; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 0.62rem; cursor: pointer; width: 20%; height: 100%; transition: 0.2s; }
 .nav-item svg { width: 22px; height: 22px; fill: currentColor; }
 .nav-item.active { color: var(--primary); }
 .loader { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; animation: loaderFadeIn 0.3s ease; }
@@ -206,7 +231,6 @@ main::-webkit-scrollbar { display: none; }
 .chat-input:focus { border-color: var(--primary); }
 .chat-send-btn { width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: #000; border: none; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.15s; flex-shrink: 0; }
 .chat-send-btn:active { transform: scale(0.9); }
-.hidden { display: none !important; }
 
 /* ─── Boutons dépôt/retrait (Wallet) ─── */
 .btn-wallet-action {
@@ -307,17 +331,37 @@ main::-webkit-scrollbar { display: none; }
 .wallet-token-select { flex: 0 0 72px; min-width: 68px; margin-bottom: 0; padding: 10px 8px; font-size: 14px; }
 .wallet-amount-input { flex: 2 1 90px; min-width: 70px; margin-bottom: 0; }
 
+/* ═══ HISTORIQUE DES TRANSACTIONS ═══ */
+.history-filters { display: flex; gap: 10px; margin-bottom: 15px; }
+.history-filters .game-input { margin-bottom: 0; }
+.history-list { display: flex; flex-direction: column; gap: 8px; }
+.history-item { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; transition: 0.15s; }
+.history-item:active { background: rgba(255,255,255,0.05); }
+.history-item-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.history-icon { font-size: 1.3rem; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: rgba(255,255,255,0.05); flex-shrink: 0; }
+.history-details { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.history-detail-type { font-weight: 700; font-size: 0.85rem; }
+.history-detail-date { font-size: 0.7rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+.history-item-right { text-align: right; flex-shrink: 0; }
+.history-amount { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.85rem; }
+.history-amount.positive { color: #10b981; }
+.history-amount.negative { color: #ef4444; }
+
+.history-pagination { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
+.history-pagination.hidden { display: none; }
+.btn-page { padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: var(--card-bg); color: var(--text); cursor: pointer; font-weight: 600; font-size: 0.8rem; }
+.btn-page:disabled { opacity: 0.3; cursor: default; }
+.btn-page:active:not(:disabled) { background: var(--primary); color: #000; }
+
 /* ─── Améliorations mobiles ─── */
 @media screen and (max-width: 380px) {
   .wallet-token-row { flex-wrap: wrap; gap: 6px; }
-  .wallet-actions { flex-direction: row; gap: 4px; }
   .btn-wallet { padding: 5px 8px; font-size: 0.68rem; }
   .btn-wallet-action { padding: 8px 4px; font-size: 0.68rem; min-width: 48px; }
   .btn-wallet-main { padding: 6px 10px; font-size: 0.7rem; }
   .wallet-card-header { gap: 8px; }
   .wallet-token-select { flex: 0 0 60px; min-width: 58px; padding: 8px 6px; }
   .wallet-amount-input { min-width: 60px; }
-  .token-price-mini { font-size: 0.65rem; padding: 3px 8px; min-width: 48px; }
   .plug-grid { grid-template-columns: 1fr; }
   .game-input { font-size: 14px; padding: 10px; }
   header { padding: 10px 8px; }
@@ -325,104 +369,6 @@ main::-webkit-scrollbar { display: none; }
   .btn-connect { padding: 6px 10px; font-size: 0.73rem; }
   .chat-fab { width: 48px; height: 48px; bottom: calc(var(--nav-height) + var(--safe-bottom) + 10px); right: 10px; }
   .chat-panel { width: calc(100% - 16px); right: 8px; max-width: 100%; }
+  .nav-item { font-size: 0.55rem; }
+  .nav-item svg { width: 18px; height: 18px; }
 }
-
-/* ═══════════════════════════════════════════════════════════════
-   NOTIFICATION BELL + PANEL
-   ═══════════════════════════════════════════════════════════════ */
-.notif-bell-wrap{position:relative;display:flex;align-items:center;margin-left:4px;}
-.notif-bell-btn{background:rgba(255,255,255,.08);border:none;color:var(--text-muted);width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:.2s;position:relative;}
-.notif-bell-btn:active{background:rgba(255,255,255,.18);color:var(--primary);}
-.notif-badge{position:absolute;top:-2px;right:-2px;background:var(--danger);color:#fff;font-size:.6rem;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 0 8px rgba(239,68,68,.5);animation:badgePulse 2s infinite;}
-@keyframes badgePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
-.notif-panel{position:fixed;top:60px;right:10px;width:calc(100% - 20px);max-width:380px;max-height:55vh;background:var(--card-bg);border-radius:16px;border:1px solid rgba(255,255,255,.1);box-shadow:0 15px 40px rgba(0,0,0,.6);z-index:150;display:flex;flex-direction:column;transform:translateY(-10px);opacity:0;pointer-events:none;transition:all .25s ease;}
-.notif-panel.active{transform:translateY(0);opacity:1;pointer-events:auto;}
-.notif-panel-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);}
-.notif-panel-header h3{margin:0;font-size:.9rem;font-weight:700;}
-.notif-clear-btn{background:none;border:none;color:var(--accent);font-size:.72rem;font-weight:700;cursor:pointer;padding:4px 8px;border-radius:6px;}
-.notif-clear-btn:active{background:rgba(59,130,246,.15);}
-.notif-list{flex:1;overflow-y:auto;padding:6px;scrollbar-width:thin;scrollbar-color:#333 transparent;}
-.notif-list::-webkit-scrollbar{width:4px;}
-.notif-list::-webkit-scrollbar-thumb{background:#333;border-radius:4px;}
-.notif-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;margin-bottom:4px;cursor:pointer;transition:background .15s;border:1px solid transparent;}
-.notif-item.unread{background:rgba(240,185,11,.06);border-color:rgba(240,185,11,.15);}
-.notif-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;}
-.notif-icon.deposit{background:rgba(16,185,129,.15);}
-.notif-icon.withdraw{background:rgba(239,68,68,.15);}
-.notif-icon.swap{background:rgba(59,130,246,.15);}
-.notif-icon.claim{background:rgba(240,185,11,.15);}
-.notif-icon.buy{background:rgba(139,92,246,.15);}
-.notif-icon.plug{background:rgba(6,182,212,.15);}
-.notif-icon.send{background:rgba(245,158,11,.15);}
-.notif-icon.referral{background:rgba(16,185,129,.15);}
-.notif-body{flex:1;min-width:0;}
-.notif-title{font-size:.78rem;font-weight:700;color:var(--text);margin-bottom:2px;}
-.notif-desc{font-size:.7rem;color:var(--text-muted);margin-bottom:3px;line-height:1.3;}
-.notif-time{font-size:.64rem;color:#64748b;font-family:'JetBrains Mono',monospace;}
-.notif-empty{text-align:center;padding:30px 15px;color:var(--text-muted);font-size:.8rem;}
-
-/* ═══════════════════════════════════════════════════════════════
-   PROFILE VIEW
-   ═══════════════════════════════════════════════════════════════ */
-.profile-header-card{text-align:center;padding:20px 15px;background:linear-gradient(145deg,#1a1a2e,#162032);border:1px solid rgba(240,185,11,.15);}
-.profile-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#FFD43B);display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:800;color:#000;margin:0 auto 10px;box-shadow:0 4px 20px rgba(240,185,11,.3);font-family:'JetBrains Mono',monospace;}
-.profile-name{font-size:.95rem;font-weight:700;font-family:'JetBrains Mono',monospace;margin-bottom:4px;color:var(--text);word-break:break-all;}
-.profile-id{font-size:.75rem;color:var(--primary);font-family:'JetBrains Mono',monospace;background:rgba(240,185,11,.1);padding:3px 10px;border-radius:12px;display:inline-block;}
-.profile-ref{font-size:.73rem;color:var(--text-muted);margin-top:8px;}
-.profile-ref span{color:var(--accent);font-family:'JetBrains Mono',monospace;}
-.profile-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px;}
-.profile-stat{background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05);border-radius:12px;padding:14px;text-align:center;}
-.profile-stat-val{font-family:'JetBrains Mono',monospace;font-size:clamp(1rem,4vw,1.25rem);font-weight:700;color:var(--text);}
-.profile-stat-val.primary{color:var(--primary);}
-.profile-stat-label{font-size:.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px;}
-.activity-filters{display:flex;gap:6px;margin:0 0 12px 0;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
-.activity-filters::-webkit-scrollbar{display:none;}
-.activity-filter-btn{padding:6px 12px;border-radius:16px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--text-muted);font-size:.7rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:.15s;}
-.activity-filter-btn.active{background:var(--primary);color:#000;border-color:var(--primary);}
-.activity-filter-btn:active{transform:scale(.96);}
-.activity-list{max-height:55vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#333 transparent;}
-.activity-list::-webkit-scrollbar{width:4px;}
-.activity-list::-webkit-scrollbar-thumb{background:#333;border-radius:4px;}
-.activity-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.03);transition:background .15s;}
-.activity-item:last-child{border-bottom:none;}
-.activity-icon{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;}
-.activity-icon.swap{background:rgba(59,130,246,.15);}
-.activity-icon.deposit{background:rgba(16,185,129,.15);}
-.activity-icon.withdraw{background:rgba(239,68,68,.15);}
-.activity-icon.claim{background:rgba(240,185,11,.15);}
-.activity-icon.buy{background:rgba(139,92,246,.15);}
-.activity-icon.plug{background:rgba(6,182,212,.15);}
-.activity-icon.send{background:rgba(245,158,11,.15);}
-.activity-icon.referral{background:rgba(16,185,129,.15);}
-.activity-info{flex:1;min-width:0;}
-.activity-title{font-size:.8rem;font-weight:600;color:var(--text);}
-.activity-detail{font-size:.7rem;color:var(--text-muted);margin-top:1px;}
-.activity-right{text-align:right;flex-shrink:0;}
-.activity-amount{font-family:'JetBrains Mono',monospace;font-size:.78rem;font-weight:700;}
-.activity-amount.positive{color:var(--success);}
-.activity-amount.negative{color:var(--danger);}
-.activity-time{font-size:.63rem;color:#64748b;font-family:'JetBrains Mono',monospace;margin-top:2px;}
-.activity-tx{font-size:.6rem;color:var(--accent);font-family:'JetBrains Mono',monospace;cursor:pointer;margin-top:1px;}
-.activity-tx:hover{text-decoration:underline;}
-.activity-empty{text-align:center;padding:40px 15px;color:var(--text-muted);font-size:.82rem;}
-.profile-export-btn{width:100%;margin-top:12px;padding:10px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--text-muted);font-size:.75rem;font-weight:600;cursor:pointer;transition:.15s;}
-.profile-export-btn:active{background:rgba(255,255,255,.1);color:var(--text);}
-
-/* ─── Mobile adjust for 5-tab nav + profile */
-@media screen and (max-width:380px){
-  .nav-item{font-size:.58rem;}
-  .nav-item svg{width:18px;height:18px;}
-  .profile-stats-grid{grid-template-columns:1fr 1fr;gap:8px;}
-  .profile-stat{padding:10px 8px;}
-  .profile-stat-val{font-size:.9rem;}
-  .activity-filters{gap:4px;}
-  .activity-filter-btn{padding:5px 8px;font-size:.63rem;}
-}
-/* ─── Connexion : boutons de choix (Email/Google vs Wallet Web3) ─── */
-.connect-option-btn{display:flex;align-items:center;gap:14px;width:100%;padding:16px;margin-bottom:12px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--text);cursor:pointer;transition:.15s;text-align:left;}
-.connect-option-btn:active{background:rgba(240,185,11,.12);border-color:var(--primary);transform:scale(.98);}
-.connect-option-icon{font-size:1.6rem;flex-shrink:0;}
-.connect-option-text{display:flex;flex-direction:column;gap:2px;}
-.connect-option-text strong{font-size:.92rem;font-weight:700;}
-.connect-option-text small{font-size:.72rem;color:var(--text-muted);}
-.wallet-status{cursor:pointer;}

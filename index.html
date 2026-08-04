@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0f172a">
-<title>FITIA PRO MINER</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src * ws://* wss://*; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://unpkg.com https://relay.walletconnect.com https://cdn.jsdelivr.net https://esm.sh; frame-src 'self' https:; img-src 'self' data: https://* http://*;">
+<title>FITIA PRO MINER V4</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src * ws://* wss://*; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://unpkg.com https://relay.walletconnect.com; img-src 'self' data: https://* http://*;">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -17,7 +17,44 @@
 <body>
 <div class="bg-glow"></div>
 <div id="toast-container"></div>
-<div class="app-shell">
+
+<!-- ═══ ÉCRAN D'AUTHENTIFICATION (Login / Register) ═══ -->
+<div id="auth-screen" class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" alt="FTA" class="auth-logo-img">
+      <h1 class="auth-title">FITIA <span class="pro-badge">PRO</span></h1>
+      <p class="auth-subtitle">Mining Platform</p>
+    </div>
+
+    <!-- Étape 1 : Connexion Wallet -->
+    <div id="auth-step-connect" class="auth-step active">
+      <p class="auth-desc" data-i18n="authConnectWallet">Connectez votre wallet Polygon pour accéder à l'application.</p>
+      <button class="btn-auth btn-connect-wallet" onclick="App.connectWallet()">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M21 18v1a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v1h-9a2 2 0 00-2 2v8a2 2 0 002 2h9zm-9-2h10V8H12v8zm4-2.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/></svg>
+        Connecter MetaMask
+      </button>
+      <button class="btn-auth btn-connect-wc" onclick="App.connectWalletConnect()">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+        WalletConnect
+      </button>
+      <p class="auth-disclaimer">Votre adresse Polygon sera votre identifiant unique.</p>
+    </div>
+
+    <!-- Étape 2 : Wallet connecté — Inscription ou Connexion -->
+    <div id="auth-step-register" class="auth-step">
+      <p class="auth-connected-addr" id="auth-connected-addr">0x...</p>
+      <p class="auth-desc" id="auth-register-msg" data-i18n="authNewAccount">Nouveau compte détecté. Créez votre profil.</p>
+      <input type="text" id="auth-username" class="game-input" placeholder="Pseudo (optionnel)" data-i18n-placeholder="authUsername">
+      <button class="btn-auth btn-register" onclick="App.registerUser()" data-i18n="authRegister">S'INSCRIRE</button>
+      <button class="btn-auth btn-login" onclick="App.loginUser()" data-i18n="authLogin">SE CONNECTER</button>
+      <button class="btn-auth btn-disconnect" onclick="App.disconnectWallet()" data-i18n="authDisconnect">Déconnecter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ APPLICATION PRINCIPALE (cachée tant que non authentifié) ═══ -->
+<div id="app-screen" class="app-shell hidden">
 <header>
 <div class="brand">
 <div class="logo-icon">⚡</div>
@@ -33,15 +70,11 @@
 <a href="#" onclick="App.setLanguage('sg')">🇸🇬 English (SG)</a>
 </div>
 </div>
-<button id="btn-connect" class="btn-connect" onclick="App.openConnectModal()">Connecter</button>
-<div id="wallet-status" class="wallet-status hidden" onclick="App.disconnectWallet()" title="Cliquer pour se déconnecter">
+<div id="wallet-status" class="wallet-status">
 <span id="addr-display">0x...</span>
 <span class="status-dot"></span>
 </div>
-<div class="notif-bell-wrap">
-<button class="notif-bell-btn" onclick="App.toggleNotifications()" title="Notifications">🔔</button>
-<span class="notif-badge hidden" id="notif-badge">0</span>
-</div>
+<button class="btn-logout" onclick="App.logout()" data-i18n="logout">↪</button>
 </header>
 
 <main id="main-view">
@@ -111,7 +144,6 @@
 <div class="card wallet-main-card">
 <div class="wallet-card-header">
 <h3 data-i18n="walletBal">💰 Soldes</h3>
-<!-- Boutons Envoyer / Recevoir -->
 <div class="wallet-main-actions">
 <button class="btn-wallet-main btn-wallet-send" onclick="App.openSend()" data-i18n="send"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Envoyer</button>
 <button class="btn-wallet-main btn-wallet-recv" onclick="App.openReceive()" data-i18n="receive"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z" transform="rotate(180 12 12)"/></svg> Recevoir</button>
@@ -226,49 +258,29 @@
 </div>
 </div>
 
-<!-- ═══ PROFIL ═══ -->
-<div id="view-profile" class="view">
-<div class="card profile-header-card">
-<div class="profile-avatar" id="profile-avatar">?</div>
-<div class="profile-name" id="profile-addr">—</div>
-<div class="profile-id">ID: <span id="profile-uid">—</span></div>
-<div class="profile-ref">Parrain: <span id="profile-ref">—</span></div>
+<!-- ═══ HISTORIQUE DES TRANSACTIONS ═══ -->
+<div id="view-history" class="view">
+<h2 class="view-title" data-i18n="historyTitle">📜 Historique</h2>
+<div class="history-filters">
+<select id="history-filter-type" class="game-input" style="flex:1; margin-bottom:0;" onchange="App.filterHistory()">
+<option value="" data-i18n="historyAllTypes">Tous les types</option>
+<option value="buy_machine">Achat Machine</option>
+<option value="buy_battery">Achat Batterie</option>
+<option value="deposit">Dépôt</option>
+<option value="withdraw">Retrait</option>
+<option value="claim">Claim</option>
+<option value="swap">Swap</option>
+<option value="plug">Branchement</option>
+<option value="referral">Parrainage</option>
+<option value="send">Envoi</option>
+<option value="receive">Réception</option>
+</select>
 </div>
-<div class="profile-stats-grid">
-<div class="profile-stat">
-<div class="profile-stat-val primary" id="profile-stat-tx">0</div>
-<div class="profile-stat-label">Transactions</div>
+<div id="history-list" class="history-list">
+<p class="small-text" style="text-align:center; padding:20px;" data-i18n="historyLoading">Chargement de l'historique...</p>
 </div>
-<div class="profile-stat">
-<div class="profile-stat-val" id="profile-stat-machines">0</div>
-<div class="profile-stat-label">Machines</div>
+<div id="history-pagination" class="history-pagination hidden"></div>
 </div>
-<div class="profile-stat">
-<div class="profile-stat-val" id="profile-stat-claims">0</div>
-<div class="profile-stat-label">Claims</div>
-</div>
-<div class="profile-stat">
-<div class="profile-stat-val" id="profile-stat-volume">$0</div>
-<div class="profile-stat-label">Volume Total</div>
-</div>
-</div>
-<h3 style="font-size:.9rem;margin-bottom:8px;font-weight:700;">📜 Historique d'activité</h3>
-<div class="activity-filters" id="activity-filters">
-<button class="activity-filter-btn active" onclick="App.filterActivity('all')">Tout</button>
-<button class="activity-filter-btn" onclick="App.filterActivity('deposit')">💰 Dépôt</button>
-<button class="activity-filter-btn" onclick="App.filterActivity('withdraw')">📤 Retrait</button>
-<button class="activity-filter-btn" onclick="App.filterActivity('swap')">💱 Swap</button>
-<button class="activity-filter-btn" onclick="App.filterActivity('claim')">⛏️ Claim</button>
-<button class="activity-filter-btn" onclick="App.filterActivity('buy')">🛒 Achat</button>
-<button class="activity-filter-btn" onclick="App.filterActivity('plug')">🔌 Brancher</button>
-<button class="activity-filter-btn" onclick="App.filterActivity('send')">📨 Envoi</button>
-</div>
-<div class="activity-list" id="activity-list">
-<p class="activity-empty">Aucune activité enregistrée. Commencez par déposer ou acheter une machine !</p>
-</div>
-<button class="profile-export-btn" onclick="App.exportActivity()">📥 Exporter l'historique (CSV)</button>
-</div>
-
 </main>
 
 <!-- ═══ NAVIGATION BASSE ═══ -->
@@ -277,7 +289,7 @@
 <button class="nav-item" onclick="App.nav('shop')"><svg viewBox="0 0 24 24"><path d="M12 2l-5.5 9h11z"/></svg><span data-i18n="shop">Boutique</span></button>
 <button class="nav-item" onclick="App.nav('my-rigs')"><svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg><span data-i18n="assets">Wallet</span></button>
 <button class="nav-item" onclick="App.nav('swap')"><svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg><span data-i18n="swapNav">Swap</span></button>
-<button class="nav-item" onclick="App.nav('profile')"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg><span>Profil</span></button>
+<button class="nav-item" onclick="App.nav('history')"><svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 00-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0013 21a9 9 0 000-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg><span data-i18n="historyNav">Historique</span></button>
 </nav>
 </div>
 
@@ -306,39 +318,6 @@
 <p class="small-text" style="margin-bottom: 15px;">Envoyez uniquement POL, USDT ou FTA à cette adresse sur Polygon.</p>
 <div class="receive-addr-box" onclick="App.copyReceiveAddress()"><span id="receive-addr-display">0x...</span><span class="copy-icon">📋</span></div>
 <p class="small-text" style="margin-top: 10px; color: var(--primary);">Appuyez pour copier</p>
-</div>
-</div>
-
-<!-- Connexion : choix du mode -->
-<div id="modal-connect" class="modal">
-<div class="modal-content" style="text-align: center;">
-<div class="modal-header"><h3>Se connecter</h3><button class="modal-close" onclick="App.closeModals()">✕</button></div>
-<p class="small-text" style="margin-bottom: 15px;">Choisissez votre méthode de connexion.</p>
-<button class="connect-option-btn" onclick="App.connectWeb3Auth()">
-<span class="connect-option-icon">📧</span>
-<span class="connect-option-text">
-<strong>Email / Google</strong>
-<small>Rapide, sans extension à installer</small>
-</span>
-</button>
-<button class="connect-option-btn" onclick="App.connectInjectedWallet()">
-<span class="connect-option-icon">🦊</span>
-<span class="connect-option-text">
-<strong>Wallet Web3</strong>
-<small>MetaMask, WalletConnect...</small>
-</span>
-</button>
-</div>
-</div>
-
-<!-- ═══ NOTIFICATIONS PANEL ═══ -->
-<div id="notif-panel" class="notif-panel">
-<div class="notif-panel-header">
-<h3>🔔 Notifications</h3>
-<button class="notif-clear-btn" onclick="App.clearNotifications()">Tout lu</button>
-</div>
-<div class="notif-list" id="notif-list">
-<p class="notif-empty">Aucune notification</p>
 </div>
 </div>
 
