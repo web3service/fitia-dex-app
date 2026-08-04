@@ -1,0 +1,5 @@
+node_modules/
+fitia_mining.db
+*.db-journal
+*.db-wal
+*.db-shm
