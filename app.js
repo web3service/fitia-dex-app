@@ -16,7 +16,7 @@ const CONFIG = {
   WC_PROJECT_ID: "2c10ee910a836551fbabbf7c8cc4542a",
   WHATSAPP_GROUP: "https://chat.whatsapp.com/BDsvPCB6xp8H8X0YaRmPFP",
   WHATSAPP_CHANNEL: "https://whatsapp.com/channel/0029VbCQhI38PgsPLbBJdV1e",
-  API_BASE: "fitia-dex-app-production.up.railway.app"  // URL du backend SQLite
+  API_BASE: "https://fitia-dex-app-production.up.railway.app/"  // URL du backend SQLite
 };
 
 // ─── Traductions i18n (5 langues) ──────────────────────────────────
