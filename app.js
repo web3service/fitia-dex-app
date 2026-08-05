@@ -8,15 +8,15 @@
 
 // ─── Configuration ─────────────────────────────────────────────────
 const CONFIG = {
-  CORE: "0x........................................",
-  MINE: "0x........................................",
+  CORE: "0x1b8EdFb91168Fb233F8CA7cf1631038AC193D743",
+  MINE: "0xBd9FA9801eDA247b28B3BB9dDBf1CF52cA563Bc6",
   USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
-  FTA:  "0x........................................",
+  FTA:  "0x5c418b12c7e9c2A8e9A71A68c6d9b319E7B1d1fd",
   CHAIN_ID: 137,
   WC_PROJECT_ID: "2c10ee910a836551fbabbf7c8cc4542a",
   WHATSAPP_GROUP: "https://chat.whatsapp.com/BDsvPCB6xp8H8X0YaRmPFP",
   WHATSAPP_CHANNEL: "https://whatsapp.com/channel/0029VbCQhI38PgsPLbBJdV1e",
-  API_BASE: "https://fitia-dex-app-production.up.railway.app"  // URL du backend SQLite
+  API_BASE: "https://fitia-dex-app-production.up.railway.app"  // URL du backend Railway
 };
 
 // ─── Traductions i18n (5 langues) ──────────────────────────────────
