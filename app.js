@@ -16,9 +16,7 @@ const CONFIG = {
   WC_PROJECT_ID: "2c10ee910a836551fbabbf7c8cc4542a",
   WHATSAPP_GROUP: "https://chat.whatsapp.com/BDsvPCB6xp8H8X0YaRmPFP",
   WHATSAPP_CHANNEL: "https://whatsapp.com/channel/0029VbCQhI38PgsPLbBJdV1e",
-  API_BASE: "https://fitia-dex-app-production.up.railway.app",  // URL du backend Railway
-  WEB3AUTH_CLIENT_ID: "BB8-sW8_NENPty92A-Mx0_yXq2MVZUK9yg3Y8RpuClJO8x-L_N7n_IlXR5b230lFeEJaIGSEV1i2q8HoK3dTEwA",  // ⚠️ Remplace par ton vrai Client ID Web3Auth !
-  WEB3AUTH_VERIFIER: "fitia-mining-auth"  // Nom de ton verifier Web3Auth
+  API_BASE: "https://fitia-dex-app-production.up.railway.app"  // URL du backend Railway
 };
 
 // ─── Traductions i18n (5 langues) ──────────────────────────────────
@@ -347,8 +345,7 @@ class Application {
     // ─── Authentification ───
     this.isAuthenticated = false;
     this.dbUserId = null;
-    this.web3auth = null;          // Instance Web3Auth
-    this.authProvider = null;       // Provider Web3Auth (pour signer)
+    this.isGuestMode = false;       // Mode invité (lecture seule, pas de wallet)
 
     // ─── Mode de paiement ───
     this.payMode = 'USDT';
@@ -556,54 +553,87 @@ class Application {
 
   // ═══ AUTHENTIFICATION ════════════════════════════════════════════
 
-  /** Initialise Web3Auth (chargé une fois au démarrage) */
-  async initWeb3Auth() {
-    if (typeof window.Web3Auth === 'undefined') {
-      console.warn('Web3Auth non chargé — connexion via MetaMask/WalletConnect uniquement');
-      return;
-    }
+  /** Mode invité : entrer dans l'app sans wallet, lecture seule */
+  async enterGuestMode() {
+    this.isGuestMode = true;
+    this.isAuthenticated = false;
+    this.user = null;
+    this.signer = null;
+    this.provider = null;
+
+    // Créer un provider read-only pour lire la blockchain
     try {
-      this.web3auth = new window.Web3Auth.Modal({
-        clientId: CONFIG.WEB3AUTH_CLIENT_ID,
-        chainConfig: {
-          chainNamespace: 'eip155',
-          chainId: '0x89',
-          rpcTarget: 'https://polygon-rpc.com',
-          displayName: 'Polygon',
-          ticker: 'POL',
-          tickerName: 'Polygon'
-        },
-        web3AuthNetwork: 'sapphire_mainnet'
-      });
-      await this.web3auth.initModal();
-      console.log('✅ Web3Auth initialisé');
+      this.provider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
+      // Instancier les contrats en lecture seule
+      this.core = new ethers.Contract(CONFIG.CORE, CORE_ABI, this.provider);
+      this.mine = new ethers.Contract(CONFIG.MINE, MINE_ABI, this.provider);
+      // Charger les données de la boutique + taux
+      await this.fetchMarketPrices();
+      await this.cacheBatteryDurations();
+      await this.fetchMachines();
+      await this.fetchBatteries();
+      this.renderShop();
+      // Mettre à jour l'affichage des prix
+      await this.updateGuestData();
+      setInterval(() => this.updateGuestData(), 30000);
     } catch (e) {
-      console.error('Erreur init Web3Auth:', e);
+      console.error('Erreur mode invité:', e);
     }
+
+    // Afficher l'app
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('app-screen').classList.remove('hidden');
+    document.getElementById('wallet-status').classList.add('hidden');
+    document.getElementById('btn-connect-header').classList.remove('hidden');
+    document.getElementById('btn-logout-header').classList.add('hidden');
+    this.initVisualizer();
+
+    this.showToast('🧭 Mode invité — connectez votre wallet pour acheter, miner et échanger.');
   }
 
-  /** Connexion via Web3Auth (Google, Email, etc.) */
-  async connectWeb3Auth() {
-    if (!this.web3auth) return this.connectWallet();
-    this.setLoader(true, 'Connexion Web3Auth...');
+  /** Mise à jour légère pour le mode invité (lecture seule) */
+  async updateGuestData() {
+    if (!this.isGuestMode) return;
     try {
-      const web3authProvider = await this.web3auth.connect();
-      if (!web3authProvider) throw new Error('Connexion Web3Auth annulée');
-      this.authProvider = web3authProvider;
-      this.provider = new ethers.BrowserProvider(web3authProvider);
-      this.signer = await this.provider.getSigner();
-      this.user = await this.signer.getAddress();
-      localStorage.setItem('fitia_connected_address', this.user);
-      localStorage.setItem('fitia_auth_method', 'web3auth');
-      this.showRegisterStep();
-    } catch (e) {
-      if (e?.message?.includes('User closed') || e?.message?.includes('cancelled')) {
-        this.showToast('Connexion annulée', true);
-      } else {
-        this.showError(e);
-      }
+      // Taux FTA
+      try {
+        const rateRaw = await this.core.rate();
+        this.ftaPriceUsd = parseFloat(ethers.formatUnits(rateRaw, this.usdtDecimals));
+        document.getElementById('price-fta').innerText = this.formatUsd(this.ftaPriceUsd);
+        document.getElementById('swap-rate').innerText = '1 FTA = ' + this.ftaPriceUsd.toFixed(6) + ' USDT';
+      } catch (e) {}
+      // Prix POL
+      if (!this.polPriceUsd) await this.fetchMarketPrices();
+      document.getElementById('price-pol').innerText = this.formatUsd(this.polPriceUsd);
+      document.getElementById('price-usdt').innerText = this.formatUsd(1);
+      document.getElementById('val-total-usd').innerText = this.formatUsd(0);
+      document.getElementById('val-power').innerText = '0 H/s';
+      document.getElementById('val-pending').innerText = '0.00000000';
+      document.getElementById('viz-status').innerText = 'CONNECTEZ-VOUS';
+      document.getElementById('viz-status').style.color = 'var(--primary)';
+      // Soldes à zéro
+      document.getElementById('bal-pol').innerText = '0.00';
+      document.getElementById('bal-usdt').innerText = '0.00';
+      document.getElementById('bal-fta').innerText = '0.00';
+    } catch (e) {}
+  }
+
+  /** Vérifie si le wallet est connecté, sinon demande de se connecter */
+  requireWallet(callback) {
+    if (!this.user) {
+      this.showToast('🔌 Connectez votre wallet pour effectuer cette action.', true);
+      this.showAuthToConnect();
+      return;
     }
-    this.setLoader(false);
+    callback();
+  }
+
+  /** Affiche l'écran d'auth pour se connecter */
+  showAuthToConnect() {
+    document.getElementById('app-screen').classList.add('hidden');
+    document.getElementById('auth-screen').classList.remove('hidden');
+    document.getElementById('auth-step-register').classList.remove('active');
+    document.getElementById('auth-step-connect').classList.add('active');
   }
 
   /** Étape 1 : Connexion du wallet */
@@ -615,12 +645,11 @@ class Application {
       this.provider = new ethers.BrowserProvider(window.ethereum);
       this.signer = await this.provider.getSigner();
       this.user = await this.signer.getAddress();
+      this.isGuestMode = false;
       const network = await this.provider.getNetwork();
       if (Number(network.chainId) !== CONFIG.CHAIN_ID) await this.switchNetwork();
       window.ethereum.on('accountsChanged', () => this.disconnectWallet());
       window.ethereum.on('chainChanged', () => this.disconnectWallet());
-      localStorage.setItem('fitia_connected_address', this.user);
-      localStorage.setItem('fitia_auth_method', 'metamask');
       this.showRegisterStep();
     } catch (e) { this.showError(e); }
     this.setLoader(false);
@@ -702,15 +731,12 @@ class Application {
   }
 
   /** Déconnexion du wallet (retour à l'écran d'accueil) */
-  async disconnectWallet() {
-    if (this.web3auth && this.web3auth.connected) {
-      try { await this.web3auth.logout(); } catch (e) {}
-    }
+  disconnectWallet() {
     this.user = null;
     this.signer = null;
     this.provider = null;
-    this.authProvider = null;
     this.isAuthenticated = false;
+    this.isGuestMode = false;
     localStorage.removeItem('fitia_connected_address');
     localStorage.removeItem('fitia_auth_method');
     document.getElementById('auth-step-register').classList.remove('active');
@@ -724,14 +750,11 @@ class Application {
   /** Déconnexion complète (logout) */
   async logout() {
     this.stopMiningCounter();
-    if (this.web3auth && this.web3auth.connected) {
-      try { await this.web3auth.logout(); } catch (e) {}
-    }
     this.user = null;
     this.signer = null;
     this.provider = null;
-    this.authProvider = null;
     this.isAuthenticated = false;
+    this.isGuestMode = false;
     localStorage.removeItem(this.storageKey);
     localStorage.removeItem('fitia_connected_address');
     localStorage.removeItem('fitia_auth_method');
@@ -747,8 +770,12 @@ class Application {
   /** Entrée dans l'application principale */
   async enterApp() {
     this.isAuthenticated = true;
+    this.isGuestMode = false;
     document.getElementById('auth-screen').classList.add('hidden');
     document.getElementById('app-screen').classList.remove('hidden');
+    document.getElementById('wallet-status').classList.remove('hidden');
+    document.getElementById('btn-connect-header').classList.add('hidden');
+    document.getElementById('btn-logout-header').classList.remove('hidden');
     await this.initContracts();
     document.getElementById('addr-display').innerText = this.user.slice(0, 6) + "..." + this.user.slice(-4);
     this.setLoader(false);
@@ -1702,47 +1729,16 @@ class Application {
   async init() {
     this.setLanguage(this.currentLang);
 
-    // Initialise Web3Auth en arrière-plan
-    this.initWeb3Auth();
-
-    // Vérifier si déjà connecté (restauration de session)
+    // Vérifier si déjà connecté (restauration de session MetaMask uniquement)
     const savedAddress = localStorage.getItem('fitia_connected_address');
-    const authMethod = localStorage.getItem('fitia_auth_method');
-
-    if (savedAddress && authMethod === 'web3auth' && this.web3auth) {
-      // Reconnexion Web3Auth
-      try {
-        if (this.web3auth.connected) {
-          const web3authProvider = this.web3auth.provider;
-          this.authProvider = web3authProvider;
-          this.provider = new ethers.BrowserProvider(web3authProvider);
-          this.signer = await this.provider.getSigner();
-          this.user = await this.signer.getAddress();
-          if (this.user.toLowerCase() === savedAddress.toLowerCase()) {
-            try {
-              await this.apiCall(`/api/auth/me/${this.user}`);
-              await this.enterApp();
-              return;
-            } catch (e) {
-              this.showRegisterStep();
-              return;
-            }
-          }
-        }
-      } catch (e) {
-        localStorage.removeItem('fitia_connected_address');
-        localStorage.removeItem('fitia_auth_method');
-      }
-    }
-
     if (savedAddress && window.ethereum) {
-      // Reconnexion MetaMask
       try {
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         if (accounts.length > 0 && accounts[0].toLowerCase() === savedAddress.toLowerCase()) {
           this.provider = new ethers.BrowserProvider(window.ethereum);
           this.signer = await this.provider.getSigner();
           this.user = accounts[0];
+          this.isGuestMode = false;
           const network = await this.provider.getNetwork();
           if (Number(network.chainId) === CONFIG.CHAIN_ID) {
             try {
@@ -1757,7 +1753,6 @@ class Application {
         }
       } catch (e) {
         localStorage.removeItem('fitia_connected_address');
-        localStorage.removeItem('fitia_auth_method');
       }
     }
   }
