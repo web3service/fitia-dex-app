@@ -459,24 +459,44 @@ app.get('/api/auth/me/:address', (req, res) => {
 
 /** GET /api/blockchain/info/:address — toutes les infos utilisateur */
 app.get('/api/blockchain/info/:address', async (req, res) => {
+  const addr = req.params.address;
+  console.log(`[INFO] Requête info pour ${addr.slice(0, 8)}...`);
+
   try {
-    const addr = req.params.address;
-    const [uBal, fBal, polBal, polNative, rateRaw, diff, powerRaw, myMachines, bCount, mCount] = await Promise.all([
-      core.uBal(addr).catch(() => 0n),
-      core.fBal(addr).catch(() => 0n),
-      core.pol(addr).catch(() => 0n),
-      provider.getBalance(addr).catch(() => 0n),
-      core.rate().catch(() => 0n),
-      core.difficulty().catch(() => 0n),
-      mine.powerOf(addr).catch(() => 0n),
-      mine.myMachines(addr).catch(() => []),
-      mine.bCount().catch(() => 0n),
-      mine.mCount().catch(() => 0n)
+    // Chaque appel contrat est isolé : si un échoue, les autres continuent
+    const results = {};
+    const errors = [];
+
+    const safeCall = async (name, fn, fallback) => {
+      try {
+        results[name] = await fn();
+      } catch (e) {
+        errors.push(`${name}: ${e?.shortMessage || e?.message?.slice(0, 80)}`);
+        results[name] = fallback;
+      }
+    };
+
+    await Promise.all([
+      safeCall('uBal', () => core.uBal(addr), 0n),
+      safeCall('fBal', () => core.fBal(addr), 0n),
+      safeCall('polBal', () => core.pol(addr), 0n),
+      safeCall('polNative', () => provider.getBalance(addr), 0n),
+      safeCall('rate', () => core.rate(), 0n),
+      safeCall('difficulty', () => core.difficulty(), 0n),
+      safeCall('power', () => mine.powerOf(addr), 0n),
+      safeCall('myMachines', () => mine.myMachines(addr), []),
+      safeCall('bCount', () => mine.bCount(), 0n),
+      safeCall('mCount', () => mine.mCount(), 0n),
     ]);
+
+    if (errors.length > 0) {
+      console.error(`[INFO] ${errors.length} erreur(s) contrat pour ${addr.slice(0, 8)}... :`, errors.join(' | '));
+    }
 
     // Batteries par type
     const batteries = {};
-    for (let i = 0; i < Number(bCount); i++) {
+    const bCountNum = Number(results.bCount);
+    for (let i = 0; i < bCountNum; i++) {
       try {
         const qty = await mine.myBattery(addr, i);
         if (qty > 0n) batteries[i] = Number(qty);
@@ -485,43 +505,52 @@ app.get('/api/blockchain/info/:address', async (req, res) => {
 
     // Types de machines & batteries
     const mTypes = [];
-    for (let i = 0; i < Number(mCount); i++) {
+    const mCountNum = Number(results.mCount);
+    for (let i = 0; i < mCountNum; i++) {
       try {
         const m = await mine.getMType(i);
         mTypes.push({ price: m.price.toString(), power: Number(m.power), shopExpiry: Number(m.shopExpiry) });
       } catch (e) {}
     }
     const bTypes = [];
-    for (let i = 0; i < Number(bCount); i++) {
+    for (let i = 0; i < bCountNum; i++) {
       try {
         const b = await mine.getBType(i);
         bTypes.push({ price: b.price.toString(), dur: Number(b.dur) });
       } catch (e) {}
     }
 
+    // Machines de l'utilisateur
     const machines = [];
-    for (const m of myMachines) {
-      machines.push({ tid: Number(m.tid), exp: Number(m.exp) });
+    const rawMachines = results.myMachines;
+    if (rawMachines && typeof rawMachines[Symbol.iterator] === 'function') {
+      for (const m of rawMachines) {
+        machines.push({ tid: Number(m.tid), exp: Number(m.exp) });
+      }
     }
+
+    // Conversion sécurisée BigInt → string
+    const toStr = (v) => (typeof v === 'bigint' ? v : BigInt(v || 0)).toString();
 
     res.json({
       balances: {
-        usdt: uBal.toString(),
-        fta: fBal.toString(),
-        pol: (polBal + polNative).toString(),
-        polNative: polNative.toString()
+        usdt: toStr(results.uBal),
+        fta: toStr(results.fBal),
+        pol: (BigInt(toStr(results.polBal)) + BigInt(toStr(results.polNative))).toString(),
+        polNative: toStr(results.polNative)
       },
-      rate: rateRaw.toString(),
-      difficulty: diff.toString(),
-      power: powerRaw.toString(),
+      rate: toStr(results.rate),
+      difficulty: toStr(results.difficulty),
+      power: toStr(results.power),
       machines,
       batteries,
       mTypes,
       bTypes
     });
+    console.log(`[INFO] OK pour ${addr.slice(0, 8)}... (machines:${machines.length}, shop:${mTypes.length}M/${bTypes.length}B)`);
   } catch (e) {
-    console.error('Info error:', e);
-    res.status(500).json({ error: 'Erreur blockchain' });
+    console.error('[INFO] Erreur globale:', e?.shortMessage || e?.message);
+    res.status(500).json({ error: 'Erreur blockchain: ' + (e?.shortMessage || e?.message).slice(0, 200) });
   }
 });
 
@@ -529,9 +558,11 @@ app.get('/api/blockchain/info/:address', async (req, res) => {
 app.get('/api/blockchain/rate', async (req, res) => {
   try {
     const rate = await core.rate();
+    console.log(`[RATE] ${ethers.formatUnits(rate, 6)} USDT/FTA`);
     res.json({ rate: rate.toString() });
   } catch (e) {
-    res.status(500).json({ error: 'Erreur taux' });
+    console.error('[RATE] Erreur:', e?.shortMessage || e?.message);
+    res.status(500).json({ error: 'Erreur taux: ' + (e?.shortMessage || e?.message).slice(0, 100) });
   }
 });
 
@@ -539,16 +570,18 @@ app.get('/api/blockchain/rate', async (req, res) => {
 app.get('/api/blockchain/shop', async (req, res) => {
   try {
     const [mCount, bCount] = await Promise.all([mine.mCount(), mine.bCount()]);
+    console.log(`[SHOP] ${mCount} machines, ${bCount} batteries`);
     const mTypes = [], bTypes = [];
     for (let i = 0; i < Number(mCount); i++) {
-      try { const m = await mine.getMType(i); mTypes.push({ price: m.price.toString(), power: Number(m.power), shopExpiry: Number(m.shopExpiry) }); } catch (e) {}
+      try { const m = await mine.getMType(i); mTypes.push({ price: m.price.toString(), power: Number(m.power), shopExpiry: Number(m.shopExpiry) }); } catch (e) { console.error(`[SHOP] getMType(${i}) erreur:`, e?.shortMessage); }
     }
     for (let i = 0; i < Number(bCount); i++) {
-      try { const b = await mine.getBType(i); bTypes.push({ price: b.price.toString(), dur: Number(b.dur) }); } catch (e) {}
+      try { const b = await mine.getBType(i); bTypes.push({ price: b.price.toString(), dur: Number(b.dur) }); } catch (e) { console.error(`[SHOP] getBType(${i}) erreur:`, e?.shortMessage); }
     }
     res.json({ mTypes, bTypes });
   } catch (e) {
-    res.status(500).json({ error: 'Erreur boutique' });
+    console.error('[SHOP] Erreur:', e?.shortMessage || e?.message);
+    res.status(500).json({ error: 'Erreur boutique: ' + (e?.shortMessage || e?.message).slice(0, 100) });
   }
 });
 
