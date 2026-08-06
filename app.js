@@ -224,48 +224,58 @@ class Application {
         this.ftaPriceUsd = parseFloat(ethers.formatUnits(rateData.rate, 6));
         document.getElementById('price-fta').innerText = this.formatUsd(this.ftaPriceUsd);
         document.getElementById('swap-rate').innerText = '1 FTA = ' + this.ftaPriceUsd.toFixed(6) + ' USDT';
-      } catch (e) {}
+      } catch (e) {
+        console.error('Shop rate error:', e);
+        document.getElementById('swap-rate').innerText = 'Indisponible';
+      }
       document.getElementById('price-pol').innerText = this.formatUsd(this.polPriceUsd);
       document.getElementById('price-usdt').innerText = this.formatUsd(1);
       this.renderShop();
-    } catch (e) { console.error('Shop error:', e); }
+    } catch (e) {
+      console.error('Shop error:', e);
+      this.showToast('⚠️ Boutique inaccessible. Vérifiez la connexion.', true);
+    }
   }
 
   async loadAllData() {
     if (!this.user) return;
+
+    // Étape 1 : infos blockchain (avec gestion d'erreur visible)
     try {
       const data = await this.apiCall(`/api/blockchain/info/${this.user}`);
+      if (!data || !data.balances) throw new Error('Données invalides');
+
       // Balances
-      const uB = parseFloat(ethers.formatUnits(data.balances.usdt, 6));
-      const fB = parseFloat(ethers.formatUnits(data.balances.fta, 8));
-      const pB = parseFloat(ethers.formatUnits(data.balances.pol, 18));
+      const uB = parseFloat(ethers.formatUnits(data.balances.usdt || '0', 6));
+      const fB = parseFloat(ethers.formatUnits(data.balances.fta || '0', 8));
+      const pB = parseFloat(ethers.formatUnits(data.balances.pol || '0', 18));
       document.getElementById('bal-usdt').innerText = uB.toFixed(2);
       document.getElementById('bal-fta').innerText = fB.toFixed(4);
       document.getElementById('bal-pol').innerText = pB.toFixed(4);
       document.getElementById('bal-usdt-usd').innerText = '≈ ' + this.formatUsd(uB);
       document.getElementById('bal-fta-usd').innerText = '≈ ' + this.formatUsd(fB * this.ftaPriceUsd);
       document.getElementById('bal-pol-usd').innerText = '≈ ' + this.formatUsd(pB * this.polPriceUsd);
-
-      // Afficher/masquer le message info POL
-      const polBanner = document.getElementById('pol-info-banner');
-      if (polBanner && pB < 0.05) {
-        polBanner.classList.remove('hidden');
-      } else if (polBanner && pB >= 0.1) {
-        polBanner.classList.add('hidden');
-      }
       document.getElementById('val-total-usd').innerText = this.formatUsd(uB + fB * this.ftaPriceUsd + pB * this.polPriceUsd);
 
+      // Bannière POL
+      const polBanner = document.getElementById('pol-info-banner');
+      if (polBanner) { polBanner.classList.toggle('hidden', pB >= 0.05); }
+
       // Taux FTA
-      if (data.rate) {
+      if (data.rate && data.rate !== '0') {
         this.ftaPriceUsd = parseFloat(ethers.formatUnits(data.rate, 6));
         document.getElementById('price-fta').innerText = this.formatUsd(this.ftaPriceUsd);
         document.getElementById('swap-rate').innerText = '1 FTA = ' + this.ftaPriceUsd.toFixed(6) + ' USDT';
+      } else {
+        document.getElementById('swap-rate').innerText = 'Taux indisponible';
       }
       document.getElementById('price-pol').innerText = this.formatUsd(this.polPriceUsd);
       document.getElementById('price-usdt').innerText = this.formatUsd(1);
 
       // Puissance
-      this.currentRealPower = Number(data.power) > 0 ? (Number(data.power) * Number(data.difficulty)) / 1e18 : 0;
+      const powerNum = Number(data.power || 0);
+      const diffNum = Number(data.difficulty || 0);
+      this.currentRealPower = powerNum > 0 && diffNum > 0 ? (powerNum * diffNum) / 1e18 : 0;
       document.getElementById('val-power').innerText = this.formatHashrate(this.currentRealPower);
 
       // Pending
@@ -280,10 +290,7 @@ class Application {
 
       // Viz status
       if (this.currentRealPower > 0) {
-        if (!this.miningTimer) {
-          this.pendingBalance = (pendingFtaRaw / 1e8);
-          this.startMiningCounter();
-        }
+        if (!this.miningTimer) { this.pendingBalance = (pendingFtaRaw / 1e8); this.startMiningCounter(); }
         document.getElementById('viz-status').innerText = 'MINAGE ACTIF';
         document.getElementById('viz-status').style.color = 'var(--primary)';
       } else {
@@ -305,25 +312,33 @@ class Application {
       this.batteryInventory = data.batteries || {};
       this.renderUserBatteries();
 
-      // Shop
-      this.shopMachinesData = (data.mTypes || []).map(m => ({
-        price: parseFloat(ethers.formatUnits(m.price, 6)),
-        power: m.power,
-        shopExpiry: m.shopExpiry
-      }));
-      this.shopBatteriesData = (data.bTypes || []).map(b => ({
-        price: parseFloat(ethers.formatUnits(b.price, 6)),
-        days: Number(b.dur) / 86400
-      }));
-      for (let i = 0; i < (data.bTypes || []).length; i++) {
-        this.batteryTypeDurations[i] = Number(data.bTypes[i].dur) / 86400;
+      // Données shop depuis l'endpoint info (fallback si shop dédié échoue)
+      if (data.mTypes && data.mTypes.length > 0) {
+        this.shopMachinesData = data.mTypes.map(m => ({
+          price: parseFloat(ethers.formatUnits(m.price, 6)),
+          power: m.power,
+          shopExpiry: m.shopExpiry
+        }));
+      }
+      if (data.bTypes && data.bTypes.length > 0) {
+        this.shopBatteriesData = data.bTypes.map(b => ({
+          price: parseFloat(ethers.formatUnits(b.price, 6)),
+          days: Number(b.dur) / 86400
+        }));
+        for (let i = 0; i < data.bTypes.length; i++) {
+          this.batteryTypeDurations[i] = Number(data.bTypes[i].dur) / 86400;
+        }
       }
       this.renderShop();
 
       if (document.getElementById('swap-from-in').value) this.calcSwap();
     } catch (e) {
       console.error('Load data error:', e);
+      this.showToast('⚠️ Données blockchain temporairement indisponibles. Nouvelle tentative dans 15s...', true);
     }
+
+    // Étape 2 : toujours tenter le shop dédié (plus frais que les données de l'endpoint info)
+    this.loadShopData();
   }
 
   startMiningCounter() {
