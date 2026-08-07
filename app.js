@@ -233,7 +233,7 @@ class Application {
       this.renderShop();
     } catch (e) {
       console.error('Shop error:', e);
-      this.showToast('⚠️ Boutique inaccessible. Vérifiez la connexion.', true);
+      this.showToast('⚠️ Erreur boutique: ' + (e.message || 'inconnue').slice(0, 80), true);
     }
   }
 
