@@ -24,17 +24,28 @@ const CONTRACTS = {
   USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
   FTA:  "0x5c418b12c7e9c2A8e9A71A68c6d9b319E7B1d1fd",
   CHAIN_ID: 137,
-  RPC_URL: "https://polygon-rpc.com"
+  // RPCs multiples avec fallback automatique (essayés dans l'ordre)
+  RPC_URLS: [
+    "https://polygon-rpc.com",
+    "https://rpc-mainnet.maticvigil.com",
+    "https://rpc-mainnet.matic.network",
+    "https://rpc-mainnet.matic.quiknode.pro",
+    "https://polygon.llamarpc.com",
+    "https://polygon-mainnet.g.alchemy.com/v2/demo",
+    "https://1rpc.io/matic"
+  ]
 };
 
 // ⚠️ CLÉ PRIVÉE DU RELAYER (compte qui paye le gas pour les utilisateurs)
 // Ce compte doit avoir du POL pour payer les frais de gas
 const RELAYER_KEY = process.env.RELAYER_PRIVATE_KEY || "0xbdf5930f304c9df5086ed18a1380903fa537a90dc137c7dbd43e3d99db8e5540";
 
-// ─── Initialisation de la base de données SQLite ──────────────────
-const db = new Database(DB_PATH);
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+// Vérifie que la clé du relayer est configurée
+if (!RELAYER_KEY || RELAYER_KEY.length < 64) {
+  console.error('❌ ERREUR CRITIQUE : RELAYER_PRIVATE_KEY non configurée !');
+  console.error('   Le financement gas et les transactions seront désactivés.');
+  console.error('   Configurez la variable d\'environnement RELAYER_PRIVATE_KEY.');
+}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -91,9 +102,81 @@ try {
   db.exec('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)');
 } catch (e) { /* ignore */ }
 
-// ─── Fournisseur Blockchain + Relayer ──────────────────────────────
-const provider = new ethers.JsonRpcProvider(CONTRACTS.RPC_URL);
-const relayer = new ethers.Wallet(RELAYER_KEY, provider);
+// ─── Fournisseur Blockchain multi-RPC avec fallback automatique ────
+let currentRpcIndex = 0;
+let provider = null;
+let relayer = null;
+let core = null;
+let mine = null;
+
+/** Crée un provider sur un RPC spécifique */
+function createProvider(rpcUrl) {
+  return new ethers.JsonRpcProvider(rpcUrl, CONTRACTS.CHAIN_ID, {
+    staticNetwork: true,
+    batchMaxCount: 3,
+    cacheTimeout: 2000
+  });
+}
+
+/** Teste si un RPC répond */
+async function testRpc(rpcUrl) {
+  try {
+    const p = createProvider(rpcUrl);
+    const code = await Promise.race([
+      p.getCode(CONTRACTS.USDT),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+    ]);
+    if (code === '0x' || !code) throw new Error('no code');
+    return p;
+  } catch (e) { return null; }
+}
+
+/** Initialise ou bascule vers le prochain RPC fonctionnel */
+async function initProvider() {
+  for (let i = 0; i < CONTRACTS.RPC_URLS.length; i++) {
+    const idx = (currentRpcIndex + i) % CONTRACTS.RPC_URLS.length;
+    const url = CONTRACTS.RPC_URLS[idx];
+    const p = await testRpc(url);
+    if (p) {
+      currentRpcIndex = idx;
+      provider = p;
+      relayer = new ethers.Wallet(RELAYER_KEY, provider);
+      core = new ethers.Contract(CONTRACTS.CORE, CORE_ABI, provider);
+      mine = new ethers.Contract(CONTRACTS.MINE, MINE_ABI, provider);
+      console.log(`🔗 RPC: ${url}`);
+      return true;
+    }
+    console.warn(`  ⚠️ ${url.split('//')[1]?.slice(0, 35)}... : échec`);
+  }
+  console.error('❌ Aucun RPC Polygon disponible !');
+  return false;
+}
+
+/** Appel contrat avec retry automatique (change de RPC si nécessaire) */
+async function callWithRetry(fn, maxRetries = 3) {
+  let lastError = null;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      if (!provider) await initProvider();
+      if (!provider) throw new Error('Provider indisponible');
+      return await fn();
+    } catch (e) {
+      lastError = e;
+      const msg = e?.shortMessage || e?.message || '';
+      const isRpcError = msg.includes('network') || msg.includes('timeout') ||
+        msg.includes('rate limit') || msg.includes('429') || msg.includes('503') ||
+        msg.includes('disconnected') || msg.includes('ETIMEDOUT');
+      if (isRpcError && attempt < maxRetries - 1) {
+        console.warn(`🔄 RPC bascule (essai ${attempt + 1}/${maxRetries})...`);
+        await initProvider();
+        await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+      } else {
+        throw lastError;
+      }
+    }
+  }
+  throw lastError;
+}
 
 // ─── ABIs ──────────────────────────────────────────────────────────
 const CORE_ABI = [
@@ -135,7 +218,8 @@ const MINE_ABI = [
   "function getBType(uint256) view returns (uint256 price, uint256 dur)",
   "function myMachines(address u) view returns (tuple(uint256 tid, uint256 exp)[])",
   "function myBattery(address u, uint256 t) view returns (uint256)",
-  "function myInfo(address u) view returns (uint256 mc, uint256 ap, uint256 lc)"
+  "function myInfo(address u) view returns (uint256 mc, uint256 ap, uint256 lc)",
+  "function core() view returns (address)"
 ];
 
 const ERC20_ABI = [
@@ -145,11 +229,6 @@ const ERC20_ABI = [
   "function decimals() view returns (uint8)",
   "function transfer(address to, uint256 amount) returns (bool)"
 ];
-
-const core = new ethers.Contract(CONTRACTS.CORE, CORE_ABI);
-const mine = new ethers.Contract(CONTRACTS.MINE, MINE_ABI);
-
-// ─── Helpers ───────────────────────────────────────────────────────
 
 // Configuration hachage mot de passe (PBKDF2 intégré à Node.js, pas de dépendance externe)
 const PW_CONFIG = { iterations: 100000, keylen: 64, digest: 'sha512', saltBytes: 16 };
@@ -201,6 +280,10 @@ function updateTx(txId, status, txHash = null) {
 /** Vérifie le solde du relayer et log un avertissement si bas */
 async function checkRelayerBalance() {
   try {
+    if (!provider || !relayer) {
+      console.warn('⚡ Relayer non initialisé');
+      return null;
+    }
     const bal = await provider.getBalance(relayer.address);
     const balPol = parseFloat(ethers.formatEther(bal));
     if (balPol < 1) {
@@ -278,8 +361,37 @@ async function fundUserGas(address) {
 //  APPLICATION EXPRESS
 // ═══════════════════════════════════════════════════════════════════
 const app = express();
-app.use(cors());
-app.use(express.json());
+
+// ─── Sécurité : CORS restreint à l'app uniquement ──────────────────
+const ALLOWED_ORIGINS = [
+  'https://fitia-dex-app-production.up.railway.app',
+  'http://localhost:3001',
+  'http://localhost:3000',
+  'http://127.0.0.1:3001',
+  'http://127.0.0.1:3000'
+];
+app.use(cors({
+  origin: (origin, cb) => {
+    // Autorise les requêtes sans origin (curl, Postman, apps mobiles)
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    console.warn(`CORS bloqué: ${origin}`);
+    cb(new Error('Origine non autorisée'));
+  },
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type']
+}));
+
+// ─── Sécurité : headers HTTP ──────────────────────────────────────
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
+
+app.use(express.json({ limit: '100kb' })); // Anti-payload bombing
 
 // ─── Rate limiting simple (anti brute-force connexion) ────────────
 const loginAttempts = new Map(); // Map<ip, { count, lastAttempt }>
@@ -308,6 +420,24 @@ setInterval(() => {
     if (now - entry.lastAttempt > LOGIN_WINDOW_MS) loginAttempts.delete(ip);
   }
 }, 5 * 60 * 1000);
+
+/** Vérifie qu'une adresse existe dans la DB (protection endpoints sensibles) */
+function userExists(address) {
+  return !!db.prepare('SELECT id FROM users WHERE address = ? AND is_active = 1').get(address);
+}
+
+/** Sanitize un message d'erreur pour le client (pas de fuite d'internes) */
+function safeError(e, fallback = 'Erreur interne') {
+  const msg = e?.shortMessage || e?.message || '';
+  // Filtre les messages sensibles
+  if (msg.includes('insufficient funds')) return 'Solde insuffisant pour payer les frais de gas';
+  if (msg.includes('call revert') || msg.includes('execution reverted')) return 'Transaction rejetée par le contrat';
+  if (msg.includes('nonce')) return 'Erreur de séquence. Réessayez.';
+  if (msg.includes('network') || msg.includes('timeout') || msg.includes('disconnected')) return 'Réseau Polygon momentanément indisponible';
+  if (msg.includes('rate limit') || msg.includes('429')) return 'Trop de requêtes. Patientez quelques secondes.';
+  // Tronque tout message inconnu
+  return fallback;
+}
 
 // ═══ AUTHENTIFICATION ══════════════════════════════════════════════
 
@@ -448,9 +578,11 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-/** GET /api/auth/me/:address */
+/** GET /api/auth/me/:address — infos publiques uniquement (pas de clé privée) */
 app.get('/api/auth/me/:address', (req, res) => {
-  const user = db.prepare('SELECT id, address, username, created_at, last_login FROM users WHERE address = ?').get(req.params.address);
+  const addr = req.params.address;
+  if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) return res.status(400).json({ error: 'Format adresse invalide' });
+  const user = db.prepare('SELECT id, username, created_at FROM users WHERE address = ?').get(addr);
   if (!user) return res.status(404).json({ error: 'Non trouvé' });
   res.json({ user });
 });
@@ -550,38 +682,38 @@ app.get('/api/blockchain/info/:address', async (req, res) => {
     console.log(`[INFO] OK pour ${addr.slice(0, 8)}... (machines:${machines.length}, shop:${mTypes.length}M/${bTypes.length}B)`);
   } catch (e) {
     console.error('[INFO] Erreur globale:', e?.shortMessage || e?.message);
-    res.status(500).json({ error: 'Erreur blockchain: ' + (e?.shortMessage || e?.message).slice(0, 200) });
+    res.status(500).json({ error: safeError(e) });
   }
 });
 
 /** GET /api/blockchain/rate — taux actuel FTA/USDT */
 app.get('/api/blockchain/rate', async (req, res) => {
   try {
-    const rate = await core.rate();
+    const rate = await callWithRetry(() => core.rate());
     console.log(`[RATE] ${ethers.formatUnits(rate, 6)} USDT/FTA`);
     res.json({ rate: rate.toString() });
   } catch (e) {
     console.error('[RATE] Erreur:', e?.shortMessage || e?.message);
-    res.status(500).json({ error: 'Erreur taux: ' + (e?.shortMessage || e?.message).slice(0, 100) });
+    res.status(500).json({ error: safeError(e) });
   }
 });
 
 /** GET /api/blockchain/shop — liste complète boutique */
 app.get('/api/blockchain/shop', async (req, res) => {
   try {
-    const [mCount, bCount] = await Promise.all([mine.mCount(), mine.bCount()]);
+    const [mCount, bCount] = await callWithRetry(() => Promise.all([mine.mCount(), mine.bCount()]));
     console.log(`[SHOP] ${mCount} machines, ${bCount} batteries`);
     const mTypes = [], bTypes = [];
     for (let i = 0; i < Number(mCount); i++) {
-      try { const m = await mine.getMType(i); mTypes.push({ price: m.price.toString(), power: Number(m.power), shopExpiry: Number(m.shopExpiry) }); } catch (e) { console.error(`[SHOP] getMType(${i}) erreur:`, e?.shortMessage); }
+      try { const m = await callWithRetry(() => mine.getMType(i)); mTypes.push({ price: m.price.toString(), power: Number(m.power), shopExpiry: Number(m.shopExpiry) }); } catch (e) { console.error(`[SHOP] getMType(${i}) erreur:`, e?.shortMessage); }
     }
     for (let i = 0; i < Number(bCount); i++) {
-      try { const b = await mine.getBType(i); bTypes.push({ price: b.price.toString(), dur: Number(b.dur) }); } catch (e) { console.error(`[SHOP] getBType(${i}) erreur:`, e?.shortMessage); }
+      try { const b = await callWithRetry(() => mine.getBType(i)); bTypes.push({ price: b.price.toString(), dur: Number(b.dur) }); } catch (e) { console.error(`[SHOP] getBType(${i}) erreur:`, e?.shortMessage); }
     }
     res.json({ mTypes, bTypes });
   } catch (e) {
     console.error('[SHOP] Erreur:', e?.shortMessage || e?.message);
-    res.status(500).json({ error: 'Erreur boutique: ' + (e?.shortMessage || e?.message).slice(0, 100) });
+    res.status(500).json({ error: safeError(e) });
   }
 });
 
@@ -628,7 +760,7 @@ app.post('/api/blockchain/deposit', async (req, res) => {
     }
   } catch (e) {
     console.error('Deposit error:', e);
-    res.status(500).json({ error: 'Erreur dépôt: ' + (e?.shortMessage || e?.message).slice(0, 200) });
+    res.status(500).json({ error: safeError(e) });
   }
 });
 
@@ -649,7 +781,7 @@ app.post('/api/blockchain/withdraw', async (req, res) => {
     recordTx(address, receipt.hash, 'withdraw', token, Number(amount), null, 'confirmed');
     res.json({ success: true, txHash: receipt.hash });
   } catch (e) {
-    res.status(500).json({ error: 'Erreur retrait: ' + (e?.shortMessage || e?.message).slice(0, 200) });
+    res.status(500).json({ error: safeError(e) });
   }
 });
 
@@ -670,7 +802,7 @@ app.post('/api/blockchain/buy-machine', async (req, res) => {
     recordTx(address, receipt.hash, 'buy_machine', payMode || 'USDT', null, { machineType: typeId }, 'confirmed');
     res.json({ success: true, txHash: receipt.hash });
   } catch (e) {
-    res.status(500).json({ error: 'Erreur achat machine: ' + (e?.shortMessage || e?.message).slice(0, 200) });
+    res.status(500).json({ error: safeError(e) });
   }
 });
 
@@ -691,7 +823,7 @@ app.post('/api/blockchain/buy-battery', async (req, res) => {
     recordTx(address, receipt.hash, 'buy_battery', payMode || 'USDT', null, { batteryType: typeId }, 'confirmed');
     res.json({ success: true, txHash: receipt.hash });
   } catch (e) {
-    res.status(500).json({ error: 'Erreur achat batterie: ' + (e?.shortMessage || e?.message).slice(0, 200) });
+    res.status(500).json({ error: safeError(e) });
   }
 });
 
@@ -707,7 +839,7 @@ app.post('/api/blockchain/plug', async (req, res) => {
     recordTx(address, receipt.hash, 'plug', null, null, { machineIndex, batteryTypeId }, 'confirmed');
     res.json({ success: true, txHash: receipt.hash });
   } catch (e) {
-    res.status(500).json({ error: 'Erreur branchement: ' + (e?.shortMessage || e?.message).slice(0, 200) });
+    res.status(500).json({ error: safeError(e) });
   }
 });
 
@@ -723,7 +855,7 @@ app.post('/api/blockchain/claim', async (req, res) => {
     recordTx(address, receipt.hash, 'claim', 'FTA', null, null, 'confirmed');
     res.json({ success: true, txHash: receipt.hash });
   } catch (e) {
-    res.status(500).json({ error: 'Erreur claim: ' + (e?.shortMessage || e?.message).slice(0, 200) });
+    res.status(500).json({ error: safeError(e) });
   }
 });
 
@@ -751,7 +883,7 @@ app.post('/api/blockchain/swap', async (req, res) => {
     recordTx(address, receipt.hash, 'swap', isUsdtTo ? 'USDT' : 'FTA', Number(amount), { direction }, 'confirmed');
     res.json({ success: true, txHash: receipt.hash });
   } catch (e) {
-    res.status(500).json({ error: 'Erreur swap: ' + (e?.shortMessage || e?.message).slice(0, 200) });
+    res.status(500).json({ error: safeError(e) });
   }
 });
 
@@ -772,7 +904,7 @@ app.post('/api/blockchain/set-referrer', async (req, res) => {
     recordTx(address, receipt.hash, 'referral', null, null, { referrer }, 'confirmed');
     res.json({ success: true, txHash: receipt.hash });
   } catch (e) {
-    res.status(500).json({ error: 'Erreur parrainage: ' + (e?.shortMessage || e?.message).slice(0, 200) });
+    res.status(500).json({ error: safeError(e) });
   }
 });
 
@@ -804,7 +936,7 @@ app.post('/api/blockchain/send-pol', async (req, res) => {
     recordTx(address, receipt.hash, 'send', 'POL', amount, { to }, 'confirmed');
     res.json({ success: true, txHash: receipt.hash });
   } catch (e) {
-    res.status(500).json({ error: 'Erreur envoi POL: ' + (e?.shortMessage || e?.message).slice(0, 200) });
+    res.status(500).json({ error: safeError(e) });
   }
 });
 
@@ -834,7 +966,7 @@ app.post('/api/blockchain/send-token', async (req, res) => {
     recordTx(address, receipt.hash, 'send', token, amount, { to }, 'confirmed');
     res.json({ success: true, txHash: receipt.hash });
   } catch (e) {
-    res.status(500).json({ error: 'Erreur envoi ' + (token || '') + ': ' + (e?.shortMessage || e?.message).slice(0, 200) });
+    res.status(500).json({ error: safeError(e, 'Erreur envoi token') });
   }
 });
 
@@ -854,7 +986,7 @@ app.post('/api/blockchain/fund-gas', async (req, res) => {
       return res.status(400).json({ error: 'Financement impossible', reason: result.reason });
     }
   } catch (e) {
-    res.status(500).json({ error: 'Erreur financement gas: ' + (e?.shortMessage || e?.message).slice(0, 200) });
+    res.status(500).json({ error: safeError(e) });
   }
 });
 
@@ -879,11 +1011,61 @@ app.get('/api/status', async (req, res) => {
   }
 });
 
+/** GET /api/diag — diagnostic des connexions contrat */
+app.get('/api/diag', async (req, res) => {
+  const results = {};
+  const test = async (name, fn) => {
+    try { const v = await fn(); results[name] = { ok: true, value: v.toString() }; }
+    catch (e) { results[name] = { ok: false, error: e?.shortMessage || e?.message?.slice(0, 120) }; }
+  };
+
+  await Promise.all([
+    test('rpc_chainId', () => provider.getNetwork().then(n => n.chainId)),
+    test('rpc_blockNumber', () => provider.getBlockNumber()),
+    test('core_exists', () => provider.getCode(CONTRACTS.CORE)),
+    test('mine_exists', () => provider.getCode(CONTRACTS.MINE)),
+    test('core_rate', () => core.rate()),
+    test('core_difficulty', () => core.difficulty()),
+    test('mine_mCount', () => mine.mCount()),
+    test('mine_bCount', () => mine.bCount()),
+    test('relayer_balance', () => provider.getBalance(relayer.address)),
+  ]);
+
+  // Vérifie aussi si le Mine pointe vers le bon Core
+  try {
+    const mineCore = await mine.core();
+    results.mine_core_link = {
+      ok: mineCore.toLowerCase() === CONTRACTS.CORE.toLowerCase(),
+      mineCore: mineCore,
+      configured: CONTRACTS.CORE
+    };
+  } catch (e) {
+    results.mine_core_link = { ok: false, error: e?.shortMessage };
+  }
+
+  res.json({
+    contracts: {
+      CORE: CONTRACTS.CORE,
+      MINE: CONTRACTS.MINE,
+      USDT: CONTRACTS.USDT,
+      FTA: CONTRACTS.FTA,
+      RPC: CONTRACTS.RPC_URL
+    },
+    tests: results
+  });
+});
+
 // ═══ HISTORIQUE ════════════════════════════════════════════════════
 
 app.get('/api/transactions/:address', (req, res) => {
   const { address } = req.params;
-  const { limit = 50, offset = 0, type, status } = req.query;
+  // Validation : l'adresse doit exister dans la DB
+  if (!/^0x[a-fA-F0-9]{40}$/.test(address)) return res.status(400).json({ error: 'Format adresse invalide' });
+  if (!userExists(address)) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+
+  const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 100);
+  const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+  const { type, status } = req.query;
   let query = 'SELECT * FROM transactions WHERE user_address = ?';
   let countQuery = 'SELECT COUNT(*) as total FROM transactions WHERE user_address = ?';
   const params = [address], countParams = [address];
@@ -892,7 +1074,7 @@ app.get('/api/transactions/:address', (req, res) => {
   if (status) { query += ' AND status = ?'; countQuery += ' AND status = ?'; params.push(status); countParams.push(status); }
 
   query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-  params.push(Number(limit), Number(offset));
+  params.push(limit, offset);
 
   const transactions = db.prepare(query).all(...params).map(tx => ({
     ...tx,
@@ -900,16 +1082,20 @@ app.get('/api/transactions/:address', (req, res) => {
   }));
   const { total } = db.prepare(countQuery).get(...countParams);
 
-  res.json({ transactions, total, limit: Number(limit), offset: Number(offset) });
+  res.json({ transactions, total, limit, offset });
 });
 
 // ═══ DÉMARRAGE ════════════════════════════════════════════════════
 app.listen(PORT, async () => {
   console.log(`🚀 Fitia Mining Wallet Interne lancé sur http://localhost:${PORT}`);
   console.log(`📁 DB: ${DB_PATH}`);
-  console.log(`🔗 RPC: ${CONTRACTS.RPC_URL}`);
-  console.log(`👛 Relayer: ${relayer.address}`);
 
-  // Vérification du solde du relayer au démarrage
-  await checkRelayerBalance();
+  // Initialisation du provider blockchain (multi-RPC avec fallback)
+  const connected = await initProvider();
+  if (connected) {
+    console.log(`👛 Relayer: ${relayer?.address || 'non configuré'}`);
+    await checkRelayerBalance();
+  } else {
+    console.error('❌ ATTENTION : Aucune connexion blockchain. Vérifiez les RPCs et redémarrez.');
+  }
 });
