@@ -19,10 +19,10 @@ const DB_PATH = path.join(__dirname, 'fitia_mining.db');
 
 // ⚠️ CONTRATS : mets ici les vraies adresses déployées sur Polygon
 const CONTRACTS = {
-  CORE: "0x1b8EdFb91168Fb233F8CA7cf1631038AC193D743",
-  MINE: "0xBd9FA9801eDA247b28B3BB9dDBf1CF52cA563Bc6",
+  CORE: "0x........................................",
+  MINE: "0x........................................",
   USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
-  FTA:  "0x5c418b12c7e9c2A8e9A71A68c6d9b319E7B1d1fd",
+  FTA:  "0x........................................",
   CHAIN_ID: 137,
   // RPCs multiples avec fallback automatique (essayés dans l'ordre)
   RPC_URLS: [
@@ -38,7 +38,7 @@ const CONTRACTS = {
 
 // ⚠️ CLÉ PRIVÉE DU RELAYER (compte qui paye le gas pour les utilisateurs)
 // Ce compte doit avoir du POL pour payer les frais de gas
-const RELAYER_KEY = process.env.RELAYER_PRIVATE_KEY || "0xbdf5930f304c9df5086ed18a1380903fa537a90dc137c7dbd43e3d99db8e5540";
+const RELAYER_KEY = process.env.RELAYER_PRIVATE_KEY || "";
 
 // Vérifie que la clé du relayer est configurée
 if (!RELAYER_KEY || RELAYER_KEY.length < 64) {
@@ -46,6 +46,11 @@ if (!RELAYER_KEY || RELAYER_KEY.length < 64) {
   console.error('   Le financement gas et les transactions seront désactivés.');
   console.error('   Configurez la variable d\'environnement RELAYER_PRIVATE_KEY.');
 }
+
+// Initialisation de la base de données SQLite
+const db = new Database(DB_PATH);
+db.pragma('journal_mode = WAL');
+db.pragma('foreign_keys = ON');
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -1049,7 +1054,7 @@ app.get('/api/diag', async (req, res) => {
       MINE: CONTRACTS.MINE,
       USDT: CONTRACTS.USDT,
       FTA: CONTRACTS.FTA,
-      RPC: CONTRACTS.RPC_URL
+      RPC: CONTRACTS.RPC_URLS[currentRpcIndex] || 'none'
     },
     tests: results
   });
@@ -1086,16 +1091,25 @@ app.get('/api/transactions/:address', (req, res) => {
 });
 
 // ═══ DÉMARRAGE ════════════════════════════════════════════════════
+
+// Health check — fonctionne même sans blockchain
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', provider: !!provider, time: Date.now() });
+});
+
 app.listen(PORT, async () => {
-  console.log(`🚀 Fitia Mining Wallet Interne lancé sur http://localhost:${PORT}`);
+  console.log(`🚀 Fitia Mining lancé sur le port ${PORT}`);
   console.log(`📁 DB: ${DB_PATH}`);
 
-  // Initialisation du provider blockchain (multi-RPC avec fallback)
-  const connected = await initProvider();
-  if (connected) {
-    console.log(`👛 Relayer: ${relayer?.address || 'non configuré'}`);
-    await checkRelayerBalance();
-  } else {
-    console.error('❌ ATTENTION : Aucune connexion blockchain. Vérifiez les RPCs et redémarrez.');
+  try {
+    const connected = await initProvider();
+    if (connected) {
+      console.log(`👛 Relayer: ${relayer?.address || 'non configuré'}`);
+      await checkRelayerBalance();
+    } else {
+      console.error('❌ Aucune connexion blockchain. Le serveur fonctionne mais sans blockchain.');
+    }
+  } catch (e) {
+    console.error('❌ Erreur init provider:', e.message);
   }
 });
