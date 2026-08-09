@@ -763,45 +763,66 @@ class Application {
 
   // ═══ INIT BLOCKCHAIN (flux V1 original — 100% fiable) ═══
 
-  /** Initialise la connexion blockchain (MetaMask → contrats → données).
-   *  C'est EXACTEMENT le flux V1 qui fonctionnait avant les modifs d'auth. */
+  /** Initialise la connexion blockchain avec feedback visible à chaque étape */
   async initBlockchain() {
-    if (!window.ethereum) { this.showToast('Installez MetaMask !', true); return false; }
+    const step = (msg) => { console.log('⛓️', msg); this.showToast(msg); };
+    
+    if (!window.ethereum) { step('❌ MetaMask non détecté'); return false; }
+    
     try {
+      step('🔗 Connexion MetaMask...');
       await window.ethereum.request({ method: 'eth_requestAccounts' });
+      
+      step('📡 Création provider...');
       this.provider = new ethers.BrowserProvider(window.ethereum);
       this.signer = await this.provider.getSigner();
       this.user = await this.signer.getAddress();
-      const network = await this.provider.getNetwork();
-      if (Number(network.chainId) !== CONFIG.CHAIN_ID) await this.switchNetwork();
+      step('✅ Wallet: ' + this.user.slice(0,8) + '...');
       
-      // V1 initContracts (signer pour lectures ET écritures)
+      const network = await this.provider.getNetwork();
+      step('🌐 Réseau: ' + network.chainId);
+      if (Number(network.chainId) !== CONFIG.CHAIN_ID) {
+        step('🔄 Basculement Polygon...');
+        await this.switchNetwork();
+      }
+      
+      step('📜 Initialisation contrats...');
       this.core = new ethers.Contract(CONFIG.CORE, CORE_ABI, this.signer);
       this.mine = new ethers.Contract(CONFIG.MINE, MINE_ABI, this.signer);
+      
       try {
         const ftaContract = new ethers.Contract(CONFIG.FTA, ['function decimals() view returns (uint8)'], this.provider);
         this.ftaDecimals = Number(await ftaContract.decimals());
-      } catch (e) { /* garde 8 */ }
+      } catch (e) {}
+      
       if (!localStorage.getItem(this.storageKey)) localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
       
       window.ethereum.on('accountsChanged', () => this.handleWalletDisconnect());
       window.ethereum.on('chainChanged', () => this.handleWalletDisconnect());
       
-      // V1 data cycle
+      step('💰 Récupération soldes...');
       await this.fetchMarketPrices();
+      
+      step('🔋 Récupération machines...');
       await this.cacheBatteryDurations();
+      
       if (this._updateInterval) clearInterval(this._updateInterval);
       this._updateInterval = setInterval(() => this.updateData(), 15000);
+      
+      step('📊 Chargement données...');
       await this.updateData();
       this.updateWalletUI();
+      
+      step('✅ Blockchain connectée !');
       return true;
-    } catch (e) { this.showError(e); return false; }
+    } catch (e) {
+      step('❌ ERREUR: ' + (e.shortMessage || e.message || 'Inconnue'));
+      console.error('initBlockchain error:', e);
+      return false;
+    }
   }
 
-  async initContracts() {
-    // Appelé uniquement via initBlockchain() ci-dessus
-    // Gardé pour compatibilité
-  }
+  async initContracts() {}
 
   async cacheBatteryDurations() {
     try {
@@ -938,7 +959,15 @@ class Application {
       this.renderUserMachines();
       this.renderUserBatteries();
       if (document.getElementById('swap-from-in').value) this.calcSwap();
-    } catch (e) { console.error("Erreur updateData:", e); }
+    } catch (e) {
+      const msg = '❌ Blockchain: ' + (e.shortMessage || e.reason || e.message || 'Erreur inconnue');
+      console.error(msg);
+      // Afficher l'erreur une seule fois
+      if (!this._lastBlockchainError || Date.now() - this._lastBlockchainError > 30000) {
+        this.showToast(msg.substring(0, 80), true);
+        this._lastBlockchainError = Date.now();
+      }
+    }
   }
 
   startMiningCounter() {
