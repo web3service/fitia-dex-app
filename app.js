@@ -551,6 +551,9 @@ class Application {
     this.provider = null;
     this.core = null;
     this.mine = null;
+    this._coreWrite = null;
+    this._mineWrite = null;
+    this._readProvider = null;
     localStorage.removeItem('fitia_auth_token');
     localStorage.removeItem('fitia_profile');
     localStorage.removeItem(this.storageKey);
@@ -723,6 +726,9 @@ class Application {
     this.provider = null;
     this.core = null;
     this.mine = null;
+    this._coreWrite = null;
+    this._mineWrite = null;
+    this._readProvider = null;
     this.stopMiningCounter();
     // Nettoyer l'intervalle de mise à jour blockchain
     if (this._updateInterval) {
@@ -819,42 +825,43 @@ class Application {
   }
 
   async initContracts() {
-    // Utiliser un JsonRpcProvider fallback si le provider MetaMask échoue
-    let provider = this.provider;
+    // STRATÉGIE : lectures via RPC public direct (rapide), écritures via MetaMask
+    
+    // 1. Provider lecture rapide (RPC public)
+    const rpcUrl = CONFIG.RPC_URLS[this._rpcIndex] || CONFIG.RPC_URLS[0];
+    this._readProvider = new ethers.JsonRpcProvider(rpcUrl);
+    console.log('📡 RPC:', rpcUrl.substring(0, 40) + '...');
+    
+    // 2. Contrats de LECTURE (RPC public) → utilisés par défaut
+    this.mine = new ethers.Contract(CONFIG.MINE, MINE_ABI, this._readProvider);
+    this.core = new ethers.Contract(CONFIG.CORE, CORE_ABI, this._readProvider);
+    
+    // 3. Contrats d'ÉCRITURE (MetaMask signer) → pour transactions uniquement
+    this._mineWrite = new ethers.Contract(CONFIG.MINE, MINE_ABI, this.signer);
+    this._coreWrite = new ethers.Contract(CONFIG.CORE, CORE_ABI, this.signer);
+    
+    // 4. Décimales FTA
     try {
-      // Tester si le provider MetaMask répond
-      await this.provider.getBlockNumber();
-    } catch (e) {
-      console.warn('⚠️ Provider MetaMask injoignable, fallback RPC public');
-      // Fallback : utiliser un RPC public pour les lectures
-      const rpcUrl = CONFIG.RPC_URLS[this._rpcIndex] || CONFIG.RPC_URLS[0];
-      provider = new ethers.JsonRpcProvider(rpcUrl);
-      // Garder le signer MetaMask pour les transactions
-    }
-    
-    // Contrat Core : utiliser le signer pour les écritures, provider pour les lectures
-    this.core = new ethers.Contract(CONFIG.CORE, CORE_ABI, this.signer || provider);
-    this.mine = new ethers.Contract(CONFIG.MINE, MINE_ABI, this.signer || provider);
-    
-    // Ajouter une connexion provider-only pour les lectures si le provider MetaMask est lent
-    this._readProvider = provider !== this.provider ? provider : null;
-    
-    try {
-      const ftaReadProvider = this._readProvider || this.provider;
-      const ftaContract = new ethers.Contract(CONFIG.FTA, ["function decimals() view returns (uint8)"], ftaReadProvider);
+      const ftaContract = new ethers.Contract(CONFIG.FTA, ["function decimals() view returns (uint8)"], this._readProvider);
       this.ftaDecimals = Number(await ftaContract.decimals());
+      console.log('🔢 FTA decimals:', this.ftaDecimals);
     } catch (e) { /* garde 8 */ }
+    
     if (!localStorage.getItem(this.storageKey)) localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
     
-    // Vérification rapide que les contrats sont accessibles
+    // 5. Vérifier que les contrats sont joignables
     try {
-      await this.mine.mCount();
-      console.log('✅ Contrats blockchain accessibles');
+      const count = await this.mine.mCount();
+      console.log('✅ Contrats OK —', Number(count), 'machines');
     } catch (e) {
-      console.warn('⚠️ Contrats inaccessibles (RPC lent ou down):', e.message.substring(0,100));
+      console.warn('⚠️ RPC', rpcUrl.substring(0,30)+'...:', e.message.substring(0,80));
       this._rpcIndex = (this._rpcIndex + 1) % CONFIG.RPC_URLS.length;
-      // Ne PAS bloquer — le wallet peut être lié même sans accès RPC
-      // Les données se chargeront quand le RPC répondra
+      const nextRpc = CONFIG.RPC_URLS[this._rpcIndex];
+      this._readProvider = new ethers.JsonRpcProvider(nextRpc);
+      this.mine = new ethers.Contract(CONFIG.MINE, MINE_ABI, this._readProvider);
+      this.core = new ethers.Contract(CONFIG.CORE, CORE_ABI, this._readProvider);
+      console.log('🔄 Fallback:', nextRpc.substring(0,40)+'...');
+      try { await this.mine.mCount(); console.log('✅ OK fallback'); } catch (e2) {}
     }
   }
 
@@ -929,7 +936,7 @@ class Application {
   async updateData() {
     if (!this.user) return;
     try {
-      // Essayer de lire les données blockchain
+      // Lecture blockchain via RPC public (this.mine/core = JsonRpcProvider)
       let rawPower = 0, diffNum = 2e12, uBal = 0n, fBal = 0n, polBal = 0n, nativePol = 0n;
       
       try {
@@ -937,22 +944,7 @@ class Application {
         const powNum = Number(rawPower);
         try { diffNum = Number(await this.core.difficulty()); } catch (e) {}
         this.currentRealPower = powNum > 0 ? (powNum * diffNum) / 1e18 : 0;
-      } catch (e) {
-        console.warn('⚠️ Erreur lecture powerOf:', e.message);
-        // Réessayer avec le provider fallback si dispo
-        if (this._readProvider) {
-          try {
-            const mineRead = new ethers.Contract(CONFIG.MINE, MINE_ABI, this._readProvider);
-            const coreRead = new ethers.Contract(CONFIG.CORE, CORE_ABI, this._readProvider);
-            rawPower = await mineRead.powerOf(this.user);
-            const powNum = Number(rawPower);
-            try { diffNum = Number(await coreRead.difficulty()); } catch (e2) {}
-            this.currentRealPower = powNum > 0 ? (powNum * diffNum) / 1e18 : 0;
-          } catch (e2) {
-            console.error('❌ Fallback RPC aussi en échec:', e2.message);
-          }
-        }
-      }
+      } catch (e) { console.warn('⚠️ powerOf:', e.message); }
       
       try { const rateRaw = await this.core.rate(); this.ftaPriceUsd = parseFloat(ethers.formatUnits(rateRaw, this.usdtDecimals)); } catch (e) {}
       
@@ -966,7 +958,6 @@ class Application {
       const pB = parseFloat(ethers.formatUnits(polBal, 18));
       const nB = parseFloat(ethers.formatUnits(nativePol, 18));
 
-      // Mise à jour UI (seulement si les éléments existent)
       const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
       safeSet('val-power', this.formatHashrate(this.currentRealPower));
       safeSet('bal-pol', (pB + nB).toFixed(4));
@@ -989,7 +980,7 @@ class Application {
       this.lastClaimTimestamp = parseInt(localStorage.getItem(this.storageKey) || '0');
       const elapsed = Math.floor(Date.now() / 1000) - this.lastClaimTimestamp;
       if (this.currentRealPower > 0) {
-        if (!this.miningTimer) { const pendingFtaRaw = this.currentRealPower * elapsed; safeSet('val-pending', (pendingFtaRaw / 1e8).toFixed(8)); this.startMiningCounter(); }
+        if (!this.miningTimer) { safeSet('val-pending', (this.currentRealPower * elapsed / 1e8).toFixed(8)); this.startMiningCounter(); }
         const viz = document.getElementById('viz-status'); if (viz) { viz.innerText = this.t('miningActive'); viz.style.color = "var(--primary)"; }
         this.updateVisualizerIntensity(this.currentRealPower);
       } else {
@@ -1005,24 +996,21 @@ class Application {
       this.renderUserBatteries();
       if (document.getElementById('swap-from-in')?.value) this.calcSwap();
       
-      // Réinitialiser le compteur d'erreurs si succès
       this._blockchainErrorCount = 0;
     } catch (e) {
       this._blockchainErrorCount++;
-      console.error("Erreur updateData (#" + this._blockchainErrorCount + "):", e.message);
-      // Afficher l'erreur une seule fois pour ne pas spammer
+      console.error("❌ updateData (#" + this._blockchainErrorCount + "):", e.message);
       if (this._blockchainErrorCount === 1) {
-        this.showToast('⚠️ Erreur connexion blockchain. Vérifiez votre wallet et le réseau Polygon.', true);
+        this.showToast('⚠️ Erreur connexion blockchain. Nouvelle tentative dans 15s...', true);
       }
-      // Après 3 échecs, réessayer avec un autre RPC
       if (this._blockchainErrorCount >= 3) {
         this._rpcIndex = (this._rpcIndex + 1) % CONFIG.RPC_URLS.length;
-        const rpcUrl = CONFIG.RPC_URLS[this._rpcIndex];
-        console.log('🔄 Basculement RPC:', rpcUrl);
-        try {
-          this._readProvider = new ethers.JsonRpcProvider(rpcUrl);
-          this._blockchainErrorCount = 0;
-        } catch (e2) {}
+        const nextRpc = CONFIG.RPC_URLS[this._rpcIndex];
+        console.log('🔄 Basculement RPC →', nextRpc.substring(0,40)+'...');
+        this._readProvider = new ethers.JsonRpcProvider(nextRpc);
+        this.mine = new ethers.Contract(CONFIG.MINE, MINE_ABI, this._readProvider);
+        this.core = new ethers.Contract(CONFIG.CORE, CORE_ABI, this._readProvider);
+        this._blockchainErrorCount = 0;
       }
     }
   }
@@ -1070,7 +1058,7 @@ class Application {
         const allowance = await usdtContract.allowance(this.user, CONFIG.CORE);
         if (allowance < amountBN) { this.setLoader(true, "Approbation USDT..."); await (await usdtContract.connect(this.signer).approve(CONFIG.CORE, amountBN)).wait(); }
         this.setLoader(true, this.t('confirming'));
-        tx = await this.core.depositUsdt(amountBN);
+        tx = await this._coreWrite.depositUsdt(amountBN);
       } else {
         const ftaContract = new ethers.Contract(CONFIG.FTA, ["function approve(address,uint256) returns (bool)", "function allowance(address,address) view returns (uint256)", "function balanceOf(address) view returns (uint256)"], this.provider);
         const amountBN = ethers.parseUnits(amount.toString(), this.ftaDecimals);
@@ -1079,7 +1067,7 @@ class Application {
         const allowance = await ftaContract.allowance(this.user, CONFIG.CORE);
         if (allowance < amountBN) { this.setLoader(true, "Approbation FTA..."); await (await ftaContract.connect(this.signer).approve(CONFIG.CORE, amountBN)).wait(); }
         this.setLoader(true, this.t('confirming'));
-        tx = await this.core.depositFta(amountBN);
+        tx = await this._coreWrite.depositFta(amountBN);
       }
       await tx.wait();
       this.showToast(this.t('depositSuccess'));
@@ -1097,7 +1085,7 @@ class Application {
     if (!amount || amount <= 0) return this.showToast(this.t('invalidAmount'), true);
     this.setLoader(true, this.t('withdrawing'));
     try {
-      let tx = tokenType === 'USDT' ? await this.core.withdrawUsdt(ethers.parseUnits(amount.toString(), this.usdtDecimals)) : await this.core.withdrawFta(ethers.parseUnits(amount.toString(), this.ftaDecimals));
+      let tx = tokenType === 'USDT' ? await this._coreWrite.withdrawUsdt(ethers.parseUnits(amount.toString(), this.usdtDecimals)) : await this._coreWrite.withdrawFta(ethers.parseUnits(amount.toString(), this.ftaDecimals));
       await tx.wait();
       this.showToast(this.t('withdrawSuccess'));
       document.getElementById('deposit-amount').value = '';
@@ -1145,7 +1133,7 @@ class Application {
     if (mData.shopExpiry > 0 && Math.floor(Date.now() / 1000) > mData.shopExpiry) return this.showToast("Cette machine n'est plus disponible", true);
     this.setLoader(true, `${this.t('buyingMachine')} (${this.payMode})...`);
     try {
-      let tx = this.payMode === 'USDT' ? await this.mine.buyMachine(typeId) : await this.mine.buyMachineFTA(typeId);
+      let tx = this.payMode === 'USDT' ? await this._mineWrite.buyMachine(typeId) : await this._mineWrite.buyMachineFTA(typeId);
       await tx.wait();
       this.showToast(this.t('machineBought'));
       this.shopMachinesData = [];
@@ -1159,7 +1147,7 @@ class Application {
     if (!this.user) return this.showToast('Connectez votre wallet', true);
     this.setLoader(true, `${this.t('buyingBattery')} (${this.payMode})...`);
     try {
-      let tx = this.payMode === 'USDT' ? await this.mine.buyBattery(typeId) : await this.mine.buyBatteryFTA(typeId);
+      let tx = this.payMode === 'USDT' ? await this._mineWrite.buyBattery(typeId) : await this._mineWrite.buyBatteryFTA(typeId);
       await tx.wait();
       const bData = this.shopBatteriesData[typeId] || {};
       this.showToast(this.t('batteryBought'));
@@ -1178,7 +1166,7 @@ class Application {
     if (!this.batteryInventory[Number(batteryTypeId)] || this.batteryInventory[Number(batteryTypeId)] <= 0) return this.showToast(this.t('errNoBattery'), true);
     this.setLoader(true, this.t('pluggingIn'));
     try {
-      const tx = await this.mine.plugInMachine(machineIndex, batteryTypeId);
+      const tx = await this._mineWrite.plugInMachine(machineIndex, batteryTypeId);
       await tx.wait();
       this.showToast(this.t('pluggedIn'));
       await this.recordTransaction('plug', { txHash: tx.hash, details: { machineIndex, batteryTypeId }, status: 'confirmed' });
@@ -1192,7 +1180,7 @@ class Application {
     this.stopMiningCounter();
     this.setLoader(true, this.t('claiming'));
     try {
-      const tx = await this.mine.claimRewards();
+      const tx = await this._mineWrite.claimRewards();
       await tx.wait();
       const claimedAmount = this.pendingBalance / 1e8;
       this.pendingBalance = 0;
@@ -1218,7 +1206,7 @@ class Application {
     if (!this.user) return this.showToast('Connectez votre wallet', true);
     this.setLoader(true, this.t('linking'));
     try {
-      let tx = input.startsWith('0x') && input.length === 42 ? await this.core.setReferrer(input) : await this.core.setReferrerById(parseInt(input));
+      let tx = input.startsWith('0x') && input.length === 42 ? await this._coreWrite.setReferrer(input) : await this._coreWrite.setReferrerById(parseInt(input));
       await tx.wait();
       this.showToast(this.t('refLinked'));
       document.getElementById('ref-address-input').value = '';
@@ -1270,7 +1258,7 @@ class Application {
       const outDec = isUsdtTo ? this.ftaDecimals : this.usdtDecimals;
       const minOut = ethers.parseUnits((expectedOut * (1 - SLIPPAGE)).toFixed(outDec), outDec);
       const deadline = Math.floor(Date.now() / 1000) + 1200;
-      let tx = isUsdtTo ? await this.core.swapUForF(amount, minOut, deadline) : await this.core.swapFForU(amount, minOut, deadline);
+      let tx = isUsdtTo ? await this._coreWrite.swapUForF(amount, minOut, deadline) : await this._coreWrite.swapFForU(amount, minOut, deadline);
       await tx.wait();
       this.showToast(this.t('swapSuccess'));
       document.getElementById('swap-from-in').value = ''; document.getElementById('swap-to-in').value = '';
