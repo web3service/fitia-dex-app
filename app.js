@@ -893,83 +893,57 @@ class Application {
   }
 
   async updateData() {
-    // V1 original — simple, fiable
     if (!this.user) return;
-    try {
-      const rawPower = await this.mine.powerOf(this.user);
-      let powNum = Number(rawPower);
-      let diffNum = 2e12;
-      try { diffNum = Number(await this.core.difficulty()); } catch (e) {}
-      this.currentRealPower = powNum > 0 ? (powNum * diffNum) / 1e18 : 0;
-
-      try {
-        const rateRaw = await this.core.rate();
-        this.ftaPriceUsd = parseFloat(ethers.formatUnits(rateRaw, this.usdtDecimals));
-      } catch (e) {}
-
-      const uBal = await this.core.uBal(this.user);
-      const fBal = await this.core.fBal(this.user);
-      const polBal = await this.core.pol(this.user);
-      const nativePol = await this.provider.getBalance(this.user);
-
-      const uB = parseFloat(ethers.formatUnits(uBal, this.usdtDecimals));
-      const fB = parseFloat(ethers.formatUnits(fBal, this.ftaDecimals));
-      const pB = parseFloat(ethers.formatUnits(polBal, 18));
-      const nB = parseFloat(ethers.formatUnits(nativePol, 18));
-
-      document.getElementById('val-power').innerText = this.formatHashrate(this.currentRealPower);
-      document.getElementById('bal-pol').innerText = (pB + nB).toFixed(4);
-      document.getElementById('bal-usdt').innerText = uB.toFixed(2);
-      document.getElementById('bal-fta').innerText = fB.toFixed(4);
-      document.getElementById('price-pol').innerText = this.formatUsd(this.polPriceUsd);
-      document.getElementById('price-usdt').innerText = this.formatUsd(1);
-      document.getElementById('price-fta').innerText = this.formatUsd(this.ftaPriceUsd);
-      this.updatePriceChange('pol', this.polPriceUsd);
-      this.updatePriceChange('usdt', 1);
-      this.updatePriceChange('fta', this.ftaPriceUsd);
-      document.getElementById('bal-pol-usd').innerText = '≈ ' + this.formatUsd((pB + nB) * this.polPriceUsd);
-      document.getElementById('bal-usdt-usd').innerText = '≈ ' + this.formatUsd(uB);
-      document.getElementById('bal-fta-usd').innerText = '≈ ' + this.formatUsd(fB * this.ftaPriceUsd);
-      document.getElementById('val-total-usd').innerText = this.formatUsd((pB + nB) * this.polPriceUsd + uB + fB * this.ftaPriceUsd);
-      document.getElementById('swap-rate').innerText = this.t('currentRate') + this.ftaPriceUsd.toFixed(6) + this.t('usdtPerFta');
-      document.getElementById('swap-bal-from').innerText = (this.swapDirection === 'USDT_TO_FTA' ? uB : fB).toFixed(4);
-      document.getElementById('swap-bal-to').innerText = (this.swapDirection === 'USDT_TO_FTA' ? fB : uB).toFixed(4);
-
-      this.lastClaimTimestamp = parseInt(localStorage.getItem(this.storageKey) || '0');
-      const elapsed = Math.floor(Date.now() / 1000) - this.lastClaimTimestamp;
-      if (this.currentRealPower > 0) {
-        if (!this.miningTimer) {
-          const pendingFtaRaw = this.currentRealPower * elapsed;
-          document.getElementById('val-pending').innerText = (pendingFtaRaw / 1e8).toFixed(8);
-          this.startMiningCounter();
-        }
-        document.getElementById('viz-status').innerText = this.t('miningActive');
-        document.getElementById('viz-status').style.color = "var(--primary)";
-        this.updateVisualizerIntensity(this.currentRealPower);
-      } else {
-        this.stopMiningCounter();
-        document.getElementById('viz-status').innerText = this.t('noMachine');
-        document.getElementById('viz-status').style.color = "#666";
-        document.getElementById('val-pending').innerText = "0.00000000";
-      }
-
-      await this.renderShop();
-      await this.fetchUserAssets();
-      this.renderActiveMachines();
-      this.renderUserMachines();
-      this.renderUserBatteries();
-      if (document.getElementById('swap-from-in').value) this.calcSwap();
-    } catch (e) {
-      const msg = '❌ Blockchain: ' + (e.shortMessage || e.reason || e.message || 'Erreur inconnue');
-      console.error(msg);
-      // Afficher l'erreur une seule fois
-      if (!this._lastBlockchainError || Date.now() - this._lastBlockchainError > 30000) {
-        this.showToast(msg.substring(0, 80), true);
-        this._lastBlockchainError = Date.now();
-      }
+    const el = (id) => document.getElementById(id);
+    
+    // 1. Puissance — isole
+    try { const r = await this.mine.powerOf(this.user); let d = 2e12; try { d = Number(await this.core.difficulty()) } catch (e) {}; this.currentRealPower = Number(r) > 0 ? (Number(r) * d) / 1e18 : 0; if (el("val-power")) el("val-power").innerText = this.formatHashrate(this.currentRealPower) } catch (e) { console.warn("powerOf:", e.shortMessage || e.message) }
+    
+    // 2. Taux FTA
+    try { this.ftaPriceUsd = parseFloat(ethers.formatUnits(await this.core.rate(), this.usdtDecimals)) } catch (e) {}
+    
+    // 3. Soldes — chaque appel isole
+    let uB = 0, fB = 0, pB = 0, nB = 0;
+    try { uB = parseFloat(ethers.formatUnits(await this.core.uBal(this.user), this.usdtDecimals)) } catch (e) {}
+    try { fB = parseFloat(ethers.formatUnits(await this.core.fBal(this.user), this.ftaDecimals)) } catch (e) {}
+    try { pB = parseFloat(ethers.formatUnits(await this.core.pol(this.user), 18)) } catch (e) {}
+    try { nB = parseFloat(ethers.formatUnits(await this.provider.getBalance(this.user), 18)) } catch (e) {}
+    
+    // 4. UI soldes
+    if (el("bal-pol")) el("bal-pol").innerText = (pB + nB).toFixed(4);
+    if (el("bal-usdt")) el("bal-usdt").innerText = uB.toFixed(2);
+    if (el("bal-fta")) el("bal-fta").innerText = fB.toFixed(4);
+    if (el("price-pol")) el("price-pol").innerText = this.formatUsd(this.polPriceUsd);
+    if (el("price-usdt")) el("price-usdt").innerText = this.formatUsd(1);
+    if (el("price-fta")) el("price-fta").innerText = this.formatUsd(this.ftaPriceUsd);
+    this.updatePriceChange("pol", this.polPriceUsd); this.updatePriceChange("usdt", 1); this.updatePriceChange("fta", this.ftaPriceUsd);
+    if (el("bal-pol-usd")) el("bal-pol-usd").innerText = "\u2248 " + this.formatUsd((pB + nB) * this.polPriceUsd);
+    if (el("bal-usdt-usd")) el("bal-usdt-usd").innerText = "\u2248 " + this.formatUsd(uB);
+    if (el("bal-fta-usd")) el("bal-fta-usd").innerText = "\u2248 " + this.formatUsd(fB * this.ftaPriceUsd);
+    if (el("val-total-usd")) el("val-total-usd").innerText = this.formatUsd((pB + nB) * this.polPriceUsd + uB + fB * this.ftaPriceUsd);
+    if (el("swap-rate")) el("swap-rate").innerText = this.t("currentRate") + this.ftaPriceUsd.toFixed(6) + this.t("usdtPerFta");
+    if (el("swap-bal-from")) el("swap-bal-from").innerText = (this.swapDirection === "USDT_TO_FTA" ? uB : fB).toFixed(4);
+    if (el("swap-bal-to")) el("swap-bal-to").innerText = (this.swapDirection === "USDT_TO_FTA" ? fB : uB).toFixed(4);
+    
+    // 5. Statut minage
+    this.lastClaimTimestamp = parseInt(localStorage.getItem(this.storageKey) || "0");
+    const elapsed = Math.floor(Date.now() / 1000) - this.lastClaimTimestamp;
+    if (this.currentRealPower > 0) {
+      if (!this.miningTimer) { if (el("val-pending")) el("val-pending").innerText = (this.currentRealPower * elapsed / 1e8).toFixed(8); this.startMiningCounter(); }
+      if (el("viz-status")) { el("viz-status").innerText = this.t("miningActive"); el("viz-status").style.color = "var(--primary)"; }
+      this.updateVisualizerIntensity(this.currentRealPower);
+    } else {
+      this.stopMiningCounter();
+      if (el("viz-status")) { el("viz-status").innerText = this.t("noMachine"); el("viz-status").style.color = "#666"; }
+      if (el("val-pending")) el("val-pending").innerText = "0.00000000";
     }
+    
+    // 6. Shop + assets — chaque appel isole
+    try { await this.renderShop() } catch (e) { console.warn("shop:", e.message) }
+    try { await this.fetchUserAssets() } catch (e) { console.warn("assets:", e.message) }
+    this.renderActiveMachines(); this.renderUserMachines(); this.renderUserBatteries();
+    if (el("swap-from-in")?.value) this.calcSwap();
   }
-
   startMiningCounter() {
     if (this.miningTimer) return;
     this.pendingBalance = parseFloat(document.getElementById('val-pending').innerText) * 1e8 || 0;
