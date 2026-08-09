@@ -551,8 +551,8 @@ class Application {
     this.provider = null;
     this.core = null;
     this.mine = null;
-    this._coreWrite = null;
-    this._mineWrite = null;
+    
+    
     this._readProvider = null;
     localStorage.removeItem('fitia_auth_token');
     localStorage.removeItem('fitia_profile');
@@ -583,35 +583,21 @@ class Application {
     document.getElementById('auth-screen').classList.add('hidden');
     document.getElementById('app-screen').classList.remove('hidden');
 
-    // Afficher le pseudo dans le header
     document.getElementById('addr-display').innerText = this.profile.username;
     document.getElementById('account-username').innerText = this.profile.username;
     document.getElementById('account-email').innerText = this.profile.email;
     document.getElementById('account-uid').innerText = 'ID: ' + (this.profile.id || '—');
     document.getElementById('account-avatar').innerText = this.profile.username.charAt(0).toUpperCase();
-    
-    // Mettre à jour l'UI wallet
     this.updateWalletUI();
 
-    // Tenter de connecter le wallet silencieusement (si déjà lié)
-    const walletOk = this.profile.address ? await this.connectWalletSilent() : false;
-
-    // Initialiser le visualiseur (marche sans wallet)
     this.initVisualizer();
     window.addEventListener('resize', () => this.resizeCanvas());
     
-    // Initialiser la blockchain UNIQUEMENT si le wallet est vraiment connecté
-    if (walletOk && this.user) {
-      await this.cacheBatteryDurations();
-      if (this._updateInterval) clearInterval(this._updateInterval);
-      this._updateInterval = setInterval(() => this.updateData(), 15000);
-      await this.fetchMarketPrices();
-      await this.updateData();
-      console.log('✅ Blockchain initialisée — wallet connecté:', this.user.slice(0,10)+'...');
-    } else if (this.profile.address) {
-      console.log('⚠️ Wallet lié mais non connecté (MetaMask absent ou verrouillé)');
+    // Si wallet déjà lié → init blockchain (flux V1)
+    if (this.profile.address && window.ethereum) {
+      await this.initBlockchain();
     }
-
+    
     this.setLoader(false);
   }
 
@@ -649,73 +635,24 @@ class Application {
     }
   }
 
-  /** Connexion silencieuse du wallet (déjà lié au compte). Retourne true si connecté. */
-  async connectWalletSilent() {
-    if (!window.ethereum) return false;
-    try {
-      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-      if (accounts.length > 0 && accounts[0].toLowerCase() === this.profile.address.toLowerCase()) {
-        this.provider = new ethers.BrowserProvider(window.ethereum);
-        this.signer = await this.provider.getSigner();
-        this.user = accounts[0];
-        const network = await this.provider.getNetwork();
-        if (Number(network.chainId) !== CONFIG.CHAIN_ID) await this.switchNetwork();
-        await this.initContracts();
-        window.ethereum.on('accountsChanged', () => this.handleWalletDisconnect());
-        window.ethereum.on('chainChanged', () => this.handleWalletDisconnect());
-        this.updateWalletUI();
-        return true;
-      }
-      return false;
-    } catch (e) { return false; }
-  }
-
-  /** Connexion wallet depuis la page compte */
+  /** Connexion wallet depuis la page compte — flux V1 */
   async connectWalletForAccount() {
-    if (!window.ethereum) return this.showToast("Installez MetaMask !", true);
     this.setLoader(true, this.t('connWallet'));
+    // Lancer la blockchain d'abord (flux V1 exact)
+    const ok = await this.initBlockchain();
+    if (!ok) { this.setLoader(false); return; }
+    
+    // Lier l'adresse au compte (non bloquant)
     try {
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
-      this.provider = new ethers.BrowserProvider(window.ethereum);
-      this.signer = await this.provider.getSigner();
-      this.user = await this.signer.getAddress();
-      const network = await this.provider.getNetwork();
-      if (Number(network.chainId) !== CONFIG.CHAIN_ID) await this.switchNetwork();
-
-      // Lier l'adresse au compte via l'API
       await this.apiCall('/api/profile/address', 'PUT', { address: this.user });
-      
-      // Mettre à jour le profil local
       this.profile.address = this.user;
       localStorage.setItem('fitia_profile', JSON.stringify(this.profile));
-
-      window.ethereum.on('accountsChanged', () => this.handleWalletDisconnect());
-      window.ethereum.on('chainChanged', () => this.handleWalletDisconnect());
-
-      // Initialiser les contrats et les données blockchain
-      await this.initContracts();
-      await this.cacheBatteryDurations();
-      
-      // Toujours recréer l'intervalle pour éviter les doublons
-      if (this._updateInterval) clearInterval(this._updateInterval);
-      this._updateInterval = setInterval(() => this.updateData(), 15000);
-      
-      await this.fetchMarketPrices();
-      await this.updateData();
-      this.updateWalletUI();
-
-      // Mettre à jour l'affichage header et compte
-      document.getElementById('addr-display').innerText = this.profile.username + ' | ' + this.user.slice(0, 6) + '...' + this.user.slice(-4);
-      document.getElementById('account-address').innerText = 'Wallet: ' + this.user.slice(0, 6) + '...' + this.user.slice(-4);
-      document.getElementById('account-wallet-addr').innerText = this.user.slice(0, 6) + '...' + this.user.slice(-4);
-      document.getElementById('account-wallet-addr').style.color = 'var(--success)';
-
-      // Forcer le rendu de la boutique
-      this.renderShop();
-
-      this.showToast('✅ Wallet lié avec succès !');
-      console.log('✅ Wallet connecté avec succès:', this.user.slice(0,10)+'...');
-    } catch (e) { this.showError(e); }
+    } catch (e) { console.warn('⚠️ API link wallet:', e.message); }
+    
+    this.updateWalletUI();
+    document.getElementById('addr-display').innerText = this.profile.username + ' | ' + this.user.slice(0, 6) + '...' + this.user.slice(-4);
+    document.getElementById('account-address').innerText = 'Wallet: ' + this.user.slice(0, 6) + '...' + this.user.slice(-4);
+    this.showToast('✅ Wallet lié !');
     this.setLoader(false);
   }
 
@@ -726,8 +663,8 @@ class Application {
     this.provider = null;
     this.core = null;
     this.mine = null;
-    this._coreWrite = null;
-    this._mineWrite = null;
+    
+    
     this._readProvider = null;
     this.stopMiningCounter();
     // Nettoyer l'intervalle de mise à jour blockchain
@@ -824,45 +761,46 @@ class Application {
     }
   }
 
+  // ═══ INIT BLOCKCHAIN (flux V1 original — 100% fiable) ═══
+
+  /** Initialise la connexion blockchain (MetaMask → contrats → données).
+   *  C'est EXACTEMENT le flux V1 qui fonctionnait avant les modifs d'auth. */
+  async initBlockchain() {
+    if (!window.ethereum) { this.showToast('Installez MetaMask !', true); return false; }
+    try {
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      this.provider = new ethers.BrowserProvider(window.ethereum);
+      this.signer = await this.provider.getSigner();
+      this.user = await this.signer.getAddress();
+      const network = await this.provider.getNetwork();
+      if (Number(network.chainId) !== CONFIG.CHAIN_ID) await this.switchNetwork();
+      
+      // V1 initContracts (signer pour lectures ET écritures)
+      this.core = new ethers.Contract(CONFIG.CORE, CORE_ABI, this.signer);
+      this.mine = new ethers.Contract(CONFIG.MINE, MINE_ABI, this.signer);
+      try {
+        const ftaContract = new ethers.Contract(CONFIG.FTA, ['function decimals() view returns (uint8)'], this.provider);
+        this.ftaDecimals = Number(await ftaContract.decimals());
+      } catch (e) { /* garde 8 */ }
+      if (!localStorage.getItem(this.storageKey)) localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
+      
+      window.ethereum.on('accountsChanged', () => this.handleWalletDisconnect());
+      window.ethereum.on('chainChanged', () => this.handleWalletDisconnect());
+      
+      // V1 data cycle
+      await this.fetchMarketPrices();
+      await this.cacheBatteryDurations();
+      if (this._updateInterval) clearInterval(this._updateInterval);
+      this._updateInterval = setInterval(() => this.updateData(), 15000);
+      await this.updateData();
+      this.updateWalletUI();
+      return true;
+    } catch (e) { this.showError(e); return false; }
+  }
+
   async initContracts() {
-    // STRATÉGIE : lectures via RPC public direct (rapide), écritures via MetaMask
-    
-    // 1. Provider lecture rapide (RPC public)
-    const rpcUrl = CONFIG.RPC_URLS[this._rpcIndex] || CONFIG.RPC_URLS[0];
-    this._readProvider = new ethers.JsonRpcProvider(rpcUrl);
-    console.log('📡 RPC:', rpcUrl.substring(0, 40) + '...');
-    
-    // 2. Contrats de LECTURE (RPC public) → utilisés par défaut
-    this.mine = new ethers.Contract(CONFIG.MINE, MINE_ABI, this._readProvider);
-    this.core = new ethers.Contract(CONFIG.CORE, CORE_ABI, this._readProvider);
-    
-    // 3. Contrats d'ÉCRITURE (MetaMask signer) → pour transactions uniquement
-    this._mineWrite = new ethers.Contract(CONFIG.MINE, MINE_ABI, this.signer);
-    this._coreWrite = new ethers.Contract(CONFIG.CORE, CORE_ABI, this.signer);
-    
-    // 4. Décimales FTA
-    try {
-      const ftaContract = new ethers.Contract(CONFIG.FTA, ["function decimals() view returns (uint8)"], this._readProvider);
-      this.ftaDecimals = Number(await ftaContract.decimals());
-      console.log('🔢 FTA decimals:', this.ftaDecimals);
-    } catch (e) { /* garde 8 */ }
-    
-    if (!localStorage.getItem(this.storageKey)) localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
-    
-    // 5. Vérifier que les contrats sont joignables
-    try {
-      const count = await this.mine.mCount();
-      console.log('✅ Contrats OK —', Number(count), 'machines');
-    } catch (e) {
-      console.warn('⚠️ RPC', rpcUrl.substring(0,30)+'...:', e.message.substring(0,80));
-      this._rpcIndex = (this._rpcIndex + 1) % CONFIG.RPC_URLS.length;
-      const nextRpc = CONFIG.RPC_URLS[this._rpcIndex];
-      this._readProvider = new ethers.JsonRpcProvider(nextRpc);
-      this.mine = new ethers.Contract(CONFIG.MINE, MINE_ABI, this._readProvider);
-      this.core = new ethers.Contract(CONFIG.CORE, CORE_ABI, this._readProvider);
-      console.log('🔄 Fallback:', nextRpc.substring(0,40)+'...');
-      try { await this.mine.mCount(); console.log('✅ OK fallback'); } catch (e2) {}
-    }
+    // Appelé uniquement via initBlockchain() ci-dessus
+    // Gardé pour compatibilité
   }
 
   async cacheBatteryDurations() {
@@ -934,85 +872,73 @@ class Application {
   }
 
   async updateData() {
+    // V1 original — simple, fiable
     if (!this.user) return;
     try {
-      // Lecture blockchain via RPC public (this.mine/core = JsonRpcProvider)
-      let rawPower = 0, diffNum = 2e12, uBal = 0n, fBal = 0n, polBal = 0n, nativePol = 0n;
-      
+      const rawPower = await this.mine.powerOf(this.user);
+      let powNum = Number(rawPower);
+      let diffNum = 2e12;
+      try { diffNum = Number(await this.core.difficulty()); } catch (e) {}
+      this.currentRealPower = powNum > 0 ? (powNum * diffNum) / 1e18 : 0;
+
       try {
-        rawPower = await this.mine.powerOf(this.user);
-        const powNum = Number(rawPower);
-        try { diffNum = Number(await this.core.difficulty()); } catch (e) {}
-        this.currentRealPower = powNum > 0 ? (powNum * diffNum) / 1e18 : 0;
-      } catch (e) { console.warn('⚠️ powerOf:', e.message); }
-      
-      try { const rateRaw = await this.core.rate(); this.ftaPriceUsd = parseFloat(ethers.formatUnits(rateRaw, this.usdtDecimals)); } catch (e) {}
-      
-      try { uBal = await this.core.uBal(this.user); } catch (e) { console.warn('⚠️ uBal:', e.message); }
-      try { fBal = await this.core.fBal(this.user); } catch (e) { console.warn('⚠️ fBal:', e.message); }
-      try { polBal = await this.core.pol(this.user); } catch (e) { console.warn('⚠️ pol:', e.message); }
-      try { nativePol = await this.provider.getBalance(this.user); } catch (e) { console.warn('⚠️ getBalance:', e.message); }
-      
+        const rateRaw = await this.core.rate();
+        this.ftaPriceUsd = parseFloat(ethers.formatUnits(rateRaw, this.usdtDecimals));
+      } catch (e) {}
+
+      const uBal = await this.core.uBal(this.user);
+      const fBal = await this.core.fBal(this.user);
+      const polBal = await this.core.pol(this.user);
+      const nativePol = await this.provider.getBalance(this.user);
+
       const uB = parseFloat(ethers.formatUnits(uBal, this.usdtDecimals));
       const fB = parseFloat(ethers.formatUnits(fBal, this.ftaDecimals));
       const pB = parseFloat(ethers.formatUnits(polBal, 18));
       const nB = parseFloat(ethers.formatUnits(nativePol, 18));
 
-      const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-      safeSet('val-power', this.formatHashrate(this.currentRealPower));
-      safeSet('bal-pol', (pB + nB).toFixed(4));
-      safeSet('bal-usdt', uB.toFixed(2));
-      safeSet('bal-fta', fB.toFixed(4));
-      safeSet('price-pol', this.formatUsd(this.polPriceUsd));
-      safeSet('price-usdt', this.formatUsd(1));
-      safeSet('price-fta', this.formatUsd(this.ftaPriceUsd));
+      document.getElementById('val-power').innerText = this.formatHashrate(this.currentRealPower);
+      document.getElementById('bal-pol').innerText = (pB + nB).toFixed(4);
+      document.getElementById('bal-usdt').innerText = uB.toFixed(2);
+      document.getElementById('bal-fta').innerText = fB.toFixed(4);
+      document.getElementById('price-pol').innerText = this.formatUsd(this.polPriceUsd);
+      document.getElementById('price-usdt').innerText = this.formatUsd(1);
+      document.getElementById('price-fta').innerText = this.formatUsd(this.ftaPriceUsd);
       this.updatePriceChange('pol', this.polPriceUsd);
       this.updatePriceChange('usdt', 1);
       this.updatePriceChange('fta', this.ftaPriceUsd);
-      safeSet('bal-pol-usd', '≈ ' + this.formatUsd((pB + nB) * this.polPriceUsd));
-      safeSet('bal-usdt-usd', '≈ ' + this.formatUsd(uB));
-      safeSet('bal-fta-usd', '≈ ' + this.formatUsd(fB * this.ftaPriceUsd));
-      safeSet('val-total-usd', this.formatUsd((pB + nB) * this.polPriceUsd + uB + fB * this.ftaPriceUsd));
-      safeSet('swap-rate', this.t('currentRate') + this.ftaPriceUsd.toFixed(6) + this.t('usdtPerFta'));
-      safeSet('swap-bal-from', (this.swapDirection === 'USDT_TO_FTA' ? uB : fB).toFixed(4));
-      safeSet('swap-bal-to', (this.swapDirection === 'USDT_TO_FTA' ? fB : uB).toFixed(4));
+      document.getElementById('bal-pol-usd').innerText = '≈ ' + this.formatUsd((pB + nB) * this.polPriceUsd);
+      document.getElementById('bal-usdt-usd').innerText = '≈ ' + this.formatUsd(uB);
+      document.getElementById('bal-fta-usd').innerText = '≈ ' + this.formatUsd(fB * this.ftaPriceUsd);
+      document.getElementById('val-total-usd').innerText = this.formatUsd((pB + nB) * this.polPriceUsd + uB + fB * this.ftaPriceUsd);
+      document.getElementById('swap-rate').innerText = this.t('currentRate') + this.ftaPriceUsd.toFixed(6) + this.t('usdtPerFta');
+      document.getElementById('swap-bal-from').innerText = (this.swapDirection === 'USDT_TO_FTA' ? uB : fB).toFixed(4);
+      document.getElementById('swap-bal-to').innerText = (this.swapDirection === 'USDT_TO_FTA' ? fB : uB).toFixed(4);
 
       this.lastClaimTimestamp = parseInt(localStorage.getItem(this.storageKey) || '0');
       const elapsed = Math.floor(Date.now() / 1000) - this.lastClaimTimestamp;
       if (this.currentRealPower > 0) {
-        if (!this.miningTimer) { safeSet('val-pending', (this.currentRealPower * elapsed / 1e8).toFixed(8)); this.startMiningCounter(); }
-        const viz = document.getElementById('viz-status'); if (viz) { viz.innerText = this.t('miningActive'); viz.style.color = "var(--primary)"; }
+        if (!this.miningTimer) {
+          const pendingFtaRaw = this.currentRealPower * elapsed;
+          document.getElementById('val-pending').innerText = (pendingFtaRaw / 1e8).toFixed(8);
+          this.startMiningCounter();
+        }
+        document.getElementById('viz-status').innerText = this.t('miningActive');
+        document.getElementById('viz-status').style.color = "var(--primary)";
         this.updateVisualizerIntensity(this.currentRealPower);
       } else {
         this.stopMiningCounter();
-        const viz = document.getElementById('viz-status'); if (viz) { viz.innerText = this.t('noMachine'); viz.style.color = "#666"; }
-        safeSet('val-pending', "0.00000000");
+        document.getElementById('viz-status').innerText = this.t('noMachine');
+        document.getElementById('viz-status').style.color = "#666";
+        document.getElementById('val-pending').innerText = "0.00000000";
       }
-      
-      try { await this.renderShop(); } catch (e) { console.warn('⚠️ renderShop:', e.message); }
-      try { await this.fetchUserAssets(); } catch (e) { console.warn('⚠️ fetchUserAssets:', e.message); }
+
+      await this.renderShop();
+      await this.fetchUserAssets();
       this.renderActiveMachines();
       this.renderUserMachines();
       this.renderUserBatteries();
-      if (document.getElementById('swap-from-in')?.value) this.calcSwap();
-      
-      this._blockchainErrorCount = 0;
-    } catch (e) {
-      this._blockchainErrorCount++;
-      console.error("❌ updateData (#" + this._blockchainErrorCount + "):", e.message);
-      if (this._blockchainErrorCount === 1) {
-        this.showToast('⚠️ Erreur connexion blockchain. Nouvelle tentative dans 15s...', true);
-      }
-      if (this._blockchainErrorCount >= 3) {
-        this._rpcIndex = (this._rpcIndex + 1) % CONFIG.RPC_URLS.length;
-        const nextRpc = CONFIG.RPC_URLS[this._rpcIndex];
-        console.log('🔄 Basculement RPC →', nextRpc.substring(0,40)+'...');
-        this._readProvider = new ethers.JsonRpcProvider(nextRpc);
-        this.mine = new ethers.Contract(CONFIG.MINE, MINE_ABI, this._readProvider);
-        this.core = new ethers.Contract(CONFIG.CORE, CORE_ABI, this._readProvider);
-        this._blockchainErrorCount = 0;
-      }
-    }
+      if (document.getElementById('swap-from-in').value) this.calcSwap();
+    } catch (e) { console.error("Erreur updateData:", e); }
   }
 
   startMiningCounter() {
@@ -1058,7 +984,7 @@ class Application {
         const allowance = await usdtContract.allowance(this.user, CONFIG.CORE);
         if (allowance < amountBN) { this.setLoader(true, "Approbation USDT..."); await (await usdtContract.connect(this.signer).approve(CONFIG.CORE, amountBN)).wait(); }
         this.setLoader(true, this.t('confirming'));
-        tx = await this._coreWrite.depositUsdt(amountBN);
+        tx = await this.core.depositUsdt(amountBN);
       } else {
         const ftaContract = new ethers.Contract(CONFIG.FTA, ["function approve(address,uint256) returns (bool)", "function allowance(address,address) view returns (uint256)", "function balanceOf(address) view returns (uint256)"], this.provider);
         const amountBN = ethers.parseUnits(amount.toString(), this.ftaDecimals);
@@ -1067,7 +993,7 @@ class Application {
         const allowance = await ftaContract.allowance(this.user, CONFIG.CORE);
         if (allowance < amountBN) { this.setLoader(true, "Approbation FTA..."); await (await ftaContract.connect(this.signer).approve(CONFIG.CORE, amountBN)).wait(); }
         this.setLoader(true, this.t('confirming'));
-        tx = await this._coreWrite.depositFta(amountBN);
+        tx = await this.core.depositFta(amountBN);
       }
       await tx.wait();
       this.showToast(this.t('depositSuccess'));
@@ -1085,7 +1011,7 @@ class Application {
     if (!amount || amount <= 0) return this.showToast(this.t('invalidAmount'), true);
     this.setLoader(true, this.t('withdrawing'));
     try {
-      let tx = tokenType === 'USDT' ? await this._coreWrite.withdrawUsdt(ethers.parseUnits(amount.toString(), this.usdtDecimals)) : await this._coreWrite.withdrawFta(ethers.parseUnits(amount.toString(), this.ftaDecimals));
+      let tx = tokenType === 'USDT' ? await this.core.withdrawUsdt(ethers.parseUnits(amount.toString(), this.usdtDecimals)) : await this.core.withdrawFta(ethers.parseUnits(amount.toString(), this.ftaDecimals));
       await tx.wait();
       this.showToast(this.t('withdrawSuccess'));
       document.getElementById('deposit-amount').value = '';
@@ -1133,7 +1059,7 @@ class Application {
     if (mData.shopExpiry > 0 && Math.floor(Date.now() / 1000) > mData.shopExpiry) return this.showToast("Cette machine n'est plus disponible", true);
     this.setLoader(true, `${this.t('buyingMachine')} (${this.payMode})...`);
     try {
-      let tx = this.payMode === 'USDT' ? await this._mineWrite.buyMachine(typeId) : await this._mineWrite.buyMachineFTA(typeId);
+      let tx = this.payMode === 'USDT' ? await this.mine.buyMachine(typeId) : await this.mine.buyMachineFTA(typeId);
       await tx.wait();
       this.showToast(this.t('machineBought'));
       this.shopMachinesData = [];
@@ -1147,7 +1073,7 @@ class Application {
     if (!this.user) return this.showToast('Connectez votre wallet', true);
     this.setLoader(true, `${this.t('buyingBattery')} (${this.payMode})...`);
     try {
-      let tx = this.payMode === 'USDT' ? await this._mineWrite.buyBattery(typeId) : await this._mineWrite.buyBatteryFTA(typeId);
+      let tx = this.payMode === 'USDT' ? await this.mine.buyBattery(typeId) : await this.mine.buyBatteryFTA(typeId);
       await tx.wait();
       const bData = this.shopBatteriesData[typeId] || {};
       this.showToast(this.t('batteryBought'));
@@ -1166,7 +1092,7 @@ class Application {
     if (!this.batteryInventory[Number(batteryTypeId)] || this.batteryInventory[Number(batteryTypeId)] <= 0) return this.showToast(this.t('errNoBattery'), true);
     this.setLoader(true, this.t('pluggingIn'));
     try {
-      const tx = await this._mineWrite.plugInMachine(machineIndex, batteryTypeId);
+      const tx = await this.mine.plugInMachine(machineIndex, batteryTypeId);
       await tx.wait();
       this.showToast(this.t('pluggedIn'));
       await this.recordTransaction('plug', { txHash: tx.hash, details: { machineIndex, batteryTypeId }, status: 'confirmed' });
@@ -1180,7 +1106,7 @@ class Application {
     this.stopMiningCounter();
     this.setLoader(true, this.t('claiming'));
     try {
-      const tx = await this._mineWrite.claimRewards();
+      const tx = await this.mine.claimRewards();
       await tx.wait();
       const claimedAmount = this.pendingBalance / 1e8;
       this.pendingBalance = 0;
@@ -1206,7 +1132,7 @@ class Application {
     if (!this.user) return this.showToast('Connectez votre wallet', true);
     this.setLoader(true, this.t('linking'));
     try {
-      let tx = input.startsWith('0x') && input.length === 42 ? await this._coreWrite.setReferrer(input) : await this._coreWrite.setReferrerById(parseInt(input));
+      let tx = input.startsWith('0x') && input.length === 42 ? await this.core.setReferrer(input) : await this.core.setReferrerById(parseInt(input));
       await tx.wait();
       this.showToast(this.t('refLinked'));
       document.getElementById('ref-address-input').value = '';
@@ -1258,7 +1184,7 @@ class Application {
       const outDec = isUsdtTo ? this.ftaDecimals : this.usdtDecimals;
       const minOut = ethers.parseUnits((expectedOut * (1 - SLIPPAGE)).toFixed(outDec), outDec);
       const deadline = Math.floor(Date.now() / 1000) + 1200;
-      let tx = isUsdtTo ? await this._coreWrite.swapUForF(amount, minOut, deadline) : await this._coreWrite.swapFForU(amount, minOut, deadline);
+      let tx = isUsdtTo ? await this.core.swapUForF(amount, minOut, deadline) : await this.core.swapFForU(amount, minOut, deadline);
       await tx.wait();
       this.showToast(this.t('swapSuccess'));
       document.getElementById('swap-from-in').value = ''; document.getElementById('swap-to-in').value = '';
