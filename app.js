@@ -851,9 +851,10 @@ class Application {
       await this.mine.mCount();
       console.log('✅ Contrats blockchain accessibles');
     } catch (e) {
-      console.error('❌ Contrats inaccessibles:', e.message);
+      console.warn('⚠️ Contrats inaccessibles (RPC lent ou down):', e.message.substring(0,100));
       this._rpcIndex = (this._rpcIndex + 1) % CONFIG.RPC_URLS.length;
-      throw new Error('Impossible de contacter les contrats sur Polygon. Vérifiez votre connexion RPC.');
+      // Ne PAS bloquer — le wallet peut être lié même sans accès RPC
+      // Les données se chargeront quand le RPC répondra
     }
   }
 
