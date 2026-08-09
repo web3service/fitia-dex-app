@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  FITIA PRO MINER V4 — app.js
-//  - Authentification utilisateur via SQLite (backend API)
-//  - Historique des transactions intégré
+//  FITIA PRO MINER V4.2 — app.js
+//  - Authentification v2 : pseudo/email + mot de passe
+//  - Wallet Polygon lié séparément
+//  - Onglet Mon Compte (profil + historique)
 //  - Toute la logique blockchain V3 préservée
-//  - Chaque utilisateur lié à son adresse Polygon
 // ═══════════════════════════════════════════════════════════════════
 
 // ─── Configuration ─────────────────────────────────────────────────
@@ -16,22 +16,29 @@ const CONFIG = {
   WC_PROJECT_ID: "2c10ee910a836551fbabbf7c8cc4542a",
   WHATSAPP_GROUP: "https://chat.whatsapp.com/BDsvPCB6xp8H8X0YaRmPFP",
   WHATSAPP_CHANNEL: "https://whatsapp.com/channel/0029VbCQhI38PgsPLbBJdV1e",
-  API_BASE: "https://fitia-dex-app-production.up.railway.app"  // URL du backend Railway
+  API_BASE: "https://fitia-dex-app-production.up.railway.app"
 };
 
-// ─── Traductions i18n (5 langues) ──────────────────────────────────
+// ─── Traductions i18n (5 langues, étendues v2) ────────────────────
 const i18n = {
   en: {
-    // Auth
-    authConnectWallet: "Connect your Polygon wallet to access the app.",
-    authNewAccount: "New account detected. Create your profile.",
-    authExistingAccount: "Welcome back! Log in to continue.",
-    authRegister: "REGISTER",
-    authLogin: "LOG IN",
-    authDisconnect: "Disconnect",
-    authUsername: "Nickname (optional)",
-    logout: "↪",
-    // App
+    // Auth v2
+    authLogin: "SIGN IN", authRegister: "REGISTER",
+    authIdentifier: "Username or Email", authPassword: "Password",
+    authLoginBtn: "SIGN IN", authRegisterBtn: "CREATE ACCOUNT",
+    authEmail: "Email *", authConfirmPassword: "Confirm Password *",
+    authAcceptTerms: "I accept the <a>Terms of Use</a> and <a>Privacy Policy</a>",
+    authUsername: "Nickname *", authExistingAccount: "Welcome back!",
+    authNewAccount: "Create your account",
+    // Account
+    accountEdit: "Edit", accountEditProfile: "Edit Profile",
+    accountSave: "SAVE", accountChangePassword: "Change Password",
+    accountCurrentPassword: "Current Password", accountNewPassword: "New Password",
+    accountUpdatePassword: "UPDATE PASSWORD",
+    accountLogout: "Sign Out", accountLinkWallet: "Link / Change Wallet",
+    walletNotLinked: "Wallet not linked. Connect to use blockchain features.",
+    connectWalletBtn: "Connect Wallet",
+    // App (existing)
     connect: "Connect", refTitle: "👥 Referral System", refDesc: "Enter referrer address or ID to link.", bindRef: "BIND",
     power: "POWER", ftaSec: "Hashrate", pending: "PENDING", fta: "FTA", miningActive: "MINING ACTIVE", noMachine: "NO MACHINE", claim: "CLAIM",
     shopTitle: "⛏️ Shop", machines: "Machines", batteries: "Batteries", buy: "BUY",
@@ -68,22 +75,30 @@ const i18n = {
     errAlreadyPending: "Transaction pending. Please wait.", errNonce: "Nonce error. Restart the app.",
     errNoMachine: "No machine", errRunning: "Machine already running",
     errNoBattery: "No battery of this type", errMaxMachine: "Max machines reached",
-    // Historique
+    logout: "↪",
     txBuyMachine: "Buy Machine", txBuyBattery: "Buy Battery", txDeposit: "Deposit", txWithdraw: "Withdraw",
     txClaim: "Claim", txSwap: "Swap", txPlug: "Plug", txReferral: "Referral", txSend: "Send", txReceive: "Receive",
     prev: "← Previous", next: "Next →",
+    authDisconnect: "Disconnect",
   },
   fr: {
-    // Auth
-    authConnectWallet: "Connectez votre wallet Polygon pour accéder à l'application.",
-    authNewAccount: "Nouveau compte détecté. Créez votre profil.",
-    authExistingAccount: "Bon retour ! Connectez-vous pour continuer.",
-    authRegister: "S'INSCRIRE",
-    authLogin: "SE CONNECTER",
-    authDisconnect: "Déconnecter",
-    authUsername: "Pseudo (optionnel)",
-    logout: "↪",
-    // App
+    // Auth v2
+    authLogin: "CONNEXION", authRegister: "INSCRIPTION",
+    authIdentifier: "Pseudo ou Email", authPassword: "Mot de passe",
+    authLoginBtn: "SE CONNECTER", authRegisterBtn: "CRÉER MON COMPTE",
+    authEmail: "Email *", authConfirmPassword: "Confirmer le mot de passe *",
+    authAcceptTerms: "J'accepte les <a>Conditions d'utilisation</a> et la <a>Politique de confidentialité</a>",
+    authUsername: "Pseudo *", authExistingAccount: "Bon retour !",
+    authNewAccount: "Créez votre compte",
+    // Account
+    accountEdit: "Modifier", accountEditProfile: "Modifier le profil",
+    accountSave: "ENREGISTRER", accountChangePassword: "Changer le mot de passe",
+    accountCurrentPassword: "Mot de passe actuel", accountNewPassword: "Nouveau mot de passe",
+    accountUpdatePassword: "METTRE À JOUR",
+    accountLogout: "Déconnexion", accountLinkWallet: "Lier / Changer Wallet",
+    walletNotLinked: "Wallet non lié. Connectez pour utiliser les fonctionnalités blockchain.",
+    connectWalletBtn: "Connecter Wallet",
+    // App (existing)
     connect: "Connecter", refTitle: "👥 Parrainage", refDesc: "Entrez l'adresse ou l'ID du parrain.", bindRef: "LIER",
     power: "PUISSANCE", ftaSec: "Hashrate", pending: "EN ATTENTE", fta: "FTA", miningActive: "MINAGE ACTIF", noMachine: "AUCUNE MACHINE", claim: "RÉCLAMER",
     shopTitle: "⛏️ Boutique", machines: "Machines", batteries: "Batteries", buy: "ACHETER",
@@ -120,22 +135,26 @@ const i18n = {
     errAlreadyPending: "Transaction en cours. Patientez.", errNonce: "Erreur nonce. Redémarrez l'app.",
     errNoMachine: "Aucune machine", errRunning: "Machine déjà en marche",
     errNoBattery: "Pas de batterie de ce type", errMaxMachine: "Maximum de machines atteint",
-    // Historique
+    logout: "↪",
     txBuyMachine: "Achat Machine", txBuyBattery: "Achat Batterie", txDeposit: "Dépôt", txWithdraw: "Retrait",
     txClaim: "Claim", txSwap: "Swap", txPlug: "Branchement", txReferral: "Parrainage", txSend: "Envoi", txReceive: "Réception",
     prev: "← Précédent", next: "Suivant →",
+    authDisconnect: "Déconnecter",
   },
   de: {
-    // Auth
-    authConnectWallet: "Verbinde dein Polygon Wallet für den Zugriff.",
-    authNewAccount: "Neuer Account erkannt. Erstelle dein Profil.",
-    authExistingAccount: "Willkommen zurück! Melde dich an.",
-    authRegister: "REGISTRIEREN",
-    authLogin: "ANMELDEN",
-    authDisconnect: "Trennen",
-    authUsername: "Spitzname (optional)",
-    logout: "↪",
-    // App
+    authLogin: "ANMELDEN", authRegister: "REGISTRIEREN",
+    authIdentifier: "Benutzername oder Email", authPassword: "Passwort",
+    authLoginBtn: "ANMELDEN", authRegisterBtn: "KONTO ERSTELLEN",
+    authEmail: "Email *", authConfirmPassword: "Passwort bestätigen *",
+    authAcceptTerms: "Ich akzeptiere die <a>Nutzungsbedingungen</a> und <a>Datenschutzrichtlinie</a>",
+    authUsername: "Spitzname *",
+    accountEdit: "Bearbeiten", accountEditProfile: "Profil bearbeiten",
+    accountSave: "SPEICHERN", accountChangePassword: "Passwort ändern",
+    accountCurrentPassword: "Aktuelles Passwort", accountNewPassword: "Neues Passwort",
+    accountUpdatePassword: "PASSWORT AKTUALISIEREN",
+    accountLogout: "Abmelden", accountLinkWallet: "Wallet verknüpfen / ändern",
+    walletNotLinked: "Wallet nicht verknüpft. Verbinden für Blockchain-Funktionen.",
+    connectWalletBtn: "Wallet verbinden",
     connect: "Verbinden", refTitle: "👥 Empfehlung", refDesc: "Empfehler-Adresse oder ID eingeben.", bindRef: "BINDEN",
     power: "LEISTUNG", ftaSec: "Hashrate", pending: "AUSSTEHEND", fta: "FTA", miningActive: "MINING AKTIV", noMachine: "KEINE MASCHINE", claim: "EINFORDERN",
     shopTitle: "⛏️ Shop", machines: "Maschinen", batteries: "Batterien", buy: "KAUFEN",
@@ -166,27 +185,31 @@ const i18n = {
     slippageTolerance: "Slippage-Toleranz", networkFee: "Netzwerkgebühr",
     depositBtn: "EINZAHLEN", depositing: "Einzahlung...", depositSuccess: "Einzahlung erfolgreich!",
     errRejected: "Transaktion abgebrochen", errInsufficientFunds: "Unzureichendes Guthaben",
-    errNetwork: "Netzwerkfehler. Bitte versuchen Sie es erneut.", errTimeout: "Zeitüberschreitung.",
+    errNetwork: "Netzwerkfehler.", errTimeout: "Zeitüberschreitung.",
     errContract: "Transaktion fehlgeschlagen.", errGeneric: "Ein Fehler ist aufgetreten.",
     errAlreadyPending: "Transaktion ausstehend.", errNonce: "Nonce-Fehler. App neustarten.",
     errNoMachine: "Keine Maschine", errRunning: "Maschine läuft bereits",
     errNoBattery: "Keine Batterie dieses Typs", errMaxMachine: "Maximale Maschinen erreicht",
-    // Historique
+    logout: "↪",
     txBuyMachine: "Maschine kaufen", txBuyBattery: "Batterie kaufen", txDeposit: "Einzahlung", txWithdraw: "Auszahlung",
     txClaim: "Claim", txSwap: "Tausch", txPlug: "Anschluss", txReferral: "Empfehlung", txSend: "Senden", txReceive: "Empfang",
     prev: "← Zurück", next: "Weiter →",
+    authDisconnect: "Trennen",
   },
   zh: {
-    // Auth
-    authConnectWallet: "连接您的 Polygon 钱包以访问应用。",
-    authNewAccount: "检测到新账户。创建您的个人资料。",
-    authExistingAccount: "欢迎回来！请登录。",
-    authRegister: "注册",
-    authLogin: "登录",
-    authDisconnect: "断开连接",
-    authUsername: "昵称（可选）",
-    logout: "↪",
-    // App
+    authLogin: "登录", authRegister: "注册",
+    authIdentifier: "用户名或邮箱", authPassword: "密码",
+    authLoginBtn: "登录", authRegisterBtn: "创建账户",
+    authEmail: "邮箱 *", authConfirmPassword: "确认密码 *",
+    authAcceptTerms: "我接受<a>使用条款</a>和<a>隐私政策</a>",
+    authUsername: "昵称 *",
+    accountEdit: "编辑", accountEditProfile: "编辑资料",
+    accountSave: "保存", accountChangePassword: "修改密码",
+    accountCurrentPassword: "当前密码", accountNewPassword: "新密码",
+    accountUpdatePassword: "更新密码",
+    accountLogout: "退出登录", accountLinkWallet: "链接/更换钱包",
+    walletNotLinked: "钱包未链接。请连接以使用区块链功能。",
+    connectWalletBtn: "连接钱包",
     connect: "连接", refTitle: "👥 推荐系统", refDesc: "输入推荐人地址或ID进行绑定。", bindRef: "绑定",
     power: "算力", ftaSec: "Hashrate", pending: "待领取", fta: "FTA", miningActive: "挖矿中", noMachine: "无机器", claim: "领取",
     shopTitle: "⛏️ 商店", machines: "矿机", batteries: "电池", buy: "购买",
@@ -222,19 +245,26 @@ const i18n = {
     errAlreadyPending: "交易待处理。", errNonce: "Nonce错误，请重启应用。",
     errNoMachine: "没有矿机", errRunning: "矿机已在运行",
     errNoBattery: "没有此类型电池", errMaxMachine: "矿机数量已达上限",
-    // Historique
+    logout: "↪",
     txBuyMachine: "购买矿机", txBuyBattery: "购买电池", txDeposit: "存入", txWithdraw: "提取",
     txClaim: "领取", txSwap: "兑换", txPlug: "插入", txReferral: "推荐", txSend: "发送", txReceive: "接收",
     prev: "← 上一页", next: "下一页 →",
+    authDisconnect: "断开连接",
   },
   sg: {
-    // Auth
-    authConnectWallet: "Connect your Polygon wallet to access the app.",
-    authNewAccount: "New account detected. Create your profile.",
-    authExistingAccount: "Welcome back! Log in to continue.",
-    authRegister: "REGISTER", authLogin: "LOG IN", authDisconnect: "Disconnect",
-    authUsername: "Nickname (optional)", logout: "↪",
-    // App
+    authLogin: "SIGN IN", authRegister: "REGISTER",
+    authIdentifier: "Username or Email", authPassword: "Password",
+    authLoginBtn: "SIGN IN", authRegisterBtn: "CREATE ACCOUNT",
+    authEmail: "Email *", authConfirmPassword: "Confirm Password *",
+    authAcceptTerms: "I accept the <a>Terms of Use</a> and <a>Privacy Policy</a>",
+    authUsername: "Nickname *",
+    accountEdit: "Edit", accountEditProfile: "Edit Profile",
+    accountSave: "SAVE", accountChangePassword: "Change Password",
+    accountCurrentPassword: "Current Password", accountNewPassword: "New Password",
+    accountUpdatePassword: "UPDATE PASSWORD",
+    accountLogout: "Sign Out", accountLinkWallet: "Link / Change Wallet",
+    walletNotLinked: "Wallet not linked. Connect to use blockchain features.",
+    connectWalletBtn: "Connect Wallet",
     connect: "Connect", refTitle: "👥 Referral System", refDesc: "Enter referrer address or ID to link.", bindRef: "BIND",
     power: "POWER", ftaSec: "Hashrate", pending: "PENDING", fta: "FTA", miningActive: "MINING ACTIVE", noMachine: "NO MACHINE", claim: "CLAIM",
     shopTitle: "⛏️ Shop", machines: "Machines", batteries: "Batteries", buy: "BUY",
@@ -270,51 +300,35 @@ const i18n = {
     errAlreadyPending: "Transaction pending.", errNonce: "Nonce error. Restart app.",
     errNoMachine: "No machine", errRunning: "Machine already running",
     errNoBattery: "No battery of this type", errMaxMachine: "Max machines reached",
-    // Historique
+    logout: "↪",
     txBuyMachine: "Buy Machine", txBuyBattery: "Buy Battery", txDeposit: "Deposit", txWithdraw: "Withdraw",
     txClaim: "Claim", txSwap: "Swap", txPlug: "Plug", txReferral: "Referral", txSend: "Send", txReceive: "Receive",
     prev: "← Previous", next: "Next →",
+    authDisconnect: "Disconnect",
   }
 };
 
 // ─── ABIs des contrats V3 ──────────────────────────────────────────
-
 const CORE_ABI = [
-  "function usdt() view returns (address)",
-  "function fta() view returns (address)",
+  "function usdt() view returns (address)", "function fta() view returns (address)",
   "function myInfo() view returns (uint256, uint256, uint256, uint256)",
-  "function depositUsdt(uint256 a)",
-  "function depositFta(uint256 a)",
-  "function depositPol() payable",
-  "function withdrawUsdt(uint256 a)",
-  "function withdrawFta(uint256 a)",
-  "function withdrawPol(uint256 a)",
-  "function setReferrer(address r)",
-  "function setReferrerById(uint256 rid)",
-  "function rate() view returns (uint256)",
-  "function swapUForF(uint256 a, uint256 m, uint256 d)",
+  "function depositUsdt(uint256 a)", "function depositFta(uint256 a)", "function depositPol() payable",
+  "function withdrawUsdt(uint256 a)", "function withdrawFta(uint256 a)", "function withdrawPol(uint256 a)",
+  "function setReferrer(address r)", "function setReferrerById(uint256 rid)",
+  "function rate() view returns (uint256)", "function swapUForF(uint256 a, uint256 m, uint256 d)",
   "function swapFForU(uint256 a, uint256 m, uint256 d)",
-  "function buyFta(uint256 a) view returns (uint256)",
-  "function sellFta(uint256 a) view returns (uint256)",
-  "function costFta(uint256 a) view returns (uint256)",
-  "function swapFee() view returns (uint256)",
-  "function difficulty() view returns (uint256)",
-  "function uid(address) view returns (uint256)",
-  "function aToId(uint256) view returns (address)",
-  "function uBal(address) view returns (uint256)",
-  "function fBal(address) view returns (uint256)",
-  "function pol(address) view returns (uint256)"
+  "function buyFta(uint256 a) view returns (uint256)", "function sellFta(uint256 a) view returns (uint256)",
+  "function costFta(uint256 a) view returns (uint256)", "function swapFee() view returns (uint256)",
+  "function difficulty() view returns (uint256)", "function uid(address) view returns (uint256)",
+  "function aToId(uint256) view returns (address)", "function uBal(address) view returns (uint256)",
+  "function fBal(address) view returns (uint256)", "function pol(address) view returns (uint256)"
 ];
 
 const MINE_ABI = [
-  "function buyMachine(uint256 t)",
-  "function buyMachineFTA(uint256 t)",
-  "function buyBattery(uint256 t)",
-  "function buyBatteryFTA(uint256 t)",
-  "function plugInMachine(uint256 mi, uint256 bi)",
-  "function claimRewards()",
-  "function powerOf(address u) view returns (uint256)",
-  "function mCount() view returns (uint256)",
+  "function buyMachine(uint256 t)", "function buyMachineFTA(uint256 t)",
+  "function buyBattery(uint256 t)", "function buyBatteryFTA(uint256 t)",
+  "function plugInMachine(uint256 mi, uint256 bi)", "function claimRewards()",
+  "function powerOf(address u) view returns (uint256)", "function mCount() view returns (uint256)",
   "function bCount() view returns (uint256)",
   "function getMType(uint256) view returns (uint256 price, uint256 power, uint256 shopExpiry)",
   "function getBType(uint256) view returns (uint256 price, uint256 dur)",
@@ -326,25 +340,24 @@ const MINE_ABI = [
 // ─── Constantes ────────────────────────────────────────────────────
 const SWAP_FEE_RATE = 0.04;
 const SLIPPAGE = 0.005;
-const ONE_18 = 10n ** 18n;
 
 // ═══════════════════════════════════════════════════════════════════
-//  CLASSE PRINCIPALE : Application V4
+//  CLASSE PRINCIPALE : Application V4.2
 // ═══════════════════════════════════════════════════════════════════
 class Application {
   constructor() {
     // ─── Fournisseur blockchain ───
     this.provider = null;
     this.signer = null;
-    this.user = null;
+    this.user = null; // Adresse Polygon
 
     // ─── Contrats ───
     this.core = null;
     this.mine = null;
 
-    // ─── Authentification ───
-    this.isAuthenticated = false;
-    this.dbUserId = null;
+    // ─── Authentification v2 ───
+    this.authToken = null;
+    this.profile = null; // { id, username, email, address }
 
     // ─── Mode de paiement ───
     this.payMode = 'USDT';
@@ -368,7 +381,7 @@ class Application {
     this.batteryTypeDurations = {};
     this.miningTimer = null;
     this.lastClaimTimestamp = 0;
-    this.storageKey = "fitia_v3_last_claim";
+    this.storageKey = "fitia_v4_last_claim";
     this.vizContext = null;
     this.vizBars = [];
 
@@ -424,11 +437,14 @@ class Application {
     return fallback[typeId] || 30;
   }
 
-  // ═══ API Backend (SQLite) ════════════════════════════════════════
+  // ═══ API Backend v2 (avec token auth) ═══════════════════════════
 
   /** Appel générique à l'API backend */
   async apiCall(endpoint, method = 'GET', body = null) {
     const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (this.authToken) {
+      opts.headers['Authorization'] = `Bearer ${this.authToken}`;
+    }
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(`${CONFIG.API_BASE}${endpoint}`, opts);
     const data = await res.json();
@@ -436,124 +452,205 @@ class Application {
     return data;
   }
 
-  /** Enregistrer une transaction dans l'historique */
-  async recordTransaction(txType, options = {}) {
-    if (!this.user || !this.isAuthenticated) return;
+  // ═══ AUTHENTIFICATION v2 ════════════════════════════════════════
+
+  /** Bascule entre les onglets connexion/inscription */
+  switchAuthTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+    
+    if (tab === 'login') {
+      document.querySelector('.auth-tab:first-child').classList.add('active');
+      document.getElementById('auth-form-login').classList.add('active');
+    } else {
+      document.querySelector('.auth-tab:last-child').classList.add('active');
+      document.getElementById('auth-form-register').classList.add('active');
+    }
+  }
+
+  /** Inscription */
+  async register() {
+    const username = document.getElementById('reg-username').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const passwordConfirm = document.getElementById('reg-password-confirm').value;
+    const acceptTerms = document.getElementById('reg-accept-terms').checked;
+
+    // ─── Validation ────────────────────────────────────────────────
+    if (!username || username.length < 3) return this.showToast('Pseudo : 3 caractères minimum', true);
+    if (!email) return this.showToast('Email requis', true);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return this.showToast('Format d\'email invalide', true);
+    if (!password || password.length < 6) return this.showToast('Mot de passe : 6 caractères minimum', true);
+    if (password !== passwordConfirm) return this.showToast('Les mots de passe ne correspondent pas', true);
+    if (!acceptTerms) return this.showToast('Vous devez accepter les conditions d\'utilisation', true);
+
+    this.setLoader(true, 'Inscription en cours...');
     try {
-      await this.apiCall('/api/transactions', 'POST', {
-        user_address: this.user,
-        tx_hash: options.txHash || null,
-        tx_type: txType,
-        token: options.token || null,
-        amount: options.amount || null,
-        amount_fee: options.amountFee || 0,
-        details: options.details || null,
-        status: 'pending'
+      const data = await this.apiCall('/api/auth/register', 'POST', {
+        username, email, password, accept_terms: true
       });
+
+      this.authToken = data.token;
+      this.profile = data.user;
+      localStorage.setItem('fitia_auth_token', data.token);
+      localStorage.setItem('fitia_profile', JSON.stringify(data.user));
+
+      this.showToast('✅ Compte créé avec succès !');
+      await this.enterApp();
     } catch (e) {
-      console.error("Erreur enregistrement transaction:", e);
+      this.showToast(e.message, true);
+      this.setLoader(false);
     }
   }
 
-  /** Mettre à jour le statut d'une transaction */
-  async updateTransactionStatus(txId, status, txHash = null) {
+  /** Connexion */
+  async login() {
+    const identifier = document.getElementById('login-identifier').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    if (!identifier) return this.showToast('Pseudo ou email requis', true);
+    if (!password) return this.showToast('Mot de passe requis', true);
+
+    this.setLoader(true, 'Connexion...');
     try {
-      await this.apiCall(`/api/transactions/${txId}`, 'PATCH', { status, tx_hash: txHash });
-    } catch (e) { console.error("Erreur update transaction:", e); }
-  }
+      const data = await this.apiCall('/api/auth/login', 'POST', { identifier, password });
 
-  /** Charger l'historique */
-  async loadHistory() {
-    if (!this.user) return;
-    const container = document.getElementById('history-list');
-    container.innerHTML = `<p class="small-text" style="text-align:center;padding:20px;">${this.t('historyLoading')}</p>`;
+      this.authToken = data.token;
+      this.profile = data.user;
+      localStorage.setItem('fitia_auth_token', data.token);
+      localStorage.setItem('fitia_profile', JSON.stringify(data.user));
 
-    try {
-      let url = `/api/transactions/${this.user}?limit=${this.historyLimit}&offset=${this.historyPage * this.historyLimit}`;
-      if (this.historyFilter) url += `&type=${this.historyFilter}`;
-
-      const data = await this.apiCall(url);
-      this.historyTotal = data.total;
-      this.renderHistory(data.transactions);
+      this.showToast('✅ Connecté !');
+      await this.enterApp();
     } catch (e) {
-      container.innerHTML = '<p class="small-text" style="text-align:center;padding:20px;">Erreur chargement historique</p>';
+      this.showToast(e.message, true);
+      this.setLoader(false);
     }
   }
 
-  /** Afficher l'historique */
-  renderHistory(transactions) {
-    const container = document.getElementById('history-list');
-    if (!transactions || transactions.length === 0) {
-      container.innerHTML = `<p class="small-text" style="text-align:center;padding:20px;">Aucune transaction</p>`;
+  /** Déconnexion complète */
+  logout() {
+    this.stopMiningCounter();
+    this.authToken = null;
+    this.profile = null;
+    this.user = null;
+    this.signer = null;
+    this.provider = null;
+    localStorage.removeItem('fitia_auth_token');
+    localStorage.removeItem('fitia_profile');
+    localStorage.removeItem(this.storageKey);
+    localStorage.removeItem('fitia_connected_address');
+
+    document.getElementById('app-screen').classList.add('hidden');
+    document.getElementById('auth-screen').classList.remove('hidden');
+    document.getElementById('auth-form-login').classList.add('active');
+    document.getElementById('auth-form-register').classList.remove('active');
+    document.querySelector('.auth-tab:first-child').classList.add('active');
+    document.querySelector('.auth-tab:last-child').classList.remove('active');
+
+    // Réinitialiser les champs
+    document.getElementById('login-identifier').value = '';
+    document.getElementById('login-password').value = '';
+    document.getElementById('reg-username').value = '';
+    document.getElementById('reg-email').value = '';
+    document.getElementById('reg-password').value = '';
+    document.getElementById('reg-password-confirm').value = '';
+    document.getElementById('reg-accept-terms').checked = false;
+
+    this.showToast("Déconnecté");
+  }
+
+  /** Entrée dans l'application principale */
+  async enterApp() {
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('app-screen').classList.remove('hidden');
+
+    // Afficher le pseudo dans le header
+    document.getElementById('addr-display').innerText = this.profile.username;
+    document.getElementById('account-username').innerText = this.profile.username;
+    document.getElementById('account-email').innerText = this.profile.email;
+    document.getElementById('account-uid').innerText = 'ID: ' + (this.profile.id || '—');
+    document.getElementById('account-avatar').innerText = this.profile.username.charAt(0).toUpperCase();
+    
+    // Mettre à jour l'UI wallet
+    this.updateWalletUI();
+
+    // Si un wallet est déjà lié, initialiser les contrats
+    if (this.profile.address) {
+      await this.connectWalletSilent();
+    }
+
+    // Initialiser le visualiseur
+    this.initVisualizer();
+    window.addEventListener('resize', () => this.resizeCanvas());
+    
+    // Rafraîchir les données
+    if (this.profile.address) {
+      await this.cacheBatteryDurations();
+      setInterval(() => this.updateData(), 15000);
+      await this.fetchMarketPrices();
+      await this.updateData();
+    }
+
+    this.setLoader(false);
+  }
+
+  /** Mettre à jour l'affichage wallet (lié ou non) */
+  updateWalletUI() {
+    const banner = document.getElementById('wallet-connect-banner');
+    const actions = document.getElementById('wallet-actions-section');
+    const walletAddr = document.getElementById('account-wallet-addr');
+    const headerAddr = document.getElementById('addr-display');
+
+    if (this.profile.address && this.user) {
+      // Wallet lié et connecté
+      if (banner) banner.classList.add('hidden');
+      if (actions) actions.style.display = 'flex';
+      if (walletAddr) {
+        walletAddr.innerText = this.profile.address.slice(0, 6) + '...' + this.profile.address.slice(-4);
+        walletAddr.style.color = 'var(--success)';
+      }
+      if (headerAddr) {
+        headerAddr.innerText = this.profile.username + ' | ' + this.profile.address.slice(0, 6) + '...' + this.profile.address.slice(-4);
+      }
+      document.getElementById('account-address').innerText = 'Wallet: ' + this.profile.address.slice(0, 6) + '...' + this.profile.address.slice(-4);
     } else {
-      const typeIcons = {
-        buy_machine: '⛏️', buy_battery: '🔋', deposit: '📥', withdraw: '📤',
-        claim: '🎁', swap: '💱', plug: '🔌', referral: '👥', send: '📤', receive: '📥'
-      };
-      const typeLabels = {
-        buy_machine: 'txBuyMachine', buy_battery: 'txBuyBattery', deposit: 'txDeposit',
-        withdraw: 'txWithdraw', claim: 'txClaim', swap: 'txSwap', plug: 'txPlug',
-        referral: 'txReferral', send: 'txSend', receive: 'txReceive'
-      };
-      const positiveTypes = ['deposit', 'claim', 'receive'];
-
-      container.innerHTML = transactions.map(tx => {
-        const dt = new Date(tx.created_at + 'Z');
-        const dateStr = dt.toLocaleDateString('fr') + ' ' + dt.toLocaleTimeString('fr', { hour: '2-digit', minute: '2-digit' });
-        const isPositive = positiveTypes.includes(tx.tx_type);
-        const amtClass = isPositive ? 'positive' : 'negative';
-        const amtPrefix = isPositive ? '+' : (tx.amount ? '-' : '');
-        let amountStr = '';
-        if (tx.amount !== null) {
-          amountStr = `${amtPrefix}${tx.amount.toFixed(tx.token === 'USDT' ? 2 : tx.token === 'FTA' ? 4 : 4)} ${tx.token || ''}`;
-        }
-
-        return `<div class="history-item">
-          <div class="history-item-left">
-            <div class="history-icon">${typeIcons[tx.tx_type] || '📋'}</div>
-            <div class="history-details">
-              <div class="history-detail-type">${this.t(typeLabels[tx.tx_type] || '') || tx.tx_type}</div>
-              <div class="history-detail-date">${dateStr}</div>
-              <span class="status-pill ${tx.status}">● ${tx.status}</span>
-            </div>
-          </div>
-          <div class="history-item-right">
-            <div class="history-amount ${amtClass}">${amountStr}</div>
-          </div>
-        </div>`;
-      }).join('');
-    }
-
-    // Pagination
-    const pag = document.getElementById('history-pagination');
-    const totalPages = Math.ceil(this.historyTotal / this.historyLimit);
-    if (totalPages > 1) {
-      pag.classList.remove('hidden');
-      pag.innerHTML = `
-        <button class="btn-page" onclick="App.goHistoryPage(${this.historyPage - 1})" ${this.historyPage === 0 ? 'disabled' : ''}>${this.t('prev')}</button>
-        <span style="align-self:center;font-size:0.8rem;color:var(--text-muted);">${this.historyPage + 1} / ${totalPages}</span>
-        <button class="btn-page" onclick="App.goHistoryPage(${this.historyPage + 1})" ${this.historyPage >= totalPages - 1 ? 'disabled' : ''}>${this.t('next')}</button>`;
-    } else {
-      pag.classList.add('hidden');
+      // Wallet non lié
+      if (banner) banner.classList.remove('hidden');
+      if (actions) actions.style.display = 'none';
+      if (walletAddr) {
+        walletAddr.innerText = 'Aucun wallet lié';
+        walletAddr.style.color = 'var(--text-muted)';
+      }
+      if (headerAddr) {
+        headerAddr.innerText = this.profile ? this.profile.username : '0x...';
+      }
+      document.getElementById('account-address').innerText = 'Wallet: Non lié';
     }
   }
 
-  goHistoryPage(page) {
-    if (page < 0 || page >= Math.ceil(this.historyTotal / this.historyLimit)) return;
-    this.historyPage = page;
-    this.loadHistory();
+  /** Connexion silencieuse du wallet (déjà lié au compte) */
+  async connectWalletSilent() {
+    if (!window.ethereum) return;
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      if (accounts.length > 0 && accounts[0].toLowerCase() === this.profile.address.toLowerCase()) {
+        this.provider = new ethers.BrowserProvider(window.ethereum);
+        this.signer = await this.provider.getSigner();
+        this.user = accounts[0];
+        const network = await this.provider.getNetwork();
+        if (Number(network.chainId) !== CONFIG.CHAIN_ID) await this.switchNetwork();
+        await this.initContracts();
+        window.ethereum.on('accountsChanged', () => this.handleWalletDisconnect());
+        window.ethereum.on('chainChanged', () => this.handleWalletDisconnect());
+        this.updateWalletUI();
+      }
+    } catch (e) { /* silencieux */ }
   }
 
-  filterHistory() {
-    this.historyFilter = document.getElementById('history-filter-type').value;
-    this.historyPage = 0;
-    this.loadHistory();
-  }
-
-  // ═══ AUTHENTIFICATION ════════════════════════════════════════════
-
-  /** Étape 1 : Connexion du wallet */
-  async connectWallet() {
+  /** Connexion wallet depuis la page compte */
+  async connectWalletForAccount() {
     if (!window.ethereum) return this.showToast("Installez MetaMask !", true);
     this.setLoader(true, this.t('connWallet'));
     try {
@@ -563,127 +660,111 @@ class Application {
       this.user = await this.signer.getAddress();
       const network = await this.provider.getNetwork();
       if (Number(network.chainId) !== CONFIG.CHAIN_ID) await this.switchNetwork();
-      window.ethereum.on('accountsChanged', () => this.disconnectWallet());
-      window.ethereum.on('chainChanged', () => this.disconnectWallet());
-      // Affiche l'écran d'inscription/connexion
-      this.showRegisterStep();
-    } catch (e) { this.showError(e); }
-    this.setLoader(false);
-  }
 
-  async connectWalletConnect() {
-    if (typeof EthereumProvider === 'undefined' || !CONFIG.WC_PROJECT_ID || CONFIG.WC_PROJECT_ID.includes("...")) {
-      return this.showToast("WalletConnect non configuré", true);
-    }
-    this.setLoader(true, this.t('connWallet'));
-    try {
-      const wc = await EthereumProvider.init({
-        projectId: CONFIG.WC_PROJECT_ID, chains: [CONFIG.CHAIN_ID], showQrModal: true,
-        methods: ['eth_sendTransaction', 'personal_sign'],
-        metadata: { name: 'FITIA PRO MINER', description: 'Mining DApp', url: window.location.origin, icons: [] }
-      });
-      await wc.enable();
-      this.provider = new ethers.BrowserProvider(wc);
-      this.signer = await this.provider.getSigner();
-      this.user = await this.signer.getAddress();
-      wc.on("disconnect", () => this.disconnectWallet());
-      this.showRegisterStep();
-    } catch (e) { this.showError(e); }
-    this.setLoader(false);
-  }
+      // Lier l'adresse au compte
+      await this.apiCall('/api/profile/address', 'PUT', { address: this.user });
+      
+      // Mettre à jour le profil local
+      this.profile.address = this.user;
+      localStorage.setItem('fitia_profile', JSON.stringify(this.profile));
 
-  /** Affiche l'étape d'inscription/connexion après connexion wallet */
-  showRegisterStep() {
-    document.getElementById('auth-step-connect').classList.remove('active');
-    document.getElementById('auth-step-register').classList.add('active');
-    document.getElementById('auth-connected-addr').innerText = this.user.slice(0, 8) + '...' + this.user.slice(-8);
+      window.ethereum.on('accountsChanged', () => this.handleWalletDisconnect());
+      window.ethereum.on('chainChanged', () => this.handleWalletDisconnect());
 
-    // Vérifier si l'utilisateur existe déjà
-    this.checkExistingUser();
-  }
-
-  /** Vérifier si l'utilisateur a déjà un compte */
-  async checkExistingUser() {
-    try {
-      const data = await this.apiCall(`/api/auth/me/${this.user}`);
-      if (data.user) {
-        document.getElementById('auth-register-msg').innerText = this.t('authExistingAccount');
-        document.getElementById('auth-username').style.display = 'none';
-        document.querySelector('.btn-register').style.display = 'none';
+      await this.initContracts();
+      await this.cacheBatteryDurations();
+      if (!document.querySelector('.view.active') || document.querySelector('.view.active').id === 'view-account') {
+        // On recharge un intervalle si pas déjà actif
       }
-    } catch (e) {
-      // Utilisateur non trouvé → nouveau compte
-      document.getElementById('auth-register-msg').innerText = this.t('authNewAccount');
-      document.getElementById('auth-username').style.display = 'block';
-      document.querySelector('.btn-register').style.display = 'flex';
-    }
+      if (!this._updateInterval) {
+        this._updateInterval = setInterval(() => this.updateData(), 15000);
+      }
+      await this.fetchMarketPrices();
+      await this.updateData();
+      this.updateWalletUI();
+
+      // Afficher l'adresse dans le header
+      document.getElementById('addr-display').innerText = this.profile.username + ' | ' + this.user.slice(0, 6) + '...' + this.user.slice(-4);
+      document.getElementById('account-address').innerText = 'Wallet: ' + this.user.slice(0, 6) + '...' + this.user.slice(-4);
+
+      this.showToast('✅ Wallet lié avec succès !');
+    } catch (e) { this.showError(e); }
+    this.setLoader(false);
   }
 
-  /** Inscription */
-  async registerUser() {
-    const username = document.getElementById('auth-username').value.trim() || null;
-    this.setLoader(true, "Inscription...");
-    try {
-      const data = await this.apiCall('/api/auth/register', 'POST', { address: this.user, username });
-      this.dbUserId = data.user.id;
-      await this.enterApp();
-    } catch (e) {
-      this.showToast(e.message, true);
-      this.setLoader(false);
-    }
-  }
-
-  /** Connexion d'un utilisateur existant */
-  async loginUser() {
-    this.setLoader(true, "Connexion...");
-    try {
-      const data = await this.apiCall('/api/auth/login', 'POST', { address: this.user });
-      this.dbUserId = data.user.id;
-      await this.enterApp();
-    } catch (e) {
-      this.showToast(e.message, true);
-      this.setLoader(false);
-    }
-  }
-
-  /** Déconnexion du wallet (retour à l'écran d'accueil) */
-  disconnectWallet() {
+  handleWalletDisconnect() {
+    // Déconnecte le wallet mais garde la session auth
     this.user = null;
     this.signer = null;
     this.provider = null;
-    this.isAuthenticated = false;
-    document.getElementById('auth-step-register').classList.remove('active');
-    document.getElementById('auth-step-connect').classList.add('active');
-    document.getElementById('auth-username').style.display = 'block';
-    document.querySelector('.btn-register').style.display = 'flex';
-    document.getElementById('app-screen').classList.add('hidden');
-    document.getElementById('auth-screen').classList.remove('hidden');
-  }
-
-  /** Déconnexion complète (logout) */
-  logout() {
     this.stopMiningCounter();
-    this.user = null;
-    this.signer = null;
-    this.provider = null;
-    this.isAuthenticated = false;
-    localStorage.removeItem(this.storageKey);
-    document.getElementById('app-screen').classList.add('hidden');
-    document.getElementById('auth-screen').classList.remove('hidden');
-    document.getElementById('auth-step-register').classList.remove('active');
-    document.getElementById('auth-step-connect').classList.add('active');
-    document.getElementById('auth-username').style.display = 'block';
-    document.querySelector('.btn-register').style.display = 'flex';
-    this.showToast("Déconnecté");
+    this.profile.address = null;
+    localStorage.setItem('fitia_profile', JSON.stringify(this.profile));
+    this.updateWalletUI();
+    document.getElementById('addr-display').innerText = this.profile.username;
+    this.showToast("Wallet déconnecté. Reconnectez pour les transactions.");
   }
 
-  /** Entrée dans l'application principale */
-  async enterApp() {
-    this.isAuthenticated = true;
-    document.getElementById('auth-screen').classList.add('hidden');
-    document.getElementById('app-screen').classList.remove('hidden');
-    await this.initContracts();
-    document.getElementById('addr-display').innerText = this.user.slice(0, 6) + "..." + this.user.slice(-4);
+  // ═══ PROFIL (Mon Compte) ════════════════════════════════════════
+
+  /** Affiche/masque le formulaire d'édition */
+  toggleEditProfile() {
+    const form = document.getElementById('account-edit-form');
+    form.classList.toggle('hidden');
+    if (!form.classList.contains('hidden')) {
+      document.getElementById('edit-username').value = this.profile.username;
+      document.getElementById('edit-email').value = this.profile.email;
+      document.getElementById('edit-current-password').value = '';
+      document.getElementById('edit-new-password').value = '';
+    }
+  }
+
+  /** Sauvegarde les modifications du profil */
+  async saveProfile() {
+    const username = document.getElementById('edit-username').value.trim();
+    const email = document.getElementById('edit-email').value.trim();
+
+    if (!username || username.length < 3) return this.showToast('Pseudo : 3 caractères minimum', true);
+    if (!email) return this.showToast('Email requis', true);
+
+    this.setLoader(true, 'Mise à jour...');
+    try {
+      const data = await this.apiCall('/api/profile', 'PUT', { username, email });
+      this.profile = data.user;
+      localStorage.setItem('fitia_profile', JSON.stringify(data.user));
+
+      // Mettre à jour l'affichage
+      document.getElementById('account-username').innerText = data.user.username;
+      document.getElementById('account-email').innerText = data.user.email;
+      document.getElementById('account-uid').innerText = 'ID: ' + (data.user.id || '—');
+      document.getElementById('account-avatar').innerText = data.user.username.charAt(0).toUpperCase();
+      if (this.profile.address) {
+        document.getElementById('addr-display').innerText = data.user.username + ' | ' + this.profile.address.slice(0, 6) + '...' + this.profile.address.slice(-4);
+      } else {
+        document.getElementById('addr-display').innerText = data.user.username;
+      }
+
+      document.getElementById('account-edit-form').classList.add('hidden');
+      this.showToast('✅ Profil mis à jour !');
+    } catch (e) { this.showToast(e.message, true); }
+    this.setLoader(false);
+  }
+
+  /** Change le mot de passe */
+  async changePassword() {
+    const currentPassword = document.getElementById('edit-current-password').value;
+    const newPassword = document.getElementById('edit-new-password').value;
+
+    if (!currentPassword) return this.showToast('Mot de passe actuel requis', true);
+    if (!newPassword || newPassword.length < 6) return this.showToast('Nouveau mot de passe : 6 caractères minimum', true);
+
+    this.setLoader(true, 'Changement du mot de passe...');
+    try {
+      await this.apiCall('/api/profile/password', 'PUT', { currentPassword, newPassword });
+      document.getElementById('edit-current-password').value = '';
+      document.getElementById('edit-new-password').value = '';
+      this.showToast('✅ Mot de passe mis à jour !');
+    } catch (e) { this.showToast(e.message, true); }
     this.setLoader(false);
   }
 
@@ -696,11 +777,7 @@ class Application {
       if (e.code === 4902) {
         await window.ethereum.request({
           method: 'wallet_addEthereumChain',
-          params: [{
-            chainId: '0x89', chainName: 'Polygon',
-            nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
-            rpcUrls: ['https://polygon-rpc.com/'], blockExplorerUrls: ['https://polygonscan.com/']
-          }]
+          params: [{ chainId: '0x89', chainName: 'Polygon', nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 }, rpcUrls: ['https://polygon-rpc.com/'], blockExplorerUrls: ['https://polygonscan.com/'] }]
         });
       }
     }
@@ -714,12 +791,6 @@ class Application {
       this.ftaDecimals = Number(await ftaContract.decimals());
     } catch (e) { /* garde 8 */ }
     if (!localStorage.getItem(this.storageKey)) localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
-    await this.fetchMarketPrices();
-    await this.cacheBatteryDurations();
-    await this.updateData();
-    setInterval(() => this.updateData(), 15000);
-    this.initVisualizer();
-    window.addEventListener('resize', () => this.resizeCanvas());
   }
 
   async cacheBatteryDurations() {
@@ -737,14 +808,9 @@ class Application {
     this.batteryInventory = {};
     try {
       const machinesRaw = await this.mine.myMachines(this.user);
-      for (const m of machinesRaw) {
-        this.userMachines.push({ tid: Number(m.tid ?? m[0]), exp: Number(m.exp ?? m[1]) });
-      }
+      for (const m of machinesRaw) { this.userMachines.push({ tid: Number(m.tid ?? m[0]), exp: Number(m.exp ?? m[1]) }); }
     } catch (e) {
-      try {
-        const info = await this.mine.myInfo(this.user);
-        for (let i = 0; i < Number(info.mc ?? info[0]); i++) this.userMachines.push({ tid: 0, exp: 0 });
-      } catch (e2) {}
+      try { const info = await this.mine.myInfo(this.user); for (let i = 0; i < Number(info.mc ?? info[0]); i++) this.userMachines.push({ tid: 0, exp: 0 }); } catch (e2) {}
     }
     try {
       const bCount = Number(await this.mine.bCount());
@@ -759,36 +825,18 @@ class Application {
     if (!container) return;
     const now = Math.floor(Date.now() / 1000);
     const active = this.userMachines.filter(m => m.exp > now);
-    if (!active.length) {
-      container.innerHTML = `<p class="small-text" style="text-align:center;">${this.t('noActiveMachines')}</p>`;
-      return;
-    }
+    if (!active.length) { container.innerHTML = `<p class="small-text" style="text-align:center;">${this.t('noActiveMachines')}</p>`; return; }
     const tierNames = ['MK-I', 'MK-II', 'MK-III', 'MK-IV', 'MK-V', 'MK-VI', 'MK-VII', 'MK-VIII'];
     container.innerHTML = active.map(m => {
       const rem = m.exp - now;
-      return `<div class="asset-row">${this.getMachineMiniSVG(m.tid)}
-        <div class="asset-info">
-          <div class="asset-name">${tierNames[m.tid % 8]} <span class="status-pill active">● ${this.t('active')}</span></div>
-          <div class="asset-detail">${this.t('batteryLabel')}</div>
-          <div class="battery-bar-wrap">
-            <div class="battery-bar-header">
-              <span class="battery-bar-label">${this.t('timeRemaining')}</span>
-              <span class="battery-bar-time green">${this.formatTimeRemaining(rem)}</span>
-            </div>
-            <div class="battery-bar"><div class="battery-bar-fill green" style="width:50%"></div></div>
-          </div>
-        </div>
-      </div>`;
+      return `<div class="asset-row">${this.getMachineMiniSVG(m.tid)}<div class="asset-info"><div class="asset-name">${tierNames[m.tid % 8]} <span class="status-pill active">● ${this.t('active')}</span></div><div class="asset-detail">${this.t('batteryLabel')}</div><div class="battery-bar-wrap"><div class="battery-bar-header"><span class="battery-bar-label">${this.t('timeRemaining')}</span><span class="battery-bar-time green">${this.formatTimeRemaining(rem)}</span></div><div class="battery-bar"><div class="battery-bar-fill green" style="width:50%"></div></div></div></div></div>`;
     }).join('');
   }
 
   renderUserMachines() {
     const container = document.getElementById('my-machines-list');
     if (!container) return;
-    if (!this.userMachines.length) {
-      container.innerHTML = `<p class="small-text" style="text-align:center;">${this.t('noMachines')}</p>`;
-      return;
-    }
+    if (!this.userMachines.length) { container.innerHTML = `<p class="small-text" style="text-align:center;">${this.t('noMachines')}</p>`; return; }
     const now = Math.floor(Date.now() / 1000);
     const tierNames = ['MK-I', 'MK-II', 'MK-III', 'MK-IV', 'MK-V', 'MK-VI', 'MK-VII', 'MK-VIII'];
     container.innerHTML = this.userMachines.map((m, i) => {
@@ -797,16 +845,8 @@ class Application {
       else if (m.exp > 0 && m.exp <= now) { statusClass = 'expired'; statusText = this.t('expired'); }
       else { statusClass = 'inactive'; statusText = this.t('inactive'); }
       let extra = '';
-      if (m.exp > now) {
-        extra = `<div class="battery-bar-wrap"><div class="battery-bar-header"><span class="battery-bar-label">${this.t('timeRemaining')}</span><span class="battery-bar-time green">${this.formatTimeRemaining(m.exp - now)}</span></div><div class="battery-bar"><div class="battery-bar-fill green" style="width:50%"></div></div></div>`;
-      }
-      return `<div class="asset-row">${this.getMachineMiniSVG(m.tid)}
-        <div class="asset-info">
-          <div class="asset-name">#${i} ${tierNames[m.tid % 8]} <span class="status-pill ${statusClass}">● ${statusText}</span></div>
-          <div class="asset-detail">${m.exp > now ? this.t('plugged') : this.t('notPlugged')}</div>
-          ${extra}
-        </div>
-      </div>`;
+      if (m.exp > now) { extra = `<div class="battery-bar-wrap"><div class="battery-bar-header"><span class="battery-bar-label">${this.t('timeRemaining')}</span><span class="battery-bar-time green">${this.formatTimeRemaining(m.exp - now)}</span></div><div class="battery-bar"><div class="battery-bar-fill green" style="width:50%"></div></div></div>`; }
+      return `<div class="asset-row">${this.getMachineMiniSVG(m.tid)}<div class="asset-info"><div class="asset-name">#${i} ${tierNames[m.tid % 8]} <span class="status-pill ${statusClass}">● ${statusText}</span></div><div class="asset-detail">${m.exp > now ? this.t('plugged') : this.t('notPlugged')}</div>${extra}</div></div>`;
     }).join('');
   }
 
@@ -814,25 +854,10 @@ class Application {
     const container = document.getElementById('my-batteries-list');
     if (!container) return;
     const entries = Object.entries(this.batteryInventory).filter(([,qty]) => qty > 0);
-    if (!entries.length) {
-      container.innerHTML = `<p class="small-text" style="text-align:center;">${this.t('noBatteries')}</p>`;
-      return;
-    }
+    if (!entries.length) { container.innerHTML = `<p class="small-text" style="text-align:center;">${this.t('noBatteries')}</p>`; return; }
     container.innerHTML = entries.map(([typeId, qty]) => {
       const dur = this.getBatteryDuration(Number(typeId));
-      return `<div class="asset-row">
-        <div class="real-battery">
-          <div class="battery-cap"></div>
-          <div class="battery-body">
-            <div class="battery-level" style="width:80%"></div>
-            <div class="battery-charge-indicator">${Math.round(80)}%</div>
-          </div>
-        </div>
-        <div class="asset-info">
-          <div class="asset-name">${dur} ${this.t('days')} <span class="status-pill available">● ${this.t('available')}</span></div>
-          <div class="asset-detail">Quantité: ${qty}</div>
-        </div>
-      </div>`;
+      return `<div class="asset-row"><div class="real-battery"><div class="battery-cap"></div><div class="battery-body"><div class="battery-level" style="width:80%"></div><div class="battery-charge-indicator">${Math.round(80)}%</div></div></div><div class="asset-info"><div class="asset-name">${dur} ${this.t('days')} <span class="status-pill available">● ${this.t('available')}</span></div><div class="asset-detail">Quantité: ${qty}</div></div></div>`;
     }).join('');
   }
 
@@ -844,17 +869,11 @@ class Application {
       let diffNum = 2e12;
       try { diffNum = Number(await this.core.difficulty()); } catch (e) {}
       this.currentRealPower = powNum > 0 ? (powNum * diffNum) / 1e18 : 0;
-
-      try {
-        const rateRaw = await this.core.rate();
-        this.ftaPriceUsd = parseFloat(ethers.formatUnits(rateRaw, this.usdtDecimals));
-      } catch (e) {}
-
+      try { const rateRaw = await this.core.rate(); this.ftaPriceUsd = parseFloat(ethers.formatUnits(rateRaw, this.usdtDecimals)); } catch (e) {}
       const uBal = await this.core.uBal(this.user);
       const fBal = await this.core.fBal(this.user);
       const polBal = await this.core.pol(this.user);
       const nativePol = await this.provider.getBalance(this.user);
-
       const uB = parseFloat(ethers.formatUnits(uBal, this.usdtDecimals));
       const fB = parseFloat(ethers.formatUnits(fBal, this.ftaDecimals));
       const pB = parseFloat(ethers.formatUnits(polBal, 18));
@@ -881,11 +900,7 @@ class Application {
       this.lastClaimTimestamp = parseInt(localStorage.getItem(this.storageKey) || '0');
       const elapsed = Math.floor(Date.now() / 1000) - this.lastClaimTimestamp;
       if (this.currentRealPower > 0) {
-        if (!this.miningTimer) {
-          const pendingFtaRaw = this.currentRealPower * elapsed;
-          document.getElementById('val-pending').innerText = (pendingFtaRaw / 1e8).toFixed(8);
-          this.startMiningCounter();
-        }
+        if (!this.miningTimer) { const pendingFtaRaw = this.currentRealPower * elapsed; document.getElementById('val-pending').innerText = (pendingFtaRaw / 1e8).toFixed(8); this.startMiningCounter(); }
         document.getElementById('viz-status').innerText = this.t('miningActive');
         document.getElementById('viz-status').style.color = "var(--primary)";
         this.updateVisualizerIntensity(this.currentRealPower);
@@ -895,7 +910,6 @@ class Application {
         document.getElementById('viz-status').style.color = "#666";
         document.getElementById('val-pending').innerText = "0.00000000";
       }
-
       await this.renderShop();
       await this.fetchUserAssets();
       this.renderActiveMachines();
@@ -908,141 +922,88 @@ class Application {
   startMiningCounter() {
     if (this.miningTimer) return;
     this.pendingBalance = parseFloat(document.getElementById('val-pending').innerText) * 1e8 || 0;
-    this.miningTimer = setInterval(() => {
-      if (this.currentRealPower > 0) {
-        this.pendingBalance += this.currentRealPower;
-        document.getElementById('val-pending').innerText = (this.pendingBalance / 1e8).toFixed(8);
-      }
-    }, 1000);
+    this.miningTimer = setInterval(() => { if (this.currentRealPower > 0) { this.pendingBalance += this.currentRealPower; document.getElementById('val-pending').innerText = (this.pendingBalance / 1e8).toFixed(8); } }, 1000);
   }
 
-  stopMiningCounter() {
-    if (this.miningTimer) { clearInterval(this.miningTimer); this.miningTimer = null; }
-  }
+  stopMiningCounter() { if (this.miningTimer) { clearInterval(this.miningTimer); this.miningTimer = null; } }
 
   async fetchMarketPrices() {
     this.polPriceUsd = 0;
-    try {
-      const r = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0');
-      const d = await r.json();
-      if (d.pairs?.length) this.polPriceUsd = parseFloat(d.pairs[0].priceUsd) || 0;
-    } catch (e) {}
+    try { const r = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0'); const d = await r.json(); if (d.pairs?.length) this.polPriceUsd = parseFloat(d.pairs[0].priceUsd) || 0; } catch (e) {}
     if (!this.polPriceUsd) this.polPriceUsd = 0.70;
   }
 
-  // ═══ DÉPÔT / RETRAIT ════════════════════════════════════════════
+  // ═══ TRANSACTIONS (mêmes fonctions, vérification wallet) ════════
+
+  async recordTransaction(txType, options = {}) {
+    if (!this.user) return;
+    try {
+      await this.apiCall('/api/transactions', 'POST', {
+        user_address: this.user, tx_hash: options.txHash || null, tx_type: txType,
+        token: options.token || null, amount: options.amount || null,
+        amount_fee: options.amountFee || 0, details: options.details || null, status: 'pending'
+      });
+    } catch (e) { console.error("Erreur enregistrement transaction:", e); }
+  }
 
   async deposit() {
-    if (!this.user) return;
+    if (!this.user) return this.showToast('Connectez votre wallet d\'abord', true);
     const tokenType = document.getElementById('deposit-token-select').value;
     const amount = parseFloat(document.getElementById('deposit-amount').value);
     if (!amount || amount <= 0) return this.showToast(this.t('invalidAmount'), true);
-
     this.setLoader(true, this.t('depositing'));
     try {
       let tx;
       if (tokenType === 'USDT') {
-        const usdtContract = new ethers.Contract(CONFIG.USDT, [
-          "function approve(address,uint256) returns (bool)",
-          "function allowance(address,address) view returns (uint256)",
-          "function balanceOf(address) view returns (uint256)"
-        ], this.provider);
+        const usdtContract = new ethers.Contract(CONFIG.USDT, ["function approve(address,uint256) returns (bool)", "function allowance(address,address) view returns (uint256)", "function balanceOf(address) view returns (uint256)"], this.provider);
         const amountBN = ethers.parseUnits(amount.toString(), this.usdtDecimals);
         const walletBal = await usdtContract.balanceOf(this.user);
-        if (walletBal < amountBN) {
-          const wf = parseFloat(ethers.formatUnits(walletBal, this.usdtDecimals));
-          return this.showToast(`❌ Solde USDT insuffisant (${wf.toFixed(2)} USDT)`, true);
-        }
+        if (walletBal < amountBN) return this.showToast(`❌ Solde USDT insuffisant`, true);
         const allowance = await usdtContract.allowance(this.user, CONFIG.CORE);
-        if (allowance < amountBN) {
-          this.setLoader(true, "Approbation USDT...");
-          await (await usdtContract.connect(this.signer).approve(CONFIG.CORE, amountBN)).wait();
-        }
+        if (allowance < amountBN) { this.setLoader(true, "Approbation USDT..."); await (await usdtContract.connect(this.signer).approve(CONFIG.CORE, amountBN)).wait(); }
         this.setLoader(true, this.t('confirming'));
         tx = await this.core.depositUsdt(amountBN);
       } else {
-        const ftaContract = new ethers.Contract(CONFIG.FTA, [
-          "function approve(address,uint256) returns (bool)",
-          "function allowance(address,address) view returns (uint256)",
-          "function balanceOf(address) view returns (uint256)"
-        ], this.provider);
+        const ftaContract = new ethers.Contract(CONFIG.FTA, ["function approve(address,uint256) returns (bool)", "function allowance(address,address) view returns (uint256)", "function balanceOf(address) view returns (uint256)"], this.provider);
         const amountBN = ethers.parseUnits(amount.toString(), this.ftaDecimals);
         const walletBal = await ftaContract.balanceOf(this.user);
-        if (walletBal < amountBN) {
-          const wf = parseFloat(ethers.formatUnits(walletBal, this.ftaDecimals));
-          return this.showToast(`❌ Solde FTA insuffisant (${wf.toFixed(4)} FTA)`, true);
-        }
+        if (walletBal < amountBN) return this.showToast(`❌ Solde FTA insuffisant`, true);
         const allowance = await ftaContract.allowance(this.user, CONFIG.CORE);
-        if (allowance < amountBN) {
-          this.setLoader(true, "Approbation FTA...");
-          await (await ftaContract.connect(this.signer).approve(CONFIG.CORE, amountBN)).wait();
-        }
+        if (allowance < amountBN) { this.setLoader(true, "Approbation FTA..."); await (await ftaContract.connect(this.signer).approve(CONFIG.CORE, amountBN)).wait(); }
         this.setLoader(true, this.t('confirming'));
         tx = await this.core.depositFta(amountBN);
       }
-      const receipt = await tx.wait();
+      await tx.wait();
       this.showToast(this.t('depositSuccess'));
       document.getElementById('deposit-amount').value = '';
-      // Enregistrer dans l'historique
-      await this.recordTransaction('deposit', { txHash: receipt.hash, token: tokenType, amount, status: 'confirmed' });
+      await this.recordTransaction('deposit', { txHash: tx.hash, token: tokenType, amount, status: 'confirmed' });
       this.updateData();
     } catch (e) { this.showError(e); }
     this.setLoader(false);
   }
 
   async withdraw() {
-    if (!this.user) return;
+    if (!this.user) return this.showToast('Connectez votre wallet d\'abord', true);
     const tokenType = document.getElementById('deposit-token-select').value;
     const amount = parseFloat(document.getElementById('deposit-amount').value);
     if (!amount || amount <= 0) return this.showToast(this.t('invalidAmount'), true);
-
     this.setLoader(true, this.t('withdrawing'));
     try {
-      let tx;
-      if (tokenType === 'USDT') {
-        tx = await this.core.withdrawUsdt(ethers.parseUnits(amount.toString(), this.usdtDecimals));
-      } else {
-        tx = await this.core.withdrawFta(ethers.parseUnits(amount.toString(), this.ftaDecimals));
-      }
-      const receipt = await tx.wait();
+      let tx = tokenType === 'USDT' ? await this.core.withdrawUsdt(ethers.parseUnits(amount.toString(), this.usdtDecimals)) : await this.core.withdrawFta(ethers.parseUnits(amount.toString(), this.ftaDecimals));
+      await tx.wait();
       this.showToast(this.t('withdrawSuccess'));
       document.getElementById('deposit-amount').value = '';
-      await this.recordTransaction('withdraw', { txHash: receipt.hash, token: tokenType, amount, status: 'confirmed' });
+      await this.recordTransaction('withdraw', { txHash: tx.hash, token: tokenType, amount, status: 'confirmed' });
       this.updateData();
     } catch (e) { this.showError(e); }
     this.setLoader(false);
   }
 
-  // ═══ ENVOI / RÉCEPTION ══════════════════════════════════════════
-
-  openSend() {
-    document.getElementById('send-to-address').value = '';
-    document.getElementById('send-amount').value = '';
-    document.getElementById('modal-send').classList.add('active');
-    this.updateSendBalance();
-  }
-
-  updateSendBalance() {
-    const token = document.getElementById('send-token-select').value;
-    let balId = token === 'USDT' ? 'bal-usdt' : token === 'FTA' ? 'bal-fta' : 'bal-pol';
-    document.getElementById('send-bal').innerText = document.getElementById(balId)?.innerText || '0';
-  }
-
-  openReceive() {
-    if (!this.user) return this.showToast(this.t('connFirst'), true);
-    document.getElementById('receive-addr-display').innerText = this.user;
-    document.getElementById('modal-receive').classList.add('active');
-  }
-
-  closeModals() {
-    document.getElementById('modal-send').classList.remove('active');
-    document.getElementById('modal-receive').classList.remove('active');
-  }
-
-  copyReceiveAddress() {
-    navigator.clipboard.writeText(this.user);
-    this.showToast(this.t('addrCopied'));
-  }
+  openSend() { document.getElementById('send-to-address').value = ''; document.getElementById('send-amount').value = ''; document.getElementById('modal-send').classList.add('active'); this.updateSendBalance(); }
+  updateSendBalance() { const token = document.getElementById('send-token-select').value; let balId = token === 'USDT' ? 'bal-usdt' : token === 'FTA' ? 'bal-fta' : 'bal-pol'; document.getElementById('send-bal').innerText = document.getElementById(balId)?.innerText || '0'; }
+  openReceive() { if (!this.user) return this.showToast('Connectez votre wallet', true); document.getElementById('receive-addr-display').innerText = this.user; document.getElementById('modal-receive').classList.add('active'); }
+  closeModals() { document.getElementById('modal-send').classList.remove('active'); document.getElementById('modal-receive').classList.remove('active'); }
+  copyReceiveAddress() { navigator.clipboard.writeText(this.user); this.showToast(this.t('addrCopied')); }
 
   async executeSend() {
     const to = document.getElementById('send-to-address').value;
@@ -1053,18 +1014,12 @@ class Application {
     try {
       const token = document.getElementById('send-token-select').value;
       let tx;
-      if (token === 'POL') {
-        tx = await this.signer.sendTransaction({ to, value: ethers.parseEther(amt) });
-      } else {
-        const tokenAddr = token === 'USDT' ? CONFIG.USDT : CONFIG.FTA;
-        const dec = token === 'USDT' ? this.usdtDecimals : this.ftaDecimals;
-        const tokenContract = new ethers.Contract(tokenAddr, ["function transfer(address,uint256) returns (bool)"], this.signer);
-        tx = await tokenContract.transfer(to, ethers.parseUnits(amt, dec));
-      }
-      const receipt = await tx.wait();
+      if (token === 'POL') tx = await this.signer.sendTransaction({ to, value: ethers.parseEther(amt) });
+      else { const tokenAddr = token === 'USDT' ? CONFIG.USDT : CONFIG.FTA; const dec = token === 'USDT' ? this.usdtDecimals : this.ftaDecimals; const tokenContract = new ethers.Contract(tokenAddr, ["function transfer(address,uint256) returns (bool)"], this.signer); tx = await tokenContract.transfer(to, ethers.parseUnits(amt, dec)); }
+      await tx.wait();
       this.showToast(this.t('sentSuccess'));
       this.closeModals();
-      await this.recordTransaction('send', { txHash: receipt.hash, token, amount: Number(amt), details: { to }, status: 'confirmed' });
+      await this.recordTransaction('send', { txHash: tx.hash, token, amount: Number(amt), details: { to }, status: 'confirmed' });
       this.updateData();
     } catch (e) { this.showError(e); }
     this.setLoader(false);
@@ -1072,99 +1027,71 @@ class Application {
 
   // ═══ BOUTIQUE ════════════════════════════════════════════════════
 
-  setShopView(v) {
-    this.shopViewMode = v;
-    document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
-    event.currentTarget.classList.add('active');
-    this.renderShop();
-  }
-
-  setPayMode(mode) {
-    this.payMode = mode;
-    document.getElementById('btn-pay-usdt').classList.toggle('active', mode === 'USDT');
-    document.getElementById('btn-pay-fta').classList.toggle('active', mode === 'FTA');
-    this.renderShop();
-  }
+  setShopView(v) { this.shopViewMode = v; document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active')); event.currentTarget.classList.add('active'); this.renderShop(); }
+  setPayMode(mode) { this.payMode = mode; document.getElementById('btn-pay-usdt').classList.toggle('active', mode === 'USDT'); document.getElementById('btn-pay-fta').classList.toggle('active', mode === 'FTA'); this.renderShop(); }
 
   async buyMachine(typeId) {
-    if (!this.user) return;
+    if (!this.user) return this.showToast('Connectez votre wallet', true);
     const mData = this.shopMachinesData[typeId];
     if (!mData) return this.showToast("Machine indisponible", true);
-    if (mData.shopExpiry > 0 && Math.floor(Date.now() / 1000) > mData.shopExpiry)
-      return this.showToast("Cette machine n'est plus disponible", true);
-
+    if (mData.shopExpiry > 0 && Math.floor(Date.now() / 1000) > mData.shopExpiry) return this.showToast("Cette machine n'est plus disponible", true);
     this.setLoader(true, `${this.t('buyingMachine')} (${this.payMode})...`);
     try {
-      let tx;
-      if (this.payMode === 'USDT') tx = await this.mine.buyMachine(typeId);
-      else tx = await this.mine.buyMachineFTA(typeId);
-      const receipt = await tx.wait();
+      let tx = this.payMode === 'USDT' ? await this.mine.buyMachine(typeId) : await this.mine.buyMachineFTA(typeId);
+      await tx.wait();
       this.showToast(this.t('machineBought'));
       this.shopMachinesData = [];
-      await this.recordTransaction('buy_machine', {
-        txHash: receipt.hash, token: this.payMode, amount: mData.price,
-        details: { machineType: typeId, power: mData.power }, status: 'confirmed'
-      });
+      await this.recordTransaction('buy_machine', { txHash: tx.hash, token: this.payMode, amount: mData.price, details: { machineType: typeId, power: mData.power }, status: 'confirmed' });
       this.updateData();
     } catch (e) { this.showError(e); }
     this.setLoader(false);
   }
 
   async buyBattery(typeId) {
-    if (!this.user) return;
+    if (!this.user) return this.showToast('Connectez votre wallet', true);
     this.setLoader(true, `${this.t('buyingBattery')} (${this.payMode})...`);
     try {
-      let tx;
-      if (this.payMode === 'USDT') tx = await this.mine.buyBattery(typeId);
-      else tx = await this.mine.buyBatteryFTA(typeId);
-      const receipt = await tx.wait();
+      let tx = this.payMode === 'USDT' ? await this.mine.buyBattery(typeId) : await this.mine.buyBatteryFTA(typeId);
+      await tx.wait();
       const bData = this.shopBatteriesData[typeId] || {};
       this.showToast(this.t('batteryBought'));
       this.shopBatteriesData = [];
-      await this.recordTransaction('buy_battery', {
-        txHash: receipt.hash, token: this.payMode, amount: bData.price || 0,
-        details: { batteryType: typeId, days: bData.days || 0 }, status: 'confirmed'
-      });
+      await this.recordTransaction('buy_battery', { txHash: tx.hash, token: this.payMode, amount: bData.price || 0, details: { batteryType: typeId, days: bData.days || 0 }, status: 'confirmed' });
       this.updateData();
     } catch (e) { this.showError(e); }
     this.setLoader(false);
   }
 
   async plugInMachine() {
+    if (!this.user) return this.showToast('Connectez votre wallet', true);
     const machineIndex = document.getElementById('plug-machine-id').value;
     const batteryTypeId = document.getElementById('plug-battery-type').value;
     if (machineIndex === "" || machineIndex < 0) return this.showToast(this.t('invalidId'), true);
-    if (!this.batteryInventory[Number(batteryTypeId)] || this.batteryInventory[Number(batteryTypeId)] <= 0)
-      return this.showToast(this.t('errNoBattery'), true);
-
+    if (!this.batteryInventory[Number(batteryTypeId)] || this.batteryInventory[Number(batteryTypeId)] <= 0) return this.showToast(this.t('errNoBattery'), true);
     this.setLoader(true, this.t('pluggingIn'));
     try {
       const tx = await this.mine.plugInMachine(machineIndex, batteryTypeId);
-      const receipt = await tx.wait();
+      await tx.wait();
       this.showToast(this.t('pluggedIn'));
-      await this.recordTransaction('plug', {
-        txHash: receipt.hash, details: { machineIndex, batteryTypeId }, status: 'confirmed'
-      });
+      await this.recordTransaction('plug', { txHash: tx.hash, details: { machineIndex, batteryTypeId }, status: 'confirmed' });
       this.updateData();
     } catch (e) { this.showError(e); }
     this.setLoader(false);
   }
 
   async claim() {
-    if (!this.user) return;
+    if (!this.user) return this.showToast('Connectez votre wallet', true);
     this.stopMiningCounter();
     this.setLoader(true, this.t('claiming'));
     try {
       const tx = await this.mine.claimRewards();
-      const receipt = await tx.wait();
+      await tx.wait();
       const claimedAmount = this.pendingBalance / 1e8;
       this.pendingBalance = 0;
       document.getElementById('val-pending').innerText = "0.00000000";
       localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
       this.showToast(this.t('claimed'));
-      await this.recordTransaction('claim', {
-        txHash: receipt.hash, token: 'FTA', amount: claimedAmount, status: 'confirmed'
-      });
+      await this.recordTransaction('claim', { txHash: tx.hash, token: 'FTA', amount: claimedAmount, status: 'confirmed' });
       await this.updateData();
       if (this.currentRealPower > 0) this.startMiningCounter();
     } catch (e) {
@@ -1180,20 +1107,14 @@ class Application {
   async bindReferrer() {
     const input = document.getElementById('ref-address-input').value.trim();
     if (!input) return this.showToast(this.t('invalidAddr'), true);
-    if (!this.user) return this.showToast(this.t('connFirst'), true);
+    if (!this.user) return this.showToast('Connectez votre wallet', true);
     this.setLoader(true, this.t('linking'));
     try {
-      let tx;
-      if (input.startsWith('0x') && input.length === 42) tx = await this.core.setReferrer(input);
-      else {
-        const refId = parseInt(input);
-        if (isNaN(refId)) throw new Error("Format invalide");
-        tx = await this.core.setReferrerById(refId);
-      }
-      const receipt = await tx.wait();
+      let tx = input.startsWith('0x') && input.length === 42 ? await this.core.setReferrer(input) : await this.core.setReferrerById(parseInt(input));
+      await tx.wait();
       this.showToast(this.t('refLinked'));
       document.getElementById('ref-address-input').value = '';
-      await this.recordTransaction('referral', { txHash: receipt.hash, details: { referrer: input }, status: 'confirmed' });
+      await this.recordTransaction('referral', { txHash: tx.hash, details: { referrer: input }, status: 'confirmed' });
     } catch (e) { this.showError(e); }
     this.setLoader(false);
   }
@@ -1204,19 +1125,14 @@ class Application {
     this.swapDirection = this.swapDirection === 'USDT_TO_FTA' ? 'FTA_TO_USDT' : 'USDT_TO_FTA';
     document.getElementById('token-from-display').innerText = this.swapDirection === 'USDT_TO_FTA' ? 'USDT' : 'FTA';
     document.getElementById('token-to-display').innerText = this.swapDirection === 'USDT_TO_FTA' ? 'FTA' : 'USDT';
-    document.getElementById('swap-to-in').value = '';
-    document.getElementById('swap-from-in').value = '';
+    document.getElementById('swap-to-in').value = ''; document.getElementById('swap-from-in').value = '';
     document.getElementById('swap-details').classList.add('hidden');
     this.updateData();
   }
 
   calcSwap() {
     const val = document.getElementById('swap-from-in').value;
-    if (!val || val <= 0) {
-      document.getElementById('swap-to-in').value = '';
-      document.getElementById('swap-details').classList.add('hidden');
-      return;
-    }
+    if (!val || val <= 0) { document.getElementById('swap-to-in').value = ''; document.getElementById('swap-details').classList.add('hidden'); return; }
     const inputVal = parseFloat(val);
     const isUsdtTo = this.swapDirection === 'USDT_TO_FTA';
     const fee = inputVal * SWAP_FEE_RATE;
@@ -1227,13 +1143,13 @@ class Application {
     document.getElementById('swap-to-in').value = netOutput > 0 ? netOutput.toFixed(6) : '';
     const el = document.getElementById('swap-details');
     el.classList.remove('hidden');
-    document.getElementById('swap-detail-rate').innerText = isUsdtTo
-      ? `1 USDT = ${(1 / this.ftaPriceUsd).toFixed(2)} FTA` : `1 FTA = ${this.ftaPriceUsd.toFixed(6)} USDT`;
+    document.getElementById('swap-detail-rate').innerText = isUsdtTo ? `1 USDT = ${(1 / this.ftaPriceUsd).toFixed(2)} FTA` : `1 FTA = ${this.ftaPriceUsd.toFixed(6)} USDT`;
     document.getElementById('swap-detail-fee').innerText = `${fee.toFixed(6)} ${isUsdtTo ? 'USDT' : 'FTA'}`;
     document.getElementById('swap-detail-min').innerText = `${minReceived.toFixed(6)} ${isUsdtTo ? 'FTA' : 'USDT'}`;
   }
 
   async executeSwap() {
+    if (!this.user) return this.showToast('Connectez votre wallet', true);
     const val = document.getElementById('swap-from-in').value;
     if (!val || val <= 0) return this.showToast(this.t('invalidAmount'), true);
     this.setLoader(true, this.t('swapping'));
@@ -1246,22 +1162,13 @@ class Application {
       const outDec = isUsdtTo ? this.ftaDecimals : this.usdtDecimals;
       const minOut = ethers.parseUnits((expectedOut * (1 - SLIPPAGE)).toFixed(outDec), outDec);
       const deadline = Math.floor(Date.now() / 1000) + 1200;
-      let tx;
-      if (isUsdtTo) tx = await this.core.swapUForF(amount, minOut, deadline);
-      else tx = await this.core.swapFForU(amount, minOut, deadline);
-      const receipt = await tx.wait();
+      let tx = isUsdtTo ? await this.core.swapUForF(amount, minOut, deadline) : await this.core.swapFForU(amount, minOut, deadline);
+      await tx.wait();
       this.showToast(this.t('swapSuccess'));
-      document.getElementById('swap-from-in').value = '';
-      document.getElementById('swap-to-in').value = '';
+      document.getElementById('swap-from-in').value = ''; document.getElementById('swap-to-in').value = '';
       document.getElementById('swap-details').classList.add('hidden');
-      const fromToken = isUsdtTo ? 'USDT' : 'FTA';
-      const toToken = isUsdtTo ? 'FTA' : 'USDT';
       const inAmount = Number(val);
-      await this.recordTransaction('swap', {
-        txHash: receipt.hash, token: fromToken, amount: inAmount,
-        details: { direction: this.swapDirection, expectedOutput: expectedOut, fee: inAmount * SWAP_FEE_RATE },
-        amountFee: inAmount * SWAP_FEE_RATE, status: 'confirmed'
-      });
+      await this.recordTransaction('swap', { txHash: tx.hash, token: isUsdtTo ? 'USDT' : 'FTA', amount: inAmount, details: { direction: this.swapDirection, expectedOutput: expectedOut, fee: inAmount * SWAP_FEE_RATE }, amountFee: inAmount * SWAP_FEE_RATE, status: 'confirmed' });
       this.updateData();
     } catch (e) { this.showError(e); }
     this.setLoader(false);
@@ -1269,40 +1176,13 @@ class Application {
 
   // ═══ VISUALISEUR ═════════════════════════════════════════════════
 
-  resizeCanvas() {
-    if (this.vizContext) {
-      const c = this.vizContext.canvas;
-      c.width = c.offsetWidth * 2;
-      c.height = c.offsetHeight * 2;
-    }
-  }
-
-  initVisualizer() {
-    const c = document.getElementById('mining-canvas');
-    if (!c) return;
-    this.resizeCanvas();
-    this.vizContext = c.getContext('2d');
-    this.vizBars = [];
-    for (let i = 0; i < 20; i++) this.vizBars.push({ height: 0, targetHeight: 0 });
-    this.animateVisualizer();
-  }
-
-  updateVisualizerIntensity(p) {
-    const intensity = p > 0 ? Math.min((p * 500) + 10, 100) : 0;
-    this.vizBars.forEach(b => b.targetHeight = (this.vizContext.canvas.height * (intensity / 100)) * Math.random());
-  }
-
+  resizeCanvas() { if (this.vizContext) { const c = this.vizContext.canvas; c.width = c.offsetWidth * 2; c.height = c.offsetHeight * 2; } }
+  initVisualizer() { const c = document.getElementById('mining-canvas'); if (!c) return; this.resizeCanvas(); this.vizContext = c.getContext('2d'); this.vizBars = []; for (let i = 0; i < 20; i++) this.vizBars.push({ height: 0, targetHeight: 0 }); this.animateVisualizer(); }
+  updateVisualizerIntensity(p) { const intensity = p > 0 ? Math.min((p * 500) + 10, 100) : 0; this.vizBars.forEach(b => b.targetHeight = (this.vizContext.canvas.height * (intensity / 100)) * Math.random()); }
   animateVisualizer() {
     if (!this.vizContext) return;
-    const ctx = this.vizContext;
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    ctx.fillStyle = "#F0B90B";
-    const w = ctx.canvas.width / 20;
-    this.vizBars.forEach((b, i) => {
-      b.height += (b.targetHeight - b.height) * 0.1;
-      ctx.fillRect(i * w + 2, ctx.canvas.height - b.height, w - 4, b.height);
-      b.targetHeight += (Math.random() - 0.5) * 10;
-    });
+    const ctx = this.vizContext; ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); ctx.fillStyle = "#F0B90B"; const w = ctx.canvas.width / 20;
+    this.vizBars.forEach((b, i) => { b.height += (b.targetHeight - b.height) * 0.1; ctx.fillRect(i * w + 2, ctx.canvas.height - b.height, w - 4, b.height); b.targetHeight += (Math.random() - 0.5) * 10; });
     requestAnimationFrame(() => this.animateVisualizer());
   }
 
@@ -1310,42 +1190,13 @@ class Application {
 
   async fetchMachines() {
     this.isLoadingShop = true;
-    try {
-      const count = Number(await this.mine.mCount());
-      const promises = [];
-      for (let i = 0; i < count; i++) promises.push(this.mine.getMType(i));
-      const results = await Promise.all(promises);
-      this.shopMachinesData = [];
-      for (let i = 0; i < count; i++) {
-        const d = results[i];
-        this.shopMachinesData.push({
-          price: parseFloat(ethers.formatUnits(d.price, this.usdtDecimals)),
-          power: Number(d.power),
-          priceRaw: d.price,
-          shopExpiry: Number(d.shopExpiry ?? 0)
-        });
-      }
-    } catch (e) { console.error("Erreur fetchMachines:", e); }
+    try { const count = Number(await this.mine.mCount()); const promises = []; for (let i = 0; i < count; i++) promises.push(this.mine.getMType(i)); const results = await Promise.all(promises); this.shopMachinesData = []; for (let i = 0; i < count; i++) { const d = results[i]; this.shopMachinesData.push({ price: parseFloat(ethers.formatUnits(d.price, this.usdtDecimals)), power: Number(d.power), priceRaw: d.price, shopExpiry: Number(d.shopExpiry ?? 0) }); } } catch (e) { console.error("Erreur fetchMachines:", e); }
     this.isLoadingShop = false;
   }
 
   async fetchBatteries() {
     this.isLoadingShop = true;
-    try {
-      const count = Number(await this.mine.bCount());
-      const promises = [];
-      for (let i = 0; i < count; i++) promises.push(this.mine.getBType(i));
-      const results = await Promise.all(promises);
-      this.shopBatteriesData = [];
-      for (let i = 0; i < count; i++) {
-        const d = results[i];
-        this.shopBatteriesData.push({
-          price: parseFloat(ethers.formatUnits(d.price, this.usdtDecimals)),
-          days: Number(d.dur) / 86400,
-          priceRaw: d.price
-        });
-      }
-    } catch (e) { console.error("Erreur fetchBatteries:", e); }
+    try { const count = Number(await this.mine.bCount()); const promises = []; for (let i = 0; i < count; i++) promises.push(this.mine.getBType(i)); const results = await Promise.all(promises); this.shopBatteriesData = []; for (let i = 0; i < count; i++) { const d = results[i]; this.shopBatteriesData.push({ price: parseFloat(ethers.formatUnits(d.price, this.usdtDecimals)), days: Number(d.dur) / 86400, priceRaw: d.price }); } } catch (e) { console.error("Erreur fetchBatteries:", e); }
     this.isLoadingShop = false;
   }
 
@@ -1359,88 +1210,95 @@ class Application {
   async renderShop() {
     if (this.isLoadingShop) return;
     const container = document.getElementById('shop-list');
-    if (this.shopViewMode === 'machines') {
-      if (!this.shopMachinesData.length) await this.fetchMachines();
-      this._renderShopMachinesHTML(container);
-    } else {
-      if (!this.shopBatteriesData.length) await this.fetchBatteries();
-      this._renderShopBatteriesHTML(container);
-    }
+    if (this.shopViewMode === 'machines') { if (!this.shopMachinesData.length) await this.fetchMachines(); this._renderShopMachinesHTML(container); }
+    else { if (!this.shopBatteriesData.length) await this.fetchBatteries(); this._renderShopBatteriesHTML(container); }
   }
 
   _renderShopMachinesHTML(container) {
-    container.innerHTML = '';
-    container.style.gridTemplateColumns = '1fr 1fr';
-    const badges = [
-      'background:#64748b;color:#fff', 'background:#3b82f6;color:#fff', 'background:#8b5cf6;color:#fff', 'background:#F0B90B;color:#000',
-      'background:#f97316;color:#fff', 'background:#ef4444;color:#fff', 'background:#06b6d4;color:#000', 'background:#eab308;color:#000'
-    ];
-    const names = ['STARTER', 'STANDARD', 'ADVANCED', 'PRO', 'ELITE', 'ULTRA', 'SUPREME', 'LEGEND'];
+    container.innerHTML = ''; container.style.gridTemplateColumns = '1fr 1fr';
+    const badges = ['background:#64748b;color:#fff','background:#3b82f6;color:#fff','background:#8b5cf6;color:#fff','background:#F0B90B;color:#000','background:#f97316;color:#fff','background:#ef4444;color:#fff','background:#06b6d4;color:#000','background:#eab308;color:#000'];
+    const names = ['STARTER','STANDARD','ADVANCED','PRO','ELITE','ULTRA','SUPREME','LEGEND'];
     for (let i = 0; i < this.shopMachinesData.length; i++) {
       const d = this.shopMachinesData[i];
-      const div = document.createElement('div');
-      div.className = 'rig-item';
-      div.innerHTML = `<span class="tier-badge" style="${badges[i % 8]}">${names[i % 8]}</span>
-        ${this.getMachineMiniSVG(i)}
-        <span class="rig-name" style="font-size:0.85rem;">${this.t('rig')} ${i + 1}</span>
-        <span class="rig-power" style="font-size:0.75rem;">${this.formatHashrate(d.power)}</span>
-        <span class="rig-price" style="font-size:1rem;">${d.price.toFixed(2)} $</span>
-        <button class="btn-primary" style="padding:8px;font-size:0.75rem;margin-top:6px;" onclick="App.buyMachine(${i})">${this.t('buy')} (${this.payMode})</button>`;
+      const div = document.createElement('div'); div.className = 'rig-item';
+      div.innerHTML = `<span class="tier-badge" style="${badges[i % 8]}">${names[i % 8]}</span>${this.getMachineMiniSVG(i)}<span class="rig-name" style="font-size:0.85rem;">${this.t('rig')} ${i + 1}</span><span class="rig-power" style="font-size:0.75rem;">${this.formatHashrate(d.power)}</span><span class="rig-price" style="font-size:1rem;">${d.price.toFixed(2)} $</span><button class="btn-primary" style="padding:8px;font-size:0.75rem;margin-top:6px;" onclick="App.buyMachine(${i})">${this.t('buy')} (${this.payMode})</button>`;
       container.appendChild(div);
     }
   }
 
   _renderShopBatteriesHTML(container) {
-    container.innerHTML = '';
-    container.style.gridTemplateColumns = '1fr 1fr';
+    container.innerHTML = ''; container.style.gridTemplateColumns = '1fr 1fr';
     for (let i = 0; i < this.shopBatteriesData.length; i++) {
-      const d = this.shopBatteriesData[i];
-      const chargeLevel = Math.floor(Math.random() * 40) + 60;
-      const div = document.createElement('div');
-      div.className = 'battery-shop-item';
-      div.innerHTML = `
-        <div class="real-battery">
-          <div class="battery-cap"></div>
-          <div class="battery-body">
-            <div class="battery-level" style="width:${chargeLevel}%"></div>
-            <div class="battery-charge-indicator">${d.days}J</div>
-          </div>
-        </div>
-        <div class="battery-name">${d.days} ${this.t('days')}</div>
-        <div class="battery-price">${d.price.toFixed(2)} $</div>
-        <button class="btn-primary" style="padding:6px;font-size:0.75rem" onclick="App.buyBattery(${i})">${this.t('buy')} (${this.payMode})</button>`;
+      const d = this.shopBatteriesData[i]; const chargeLevel = Math.floor(Math.random() * 40) + 60;
+      const div = document.createElement('div'); div.className = 'battery-shop-item';
+      div.innerHTML = `<div class="real-battery"><div class="battery-cap"></div><div class="battery-body"><div class="battery-level" style="width:${chargeLevel}%"></div><div class="battery-charge-indicator">${d.days}J</div></div></div><div class="battery-name">${d.days} ${this.t('days')}</div><div class="battery-price">${d.price.toFixed(2)} $</div><button class="btn-primary" style="padding:6px;font-size:0.75rem" onclick="App.buyBattery(${i})">${this.t('buy')} (${this.payMode})</button>`;
       container.appendChild(div);
     }
   }
 
+  // ═══ HISTORIQUE (intégré dans Mon Compte) ═══════════════════════
+
+  async loadHistory() {
+    if (!this.user) {
+      document.getElementById('history-list').innerHTML = '<p class="small-text" style="text-align:center;padding:20px;">Connectez votre wallet pour voir l\'historique.</p>';
+      return;
+    }
+    document.getElementById('history-list').innerHTML = `<p class="small-text" style="text-align:center;padding:20px;">${this.t('historyLoading')}</p>`;
+    try {
+      let url = `/api/transactions/${this.user}?limit=${this.historyLimit}&offset=${this.historyPage * this.historyLimit}`;
+      if (this.historyFilter) url += `&type=${this.historyFilter}`;
+      const data = await this.apiCall(url);
+      this.historyTotal = data.total;
+      this.renderHistory(data.transactions);
+    } catch (e) { document.getElementById('history-list').innerHTML = '<p class="small-text" style="text-align:center;padding:20px;">Erreur chargement historique</p>'; }
+  }
+
+  renderHistory(transactions) {
+    const container = document.getElementById('history-list');
+    if (!transactions || transactions.length === 0) { container.innerHTML = '<p class="small-text" style="text-align:center;padding:20px;">Aucune transaction</p>'; }
+    else {
+      const typeIcons = { buy_machine:'⛏️',buy_battery:'🔋',deposit:'📥',withdraw:'📤',claim:'🎁',swap:'💱',plug:'🔌',referral:'👥',send:'📤',receive:'📥' };
+      const typeLabels = { buy_machine:'txBuyMachine',buy_battery:'txBuyBattery',deposit:'txDeposit',withdraw:'txWithdraw',claim:'txClaim',swap:'txSwap',plug:'txPlug',referral:'txReferral',send:'txSend',receive:'txReceive' };
+      const positiveTypes = ['deposit','claim','receive'];
+      container.innerHTML = transactions.map(tx => {
+        const dt = new Date(tx.created_at + 'Z'); const dateStr = dt.toLocaleDateString('fr') + ' ' + dt.toLocaleTimeString('fr', { hour:'2-digit',minute:'2-digit' });
+        const isPositive = positiveTypes.includes(tx.tx_type); const amtClass = isPositive ? 'positive' : 'negative';
+        const amtPrefix = isPositive ? '+' : (tx.amount ? '-' : '');
+        let amountStr = ''; if (tx.amount !== null) amountStr = `${amtPrefix}${tx.amount.toFixed(tx.token==='USDT'?2:4)} ${tx.token||''}`;
+        return `<div class="history-item"><div class="history-item-left"><div class="history-icon">${typeIcons[tx.tx_type]||'📋'}</div><div class="history-details"><div class="history-detail-type">${this.t(typeLabels[tx.tx_type]||'')||tx.tx_type}</div><div class="history-detail-date">${dateStr}</div><span class="status-pill ${tx.status}">● ${tx.status}</span></div></div><div class="history-item-right"><div class="history-amount ${amtClass}">${amountStr}</div></div></div>`;
+      }).join('');
+    }
+    const pag = document.getElementById('history-pagination');
+    const totalPages = Math.ceil(this.historyTotal / this.historyLimit);
+    if (totalPages > 1) { pag.classList.remove('hidden'); pag.innerHTML = `<button class="btn-page" onclick="App.goHistoryPage(${this.historyPage - 1})" ${this.historyPage===0?'disabled':''}>${this.t('prev')}</button><span style="align-self:center;font-size:0.8rem;color:var(--text-muted);">${this.historyPage+1}/${totalPages}</span><button class="btn-page" onclick="App.goHistoryPage(${this.historyPage + 1})" ${this.historyPage>=totalPages-1?'disabled':''}>${this.t('next')}</button>`; }
+    else pag.classList.add('hidden');
+  }
+
+  goHistoryPage(page) { if (page < 0 || page >= Math.ceil(this.historyTotal / this.historyLimit)) return; this.historyPage = page; this.loadHistory(); }
+  filterHistory() { this.historyFilter = document.getElementById('history-filter-type').value; this.historyPage = 0; this.loadHistory(); }
+
   // ═══ NAVIGATION ══════════════════════════════════════════════════
 
   nav(viewId) {
-    // Fermer toutes les vues
     document.querySelectorAll('.view').forEach(el => { el.classList.remove('active'); el.style.display = 'none'; });
     const activeView = document.getElementById('view-' + viewId);
     if (activeView) { activeView.classList.add('active'); activeView.style.display = 'block'; }
-
-    // Mise à jour de la barre de navigation
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    const navMap = { dashboard: 0, shop: 1, 'my-rigs': 2, swap: 3, history: 4 };
+    const navMap = { dashboard: 0, shop: 1, 'my-rigs': 2, swap: 3, account: 4 };
     const idx = navMap[viewId];
-    if (idx !== undefined) {
-      const items = document.querySelectorAll('.nav-item');
-      if (items[idx]) items[idx].classList.add('active');
-    }
-
-    // Charger l'historique si on y navigue
-    if (viewId === 'history') this.loadHistory();
+    if (idx !== undefined) { const items = document.querySelectorAll('.nav-item'); if (items[idx]) items[idx].classList.add('active'); }
+    if (viewId === 'account') this.loadHistory();
   }
+
+  // ═══ TERMS & PRIVACY ════════════════════════════════════════════
+
+  showTerms() { document.getElementById('modal-terms').classList.add('active'); }
+  closeTerms() { document.getElementById('modal-terms').classList.remove('active'); }
+  showPrivacy() { this.showToast('Politique de confidentialité : Vos données ne sont jamais partagées. Seuls votre pseudo, email et adresse Polygon sont stockés.'); }
 
   // ═══ LOADER / ERREURS / TOASTS ═══════════════════════════════════
 
-  setLoader(show, msg = "Traitement...") {
-    const loader = document.getElementById('loader');
-    document.getElementById('loader-text').innerText = msg;
-    if (show) loader.classList.remove('hidden'); else loader.classList.add('hidden');
-  }
+  setLoader(show, msg = "Traitement...") { const loader = document.getElementById('loader'); document.getElementById('loader-text').innerText = msg; if (show) loader.classList.remove('hidden'); else loader.classList.add('hidden'); }
 
   getErrorMessage(e) {
     const shortMsg = e?.shortMessage || e?.reason || '';
@@ -1462,204 +1320,118 @@ class Application {
     return this.t('errGeneric');
   }
 
-  showError(e) {
-    console.error("═══ Transaction Error ═══", e?.message, e?.shortMessage, e?.code);
-    this.showToast(this.getErrorMessage(e), true);
-  }
+  showError(e) { console.error("═══ Transaction Error ═══", e?.message, e?.shortMessage, e?.code); this.showToast(this.getErrorMessage(e), true); }
 
   showToast(msg, isError = false) {
-    const div = document.createElement('div');
-    div.className = 'toast' + (isError ? ' toast-error' : ' toast-success');
-    div.innerText = msg;
-    document.getElementById('toast-container').appendChild(div);
-    setTimeout(() => div.remove(), 4000);
+    const div = document.createElement('div'); div.className = 'toast' + (isError ? ' toast-error' : ' toast-success'); div.innerText = msg;
+    document.getElementById('toast-container').appendChild(div); setTimeout(() => div.remove(), 4000);
   }
 
   // ═══ LANGUE ══════════════════════════════════════════════════════
 
   setLanguage(lang) {
-    if (!i18n[lang]) return;
-    this.currentLang = lang;
-    localStorage.setItem('fitia_lang', lang);
-    const flags = { en: '🇬🇧', fr: '🇫🇷', de: '🇩🇪', zh: '🇨🇳', sg: '🇸🇬' };
+    if (!i18n[lang]) return; this.currentLang = lang; localStorage.setItem('fitia_lang', lang);
+    const flags = { en:'🇬🇧',fr:'🇫🇷',de:'🇩🇪',zh:'🇨🇳',sg:'🇸🇬' };
     document.getElementById('lang-btn-display').innerText = `${flags[lang]} ${lang.toUpperCase()}`;
-    this.applyTranslations();
-    this.renderShop();
+    this.applyTranslations(); this.renderShop();
   }
 
   applyTranslations() {
     const t = (k) => this.t(k);
-    const el = (id) => document.getElementById(id);
-    // Auth
-    const authDesc = document.querySelector('#auth-step-connect .auth-desc');
-    if (authDesc) authDesc.innerText = t('authConnectWallet');
     // Navigation
-    const navLabels = ['home', 'shop', 'assets', 'swapNav', 'historyNav'];
-    document.querySelectorAll('.nav-item span').forEach((s, i) => { if (navLabels[i]) s.innerText = t(navLabels[i]); });
-    // Section titles
-    const titles = {
-      'active-machines-section': '.section-title', 'val-total-usd': null,
-      'totalBal': '.total-balance-card small', 'refTitle': '.referral-card h3',
-      'refDesc': '.referral-card p.small-text', 'shopTitle': '#view-shop .view-title',
-      'myAssets': '#view-my-rigs .view-title', 'swapTitle': '#view-swap .view-title',
-      'historyTitle': '#view-history .view-title'
-    };
-    // Translations rapides via selectors
+    document.querySelectorAll('.nav-item span').forEach((s, i) => { const labels = ['home','shop','assets','swapNav',null]; if (labels[i]) s.innerText = t(labels[i]); });
+    // Nav account
+    const accountSpan = document.querySelector('.nav-item:last-child span');
+    if (accountSpan) accountSpan.innerText = 'Compte';
+    // Stats
     const stats = document.querySelectorAll('.stat-card');
     if (stats[0]) { stats[0].querySelector('small:first-child').innerText = t('power'); stats[0].querySelector('small:last-child').innerText = t('ftaSec'); }
     if (stats[1]) { stats[1].querySelector('small:first-child').innerText = t('pending'); stats[1].querySelector('small:last-child').innerText = t('fta'); }
-    const megaBtn = document.querySelector('.btn-mega');
-    if (megaBtn) { const span = megaBtn.querySelectorAll('span')[1]; if (span) span.textContent = t('claim'); }
-    const refInput = el('ref-address-input'); if (refInput) refInput.placeholder = t('enterRefAddr');
-    const bindBtn = document.querySelector('.referral-card .btn-full'); if (bindBtn) bindBtn.innerText = t('bindRef');
+    const megaBtn = document.querySelector('.btn-mega'); if (megaBtn) { const span = megaBtn.querySelectorAll('span')[1]; if (span) span.textContent = t('claim'); }
+    // Auth tabs
+    const authTabs = document.querySelectorAll('.auth-tab');
+    if (authTabs[0]) authTabs[0].innerText = t('authLogin');
+    if (authTabs[1]) authTabs[1].innerText = t('authRegister');
+    // Login form
+    const loginLabels = document.querySelectorAll('#auth-form-login .auth-field label');
+    if (loginLabels[0]) loginLabels[0].innerText = t('authIdentifier');
+    if (loginLabels[1]) loginLabels[1].innerText = t('authPassword');
+    const loginBtn = document.querySelector('#auth-form-login .btn-login-full');
+    if (loginBtn) loginBtn.innerText = t('authLoginBtn');
+    // Register form
+    const regLabels = document.querySelectorAll('#auth-form-register .auth-field label');
+    if (regLabels[0]) regLabels[0].innerText = t('authUsername');
+    if (regLabels[1]) regLabels[1].innerText = t('authEmail');
+    if (regLabels[2]) regLabels[2].innerText = t('authPassword');
+    if (regLabels[3]) regLabels[3].innerText = t('authConfirmPassword');
+    const regBtn = document.querySelector('#auth-form-register .btn-register-full');
+    if (regBtn) regBtn.innerText = t('authRegisterBtn');
   }
 
   updatePriceChange(token, newPrice) {
-    const el = document.getElementById('change-' + token);
-    if (!el) return;
-    const now = Date.now();
-    const interval = 5 * 60 * 1000;
+    const el = document.getElementById('change-' + token); if (!el) return;
+    const now = Date.now(); const interval = 5 * 60 * 1000;
     const checkpoint = this.prevPriceCheckpoint[token];
-    if (checkpoint === undefined || checkpoint === null || checkpoint === 0 || now - this.priceCheckpointTime > interval) {
-      this.prevPriceCheckpoint[token] = newPrice;
-      if (this.priceCheckpointTime === 0 || now - this.priceCheckpointTime > interval * 2) this.priceCheckpointTime = now;
-      el.textContent = '0.00%'; el.className = 'token-change flat'; return;
-    }
-    const change = ((newPrice - checkpoint) / checkpoint) * 100;
-    const abs = Math.abs(change);
+    if (checkpoint === undefined || checkpoint === null || checkpoint === 0 || now - this.priceCheckpointTime > interval) { this.prevPriceCheckpoint[token] = newPrice; if (this.priceCheckpointTime === 0 || now - this.priceCheckpointTime > interval * 2) this.priceCheckpointTime = now; el.textContent = '0.00%'; el.className = 'token-change flat'; return; }
+    const change = ((newPrice - checkpoint) / checkpoint) * 100; const abs = Math.abs(change);
     let sign = '', cls = 'flat';
-    if (abs < 0.01) cls = 'flat';
-    else if (change > 0) { sign = '+'; cls = 'up'; }
-    else { cls = 'down'; }
-    el.textContent = sign + change.toFixed(2) + '%';
-    el.className = 'token-change ' + cls;
+    if (abs < 0.01) cls = 'flat'; else if (change > 0) { sign = '+'; cls = 'up'; } else cls = 'down';
+    el.textContent = sign + change.toFixed(2) + '%'; el.className = 'token-change ' + cls;
   }
 
   // ═══ CHAT ASSISTANT ══════════════════════════════════════════════
 
-  toggleChat() {
-    const panel = document.getElementById('chat-panel');
-    const isActive = panel.classList.toggle('active');
-    if (isActive && !this.chatInitialized) {
-      this.chatInitialized = true;
-      setTimeout(() => this.addChatBubble('assistant', this.getWelcomeMessage()), 400);
-    }
-    if (isActive) setTimeout(() => document.getElementById('chat-input').focus(), 350);
-  }
-
-  sendChatMessage() {
-    const input = document.getElementById('chat-input');
-    const msg = input.value.trim();
-    if (!msg) return;
-    input.value = '';
-    this.addChatBubble('user', msg);
-    const typingId = this.showTyping();
-    const delay = 400 + Math.min(msg.length * 25, 1200) + Math.random() * 400;
-    setTimeout(() => {
-      this.removeTyping(typingId);
-      const response = this.generateLocalResponse(msg);
-      this.addChatBubble('assistant', response);
-    }, delay);
-  }
-
-  addChatBubble(role, text) {
-    const container = document.getElementById('chat-messages');
-    const bubble = document.createElement('div');
-    bubble.className = `chat-bubble ${role}`;
-    bubble.textContent = text;
-    container.appendChild(bubble);
-    requestAnimationFrame(() => container.scrollTop = container.scrollHeight);
-  }
-
-  showTyping() {
-    const container = document.getElementById('chat-messages');
-    const typing = document.createElement('div');
-    const id = 'typing-' + Date.now();
-    typing.id = id;
-    typing.className = 'chat-bubble assistant';
-    typing.innerHTML = '<span style="letter-spacing:3px;animation:loaderTextPulse 1s infinite">● ● ●</span>';
-    container.appendChild(typing);
-    container.scrollTop = container.scrollHeight;
-    return id;
-  }
-
+  toggleChat() { const panel = document.getElementById('chat-panel'); const isActive = panel.classList.toggle('active'); if (isActive && !this.chatInitialized) { this.chatInitialized = true; setTimeout(() => this.addChatBubble('assistant', this.getWelcomeMessage()), 400); } if (isActive) setTimeout(() => document.getElementById('chat-input').focus(), 350); }
+  sendChatMessage() { const input = document.getElementById('chat-input'); const msg = input.value.trim(); if (!msg) return; input.value = ''; this.addChatBubble('user', msg); const typingId = this.showTyping(); setTimeout(() => { this.removeTyping(typingId); this.addChatBubble('assistant', this.generateLocalResponse(msg)); }, 400 + Math.min(msg.length * 25, 1200) + Math.random() * 400); }
+  addChatBubble(role, text) { const container = document.getElementById('chat-messages'); const bubble = document.createElement('div'); bubble.className = `chat-bubble ${role}`; bubble.textContent = text; container.appendChild(bubble); requestAnimationFrame(() => container.scrollTop = container.scrollHeight); }
+  showTyping() { const container = document.getElementById('chat-messages'); const typing = document.createElement('div'); const id = 'typing-' + Date.now(); typing.id = id; typing.className = 'chat-bubble assistant'; typing.innerHTML = '<span style="letter-spacing:3px;animation:loaderTextPulse 1s infinite">● ● ●</span>'; container.appendChild(typing); container.scrollTop = container.scrollHeight; return id; }
   removeTyping(id) { const el = document.getElementById(id); if (el) el.remove(); }
 
   getWelcomeMessage() {
-    const m = {
-      en: "👋 Welcome to FITIA PRO! I'm your crypto assistant.\nAsk me about: Mining, Swap, Wallet, Security, Community!",
-      fr: "👋 Bienvenue sur FITIA PRO ! Connecté ✅\nDemandez-moi : Minage, Échange, Wallet, Historique, Sécurité !",
-      de: "👋 Willkommen bei FITIA PRO! Dein Krypto-Assistent.\nFrag mich zu: Mining, Tausch, Wallet, Verlauf!",
-      zh: "👋 欢迎使用 FITIA PRO！你的加密助手。\n问我：挖矿、兑换、钱包、历史、安全！",
-      sg: "👋 Welcome to FITIA PRO! Your crypto assistant.\nAsk about: Mining, Swap, Wallet, History!"
-    };
+    const m = { en: "👋 Welcome! Connected ✅\nAsk me about: Mining, Swap, Wallet, Account!", fr: "👋 Bienvenue ! Connecté ✅\nDemandez-moi : Minage, Échange, Wallet, Mon Compte !", de: "👋 Willkommen! Frag mich zu: Mining, Tausch, Wallet!", zh: "👋 欢迎！问我：挖矿、兑换、钱包！", sg: "👋 Welcome! Ask about: Mining, Swap, Wallet!" };
     return m[this.currentLang] || m.en;
   }
 
   generateLocalResponse(msg) {
     const m = msg.toLowerCase().replace(/[?!.,;:'"]/g, '').trim();
-    const conn = !!this.user;
-    const power = this.currentRealPower || 0;
-    const ftaP = this.ftaPriceUsd || 0;
-
-    if (m.includes('salut') || m.includes('bonjour') || m.includes('hello') || m.includes('hi') || m.includes('你好')) {
-      return conn
-        ? `👋 Salut ! Puissance : ${this.formatHashrate(power)}. ${this.userMachines.filter(m => m.exp > Math.floor(Date.now()/1000)).length} machine(s) active(s).`
-        : "👋 Bienvenue ! Connectez votre wallet pour commencer.";
-    }
+    const conn = !!this.user; const power = this.currentRealPower || 0; const ftaP = this.ftaPriceUsd || 0;
+    if (m.includes('salut') || m.includes('bonjour') || m.includes('hello') || m.includes('hi') || m.includes('你好')) return conn ? `👋 Salut ${this.profile?.username||''} ! Puissance : ${this.formatHashrate(power)}. ${this.userMachines.filter(x => x.exp > Math.floor(Date.now()/1000)).length} machine(s) active(s).` : "👋 Bienvenue ! Connectez votre wallet pour miner.";
     if (m.includes('merci') || m.includes('thanks')) return "De rien ! 😊";
-    if (m.includes('aide') || m.includes('help')) return "🛠️ Aide :\n⛏️ Minage • 💱 Swap • 💰 Wallet • 📜 Historique • 👥 Parrainage • 🛡️ Sécurité";
-    if (m.includes('historique') || m.includes('history') || m.includes('transactions')) return "📜 L'historique est dans le 5e onglet. Toutes vos transactions y sont enregistrées automatiquement !";
-    if (m.includes('minage') || m.includes('mine') || m.includes('miner')) {
-      return conn
-        ? `⛏️ Minage FITIA :\n1️⃣ Achetez machine (Boutique)\n2️⃣ Achetez batterie\n3️⃣ Branchez (Wallet)\n4️⃣ Réclamez vos gains\nPuissance : ${this.formatHashrate(power)}`
-        : "⛏️ Connectez votre wallet d'abord !";
-    }
-    if (m.includes('swap') || m.includes('échange') || m.includes('echange')) {
-      return `💱 Taux actuel : 1 FTA = ${ftaP > 0 ? ftaP.toFixed(6) : '...'} USDT\nFrais : 4%`;
-    }
-    if (m.includes('compte') || m.includes('inscription') || m.includes('register')) {
-      return "👤 Chaque compte est lié à votre adresse Polygon. Inscrivez-vous une fois, puis connectez-vous simplement.";
-    }
-    if (m.includes('sécurité') || m.includes('security')) {
-      return "🛡️ Sécurité : Ne partagez JAMAIS votre phrase de récupération. Vérifiez les adresses avant d'envoyer.";
-    }
-    if (m.includes('parrain') || m.includes('parrainage')) {
-      return conn ? `👥 Partagez votre adresse : ${this.user.slice(0, 6)}...${this.user.slice(-4)}` : "👥 Connectez votre wallet.";
-    }
-    return "Essayez : 'minage', 'swap', 'wallet', 'historique', 'sécurité', 'parrainage'. Je suis là pour vous aider !";
+    if (m.includes('aide') || m.includes('help')) return "🛠️ Aide :\n⛏️ Minage • 💱 Swap • 💰 Wallet • 👤 Mon Compte • 👥 Parrainage";
+    if (m.includes('compte') || m.includes('profil') || m.includes('profile')) return "👤 Mon Compte (5e onglet) : gérez votre profil, historique, wallet et mot de passe.";
+    if (m.includes('minage') || m.includes('mine') || m.includes('miner')) return conn ? `⛏️ Minage : Achetez machine → Batterie → Branchez → Réclamez ! Puissance : ${this.formatHashrate(power)}` : "⛏️ Connectez votre wallet d'abord !";
+    if (m.includes('swap') || m.includes('échange') || m.includes('echange')) return `💱 Taux : 1 FTA = ${ftaP > 0 ? ftaP.toFixed(6) : '...'} USDT | Frais : 4%`;
+    if (m.includes('sécurité') || m.includes('security')) return "🛡️ Ne partagez JAMAIS votre mot de passe ou phrase de récupération.";
+    return "Essayez : 'minage', 'swap', 'wallet', 'compte', 'parrainage'.";
   }
 
   // ═══ INIT ════════════════════════════════════════════════════════
 
   async init() {
     this.setLanguage(this.currentLang);
-    // Vérifier si déjà connecté (restauration de session)
-    const savedAddress = localStorage.getItem('fitia_connected_address');
-    if (savedAddress && window.ethereum) {
+
+    // Vérifier si l'utilisateur a une session sauvegardée
+    const savedToken = localStorage.getItem('fitia_auth_token');
+    const savedProfile = localStorage.getItem('fitia_profile');
+
+    if (savedToken && savedProfile) {
+      this.authToken = savedToken;
       try {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-        if (accounts.length > 0 && accounts[0].toLowerCase() === savedAddress.toLowerCase()) {
-          // Reconnecter automatiquement
-          this.provider = new ethers.BrowserProvider(window.ethereum);
-          this.signer = await this.provider.getSigner();
-          this.user = accounts[0];
-          const network = await this.provider.getNetwork();
-          if (Number(network.chainId) === CONFIG.CHAIN_ID) {
-            // Vérifier si le compte existe
-            try {
-              await this.apiCall(`/api/auth/me/${this.user}`);
-              await this.enterApp();
-              return;
-            } catch (e) {
-              // Compte non trouvé, afficher l'inscription
-              this.showRegisterStep();
-              return;
-            }
-          }
+        this.profile = JSON.parse(savedProfile);
+        // Vérifier que le token est toujours valide
+        const data = await this.apiCall('/api/auth/me');
+        if (data.user) {
+          this.profile = data.user;
+          localStorage.setItem('fitia_profile', JSON.stringify(data.user));
+          await this.enterApp();
+          return;
         }
       } catch (e) {
-        localStorage.removeItem('fitia_connected_address');
+        // Token expiré, on efface et on affiche la page de connexion
+        localStorage.removeItem('fitia_auth_token');
+        localStorage.removeItem('fitia_profile');
+        this.authToken = null;
+        this.profile = null;
       }
     }
   }
