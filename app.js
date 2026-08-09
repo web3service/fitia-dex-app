@@ -532,11 +532,14 @@ class Application {
   /** Déconnexion complète */
   logout() {
     this.stopMiningCounter();
+    if (this._updateInterval) { clearInterval(this._updateInterval); this._updateInterval = null; }
     this.authToken = null;
     this.profile = null;
     this.user = null;
     this.signer = null;
     this.provider = null;
+    this.core = null;
+    this.mine = null;
     localStorage.removeItem('fitia_auth_token');
     localStorage.removeItem('fitia_profile');
     localStorage.removeItem(this.storageKey);
@@ -576,21 +579,23 @@ class Application {
     // Mettre à jour l'UI wallet
     this.updateWalletUI();
 
-    // Si un wallet est déjà lié, initialiser les contrats
-    if (this.profile.address) {
-      await this.connectWalletSilent();
-    }
+    // Tenter de connecter le wallet silencieusement (si déjà lié)
+    const walletOk = this.profile.address ? await this.connectWalletSilent() : false;
 
-    // Initialiser le visualiseur
+    // Initialiser le visualiseur (marche sans wallet)
     this.initVisualizer();
     window.addEventListener('resize', () => this.resizeCanvas());
     
-    // Rafraîchir les données
-    if (this.profile.address) {
+    // Initialiser la blockchain UNIQUEMENT si le wallet est vraiment connecté
+    if (walletOk && this.user) {
       await this.cacheBatteryDurations();
-      setInterval(() => this.updateData(), 15000);
+      if (this._updateInterval) clearInterval(this._updateInterval);
+      this._updateInterval = setInterval(() => this.updateData(), 15000);
       await this.fetchMarketPrices();
       await this.updateData();
+      console.log('✅ Blockchain initialisée — wallet connecté:', this.user.slice(0,10)+'...');
+    } else if (this.profile.address) {
+      console.log('⚠️ Wallet lié mais non connecté (MetaMask absent ou verrouillé)');
     }
 
     this.setLoader(false);
@@ -630,9 +635,9 @@ class Application {
     }
   }
 
-  /** Connexion silencieuse du wallet (déjà lié au compte) */
+  /** Connexion silencieuse du wallet (déjà lié au compte). Retourne true si connecté. */
   async connectWalletSilent() {
-    if (!window.ethereum) return;
+    if (!window.ethereum) return false;
     try {
       const accounts = await window.ethereum.request({ method: 'eth_accounts' });
       if (accounts.length > 0 && accounts[0].toLowerCase() === this.profile.address.toLowerCase()) {
@@ -645,8 +650,10 @@ class Application {
         window.ethereum.on('accountsChanged', () => this.handleWalletDisconnect());
         window.ethereum.on('chainChanged', () => this.handleWalletDisconnect());
         this.updateWalletUI();
+        return true;
       }
-    } catch (e) { /* silencieux */ }
+      return false;
+    } catch (e) { return false; }
   }
 
   /** Connexion wallet depuis la page compte */
@@ -661,7 +668,7 @@ class Application {
       const network = await this.provider.getNetwork();
       if (Number(network.chainId) !== CONFIG.CHAIN_ID) await this.switchNetwork();
 
-      // Lier l'adresse au compte
+      // Lier l'adresse au compte via l'API
       await this.apiCall('/api/profile/address', 'PUT', { address: this.user });
       
       // Mettre à jour le profil local
@@ -671,23 +678,29 @@ class Application {
       window.ethereum.on('accountsChanged', () => this.handleWalletDisconnect());
       window.ethereum.on('chainChanged', () => this.handleWalletDisconnect());
 
+      // Initialiser les contrats et les données blockchain
       await this.initContracts();
       await this.cacheBatteryDurations();
-      if (!document.querySelector('.view.active') || document.querySelector('.view.active').id === 'view-account') {
-        // On recharge un intervalle si pas déjà actif
-      }
-      if (!this._updateInterval) {
-        this._updateInterval = setInterval(() => this.updateData(), 15000);
-      }
+      
+      // Toujours recréer l'intervalle pour éviter les doublons
+      if (this._updateInterval) clearInterval(this._updateInterval);
+      this._updateInterval = setInterval(() => this.updateData(), 15000);
+      
       await this.fetchMarketPrices();
       await this.updateData();
       this.updateWalletUI();
 
-      // Afficher l'adresse dans le header
+      // Mettre à jour l'affichage header et compte
       document.getElementById('addr-display').innerText = this.profile.username + ' | ' + this.user.slice(0, 6) + '...' + this.user.slice(-4);
       document.getElementById('account-address').innerText = 'Wallet: ' + this.user.slice(0, 6) + '...' + this.user.slice(-4);
+      document.getElementById('account-wallet-addr').innerText = this.user.slice(0, 6) + '...' + this.user.slice(-4);
+      document.getElementById('account-wallet-addr').style.color = 'var(--success)';
+
+      // Forcer le rendu de la boutique
+      this.renderShop();
 
       this.showToast('✅ Wallet lié avec succès !');
+      console.log('✅ Wallet connecté avec succès:', this.user.slice(0,10)+'...');
     } catch (e) { this.showError(e); }
     this.setLoader(false);
   }
@@ -697,9 +710,20 @@ class Application {
     this.user = null;
     this.signer = null;
     this.provider = null;
+    this.core = null;
+    this.mine = null;
     this.stopMiningCounter();
-    this.profile.address = null;
-    localStorage.setItem('fitia_profile', JSON.stringify(this.profile));
+    // Nettoyer l'intervalle de mise à jour blockchain
+    if (this._updateInterval) {
+      clearInterval(this._updateInterval);
+      this._updateInterval = null;
+    }
+    // Réinitialiser l'affichage
+    document.getElementById('val-power').innerText = '0 H/s';
+    document.getElementById('val-pending').innerText = '0.00000000';
+    document.getElementById('viz-status').innerText = this.t('noMachine');
+    document.getElementById('viz-status').style.color = '#666';
+    this.currentRealPower = 0;
     this.updateWalletUI();
     document.getElementById('addr-display').innerText = this.profile.username;
     this.showToast("Wallet déconnecté. Reconnectez pour les transactions.");
@@ -1287,7 +1311,12 @@ class Application {
     const navMap = { dashboard: 0, shop: 1, 'my-rigs': 2, swap: 3, account: 4 };
     const idx = navMap[viewId];
     if (idx !== undefined) { const items = document.querySelectorAll('.nav-item'); if (items[idx]) items[idx].classList.add('active'); }
+    // Charger l'historique dans Mon Compte
     if (viewId === 'account') this.loadHistory();
+    // Rafraîchir les données blockchain si wallet connecté
+    if (this.user && ['dashboard','shop','my-rigs','swap'].includes(viewId)) {
+      this.updateData().catch(e => console.error('Erreur updateData nav:', e.message));
+    }
   }
 
   // ═══ TERMS & PRIVACY ════════════════════════════════════════════
