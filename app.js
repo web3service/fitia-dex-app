@@ -16,7 +16,14 @@ const CONFIG = {
   WC_PROJECT_ID: "2c10ee910a836551fbabbf7c8cc4542a",
   WHATSAPP_GROUP: "https://chat.whatsapp.com/BDsvPCB6xp8H8X0YaRmPFP",
   WHATSAPP_CHANNEL: "https://whatsapp.com/channel/0029VbCQhI38PgsPLbBJdV1e",
-  API_BASE: "https://fitia-dex-app-production.up.railway.app"
+  API_BASE: "https://fitia-dex-app-production.up.railway.app",
+  // RPC fallbacks (Polygon)
+  RPC_URLS: [
+    "https://polygon-rpc.com",
+    "https://rpc-mainnet.maticvigil.com",
+    "https://polygon-mainnet.g.alchemy.com/v2/demo",
+    "https://rpc.ankr.com/polygon"
+  ]
 };
 
 // ─── Traductions i18n (5 langues, étendues v2) ────────────────────
@@ -400,6 +407,10 @@ class Application {
     this.chatHistory = [];
     this.prevPriceCheckpoint = {};
     this.priceCheckpointTime = 0;
+    
+    // Compteur d'erreurs blockchain (une seule notification)
+    this._blockchainErrorCount = 0;
+    this._rpcIndex = 0; // Index RPC actif
   }
 
   // ─── Traduction ──────────────────────────────────────────────────
@@ -808,13 +819,42 @@ class Application {
   }
 
   async initContracts() {
-    this.core = new ethers.Contract(CONFIG.CORE, CORE_ABI, this.signer);
-    this.mine = new ethers.Contract(CONFIG.MINE, MINE_ABI, this.signer);
+    // Utiliser un JsonRpcProvider fallback si le provider MetaMask échoue
+    let provider = this.provider;
     try {
-      const ftaContract = new ethers.Contract(CONFIG.FTA, ["function decimals() view returns (uint8)"], this.provider);
+      // Tester si le provider MetaMask répond
+      await this.provider.getBlockNumber();
+    } catch (e) {
+      console.warn('⚠️ Provider MetaMask injoignable, fallback RPC public');
+      // Fallback : utiliser un RPC public pour les lectures
+      const rpcUrl = CONFIG.RPC_URLS[this._rpcIndex] || CONFIG.RPC_URLS[0];
+      provider = new ethers.JsonRpcProvider(rpcUrl);
+      // Garder le signer MetaMask pour les transactions
+    }
+    
+    // Contrat Core : utiliser le signer pour les écritures, provider pour les lectures
+    this.core = new ethers.Contract(CONFIG.CORE, CORE_ABI, this.signer || provider);
+    this.mine = new ethers.Contract(CONFIG.MINE, MINE_ABI, this.signer || provider);
+    
+    // Ajouter une connexion provider-only pour les lectures si le provider MetaMask est lent
+    this._readProvider = provider !== this.provider ? provider : null;
+    
+    try {
+      const ftaReadProvider = this._readProvider || this.provider;
+      const ftaContract = new ethers.Contract(CONFIG.FTA, ["function decimals() view returns (uint8)"], ftaReadProvider);
       this.ftaDecimals = Number(await ftaContract.decimals());
     } catch (e) { /* garde 8 */ }
     if (!localStorage.getItem(this.storageKey)) localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
+    
+    // Vérification rapide que les contrats sont accessibles
+    try {
+      await this.mine.mCount();
+      console.log('✅ Contrats blockchain accessibles');
+    } catch (e) {
+      console.error('❌ Contrats inaccessibles:', e.message);
+      this._rpcIndex = (this._rpcIndex + 1) % CONFIG.RPC_URLS.length;
+      throw new Error('Impossible de contacter les contrats sur Polygon. Vérifiez votre connexion RPC.');
+    }
   }
 
   async cacheBatteryDurations() {
@@ -888,59 +928,102 @@ class Application {
   async updateData() {
     if (!this.user) return;
     try {
-      const rawPower = await this.mine.powerOf(this.user);
-      let powNum = Number(rawPower);
-      let diffNum = 2e12;
-      try { diffNum = Number(await this.core.difficulty()); } catch (e) {}
-      this.currentRealPower = powNum > 0 ? (powNum * diffNum) / 1e18 : 0;
+      // Essayer de lire les données blockchain
+      let rawPower = 0, diffNum = 2e12, uBal = 0n, fBal = 0n, polBal = 0n, nativePol = 0n;
+      
+      try {
+        rawPower = await this.mine.powerOf(this.user);
+        const powNum = Number(rawPower);
+        try { diffNum = Number(await this.core.difficulty()); } catch (e) {}
+        this.currentRealPower = powNum > 0 ? (powNum * diffNum) / 1e18 : 0;
+      } catch (e) {
+        console.warn('⚠️ Erreur lecture powerOf:', e.message);
+        // Réessayer avec le provider fallback si dispo
+        if (this._readProvider) {
+          try {
+            const mineRead = new ethers.Contract(CONFIG.MINE, MINE_ABI, this._readProvider);
+            const coreRead = new ethers.Contract(CONFIG.CORE, CORE_ABI, this._readProvider);
+            rawPower = await mineRead.powerOf(this.user);
+            const powNum = Number(rawPower);
+            try { diffNum = Number(await coreRead.difficulty()); } catch (e2) {}
+            this.currentRealPower = powNum > 0 ? (powNum * diffNum) / 1e18 : 0;
+          } catch (e2) {
+            console.error('❌ Fallback RPC aussi en échec:', e2.message);
+          }
+        }
+      }
+      
       try { const rateRaw = await this.core.rate(); this.ftaPriceUsd = parseFloat(ethers.formatUnits(rateRaw, this.usdtDecimals)); } catch (e) {}
-      const uBal = await this.core.uBal(this.user);
-      const fBal = await this.core.fBal(this.user);
-      const polBal = await this.core.pol(this.user);
-      const nativePol = await this.provider.getBalance(this.user);
+      
+      try { uBal = await this.core.uBal(this.user); } catch (e) { console.warn('⚠️ uBal:', e.message); }
+      try { fBal = await this.core.fBal(this.user); } catch (e) { console.warn('⚠️ fBal:', e.message); }
+      try { polBal = await this.core.pol(this.user); } catch (e) { console.warn('⚠️ pol:', e.message); }
+      try { nativePol = await this.provider.getBalance(this.user); } catch (e) { console.warn('⚠️ getBalance:', e.message); }
+      
       const uB = parseFloat(ethers.formatUnits(uBal, this.usdtDecimals));
       const fB = parseFloat(ethers.formatUnits(fBal, this.ftaDecimals));
       const pB = parseFloat(ethers.formatUnits(polBal, 18));
       const nB = parseFloat(ethers.formatUnits(nativePol, 18));
 
-      document.getElementById('val-power').innerText = this.formatHashrate(this.currentRealPower);
-      document.getElementById('bal-pol').innerText = (pB + nB).toFixed(4);
-      document.getElementById('bal-usdt').innerText = uB.toFixed(2);
-      document.getElementById('bal-fta').innerText = fB.toFixed(4);
-      document.getElementById('price-pol').innerText = this.formatUsd(this.polPriceUsd);
-      document.getElementById('price-usdt').innerText = this.formatUsd(1);
-      document.getElementById('price-fta').innerText = this.formatUsd(this.ftaPriceUsd);
+      // Mise à jour UI (seulement si les éléments existent)
+      const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+      safeSet('val-power', this.formatHashrate(this.currentRealPower));
+      safeSet('bal-pol', (pB + nB).toFixed(4));
+      safeSet('bal-usdt', uB.toFixed(2));
+      safeSet('bal-fta', fB.toFixed(4));
+      safeSet('price-pol', this.formatUsd(this.polPriceUsd));
+      safeSet('price-usdt', this.formatUsd(1));
+      safeSet('price-fta', this.formatUsd(this.ftaPriceUsd));
       this.updatePriceChange('pol', this.polPriceUsd);
       this.updatePriceChange('usdt', 1);
       this.updatePriceChange('fta', this.ftaPriceUsd);
-      document.getElementById('bal-pol-usd').innerText = '≈ ' + this.formatUsd((pB + nB) * this.polPriceUsd);
-      document.getElementById('bal-usdt-usd').innerText = '≈ ' + this.formatUsd(uB);
-      document.getElementById('bal-fta-usd').innerText = '≈ ' + this.formatUsd(fB * this.ftaPriceUsd);
-      document.getElementById('val-total-usd').innerText = this.formatUsd((pB + nB) * this.polPriceUsd + uB + fB * this.ftaPriceUsd);
-      document.getElementById('swap-rate').innerText = this.t('currentRate') + this.ftaPriceUsd.toFixed(6) + this.t('usdtPerFta');
-      document.getElementById('swap-bal-from').innerText = (this.swapDirection === 'USDT_TO_FTA' ? uB : fB).toFixed(4);
-      document.getElementById('swap-bal-to').innerText = (this.swapDirection === 'USDT_TO_FTA' ? fB : uB).toFixed(4);
+      safeSet('bal-pol-usd', '≈ ' + this.formatUsd((pB + nB) * this.polPriceUsd));
+      safeSet('bal-usdt-usd', '≈ ' + this.formatUsd(uB));
+      safeSet('bal-fta-usd', '≈ ' + this.formatUsd(fB * this.ftaPriceUsd));
+      safeSet('val-total-usd', this.formatUsd((pB + nB) * this.polPriceUsd + uB + fB * this.ftaPriceUsd));
+      safeSet('swap-rate', this.t('currentRate') + this.ftaPriceUsd.toFixed(6) + this.t('usdtPerFta'));
+      safeSet('swap-bal-from', (this.swapDirection === 'USDT_TO_FTA' ? uB : fB).toFixed(4));
+      safeSet('swap-bal-to', (this.swapDirection === 'USDT_TO_FTA' ? fB : uB).toFixed(4));
 
       this.lastClaimTimestamp = parseInt(localStorage.getItem(this.storageKey) || '0');
       const elapsed = Math.floor(Date.now() / 1000) - this.lastClaimTimestamp;
       if (this.currentRealPower > 0) {
-        if (!this.miningTimer) { const pendingFtaRaw = this.currentRealPower * elapsed; document.getElementById('val-pending').innerText = (pendingFtaRaw / 1e8).toFixed(8); this.startMiningCounter(); }
-        document.getElementById('viz-status').innerText = this.t('miningActive');
-        document.getElementById('viz-status').style.color = "var(--primary)";
+        if (!this.miningTimer) { const pendingFtaRaw = this.currentRealPower * elapsed; safeSet('val-pending', (pendingFtaRaw / 1e8).toFixed(8)); this.startMiningCounter(); }
+        const viz = document.getElementById('viz-status'); if (viz) { viz.innerText = this.t('miningActive'); viz.style.color = "var(--primary)"; }
         this.updateVisualizerIntensity(this.currentRealPower);
       } else {
         this.stopMiningCounter();
-        document.getElementById('viz-status').innerText = this.t('noMachine');
-        document.getElementById('viz-status').style.color = "#666";
-        document.getElementById('val-pending').innerText = "0.00000000";
+        const viz = document.getElementById('viz-status'); if (viz) { viz.innerText = this.t('noMachine'); viz.style.color = "#666"; }
+        safeSet('val-pending', "0.00000000");
       }
-      await this.renderShop();
-      await this.fetchUserAssets();
+      
+      try { await this.renderShop(); } catch (e) { console.warn('⚠️ renderShop:', e.message); }
+      try { await this.fetchUserAssets(); } catch (e) { console.warn('⚠️ fetchUserAssets:', e.message); }
       this.renderActiveMachines();
       this.renderUserMachines();
       this.renderUserBatteries();
-      if (document.getElementById('swap-from-in').value) this.calcSwap();
-    } catch (e) { console.error("Erreur updateData:", e); }
+      if (document.getElementById('swap-from-in')?.value) this.calcSwap();
+      
+      // Réinitialiser le compteur d'erreurs si succès
+      this._blockchainErrorCount = 0;
+    } catch (e) {
+      this._blockchainErrorCount++;
+      console.error("Erreur updateData (#" + this._blockchainErrorCount + "):", e.message);
+      // Afficher l'erreur une seule fois pour ne pas spammer
+      if (this._blockchainErrorCount === 1) {
+        this.showToast('⚠️ Erreur connexion blockchain. Vérifiez votre wallet et le réseau Polygon.', true);
+      }
+      // Après 3 échecs, réessayer avec un autre RPC
+      if (this._blockchainErrorCount >= 3) {
+        this._rpcIndex = (this._rpcIndex + 1) % CONFIG.RPC_URLS.length;
+        const rpcUrl = CONFIG.RPC_URLS[this._rpcIndex];
+        console.log('🔄 Basculement RPC:', rpcUrl);
+        try {
+          this._readProvider = new ethers.JsonRpcProvider(rpcUrl);
+          this._blockchainErrorCount = 0;
+        } catch (e2) {}
+      }
+    }
   }
 
   startMiningCounter() {
