@@ -1,1541 +1,1665 @@
-// ═══════════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════════
+   FITIA MINING V3 - Application 100% locale (3 fichiers)
+   index.html + style.css + app.js
+   • Base de données SQLite embarquée (sql.js - WebAssembly)
+   • Inscription / connexion des utilisateurs (mots de passe hachés PBKDF2)
+   • Compte lié à l'adresse Polygon (signature EIP-191 vérifiée)
+   • Interactions avec FitiaMiningV3_Core / FitiaMiningV3_Mine (MetaMask)
+   • Historique des transactions dans la base SQLite
+   • Export / import du fichier .db (portable, ouvrable dans VS Code)
+   ═══════════════════════════════════════════════════════════════════ */
+'use strict';
 
-// ─── Configuration ─────────────────────────────────────────────────
-const CONFIG = {
-  CORE: "0x1b8EdFb91168Fb233F8CA7cf1631038AC193D743",
-  MINE: "0xBd9FA9801eDA247b28B3BB9dDBf1CF52cA563Bc6",
-  USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
-  FTA:  "0x5c418b12c7e9c2A8e9A71A68c6d9b319E7B1d1fd",
-  CHAIN_ID: 137,
-  WC_PROJECT_ID: "2c10ee910a836551fbabbf7c8cc4542a",
-  WHATSAPP_GROUP: "https://chat.whatsapp.com/BDsvPCB6xp8H8X0YaRmPFP",
-  WHATSAPP_CHANNEL: "https://whatsapp.com/channel/0029VbCQhI38PgsPLbBJdV1e"
-};
-
-// ─── Traductions i18n (5 langues) ──────────────────────────────────
-const i18n = {
-  en: {
-    connect: "Connect", refTitle: "👥 Referral System", refDesc: "Enter referrer address or ID to link.", bindRef: "BIND",
-    power: "POWER", ftaSec: "Hashrate", pending: "PENDING", fta: "FTA", miningActive: "MINING ACTIVE", noMachine: "NO MACHINE", claim: "CLAIM",
-    shopTitle: "⛏️ Shop", machines: "Machines", batteries: "Batteries", buy: "BUY",
-    myAssets: "⚙️ Wallet & Assets", walletBal: "💰 Balances", plugMachine: "🔌 Plug in a machine", plugDesc: "Select a machine index and battery type.",
-    machineId: "Machine Index (0, 1...)", plug: "PLUG IN ⚡",
-    swapTitle: "💱 Swap", youPay: "You pay", balance: "Balance:", youReceive: "You receive", swap: "SWAP",
-    loading: "Loading...", currentRate: "1 FTA = ",
-    home: "Home", shop: "Shop", assets: "Wallet", swapNav: "Swap",
-    connWallet: "Connecting...", errConn: "Connection Error",
-    linking: "Linking...", refLinked: "Referrer linked!", connFirst: "Connect first",
-    enterRefAddr: "Referrer address or ID (0x...)", enterRefId: "Referrer ID (number)",
-    buyingMachine: "Buying Machine", buyingBattery: "Buying Battery",
-    confirming: "Confirming...", calcFta: "Calculating price...",
-    machineBought: "Machine purchased!", batteryBought: "Battery purchased!",
-    invalidId: "Invalid Machine Index", pluggingIn: "Plugging in...", pluggedIn: "Machine plugged in! ⚡",
-    invalidAmount: "Invalid amount", swapping: "Swapping...", swapSuccess: "Swap successful!",
-    claiming: "Claiming...", claimed: "Rewards claimed!",
-    error: "Error", days: "Days", rig: "RIG",
-    totalBal: "Total Balance", activeMachines: "⛏️ Active Machines",
-    myMachines: "⛏️ My Machines", myBatteries: "🔋 My Batteries",
-    active: "Active", expired: "Expired", inactive: "Inactive", available: "Available",
-    plugged: "Plugged", notPlugged: "Not Plugged", timeRemaining: "Remaining",
-    noMachines: "No machines yet", noBatteries: "No batteries yet",
-    batteryLabel: "Battery", usdtPerFta: " USDT", noActiveMachines: "No active machines",
-    exchangeRate: "Exchange Rate", priceImpact: "Price Impact",
-    swapFee: "Swap Fee (4%)", minimumReceived: "Minimum Received",
-    slippageTolerance: "Slippage Tolerance", networkFee: "Network Fee",
-    depositBtn: "DEPOSIT", withdrawBtn: "WITHDRAW", depositing: "Depositing...", depositSuccess: "Deposit successful!", withdrawing: "Withdrawing...", withdrawSuccess: "Withdrawal successful!",
-    send: "Send", receive: "Receive", sending: "Sending...", sentSuccess: "Sent successfully!", addrCopied: "Address copied!", confirmSend: "CONFIRM SEND", invalidAddr: "Invalid address", recipientAddr: "Recipient address (0x...)", amount: "Amount",
-    errRejected: "Transaction cancelled", errInsufficientFunds: "Insufficient balance",
-    errNetwork: "Network error. Please try again.", errTimeout: "Transaction timed out.",
-    errContract: "Transaction failed. Please try again.", errGeneric: "An error occurred.",
-    errAlreadyPending: "Transaction pending. Please wait.", errNonce: "Nonce error. Restart the app.",
-    errNoMachine: "No machine", errRunning: "Machine already running",
-    errNoBattery: "No battery of this type", errMaxMachine: "Max machines reached",
+/* ═══════════════════════════════════════════════════════════════════
+   CONFIGURATION - À MODIFIER ICI
+   Remplacez les adresses 0x000...0 par celles de VOS contrats
+   déployés sur Polygon. Sans elles, l'application fonctionne
+   (comptes, base de données, historique) mais les actions
+   blockchain sont désactivées.
+   ═══════════════════════════════════════════════════════════════════ */
+const CFG = {
+  contracts: {
+    core: '0x1b8EdFb91168Fb233F8CA7cf1631038AC193D743', // FitiaMiningV3_Core
+    mine: '0xBd9FA9801eDA247b28B3BB9dDBf1CF52cA563Bc6', // FitiaMiningV3_Mine
+    usdt: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', // Token USDT
+    fta:  '0x5c418b12c7e9c2A8e9A71A68c6d9b319E7B1d1fd'  // Token FTA
   },
-  fr: {
-    connect: "Connecter", refTitle: "👥 Parrainage", refDesc: "Entrez l'adresse ou l'ID du parrain.", bindRef: "LIER",
-    power: "PUISSANCE", ftaSec: "Hashrate", pending: "EN ATTENTE", fta: "FTA", miningActive: "MINAGE ACTIF", noMachine: "AUCUNE MACHINE", claim: "RÉCLAMER",
-    shopTitle: "⛏️ Boutique", machines: "Machines", batteries: "Batteries", buy: "ACHETER",
-    myAssets: "⚙️ Wallet & Actifs", walletBal: "💰 Soldes", plugMachine: "🔌 Brancher une machine", plugDesc: "Choisissez l'index d'une machine et le type de batterie.",
-    machineId: "Index Machine (0, 1...)", plug: "BRANCHER ⚡",
-    swapTitle: "💱 Échange", youPay: "Vous payez", balance: "Solde:", youReceive: "Vous recevez", swap: "ÉCHANGER",
-    loading: "Chargement...", currentRate: "1 FTA = ",
-    home: "Accueil", shop: "Boutique", assets: "Wallet", swapNav: "Swap",
-    connWallet: "Connexion...", errConn: "Erreur connexion",
-    linking: "Liaison...", refLinked: "Parrain lié!", connFirst: "Connectez-vous d'abord",
-    enterRefAddr: "Adresse ou ID parrain (0x...)", enterRefId: "ID Parrain (nombre)",
-    buyingMachine: "Achat Machine", buyingBattery: "Achat Batterie",
-    confirming: "Confirmation...", calcFta: "Calcul du prix...",
-    machineBought: "Machine achetée!", batteryBought: "Batterie achetée!",
-    invalidId: "Index Machine invalide", pluggingIn: "Branchement...", pluggedIn: "Machine branchée! ⚡",
-    invalidAmount: "Montant invalide", swapping: "Échange...", swapSuccess: "Échange réussi!",
-    claiming: "Récupération...", claimed: "Gains réclamés!",
-    error: "Erreur", days: "Jours", rig: "RIG",
-    totalBal: "Solde Total", activeMachines: "⛏️ Machines Actives",
-    myMachines: "⛏️ Mes Machines", myBatteries: "🔋 Mes Batteries",
-    active: "Actif", expired: "Expiré", inactive: "Inactif", available: "Disponible",
-    plugged: "Branché", notPlugged: "Non branché", timeRemaining: "Restant",
-    noMachines: "Aucune machine", noBatteries: "Aucune batterie",
-    batteryLabel: "Batterie", usdtPerFta: " USDT", noActiveMachines: "Aucune machine active",
-    exchangeRate: "Taux de change", priceImpact: "Impact prix",
-    swapFee: "Frais swap (4%)", minimumReceived: "Minimum reçu",
-    slippageTolerance: "Tolérance slippage", networkFee: "Frais réseau",
-    depositBtn: "DÉPOSER", withdrawBtn: "RETIRER", depositing: "Dépôt...", depositSuccess: "Dépôt réussi!", withdrawing: "Retrait...", withdrawSuccess: "Retrait réussi!",
-    send: "Envoyer", receive: "Recevoir", sending: "Envoi...", sentSuccess: "Envoi réussi!", addrCopied: "Adresse copiée!", confirmSend: "CONFIRMER L'ENVOI", invalidAddr: "Adresse invalide", recipientAddr: "Adresse destinataire (0x...)", amount: "Montant",
-    errRejected: "Transaction annulée", errInsufficientFunds: "Solde insuffisant",
-    errNetwork: "Erreur réseau. Réessayez.", errTimeout: "Délai expiré.",
-    errContract: "Transaction échouée. Réessayez.", errGeneric: "Une erreur est survenue.",
-    errAlreadyPending: "Transaction en cours. Patientez.", errNonce: "Erreur nonce. Redémarrez l'app.",
-    errNoMachine: "Aucune machine", errRunning: "Machine déjà en marche",
-    errNoBattery: "Pas de batterie de ce type", errMaxMachine: "Maximum de machines atteint",
-  },
-  de: {
-    connect: "Verbinden", refTitle: "👥 Empfehlung", refDesc: "Empfehler-Adresse oder ID eingeben.", bindRef: "BINDEN",
-    power: "LEISTUNG", ftaSec: "Hashrate", pending: "AUSSTEHEND", fta: "FTA", miningActive: "MINING AKTIV", noMachine: "KEINE MASCHINE", claim: "EINFORDERN",
-    shopTitle: "⛏️ Shop", machines: "Maschinen", batteries: "Batterien", buy: "KAUFEN",
-    myAssets: "⚙️ Wallet & Assets", walletBal: "💰 Guthaben", plugMachine: "🔌 Maschine anschließen", plugDesc: "Wähle Maschinen-Index und Batterietyp.",
-    machineId: "Maschinen-Index (0, 1...)", plug: "ANSCHLIESSEN ⚡",
-    swapTitle: "💱 Tausch", youPay: "Sie zahlen", balance: "Guthaben:", youReceive: "Sie erhalten", swap: "TAUSCHEN",
-    loading: "Laden...", currentRate: "1 FTA = ",
-    home: "Home", shop: "Shop", assets: "Wallet", swapNav: "Swap",
-    connWallet: "Verbindung...", errConn: "Verbindungsfehler",
-    linking: "Verknüpfung...", refLinked: "Empfehler verknüpft!", connFirst: "Zuerst verbinden",
-    enterRefAddr: "Empfehler-Adresse oder ID (0x...)", enterRefId: "Empfehler-ID (Zahl)",
-    buyingMachine: "Kaufe Maschine", buyingBattery: "Kaufe Batterie",
-    confirming: "Bestätigung...", calcFta: "Preis berechnen...",
-    machineBought: "Maschine gekauft!", batteryBought: "Batterie gekauft!",
-    invalidId: "Ungültiger Index", pluggingIn: "Anschließen...", pluggedIn: "Angeschlossen! ⚡",
-    invalidAmount: "Ungültiger Betrag", swapping: "Tauschen...", swapSuccess: "Tausch erfolgreich!",
-    claiming: "Einforderung...", claimed: "Eingefordert!",
-    error: "Fehler", days: "Tage", rig: "RIG",
-    totalBal: "Gesamtguthaben", activeMachines: "⛏️ Aktive Maschinen",
-    myMachines: "⛏️ Meine Maschinen", myBatteries: "🔋 Meine Batterien",
-    active: "Aktiv", expired: "Abgelaufen", inactive: "Inaktiv", available: "Verfügbar",
-    plugged: "Angeschlossen", notPlugged: "Nicht angeschlossen", timeRemaining: "Verbleibend",
-    noMachines: "Keine Maschinen", noBatteries: "Keine Batterien",
-    batteryLabel: "Batterie", usdtPerFta: " USDT", noActiveMachines: "Keine aktive Maschinen",
-    exchangeRate: "Wechselkurs", priceImpact: "Preisauswirkung",
-    swapFee: "Swapgebühr (4%)", minimumReceived: "Mindestbetrag",
-    slippageTolerance: "Slippage-Toleranz", networkFee: "Netzwerkgebühr",
-    depositBtn: "EINZAHLEN", depositing: "Einzahlung...", depositSuccess: "Einzahlung erfolgreich!",
-    errRejected: "Transaktion abgebrochen", errInsufficientFunds: "Unzureichendes Guthaben",
-    errNetwork: "Netzwerkfehler. Bitte versuchen Sie es erneut.", errTimeout: "Zeitüberschreitung.",
-    errContract: "Transaktion fehlgeschlagen.", errGeneric: "Ein Fehler ist aufgetreten.",
-    errAlreadyPending: "Transaktion ausstehend.", errNonce: "Nonce-Fehler. App neustarten.",
-    errNoMachine: "Keine Maschine", errRunning: "Maschine läuft bereits",
-    errNoBattery: "Keine Batterie dieses Typs", errMaxMachine: "Maximale Maschinen erreicht",
-  },
-  zh: {
-    connect: "连接", refTitle: "👥 推荐系统", refDesc: "输入推荐人地址或ID进行绑定。", bindRef: "绑定",
-    power: "算力", ftaSec: "Hashrate", pending: "待领取", fta: "FTA", miningActive: "挖矿中", noMachine: "无机器", claim: "领取",
-    shopTitle: "⛏️ 商店", machines: "矿机", batteries: "电池", buy: "购买",
-    myAssets: "⚙️ 钱包与资产", walletBal: "💰 余额", plugMachine: "🔌 插入机器", plugDesc: "选择机器索引和电池类型。",
-    machineId: "机器索引 (0, 1...)", plug: "插入 ⚡",
-    swapTitle: "💱 兑换", youPay: "您支付", balance: "余额:", youReceive: "您收到", swap: "兑换",
-    loading: "加载中...", currentRate: "1 FTA = ",
-    home: "首页", shop: "商店", assets: "钱包", swapNav: "兑换",
-    connWallet: "连接中...", errConn: "连接错误",
-    linking: "绑定中...", refLinked: "推荐人绑定成功!", connFirst: "请先连接",
-    enterRefAddr: "推荐人地址或ID (0x...)", enterRefId: "推荐人ID (数字)",
-    buyingMachine: "购买矿机", buyingBattery: "购买电池",
-    confirming: "确认中...", calcFta: "计算价格...",
-    machineBought: "矿机购买成功!", batteryBought: "电池购买成功!",
-    invalidId: "无效索引", pluggingIn: "插入中...", pluggedIn: "插入成功! ⚡",
-    invalidAmount: "无效金额", swapping: "兑换中...", swapSuccess: "兑换成功!",
-    claiming: "领取中...", claimed: "奖励已领取!",
-    error: "错误", days: "天", rig: "矿机",
-    totalBal: "总余额", activeMachines: "⛏️ 运行中矿机",
-    myMachines: "⛏️ 我的矿机", myBatteries: "🔋 我的电池",
-    active: "运行中", expired: "已过期", inactive: "未激活", available: "可用",
-    plugged: "已插入", notPlugged: "未插入", timeRemaining: "剩余",
-    noMachines: "暂无矿机", noBatteries: "暂无电池",
-    batteryLabel: "电池", usdtPerFta: " USDT", noActiveMachines: "无运行中矿机",
-    exchangeRate: "汇率", priceImpact: "价格影响",
-    swapFee: "手续费 (4%)", minimumReceived: "最低收到",
-    slippageTolerance: "滑点容忍度", networkFee: "网络费",
-    depositBtn: "存入", depositing: "存入中...", depositSuccess: "存入成功!",
-    errRejected: "交易已取消", errInsufficientFunds: "余额不足",
-    errNetwork: "网络错误，请重试。", errTimeout: "交易超时。",
-    errContract: "交易失败，请重试。", errGeneric: "发生错误。",
-    errAlreadyPending: "交易待处理。", errNonce: "Nonce错误，请重启应用。",
-    errNoMachine: "没有矿机", errRunning: "矿机已在运行",
-    errNoBattery: "没有此类型电池", errMaxMachine: "矿机数量已达上限",
-  },
-  sg: {
-    connect: "Connect", refTitle: "👥 Referral System", refDesc: "Enter referrer address or ID to link.", bindRef: "BIND",
-    power: "POWER", ftaSec: "Hashrate", pending: "PENDING", fta: "FTA", miningActive: "MINING ACTIVE", noMachine: "NO MACHINE", claim: "CLAIM",
-    shopTitle: "⛏️ Shop", machines: "Machines", batteries: "Batteries", buy: "BUY",
-    myAssets: "⚙️ Wallet & Assets", walletBal: "💰 Balances", plugMachine: "🔌 Plug in a machine", plugDesc: "Select a machine index and battery type.",
-    machineId: "Machine Index (0, 1...)", plug: "PLUG IN ⚡",
-    swapTitle: "💱 Swap", youPay: "You pay", balance: "Balance:", youReceive: "You receive", swap: "SWAP",
-    loading: "Loading...", currentRate: "1 FTA = ",
-    home: "Home", shop: "Shop", assets: "Wallet", swapNav: "Swap",
-    connWallet: "Connecting...", errConn: "Connection Error",
-    linking: "Linking...", refLinked: "Referrer linked!", connFirst: "Connect first",
-    enterRefAddr: "Referrer address or ID (0x...)", enterRefId: "Referrer ID (number)",
-    buyingMachine: "Buying Machine", buyingBattery: "Buying Battery",
-    confirming: "Confirming...", calcFta: "Calculating price...",
-    machineBought: "Machine purchased!", batteryBought: "Battery purchased!",
-    invalidId: "Invalid Machine Index", pluggingIn: "Plugging in...", pluggedIn: "Machine plugged in! ⚡",
-    invalidAmount: "Invalid amount", swapping: "Swapping...", swapSuccess: "Swap successful!",
-    claiming: "Claiming...", claimed: "Rewards claimed!",
-    error: "Error", days: "Days", rig: "RIG",
-    totalBal: "Total Balance", activeMachines: "⛏️ Active Machines",
-    myMachines: "⛏️ My Machines", myBatteries: "🔋 My Batteries",
-    active: "Active", expired: "Expired", inactive: "Inactive", available: "Available",
-    plugged: "Plugged", notPlugged: "Not Plugged", timeRemaining: "Remaining",
-    noMachines: "No machines yet", noBatteries: "No batteries yet",
-    batteryLabel: "Battery", usdtPerFta: " USDT", noActiveMachines: "No active machines",
-    exchangeRate: "Exchange Rate", priceImpact: "Price Impact",
-    swapFee: "Swap Fee (4%)", minimumReceived: "Minimum Received",
-    slippageTolerance: "Slippage Tolerance", networkFee: "Network Fee",
-    depositBtn: "DEPOSIT", depositing: "Depositing...", depositSuccess: "Deposit successful!",
-    errRejected: "Transaction cancelled", errInsufficientFunds: "Insufficient balance",
-    errNetwork: "Network error. Please try again.", errTimeout: "Transaction timed out.",
-    errContract: "Transaction failed.", errGeneric: "An error occurred.",
-    errAlreadyPending: "Transaction pending.", errNonce: "Nonce error. Restart app.",
-    errNoMachine: "No machine", errRunning: "Machine already running",
-    errNoBattery: "No battery of this type", errMaxMachine: "Max machines reached",
+  decimals: { usdt: 6, fta: 6 },   // décimales des tokens
+  polygon: {
+    chainId: '0x89',               // 137
+    chainName: 'Polygon Mainnet',
+    nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
+    rpc: ['https://polygon-rpc.com', 'https://rpc-mainnet.maticvigil.com', 'https://1rpc.io/matic'],
+    explorer: 'https://polygonscan.com'
   }
 };
 
-// ─── ABIs des contrats V3 ──────────────────────────────────────────
+const ZERO_ADDR = '0x0000000000000000000000000000000000000000';
 
-// ABI du Core (tokens, balances, swaps, dépôts, meta-tx)
+/* ─── Icônes SVG (trait 1.8px, couleur courante) - remplacement des emojis ─── */
+const svg = (p) => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+
+const ICONS = {
+  grid: svg('<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>'),
+  bag: svg('<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>'),
+  pick: svg('<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>'),
+  repeat: svg('<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'),
+  clock: svg('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'),
+  wallet: svg('<path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>'),
+  coin: svg('<path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/>'),
+  fuel: svg('<line x1="3" y1="22" x2="15" y2="22"/><line x1="4" y1="9" x2="14" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/>'),
+  bolt: svg('<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>'),
+  cpu: svg('<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/>'),
+  gift: svg('<polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>'),
+  hash: svg('<line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>'),
+  battery: svg('<rect x="1" y="6" width="18" height="12" rx="2"/><line x1="23" y1="13" x2="23" y2="11"/>'),
+  plug: svg('<path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8z"/>'),
+  arrowDown: svg('<line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>'),
+  deposit: svg('<line x1="17" y1="7" x2="7" y2="17"/><polyline points="17 17 7 17 7 7"/>'),
+  withdraw: svg('<line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>'),
+  users: svg('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'),
+  check: svg('<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'),
+  alert: svg('<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'),
+  info: svg('<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'),
+  warn: svg('<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
+  logout: svg('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>'),
+  x: svg('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'),
+  refresh: svg('<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>'),
+  download: svg('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>'),
+  upload: svg('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>'),
+  package: svg('<line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>'),
+  file: svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>'),
+  shield: svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'),
+  link: svg('<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>')
+};
+
+/* ─── État global de l'application ─── */
+const State = {
+  db: null,                        // instance SQLite (sql.js)
+  user: null,                      // utilisateur connecté
+  wallet: null,                    // adresse connectée via MetaMask (minuscules)
+  readProvider: null,
+  signer: null,
+  contracts: { core: null, mine: null, usdt: null, fta: null },
+  mTypes: [], bTypes: [],
+  ftaCostsM: [], ftaCostsB: [],
+  machineCount: 0, batteryCount: 0,
+  balances: { uBal: 0n, fBal: 0n, pol: 0n, wUsdt: null, wFta: null, wPol: null },
+  mining: { power: 0n, machines: 0n, lc: 0n, pending: 0n, difficulty: 0n, baseRate: 0n },
+  fees: { swapFee: 0n, wFee: 0n, claimFee: 0n, devFee: 0n, coms: [0n, 0n, 0n], tfp: 0n },
+  myRef: null,
+  myId: null,
+  swapDir: 'u2f',
+  confirmCb: null,
+  refreshTimer: null,
+  shopLoaded: false
+};
+
+/* ─── ABI des contrats (dérivées des fichiers .sol) ─── */
+
+// FitiaMiningV3_Core - tokens, dépôts/retraits, swaps, parrainage
 const CORE_ABI = [
-  // ─── Infos ───
-  "function usdt() view returns (address)",
-  "function fta() view returns (address)",
-  "function myInfo() view returns (uint256, uint256, uint256, uint256)",
-  // ─── Dépôts ───
-  "function depositUsdt(uint256 a)",
-  "function depositFta(uint256 a)",
-  "function depositPol() payable",
-  // ─── Retraits ───
-  "function withdrawUsdt(uint256 a)",
-  "function withdrawFta(uint256 a)",
-  "function withdrawPol(uint256 a)",
-  // ─── Parrainage ───
-  "function setReferrer(address r)",
-  "function setReferrerById(uint256 rid)",
-  // ─── Swaps (courbe de liaison) ───
-  "function rate() view returns (uint256)",
-  "function swapUForF(uint256 a, uint256 m, uint256 d)",
-  "function swapFForU(uint256 a, uint256 m, uint256 d)",
-  "function buyFta(uint256 a) view returns (uint256)",
-  "function sellFta(uint256 a) view returns (uint256)",
-  "function costFta(uint256 a) view returns (uint256)",
-  // ─── Admin (read-only pour le frontend) ───
-  "function swapFee() view returns (uint256)",
-  "function difficulty() view returns (uint256)",
-  "function uid(address) view returns (uint256)",
-  "function aToId(uint256) view returns (address)",
-  // ─── Balances internes ───
-  "function uBal(address) view returns (uint256)",
-  "function fBal(address) view returns (uint256)",
-  "function pol(address) view returns (uint256)"
+  'function usdt() view returns (address)',
+  'function fta() view returns (address)',
+  'function miner() view returns (address)',
+  'function owner() view returns (address)',
+  'function difficulty() view returns (uint256)',
+  'function baseRate() view returns (uint256)',
+  'function slope() view returns (uint256)',
+  'function netFta() view returns (uint256)',
+  'function devFee() view returns (uint256)',
+  'function comRates(uint256) view returns (uint256)',
+  'function swapFee() view returns (uint256)',
+  'function claimFee() view returns (uint256)',
+  'function wFee() view returns (uint256)',
+  'function gasFee() view returns (uint256)',
+  'function feeRecv() view returns (address)',
+  'function uid(address) view returns (uint256)',
+  'function aToId(uint256) view returns (address)',
+  'function refr(address) view returns (address)',
+  'function pol(address) view returns (uint256)',
+  'function uBal(address) view returns (uint256)',
+  'function fBal(address) view returns (uint256)',
+  'function paused() view returns (bool)',
+  'function rate() view returns (uint256)',
+  'function sellFta(uint256) view returns (uint256)',
+  'function buyFta(uint256) view returns (uint256)',
+  'function costFta(uint256) view returns (uint256)',
+  'function myInfo() view returns (uint256 id, uint256 p, uint256 ub, uint256 fb)',
+  'function depositPol() payable',
+  'function depositUsdt(uint256 a)',
+  'function depositFta(uint256 a)',
+  'function withdrawPol(uint256 a)',
+  'function withdrawUsdt(uint256 a)',
+  'function withdrawFta(uint256 a)',
+  'function setReferrer(address r)',
+  'function setReferrerById(uint256 rid)',
+  'function swapUForF(uint256 a, uint256 m, uint256 d)',
+  'function swapFForU(uint256 a, uint256 m, uint256 d)',
+  'function executeMetaTx(address from, bytes data, uint256 dl, bytes sig)'
 ];
 
-// ABI du Mine (machines, batteries, minage)
+// FitiaMiningV3_Mine - machines, batteries, minage, récompenses
 const MINE_ABI = [
-  // ─── Achats ───
-  "function buyMachine(uint256 t)",
-  "function buyMachineFTA(uint256 t)",
-  "function buyBattery(uint256 t)",
-  "function buyBatteryFTA(uint256 t)",
-  // ─── Minage ───
-  "function plugInMachine(uint256 mi, uint256 bi)",
-  "function claimRewards()",
-  // ─── Views ───
-  "function powerOf(address u) view returns (uint256)",
-  "function mCount() view returns (uint256)",
-  "function bCount() view returns (uint256)",
-  "function getMType(uint256) view returns (uint256 price, uint256 power, uint256 shopExpiry)",
-  "function getBType(uint256) view returns (uint256 price, uint256 dur)",
-  "function myMachines(address u) view returns (tuple(uint256 tid, uint256 exp)[])",
-  "function myBattery(address u, uint256 t) view returns (uint256)",
-  "function myInfo(address u) view returns (uint256 mc, uint256 ap, uint256 lc)"
+  'function core() view returns (address)',
+  'function mCount() view returns (uint256)',
+  'function bCount() view returns (uint256)',
+  'function getMType(uint256 id) view returns (uint256 price, uint256 power, uint256 shopExpiry)',
+  'function getBType(uint256 id) view returns (uint256 price, uint256 dur)',
+  'function powerOf(address u) view returns (uint256)',
+  'function myMachines(address u) view returns ((uint256 tid, uint256 exp)[] machines)',
+  'function myBattery(address u, uint256 t) view returns (uint256)',
+  'function myInfo(address u) view returns (uint256 mc, uint256 ap, uint256 lc)',
+  'function buyMachine(uint256 t)',
+  'function buyMachineFTA(uint256 t)',
+  'function buyBattery(uint256 t)',
+  'function buyBatteryFTA(uint256 t)',
+  'function plugInMachine(uint256 mi, uint256 bi)',
+  'function claimRewards()'
 ];
 
-// ─── Constantes ────────────────────────────────────────────────────
-const SWAP_FEE_RATE = 0.04;
-const SLIPPAGE = 0.005;
-const ONE_18 = 10n ** 18n;
-
-// ═══════════════════════════════════════════════════════════════════
-//  CLASSE PRINCIPALE : Application
-// ═══════════════════════════════════════════════════════════════════
-class Application {
-  constructor() {
-    // ─── Fournisseur blockchain ───
-    this.provider = null;
-    this.signer = null;
-    this.user = null;
-
-    // ─── Contrats ───
-    this.core = null;
-    this.mine = null;
-
-    // ─── Mode de paiement ───
-    this.payMode = 'USDT';
-    this.shopViewMode = 'machines';
-
-    // ─── Direction du swap ───
-    this.swapDirection = 'USDT_TO_FTA';
-
-    // ─── Décimales des tokens ───
-    this.usdtDecimals = 6;
-    this.ftaDecimals = 8;  // ⚠️ Le token FTA utilise 8 décimales
-
-    // ─── Données en cache ───
-    this.polPriceUsd = 0;
-    this.ftaPriceUsd = 0;
-    this.currentRealPower = 0;
-    this.pendingBalance = 0;
-
-    // ─── Données boutique ───
-    this.shopMachinesData = [];
-    this.shopBatteriesData = [];
-    this.isLoadingShop = false;
-
-    // ─── Données utilisateur ───
-    this.userMachines = [];
-    this.batteryInventory = {};
-    this.batteryTypeDurations = {};
-
-    // ─── Minage local ───
-    this.miningTimer = null;
-    this.lastClaimTimestamp = 0;
-    this.storageKey = "fitia_v3_last_claim";
-
-    // ─── Visualiseur ───
-    this.vizContext = null;
-    this.vizBars = [];
-
-    // ─── Langue ───
-    const savedLang = localStorage.getItem('fitia_lang');
-    this.currentLang = savedLang && i18n[savedLang] ? savedLang : 'fr';
-
-    // ─── Chat assistant ───
-    this.chatInitialized = false;
-    this.chatHistory = [];
-
-    // ─── Historique des prix pour calculer l'évolution ───
-    this.prevPriceCheckpoint = {};
-    this.priceCheckpointTime = 0;
-  }
-
-  // ─── Traduction ──────────────────────────────────────────────────
-  // Retourne la traduction pour la clé donnée, avec fallback anglais
-  t(key) {
-    return i18n[this.currentLang]?.[key] || i18n['en'][key] || key;
-  }
-
-  // ─── Formatage ───────────────────────────────────────────────────
-  formatUsd(v) {
-    return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
-
-  // Formate le hashrate avec les unités appropriées
-  formatHashrate(h) {
-    if (h <= 0) return '0 H/s';
-    const units = ['nH/s', 'µH/s', 'mH/s', 'H/s', 'KH/s', 'MH/s', 'GH/s', 'TH/s', 'PH/s'];
-    const baseIndex = 3; // H/s
-    let value = h, unitIndex = baseIndex;
-    while (value < 1 && unitIndex > 0) { value *= 1000; unitIndex--; }
-    while (value >= 1000 && unitIndex < units.length - 1) { value /= 1000; unitIndex++; }
-    return value.toFixed(2) + ' ' + units[unitIndex];
-  }
-
-  // Formate le temps restant en jours/heures/minutes
-  formatTimeRemaining(s) {
-    if (s <= 0) return this.t('expired');
-    const d = Math.floor(s / 86400);
-    const h = Math.floor((s % 86400) / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    if (d > 1) return `${d}j ${h}h`;
-    if (d === 1) return `1j ${h}h`;
-    if (h > 0) return `${h}h ${m}m`;
-    return `${m}m`;
-  }
-
-  // Retourne la durée en jours pour un type de batterie donné
-  getBatteryDuration(typeId) {
-    if (this.batteryTypeDurations[typeId] !== undefined) return this.batteryTypeDurations[typeId];
-    // Fallback si le cache n'est pas encore rempli
-    const fallback = { 0: 3, 1: 7, 2: 15, 3: 30, 4: 90, 5: 180, 6: 270, 7: 365 };
-    return fallback[typeId] || 30;
-  }
-
-  // ─── Gestion de la langue ────────────────────────────────────────
-  setLanguage(lang) {
-    if (!i18n[lang]) return;
-    this.currentLang = lang;
-    localStorage.setItem('fitia_lang', lang);
-    const flags = { en: '🇬🇧', fr: '🇫🇷', de: '🇩🇪', zh: '🇨🇳', sg: '🇸🇬' };
-    document.getElementById('lang-btn-display').innerText = `${flags[lang]} ${lang.toUpperCase()}`;
-    this.applyTranslations();
-    this.renderShop();
-  }
-
-  // Applique les traductions à tous les éléments statiques du DOM
-  applyTranslations() {
-    document.getElementById('btn-connect').innerText = this.t('connect');
-    document.querySelector('.total-balance-card small').innerText = this.t('totalBal');
-    document.querySelector('.referral-card h3').innerText = this.t('refTitle');
-    document.querySelector('.referral-card p.small-text').innerText = this.t('refDesc');
-    document.querySelector('#ref-address-input').placeholder = this.t('enterRefAddr');
-    document.querySelector('.referral-card .btn-full').innerText = this.t('bindRef');
-    const stats = document.querySelectorAll('.stat-card');
-    if (stats[0]) { stats[0].querySelector('small:first-child').innerText = this.t('power'); stats[0].querySelector('small:last-child').innerText = this.t('ftaSec'); }
-    if (stats[1]) { stats[1].querySelector('small:first-child').innerText = this.t('pending'); stats[1].querySelector('small:last-child').innerText = this.t('fta'); }
-    const megaBtn = document.querySelector('.btn-mega');
-    if (megaBtn) { const span = megaBtn.querySelectorAll('span')[1]; if (span) span.textContent = this.t('claim'); }
-    const shopTitle = document.querySelector('#view-shop .view-title');
-    if (shopTitle) shopTitle.innerText = this.t('shopTitle');
-    const shopTabs = document.querySelectorAll('.shop-tab');
-    if (shopTabs[0]) shopTabs[0].innerText = this.t('machines');
-    if (shopTabs[1]) shopTabs[1].innerText = this.t('batteries');
-    const assetsTitle = document.querySelector('#view-my-rigs .view-title');
-    if (assetsTitle) assetsTitle.innerText = this.t('myAssets');
-    const walletBalH3 = document.querySelector('#view-my-rigs .card:first-child h3');
-    if (walletBalH3) walletBalH3.innerText = this.t('walletBal');
-    const activeMachinesTitle = document.querySelector('#active-machines-section .section-title');
-    if (activeMachinesTitle) activeMachinesTitle.innerText = this.t('activeMachines');
-    const wc = document.querySelectorAll('#view-my-rigs .card');
-    if (wc[1]) wc[1].querySelector('.section-title').innerText = this.t('myMachines');
-    if (wc[2]) wc[2].querySelector('.section-title').innerText = this.t('myBatteries');
-    const swapTitle = document.querySelector('#view-swap .view-title');
-    if (swapTitle) swapTitle.innerText = this.t('swapTitle');
-    const sh = document.querySelectorAll('.swap-header span:first-child');
-    if (sh[0]) sh[0].innerText = this.t('youPay');
-    if (sh[1]) sh[1].innerText = this.t('youReceive');
-    const swapBtn = document.querySelector('#view-swap .btn-primary');
-    if (swapBtn) swapBtn.innerText = this.t('swap');
-    document.querySelectorAll('.nav-item span').forEach((s, i) => s.innerText = this.t(['home', 'shop', 'assets', 'swapNav'][i]));
-  }
-
-  // ─── Initialisation ──────────────────────────────────────────────
-  async init() { this.setLanguage(this.currentLang); }
-
-  // ─── Récupération du prix POL ────────────────────────────────────
-  async fetchMarketPrices() {
-    this.polPriceUsd = 0;
-    try {
-      const r = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0');
-      const d = await r.json();
-      if (d.pairs?.length) this.polPriceUsd = parseFloat(d.pairs[0].priceUsd) || 0;
-    } catch (e) { /* silencieux */ }
-    if (!this.polPriceUsd) {
-      try {
-        const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd');
-        const d = await r.json();
-        this.polPriceUsd = d['matic-network']?.usd || 0;
-      } catch (e2) { /* silencieux */ }
-    }
-    if (!this.polPriceUsd) this.polPriceUsd = 0.70;
-  }
-
-  // ─── Connexion wallet ────────────────────────────────────────────
-  async connect() {
-    // Si MetaMask est disponible
-    if (window.ethereum) {
-      this.setLoader(true, this.t('connWallet'));
-      try {
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        this.provider = new ethers.BrowserProvider(window.ethereum);
-        this.signer = await this.provider.getSigner();
-        this.user = await this.signer.getAddress();
-        const network = await this.provider.getNetwork();
-        if (Number(network.chainId) !== CONFIG.CHAIN_ID) await this.switchNetwork();
-        await this.initContracts();
-        window.ethereum.on('accountsChanged', () => window.location.reload());
-        window.ethereum.on('chainChanged', () => window.location.reload());
-      } catch (e) { this.showError(e); } finally { this.setLoader(false); }
-    }
-    // Si WalletConnect est disponible
-    else if (typeof EthereumProvider !== 'undefined' && CONFIG.WC_PROJECT_ID && !CONFIG.WC_PROJECT_ID.includes("...")) {
-      this.setLoader(true, this.t('connWallet'));
-      try {
-        const wc = await EthereumProvider.init({
-          projectId: CONFIG.WC_PROJECT_ID,
-          chains: [CONFIG.CHAIN_ID],
-          showQrModal: true,
-          methods: ['eth_sendTransaction', 'personal_sign'],
-          metadata: { name: 'FITIA PRO MINER', description: 'Mining DApp', url: window.location.origin, icons: [window.location.origin + '/logo.png'] }
-        });
-        await wc.enable();
-        this.provider = new ethers.BrowserProvider(wc);
-        this.signer = await this.provider.getSigner();
-        this.user = await this.signer.getAddress();
-        await this.initContracts();
-        wc.on("disconnect", () => window.location.reload());
-      } catch (e) { this.showError(e); } finally { this.setLoader(false); }
-    } else {
-      this.showToast("Installez MetaMask ou utilisez un navigateur Web3.", true);
-    }
-  }
-
-  // ─── Initialisation des contrats ─────────────────────────────────
-  async initContracts() {
-    // Instanciation du Core V3
-    this.core = new ethers.Contract(CONFIG.CORE, CORE_ABI, this.signer);
-    // Instanciation du Mine V3
-    this.mine = new ethers.Contract(CONFIG.MINE, MINE_ABI, this.signer);
-    // Récupération dynamique des décimales du token FTA
-    try {
-      const ftaContract = new ethers.Contract(CONFIG.FTA, ["function decimals() view returns (uint8)"], this.provider);
-      this.ftaDecimals = Number(await ftaContract.decimals());
-    } catch (e) { /* garde la valeur par défaut 8 */ }
-    // Met à jour l'interface
-    document.getElementById('btn-connect').classList.add('hidden');
-    document.getElementById('wallet-status').classList.remove('hidden');
-    document.getElementById('addr-display').innerText = this.user.slice(0, 6) + "..." + this.user.slice(38);
-    // Initialise le cache de temps de claim
-    if (!localStorage.getItem(this.storageKey)) localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
-    // Récupère les prix de marché
-    await this.fetchMarketPrices();
-    // Remplit le cache des durées de batterie
-    await this.cacheBatteryDurations();
-    // Met à jour toutes les données
-    await this.updateData();
-    // Rafraîchissement périodique (15 secondes)
-    setInterval(() => this.updateData(), 15000);
-    // Initialise le visualiseur de minage
-    this.initVisualizer();
-    window.addEventListener('resize', () => this.resizeCanvas());
-  }
-
-  // ─── Cache des durées de batterie ────────────────────────────────
-  async cacheBatteryDurations() {
-    try {
-      const count = Number(await this.mine.bCount());
-      for (let i = 0; i < count; i++) {
-        try {
-          const b = await this.mine.getBType(i);
-          // La durée est en secondes, on convertit en jours
-          this.batteryTypeDurations[i] = Number(b.dur) / 86400;
-        } catch (e) { /* ignore les erreurs individuelles */ }
-      }
-    } catch (e) { /* ignore si bCount échoue */ }
-  }
-
-  // ─── Changement de réseau ────────────────────────────────────────
-  async switchNetwork() {
-    try {
-      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] });
-    } catch (e) {
-      if (e.code === 4902) {
-        await window.ethereum.request({
-          method: 'wallet_addEthereumChain',
-          params: [{
-            chainId: '0x89', chainName: 'Polygon',
-            nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
-            rpcUrls: ['https://polygon-rpc.com/'],
-            blockExplorerUrls: ['https://polygonscan.com/']
-          }]
-        });
-      }
-    }
-  }
-
-  // ─── Changement de sous-vue boutique ─────────────────────────────
-  setShopView(v) {
-    this.shopViewMode = v;
-    document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
-    event.currentTarget.classList.add('active');
-    this.renderShop();
-  }
-
-  // ─── Récupération des assets utilisateur ─────────────────────────
-  async fetchUserAssets() {
-    if (!this.user) return;
-    this.userMachines = [];
-    this.batteryInventory = {};
-
-    // Récupère les machines via myInfo + myMachines
-    try {
-      const machinesRaw = await this.mine.myMachines(this.user);
-      // Les machines sont retournées comme [{tid, exp}, ...]
-      for (const m of machinesRaw) {
-        this.userMachines.push({
-          tid: Number(m.tid ?? m[0]),
-          exp: Number(m.exp ?? m[1])
-        });
-      }
-    } catch (e) {
-      console.error("Erreur récupération machines:", e);
-      // Fallback via myInfo pour connaître le nombre
-      try {
-        const info = await this.mine.myInfo(this.user);
-        const mc = Number(info.mc ?? info[0]);
-        for (let i = 0; i < mc; i++) {
-          this.userMachines.push({ tid: 0, exp: 0 });
-        }
-      } catch (e2) { /* ignore */ }
-    }
-
-    // Récupère l'inventaire des batteries par type
-    try {
-      const bCount = Number(await this.mine.bCount());
-      for (let t = 0; t < bCount; t++) {
-        try {
-          const qty = Number(await this.mine.myBattery(this.user, t));
-          if (qty > 0) this.batteryInventory[t] = qty;
-        } catch (e) { /* ignore type sans batterie */ }
-      }
-    } catch (e) { /* ignore */ }
-  }
-
-  // ─── Rendu des machines actives ──────────────────────────────────
-  renderActiveMachines() {
-    const container = document.getElementById('active-machines-list');
-    if (!container) return;
-    const now = Math.floor(Date.now() / 1000);
-    // Machine active = expiry > maintenant
-    const active = this.userMachines.filter(m => m.exp > now);
-    if (!active.length) {
-      container.innerHTML = `<p class="small-text" style="text-align:center;">${this.t('noActiveMachines')}</p>`;
-      return;
-    }
-    const tierNames = ['MK-I', 'MK-II', 'MK-III', 'MK-IV', 'MK-V', 'MK-VI', 'MK-VII', 'MK-VIII'];
-    container.innerHTML = active.map(m => {
-      const rem = m.exp - now;
-      // On estime un total basé sur la durée du type (le contrat ne stocke pas le type de batterie branché)
-      const totalSec = rem;
-      const pr = 50; // Approximation (le contrat V3 ne stocke pas la durée exacte de la batterie)
-      const bc = 'green';
-      return `<div class="asset-row">${this.getMachineMiniSVG(m.tid)}
-        <div class="asset-info">
-          <div class="asset-name">${tierNames[m.tid % 8]} <span class="status-pill active">● ${this.t('active')}</span></div>
-          <div class="asset-detail">${this.t('batteryLabel')}</div>
-          <div class="battery-bar-wrap">
-            <div class="battery-bar-header">
-              <span class="battery-bar-label">${this.t('timeRemaining')}</span>
-              <span class="battery-bar-time green">${this.formatTimeRemaining(rem)}</span>
-            </div>
-            <div class="battery-bar"><div class="battery-bar-fill green" style="width:${pr}%"></div></div>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  // ─── Rendu des machines possédées ────────────────────────────────
-  renderUserMachines() {
-    const container = document.getElementById('my-machines-list');
-    if (!container) return;
-    if (!this.userMachines.length) {
-      container.innerHTML = `<p class="small-text" style="text-align:center;">${this.t('noMachines')}</p>`;
-      return;
-    }
-    const now = Math.floor(Date.now() / 1000);
-    const tierNames = ['MK-I', 'MK-II', 'MK-III', 'MK-IV', 'MK-V', 'MK-VI', 'MK-VII', 'MK-VIII'];
-    container.innerHTML = this.userMachines.map((m, i) => {
-      let statusClass, statusText;
-      if (m.exp > now) { statusClass = 'active'; statusText = this.t('active'); }
-      else if (m.exp > 0 && m.exp <= now) { statusClass = 'expired'; statusText = this.t('expired'); }
-      else { statusClass = 'inactive'; statusText = this.t('inactive'); }
-      let extra = '';
-      if (m.exp > now) {
-        const rem = m.exp - now;
-        extra = `<div class="battery-bar-wrap"><div class="battery-bar-header"><span class="battery-bar-label">${this.t('timeRemaining')}</span><span class="battery-bar-time green">${this.formatTimeRemaining(rem)}</span></div><div class="battery-bar"><div class="battery-bar-fill green" style="width:50%"></div></div></div>`;
-      }
-      return `<div class="asset-row">${this.getMachineMiniSVG(m.tid)}
-        <div class="asset-info">
-          <div class="asset-name">#${i} ${tierNames[m.tid % 8]} <span class="status-pill ${statusClass}">● ${statusText}</span></div>
-          <div class="asset-detail">${m.exp > now ? this.t('plugged') : this.t('notPlugged')}</div>
-          ${extra}
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  // ─── Rendu des batteries possédées ───────────────────────────────
-  renderUserBatteries() {
-    const container = document.getElementById('my-batteries-list');
-    if (!container) return;
-    const entries = Object.entries(this.batteryInventory).filter(([,qty]) => qty > 0);
-    if (!entries.length) {
-      container.innerHTML = `<p class="small-text" style="text-align:center;">${this.t('noBatteries')}</p>`;
-      return;
-    }
-    container.innerHTML = entries.map(([typeId, qty]) => {
-      const dur = this.getBatteryDuration(Number(typeId));
-      const chargeLevel = 80; // Valeur esthétique
-      return `<div class="asset-row">
-        <div class="real-battery">
-          <div class="battery-cap"></div>
-          <div class="battery-body">
-            <div class="battery-level" style="width:${chargeLevel}%"></div>
-            <div class="battery-charge-indicator">${Math.round(chargeLevel)}%</div>
-          </div>
-        </div>
-        <div class="asset-info">
-          <div class="asset-name">${dur} ${this.t('days')} <span class="status-pill available">● ${this.t('available')}</span></div>
-          <div class="asset-detail">Quantité: ${qty}</div>
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  // ─── Mise à jour périodique des données ──────────────────────────
-  async updateData() {
-    if (!this.user) return;
-    try {
-      // ─── Récupération de la puissance active ─────────────────────
-      // ⚠️ powerOf() retourne un entier brut (pas en wei/18 décimales).
-      // La formule de reward dans le contrat Mine est :
-      //   reward = elapsed * power * difficulty / 1e18
-      // Donc FTA/seconde = power * difficulty / 1e18
-      const rawPower = await this.mine.powerOf(this.user);
-      let powNum = Number(rawPower);
-      let diffNum = 2e12; // fallback si la lecture échoue
-      try {
-        const difficultyRaw = await this.core.difficulty();
-        diffNum = Number(difficultyRaw);
-      } catch (e) { /* utilise la valeur par défaut */ }
-      // Puissance effective en FTA par seconde (déjà en unités humaines)
-      this.currentRealPower = powNum > 0 ? (powNum * diffNum) / 1e18 : 0;
-
-      // ─── Récupération du taux FTA via le Core ────────────────────
-      // La fonction rate() retourne le prix en unités USDT (6 décimales)
-      // car le contrat calcule en USDT → FTA, pas l'inverse.
-      let rateRaw;
-      try {
-        rateRaw = await this.core.rate();
-        // ⚠️ Correction : on utilise usdtDecimals (6) et non ftaDecimals (18)
-        this.ftaPriceUsd = parseFloat(ethers.formatUnits(rateRaw, this.usdtDecimals));
-      } catch (e) {
-        // Fallback : utilise la dernière valeur connue
-      }
-
-      // ─── Récupération des balances internes au Core ──────────────
-      const uBal = await this.core.uBal(this.user);
-      const fBal = await this.core.fBal(this.user);
-      const polBal = await this.core.pol(this.user);
-
-      // ─── Récupération du solde POL natif ─────────────────────────
-      const nativePol = await this.provider.getBalance(this.user);
-
-      const uB = parseFloat(ethers.formatUnits(uBal, this.usdtDecimals));
-      const fB = parseFloat(ethers.formatUnits(fBal, this.ftaDecimals));
-      const pB = parseFloat(ethers.formatUnits(polBal, 18));
-      const nB = parseFloat(ethers.formatUnits(nativePol, 18));
-
-      // ─── Mise à jour des affichages ──────────────────────────────
-      document.getElementById('val-power').innerText = this.formatHashrate(this.currentRealPower);
-      document.getElementById('bal-pol').innerText = (pB + nB).toFixed(4);
-      document.getElementById('bal-usdt').innerText = uB.toFixed(2);
-      document.getElementById('bal-fta').innerText = fB.toFixed(4);
-
-      document.getElementById('price-pol').innerText = this.formatUsd(this.polPriceUsd);
-      document.getElementById('price-usdt').innerText = this.formatUsd(1);
-      document.getElementById('price-fta').innerText = this.formatUsd(this.ftaPriceUsd);
-
-      // ─── Indicateurs de variation en pourcentage ────────────────
-      this.updatePriceChange('pol', this.polPriceUsd);
-      this.updatePriceChange('usdt', 1); // USDT est stable, mais on garde le mécanisme
-      this.updatePriceChange('fta', this.ftaPriceUsd);
-
-      document.getElementById('bal-pol-usd').innerText = '≈ ' + this.formatUsd((pB + nB) * this.polPriceUsd);
-      document.getElementById('bal-usdt-usd').innerText = '≈ ' + this.formatUsd(uB);
-      document.getElementById('bal-fta-usd').innerText = '≈ ' + this.formatUsd(fB * this.ftaPriceUsd);
-      document.getElementById('val-total-usd').innerText = this.formatUsd((pB + nB) * this.polPriceUsd + uB + fB * this.ftaPriceUsd);
-
-      // ─── Données swap ────────────────────────────────────────────
-      document.getElementById('swap-rate').innerText = this.t('currentRate') + this.ftaPriceUsd.toFixed(6) + this.t('usdtPerFta');
-      document.getElementById('swap-bal-from').innerText = (this.swapDirection === 'USDT_TO_FTA' ? uB : fB).toFixed(4);
-      document.getElementById('swap-bal-to').innerText = (this.swapDirection === 'USDT_TO_FTA' ? fB : uB).toFixed(4);
-
-      // ─── Gestion du statut de minage ─────────────────────────────
-      this.lastClaimTimestamp = parseInt(localStorage.getItem(this.storageKey) || '0');
-      const elapsed = Math.floor(Date.now() / 1000) - this.lastClaimTimestamp;
-
-      // ⚠️ CORRECTION : le contrat Mine crédite des unités brutes de FTA (8 décimales).
-      // La formule Solidity est : rw = elapsed * power * difficulty / 1e18
-      // rw est en unités brutes (×1e8 pour avoir des vrais FTA).
-      // Le frontend doit diviser par 1e8 pour afficher le vrai nombre de FTA.
-      // Sans ça, le pending est 100 millions de fois trop élevé (mirage).
-      if (this.currentRealPower > 0) {
-        if (!this.miningTimer) {
-          // currentRealPower = power * difficulty / 1e18 = unités brutes/seconde
-          // On divise par 1e8 pour avoir des vrais FTA
-          const pendingFtaRaw = this.currentRealPower * elapsed;
-          document.getElementById('val-pending').innerText = (pendingFtaRaw / 1e8).toFixed(8);
-          this.startMiningCounter();
-        }
-        document.getElementById('viz-status').innerText = this.t('miningActive');
-        document.getElementById('viz-status').style.color = "var(--primary)";
-        this.updateVisualizerIntensity(this.currentRealPower);
-      } else {
-        this.stopMiningCounter();
-        document.getElementById('viz-status').innerText = this.t('noMachine');
-        document.getElementById('viz-status').style.color = "#666";
-        document.getElementById('val-pending').innerText = "0.00000000";
-      }
-
-      // ─── Rafraîchit la boutique et les assets ────────────────────
-      await this.renderShop();
-      await this.fetchUserAssets();
-      this.renderActiveMachines();
-      this.renderUserMachines();
-      this.renderUserBatteries();
-
-      if (document.getElementById('swap-from-in').value) this.calcSwap();
-    } catch (e) {
-      console.error("Erreur updateData:", e);
-    }
-  }
-
-  // ─── Compteur de minage local (simulation côté client) ───────────
-  startMiningCounter() {
-    if (this.miningTimer) return;
-    // pendingBalance = accumulateur en unités brutes de FTA (÷1e8 pour vrais FTA)
-    this.pendingBalance = parseFloat(document.getElementById('val-pending').innerText) * 1e8 || 0;
-    this.miningTimer = setInterval(() => {
-      if (this.currentRealPower > 0) {
-        this.pendingBalance += this.currentRealPower; // unités brutes par seconde
-        document.getElementById('val-pending').innerText = (this.pendingBalance / 1e8).toFixed(8);
-        document.getElementById('val-pending').style.color = 'var(--primary)';
-        setTimeout(() => document.getElementById('val-pending').style.color = 'var(--text)', 500);
-      }
-    }, 1000);
-  }
-
-  stopMiningCounter() {
-    if (this.miningTimer) {
-      clearInterval(this.miningTimer);
-      this.miningTimer = null;
-    }
-  }
-
-  // ─── Dépôt dans le Core V3 (support USDT et FTA) ───────────────
-  async deposit() {
-    if (!this.user) return this.connect();
-    const tokenType = document.getElementById('deposit-token-select').value;
-    const amount = parseFloat(document.getElementById('deposit-amount').value);
-    if (!amount || amount <= 0) return this.showToast(this.t('invalidAmount'), true);
-
-    // Vérification rapide que l'adresse du token est configurée
-    const tokenAddr = tokenType === 'USDT' ? CONFIG.USDT : CONFIG.FTA;
-    if (!tokenAddr || tokenAddr === '0x0000000000000000000000000000000000000000') {
-      return this.showToast('❌ Adresse du token ' + tokenType + ' non configurée dans CONFIG. Veuillez définir CONFIG.' + tokenType, true);
-    }
-
-    this.setLoader(true, this.t('depositing'));
-    try {
-      if (tokenType === 'USDT') {
-        const usdtContract = new ethers.Contract(CONFIG.USDT, [
-          "function approve(address,uint256) returns (bool)",
-          "function allowance(address,address) view returns (uint256)",
-          "function balanceOf(address) view returns (uint256)",
-          "function decimals() view returns (uint8)"
-        ], this.provider);
-        const amountBN = ethers.parseUnits(amount.toString(), this.usdtDecimals);
-        // Vérifier le solde wallet avant d'essayer
-        const walletBal = await usdtContract.balanceOf(this.user);
-        if (walletBal < amountBN) {
-          const walletFormatted = parseFloat(ethers.formatUnits(walletBal, this.usdtDecimals));
-          return this.showToast(`❌ Solde USDT insuffisant dans votre wallet. Vous avez ${walletFormatted.toFixed(2)} USDT, vous essayez de déposer ${amount.toFixed(2)} USDT.`, true);
-        }
-        const allowance = await usdtContract.allowance(this.user, CONFIG.CORE);
-        if (allowance < amountBN) {
-          this.setLoader(true, "Approbation USDT...");
-          await (await usdtContract.connect(this.signer).approve(CONFIG.CORE, amountBN)).wait();
-        }
-        this.setLoader(true, this.t('confirming'));
-        await (await this.core.depositUsdt(amountBN)).wait();
-      } else {
-        // Dépôt FTA
-        const ftaContract = new ethers.Contract(CONFIG.FTA, [
-          "function approve(address,uint256) returns (bool)",
-          "function allowance(address,address) view returns (uint256)",
-          "function balanceOf(address) view returns (uint256)",
-          "function decimals() view returns (uint8)"
-        ], this.provider);
-        // Lire les décimales depuis le contrat FTA
-        try {
-          const dec = await ftaContract.decimals();
-          this.ftaDecimals = Number(dec);
-        } catch (e) {
-          console.warn("Impossible de lire decimals() sur FTA, fallback à 8");
-          this.ftaDecimals = 8;
-        }
-        const amountBN = ethers.parseUnits(amount.toString(), this.ftaDecimals);
-        // Vérifier le solde wallet avant d'essayer
-        const walletBal = await ftaContract.balanceOf(this.user);
-        if (walletBal < amountBN) {
-          const walletFormatted = parseFloat(ethers.formatUnits(walletBal, this.ftaDecimals));
-          return this.showToast(`❌ Solde FTA insuffisant dans votre wallet. Vous avez ${walletFormatted.toFixed(4)} FTA, vous essayez de déposer ${amount.toFixed(4)} FTA.`, true);
-        }
-        // Vérifier l'allowance et approuver si nécessaire (utiliser le signer pour les tx)
-        const allowance = await ftaContract.allowance(this.user, CONFIG.CORE);
-        if (allowance < amountBN) {
-          this.setLoader(true, "Approbation FTA...");
-          await (await ftaContract.connect(this.signer).approve(CONFIG.CORE, amountBN)).wait();
-        }
-        this.setLoader(true, this.t('confirming'));
-        await (await this.core.depositFta(amountBN)).wait();
-      }
-      this.showToast(this.t('depositSuccess'));
-      document.getElementById('deposit-amount').value = '';
-      this.updateData();
-    } catch (e) {
-      // Si le loader est encore actif après une erreur pendant approve,
-      // on désactive le loader avant d'afficher l'erreur
-      this.setLoader(false);
-      this.showError(e);
-      return; // Évite d'appeler setLoader(false) deux fois
-    }
-    this.setLoader(false);
-  }
-
-  // ─── Retrait depuis le Core V3 ────────────────────────────────
-  async withdraw() {
-    if (!this.user) return this.connect();
-    const tokenType = document.getElementById('deposit-token-select').value;
-    const amount = parseFloat(document.getElementById('deposit-amount').value);
-    if (!amount || amount <= 0) return this.showToast(this.t('invalidAmount'), true);
-
-    this.setLoader(true, this.t('withdrawing'));
-    try {
-      if (tokenType === 'USDT') {
-        const amountBN = ethers.parseUnits(amount.toString(), this.usdtDecimals);
-        await (await this.core.withdrawUsdt(amountBN)).wait();
-      } else {
-        // Retrait FTA — utiliser les décimales réelles du token (8)
-        const amountBN = ethers.parseUnits(amount.toString(), this.ftaDecimals);
-        await (await this.core.withdrawFta(amountBN)).wait();
-      }
-      this.showToast(this.t('withdrawSuccess'));
-      document.getElementById('deposit-amount').value = '';
-      this.updateData();
-    } catch (e) { this.showError(e); }
-    this.setLoader(false);
-  }
-
-  // ─── Ouvrir la modale d'envoi (avec sélecteur de token) ─────────
-  openSend() {
-    document.getElementById('send-to-address').value = '';
-    document.getElementById('send-amount').value = '';
-    document.getElementById('modal-send').classList.add('active');
-    this.updateSendBalance();
-  }
-
-  // ─── Met à jour le solde affiché dans la modale d'envoi ────────
-  updateSendBalance() {
-    const token = document.getElementById('send-token-select').value;
-    this.sendTokenSymbol = token;
-    let balId = 'bal-pol';
-    if (token === 'USDT') balId = 'bal-usdt';
-    if (token === 'FTA') balId = 'bal-fta';
-    document.getElementById('send-bal').innerText = document.getElementById(balId)?.innerText || '0';
-  }
-
-  // ─── Ouvrir la modale de réception ───────────────────────────────
-  openReceive() {
-    if (!this.user) return this.showToast(this.t('connFirst'), true);
-    document.getElementById('receive-addr-display').innerText = this.user;
-    document.getElementById('modal-receive').classList.add('active');
-  }
-
-  // ─── Fermer les modales ────────────────────────────────────────
-  closeModals() {
-    document.getElementById('modal-send').classList.remove('active');
-    document.getElementById('modal-receive').classList.remove('active');
-  }
-
-  // ─── Copier l'adresse ─────────────────────────────────────────
-  copyReceiveAddress() {
-    navigator.clipboard.writeText(this.user);
-    this.showToast(this.t('addrCopied'));
-  }
-
-  // ─── Exécuter l'envoi ─────────────────────────────────────────
-  async executeSend() {
-    const to = document.getElementById('send-to-address').value;
-    const amt = document.getElementById('send-amount').value;
-    if (!ethers.isAddress(to)) return this.showToast(this.t('invalidAddr'), true);
-    if (!amt || Number(amt) <= 0) return this.showToast(this.t('invalidAmount'), true);
-    this.setLoader(true, this.t('sending'));
-    try {
-      const token = document.getElementById('send-token-select').value;
-      let tx;
-      if (token === 'POL') {
-        tx = await this.signer.sendTransaction({ to, value: ethers.parseEther(amt) });
-      } else {
-        // Envoi via le contrat de token
-        const tokenAddr = token === 'USDT' ? CONFIG.USDT : CONFIG.FTA;
-        const dec = token === 'USDT' ? this.usdtDecimals : this.ftaDecimals;
-        const tokenContract = new ethers.Contract(tokenAddr, ["function transfer(address,uint256) returns (bool)"], this.signer);
-        tx = await tokenContract.transfer(to, ethers.parseUnits(amt, dec));
-      }
-      await tx.wait();
-      this.showToast(this.t('sentSuccess'));
-      this.closeModals();
-      this.updateData();
-    } catch (e) { this.showError(e); }
-    this.setLoader(false);
-  }
-
-  // ─── Achat d'une machine ─────────────────────────────────────────
-  async buyMachine(typeId) {
-    if (!this.user) return this.connect();
-
-    // Vérifie l'expiration shop côté frontend (sécurité)
-    const mData = this.shopMachinesData[typeId];
-    if (!mData) return this.showToast("Machine indisponible", true);
-    if (mData.shopExpiry > 0 && Math.floor(Date.now() / 1000) > mData.shopExpiry) {
-      return this.showToast("Cette machine n'est plus disponible", true);
-    }
-
-    this.setLoader(true, `${this.t('buyingMachine')} (${this.payMode})...`);
-    try {
-      if (this.payMode === 'USDT') {
-        await (await this.mine.buyMachine(typeId)).wait();
-      } else {
-        await (await this.mine.buyMachineFTA(typeId)).wait();
-      }
-      this.showToast(this.t('machineBought'));
-      this.shopMachinesData = [];
-      this.updateData();
-    } catch (e) { this.showError(e); }
-    this.setLoader(false);
-  }
-
-  // ─── Achat d'une batterie ────────────────────────────────────────
-  async buyBattery(typeId) {
-    if (!this.user) return this.connect();
-    this.setLoader(true, `${this.t('buyingBattery')} (${this.payMode})...`);
-    try {
-      if (this.payMode === 'USDT') {
-        await (await this.mine.buyBattery(typeId)).wait();
-      } else {
-        await (await this.mine.buyBatteryFTA(typeId)).wait();
-      }
-      this.showToast(this.t('batteryBought'));
-      this.shopBatteriesData = [];
-      this.updateData();
-    } catch (e) { this.showError(e); }
-    this.setLoader(false);
-  }
-
-  // ─── Branchement d'une machine ───────────────────────────────────
-  async plugInMachine() {
-    const machineIndex = document.getElementById('plug-machine-id').value;
-    const batteryTypeId = document.getElementById('plug-battery-type').value;
-
-    if (machineIndex === "" || machineIndex < 0) return this.showToast(this.t('invalidId'), true);
-    // Vérification que l'utilisateur a bien une batterie de ce type
-    if (!this.batteryInventory || !this.batteryInventory[Number(batteryTypeId)] || this.batteryInventory[Number(batteryTypeId)] <= 0) {
-      return this.showToast(this.t('errNoBattery'), true);
-    }
-
-    this.setLoader(true, this.t('pluggingIn'));
-    try {
-      await (await this.mine.plugInMachine(machineIndex, batteryTypeId)).wait();
-      this.showToast(this.t('pluggedIn'));
-      this.updateData();
-    } catch (e) {
-      this.showError(e);
-    }
-    this.setLoader(false);
-  }
-
-  // ─── Récupération des gains (claim) ──────────────────────────────
-  async claim() {
-    if (!this.user) return;
-    this.stopMiningCounter();
-    this.setLoader(true, this.t('claiming'));
-    try {
-      const tx = await this.mine.claimRewards();
-      await tx.wait();
-      // Réinitialise le pending affiché et le compteur de temps
-      this.pendingBalance = 0;
-      document.getElementById('val-pending').innerText = "0.00000000";
-      localStorage.setItem(this.storageKey, Math.floor(Date.now() / 1000));
-      this.showToast(this.t('claimed'));
-      await this.updateData();
-      if (this.currentRealPower > 0) this.startMiningCounter();
-    } catch (e) {
-      const errStr = (e?.message || '').toLowerCase();
-      if (errStr.includes('tfee') || errStr.includes('transfer')) {
-        this.showToast('⚠️ Le contrat Mine n\'a pas assez de liquidité FTA pour payer les frais de claim. Contactez l\'admin.', true);
-      } else if (errStr.includes('nom') || errStr.includes('no machine')) {
-        this.showToast('⚠️ Aucune machine trouvée. Achetez une machine et branchez-la d\'abord.', true);
-      } else {
-        this.showError(e);
-      }
-      if (this.currentRealPower > 0) this.startMiningCounter();
-    }
-    this.setLoader(false);
-  }
-
-  // ─── Parrainage ──────────────────────────────────────────────────
-  async bindReferrer() {
-    const input = document.getElementById('ref-address-input').value.trim();
-    if (!input) return this.showToast(this.t('invalidAddr'), true);
-    if (!this.user) return this.showToast(this.t('connFirst'), true);
-
-    this.setLoader(true, this.t('linking'));
-    try {
-      // Si l'adresse ressemble à une adresse Ethereum, on utilise setReferrer
-      if (input.startsWith('0x') && input.length === 42) {
-        await (await this.core.setReferrer(input)).wait();
-      } else {
-        // Sinon on traite comme un ID numérique
-        const refId = parseInt(input);
-        if (isNaN(refId)) throw new Error("Format invalide");
-        await (await this.core.setReferrerById(refId)).wait();
-      }
-      this.showToast(this.t('refLinked'));
-      document.getElementById('ref-address-input').value = '';
-    } catch (e) { this.showError(e); }
-    this.setLoader(false);
-  }
-
-  // ─── Mode de paiement ────────────────────────────────────────────
-  setPayMode(mode) {
-    this.payMode = mode;
-    document.getElementById('btn-pay-usdt').classList.toggle('active', mode === 'USDT');
-    document.getElementById('btn-pay-fta').classList.toggle('active', mode === 'FTA');
-    this.renderShop();
-  }
-
-  // ─── Rendu de la boutique ────────────────────────────────────────
-  async renderShop() {
-    if (this.isLoadingShop) return;
-    const container = document.getElementById('shop-list');
-    if (this.shopViewMode === 'machines') {
-      if (!this.shopMachinesData.length) await this.fetchMachines();
-      this._renderShopMachinesHTML(container);
-    } else {
-      if (!this.shopBatteriesData.length) await this.fetchBatteries();
-      this._renderShopBatteriesHTML(container);
-    }
-  }
-
-  // ─── Récupération des machines du shop ───────────────────────────
-  async fetchMachines() {
-    this.isLoadingShop = true;
-    try {
-      const count = Number(await this.mine.mCount());
-      const promises = [];
-      for (let i = 0; i < count; i++) promises.push(this.mine.getMType(i));
-      const results = await Promise.all(promises);
-      this.shopMachinesData = [];
-      for (let i = 0; i < count; i++) {
-        const d = results[i];
-        const priceUsdt = parseFloat(ethers.formatUnits(d.price, this.usdtDecimals));
-        // power est un entier brut (pas de décimales)
-        const power = Number(d.power);
-        // shopExpiry : 0 = jamais, >0 = timestamp d'expiration
-        const shopExpiry = Number(d.shopExpiry ?? 0);
-        this.shopMachinesData.push({ price: priceUsdt, power: power, priceRaw: d.price, shopExpiry: shopExpiry });
-      }
-    } catch (e) { console.error("Erreur fetchMachines:", e); }
-    this.isLoadingShop = false;
-  }
-
-  // ─── Récupération des batteries du shop ──────────────────────────
-  async fetchBatteries() {
-    this.isLoadingShop = true;
-    try {
-      const count = Number(await this.mine.bCount());
-      const promises = [];
-      for (let i = 0; i < count; i++) promises.push(this.mine.getBType(i));
-      const results = await Promise.all(promises);
-      this.shopBatteriesData = [];
-      for (let i = 0; i < count; i++) {
-        const d = results[i];
-        const price = parseFloat(ethers.formatUnits(d.price, this.usdtDecimals));
-        const days = Number(d.dur) / 86400;
-        this.shopBatteriesData.push({ price: price, days: days, priceRaw: d.price });
-      }
-    } catch (e) { console.error("Erreur fetchBatteries:", e); }
-    this.isLoadingShop = false;
-  }
-
-  // ─── SVG des machines (miniature) ────────────────────────────────
-  getMachineMiniSVG(tier) {
-    const c = ['#64748b', '#3b82f6', '#8b5cf6', '#F0B90B', '#f97316', '#ef4444', '#06b6d4', '#eab308'];
-    const a = ['#94a3b8', '#60a5fa', '#a78bfa', '#FFD43B', '#fb923c', '#f87171', '#22d3ee', '#facc15'];
-    const tc = c[tier % 8], ta = a[tier % 8];
-    return `<svg viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg" class="machine-svg-mini"><rect x="2" y="2" width="46" height="46" rx="6" fill="#1e293b" stroke="${tc}" stroke-width="1"/><rect x="2" y="2" width="46" height="3" rx="1.5" fill="${tc}" opacity="0.6"/><rect x="8" y="10" width="14" height="20" rx="2" fill="#080c18" stroke="${ta}" stroke-width="0.5"/><rect x="28" y="10" width="14" height="20" rx="2" fill="#080c18" stroke="${ta}" stroke-width="0.5"/><circle cx="21" cy="40" r="6" fill="#0a0e1a" stroke="#333" stroke-width="0.5"/><circle cx="37" cy="40" r="6" fill="#0a0e1a" stroke="#333" stroke-width="0.5"/></svg>`;
-  }
-
-  // ─── Rendu HTML des machines (boutique) ──────────────────────────
-  _renderShopMachinesHTML(container) {
-    container.innerHTML = '';
-    container.style.gridTemplateColumns = '1fr 1fr';
-    const badges = [
-      'background:#64748b;color:#fff', 'background:#3b82f6;color:#fff', 'background:#8b5cf6;color:#fff', 'background:#F0B90B;color:#000',
-      'background:#f97316;color:#fff', 'background:#ef4444;color:#fff', 'background:#06b6d4;color:#000', 'background:#eab308;color:#000'
-    ];
-    const names = ['STARTER', 'STANDARD', 'ADVANCED', 'PRO', 'ELITE', 'ULTRA', 'SUPREME', 'LEGEND'];
-    for (let i = 0; i < this.shopMachinesData.length; i++) {
-      const d = this.shopMachinesData[i];
-      const div = document.createElement('div');
-      div.className = 'rig-item';
-      div.innerHTML = `<span class="tier-badge" style="${badges[i % 8]}">${names[i % 8]}</span>
-        ${this.getMachineMiniSVG(i)}
-        <span class="rig-name" style="font-size:0.85rem;">${this.t('rig')} ${i + 1}</span>
-        <span class="rig-power" style="font-size:0.75rem;">${this.formatHashrate(d.power)}</span>
-        <span class="rig-price" style="font-size:1rem;">${d.price.toFixed(2)} $</span>
-        <button class="btn-primary" style="padding:8px;font-size:0.75rem;margin-top:6px;" onclick="App.buyMachine(${i})">${this.t('buy')} (${this.payMode})</button>`;
-      container.appendChild(div);
-    }
-  }
-
-  // ─── Rendu HTML des batteries (boutique) ─────────────────────────
-  _renderShopBatteriesHTML(container) {
-    container.innerHTML = '';
-    container.style.gridTemplateColumns = '1fr 1fr';
-    for (let i = 0; i < this.shopBatteriesData.length; i++) {
-      const d = this.shopBatteriesData[i];
-      const chargeLevel = Math.floor(Math.random() * 40) + 60;
-      const div = document.createElement('div');
-      div.className = 'battery-shop-item';
-      div.innerHTML = `
-        <div class="real-battery">
-          <div class="battery-cap"></div>
-          <div class="battery-body">
-            <div class="battery-level" style="width:${chargeLevel}%"></div>
-            <div class="battery-charge-indicator">${d.days}J</div>
-          </div>
-        </div>
-        <div class="battery-name">${d.days} ${this.t('days')}</div>
-        <div class="battery-price">${d.price.toFixed(2)} $</div>
-        <button class="btn-primary" style="padding:6px;font-size:0.75rem" onclick="App.buyBattery(${i})">${this.t('buy')} (${this.payMode})</button>`;
-      container.appendChild(div);
-    }
-  }
-
-  // ─── Swap : inverser la direction ────────────────────────────────
-  toggleSwap() {
-    this.swapDirection = this.swapDirection === 'USDT_TO_FTA' ? 'FTA_TO_USDT' : 'USDT_TO_FTA';
-    document.getElementById('token-from-display').innerText = this.swapDirection === 'USDT_TO_FTA' ? 'USDT' : 'FTA';
-    document.getElementById('token-to-display').innerText = this.swapDirection === 'USDT_TO_FTA' ? 'FTA' : 'USDT';
-    document.getElementById('swap-to-in').value = '';
-    document.getElementById('swap-from-in').value = '';
-    document.getElementById('swap-details').classList.add('hidden');
-    this.updateData();
-  }
-
-  // ─── Swap : calcul du montant reçu ───────────────────────────────
-  calcSwap() {
-    const val = document.getElementById('swap-from-in').value;
-    if (!val || val <= 0) {
-      document.getElementById('swap-to-in').value = '';
-      document.getElementById('swap-details').classList.add('hidden');
-      return;
-    }
-    const inputVal = parseFloat(val);
-    const isUsdtTo = this.swapDirection === 'USDT_TO_FTA';
-    const fee = inputVal * SWAP_FEE_RATE;
-    const netInput = inputVal - fee;
-    let netOutput = 0;
-    if (this.ftaPriceUsd > 0) {
-      netOutput = isUsdtTo ? (netInput / this.ftaPriceUsd) : (netInput * this.ftaPriceUsd);
-    }
-    const minReceived = netOutput * (1 - SLIPPAGE);
-    document.getElementById('swap-to-in').value = netOutput > 0 ? netOutput.toFixed(6) : '';
-    const detailsEl = document.getElementById('swap-details');
-    detailsEl.classList.remove('hidden');
-    const fromToken = isUsdtTo ? 'USDT' : 'FTA';
-    const toToken = isUsdtTo ? 'FTA' : 'USDT';
-    document.getElementById('swap-detail-rate').innerText = isUsdtTo
-      ? `1 USDT = ${(1 / this.ftaPriceUsd).toFixed(2)} FTA`
-      : `1 FTA = ${this.ftaPriceUsd.toFixed(6)} USDT`;
-    document.getElementById('swap-detail-fee').innerText = `${fee.toFixed(6)} ${fromToken}`;
-    document.getElementById('swap-detail-min').innerText = `${minReceived.toFixed(6)} ${toToken}`;
-  }
-
-  // ─── Exécution du swap via le Core V3 ────────────────────────────
-  async executeSwap() {
-    const val = document.getElementById('swap-from-in').value;
-    if (!val || val <= 0) return this.showToast(this.t('invalidAmount'), true);
-    this.setLoader(true, this.t('swapping'));
-    const isUsdtTo = this.swapDirection === 'USDT_TO_FTA';
-
-    try {
-      const decimals = isUsdtTo ? this.usdtDecimals : this.ftaDecimals;
-      const amount = ethers.parseUnits(val, decimals);
-
-      // Calcul du minimum reçu pour le slippage
-      const netInput = parseFloat(val) * (1 - SWAP_FEE_RATE);
-      const expectedOut = isUsdtTo ? (netInput / this.ftaPriceUsd) : (netInput * this.ftaPriceUsd);
-      // minOut : si USDT→FTA alors decimals=FTA (8), si FTA→USDT alors decimals=USDT (6)
-      const outDec = isUsdtTo ? this.ftaDecimals : this.usdtDecimals;
-      const minOut = ethers.parseUnits((expectedOut * (1 - SLIPPAGE)).toFixed(outDec), outDec);
-
-      // Deadline : 20 minutes dans le futur
-      const deadline = Math.floor(Date.now() / 1000) + 1200;
-
-      let tx;
-      if (isUsdtTo) {
-        tx = await this.core.swapUForF(amount, minOut, deadline);
-      } else {
-        tx = await this.core.swapFForU(amount, minOut, deadline);
-      }
-      await tx.wait();
-      this.showToast(this.t('swapSuccess'));
-      document.getElementById('swap-from-in').value = '';
-      document.getElementById('swap-to-in').value = '';
-      document.getElementById('swap-details').classList.add('hidden');
-      this.updateData();
-    } catch (e) { this.showError(e); }
-    this.setLoader(false);
-  }
-
-  // ─── Visualiseur de minage ───────────────────────────────────────
-  resizeCanvas() {
-    if (this.vizContext) {
-      const c = this.vizContext.canvas;
-      c.width = c.offsetWidth * 2;
-      c.height = c.offsetHeight * 2;
-    }
-  }
-
-  initVisualizer() {
-    const c = document.getElementById('mining-canvas');
-    if (!c) return;
-    this.resizeCanvas();
-    this.vizContext = c.getContext('2d');
-    this.vizBars = [];
-    for (let i = 0; i < 20; i++) this.vizBars.push({ height: 0, targetHeight: 0 });
-    this.animateVisualizer();
-  }
-
-  updateVisualizerIntensity(p) {
-    const intensity = p > 0 ? Math.min((p * 500) + 10, 100) : 0;
-    this.vizBars.forEach(b => b.targetHeight = (this.vizContext.canvas.height * (intensity / 100)) * Math.random());
-  }
-
-  animateVisualizer() {
-    if (!this.vizContext) return;
-    const ctx = this.vizContext;
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    ctx.fillStyle = "#F0B90B";
-    const w = ctx.canvas.width / 20;
-    this.vizBars.forEach((b, i) => {
-      b.height += (b.targetHeight - b.height) * 0.1;
-      ctx.fillRect(i * w + 2, ctx.canvas.height - b.height, w - 4, b.height);
-      b.targetHeight += (Math.random() - 0.5) * 10;
+// ERC20 standard (USDT / FTA)
+const ERC20_ABI = [
+  'function balanceOf(address) view returns (uint256)',
+  'function allowance(address, address) view returns (uint256)',
+  'function approve(address, uint256) returns (bool)',
+  'function transfer(address, uint256) returns (bool)',
+  'function decimals() view returns (uint8)',
+  'function symbol() view returns (string)'
+];
+
+/* ═══════════════════════════════════════════════════════════════════
+   BASE DE DONNÉES SQLITE (sql.js - WebAssembly)
+   Le fichier .db est conservé dans le navigateur et sauvegardé
+   automatiquement. Boutons « Exporter » / « Importer » en bas de page.
+   ═══════════════════════════════════════════════════════════════════ */
+
+const DB_SCHEMA = `
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    salt TEXT NOT NULL,
+    address TEXT UNIQUE,
+    wallet_message TEXT,
+    wallet_signature TEXT,
+    created_at INTEGER NOT NULL,
+    last_login INTEGER
+  );
+  CREATE TABLE IF NOT EXISTS transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    tx_hash TEXT,
+    asset TEXT,
+    amount TEXT,
+    status TEXT NOT NULL DEFAULT 'confirmed',
+    details TEXT,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_tx_user ON transactions(user_id, created_at);
+`;
+
+const DB = {
+  key: 'fitia_db',
+  sessionKey: 'fitia_session',
+
+  // Initialise la base : charge depuis le stockage local ou crée une base neuve
+  async init() {
+    if (typeof initSqlJs === 'undefined') throw new Error('sql.js non chargé');
+    const SQL = await initSqlJs({
+      locateFile: f => 'https://cdn.jsdelivr.net/npm/sql.js@1.13.0/dist/' + f
     });
-    requestAnimationFrame(() => this.animateVisualizer());
-  }
-
-  // ─── Navigation ──────────────────────────────────────────────────
-  nav(viewId) {
-    document.querySelectorAll('.view').forEach(el => { el.classList.remove('active'); el.style.display = 'none'; });
-    const activeView = document.getElementById('view-' + viewId);
-    if (activeView) { activeView.classList.add('active'); activeView.style.display = 'block'; }
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    if (event?.currentTarget) event.currentTarget.classList.add('active');
-  }
-
-  // ─── Loader plein écran ──────────────────────────────────────────
-  setLoader(show, msg = "Traitement...") {
-    const loader = document.getElementById('loader');
-    document.getElementById('loader-text').innerText = msg;
-    if (show) { loader.classList.remove('hidden'); } else { loader.classList.add('hidden'); }
-  }
-
-  // ─── Gestion des erreurs ─────────────────────────────────────────
-  getErrorMessage(e) {
-    // Extraire le message court ethers v6 (contient la raison du revert)
-    const shortMsg = e?.shortMessage || e?.reason || '';
-    const errStr = ((e?.message || '') + ' ' + shortMsg + ' ' + (e?.code || '') + ' ' + (e?.reason || '')).toLowerCase();
-
-    if (errStr.includes('user rejected') || errStr.includes('user denied') || errStr.includes('action_rejected') || e?.code === 4001) return this.t('errRejected');
-    if (errStr.includes('insufficient') || errStr.includes('not enough') || errStr.includes('insf')) return this.t('errInsufficientFunds');
-    // Erreurs de transfert : approve manquant, solde insuffisant, etc.
-    if (errStr.includes('tff') || errStr.includes('transferfrom') || errStr.includes('erc20: transfer amount exceeds')) return '❌ Transfert échoué. Vérifiez que vous avez approuvé le contrat et que votre solde wallet FTA est suffisant.';
-    if (errStr.includes('nonce')) return this.t('errNonce');
-    if (errStr.includes('reentrant')) return '⚠️ Une transaction est déjà en cours. Patientez quelques secondes.';
-    if (errStr.includes('pending')) return this.t('errAlreadyPending');
-    if (errStr.includes('timeout') || errStr.includes('deadline')) return this.t('errTimeout');
-    if (errStr.includes('network') || errStr.includes('fetch') || errStr.includes('call revert')) return this.t('errNetwork');
-    if (errStr.includes('revert') || errStr.includes('execution')) return this.t('errContract');
-    if (errStr.includes('nom') || errStr.includes('no machine')) return this.t('errNoMachine');
-    if (errStr.includes('running')) return this.t('errRunning');
-    if (errStr.includes('nobat') || errStr.includes('no battery')) return this.t('errNoBattery');
-    if (errStr.includes('maxm') || errStr.includes('max machine')) return this.t('errMaxMachine');
-
-    // Fallback : afficher le vrai message ethers si disponible, sinon générique
-    if (shortMsg) return 'Erreur contrat : ' + shortMsg;
-    return this.t('errGeneric');
-  }
-
-  showError(e) {
-    // Log complet pour débogage console
-    console.error("═══ Transaction Error ═══");
-    console.error("Message:", e?.message);
-    console.error("Short:", e?.shortMessage);
-    console.error("Reason:", e?.reason);
-    console.error("Code:", e?.code);
-    console.error("Data:", e?.data);
-    console.error("Full:", e);
-    this.showToast(this.getErrorMessage(e), true);
-  }
-
-  showToast(msg, isError = false) {
-    const div = document.createElement('div');
-    div.className = 'toast' + (isError ? ' toast-error' : ' toast-success');
-    div.innerText = msg;
-    const container = document.getElementById('toast-container');
-    container.appendChild(div);
-    setTimeout(() => div.remove(), 4000);
-  }
-
-  // ─── Mise à jour de l'indicateur de pourcentage d'évolution ─────
-  // Compare le prix actuel avec un checkpoint pris toutes les 5 minutes.
-  // Sans ça, comparer toutes les 15 secondes donne toujours ~0.00%
-  // car la bonding curve ne bouge pas assez vite.
-  updatePriceChange(token, newPrice) {
-    const el = document.getElementById('change-' + token);
-    if (!el) return;
-    const now = Date.now();
-    const interval = 5 * 60 * 1000; // checkpoint toutes les 5 minutes
-    const checkpoint = this.prevPriceCheckpoint[token];
-
-    // Premier passage ou reset périodique : on pose un nouveau checkpoint
-    if (checkpoint === undefined || checkpoint === null || checkpoint === 0
-        || now - this.priceCheckpointTime > interval) {
-      this.prevPriceCheckpoint[token] = newPrice;
-      if (this.priceCheckpointTime === 0 || now - this.priceCheckpointTime > interval * 2) {
-        this.priceCheckpointTime = now;
+    const saved = localStorage.getItem(this.key);
+    if (saved) {
+      try {
+        const bytes = Uint8Array.from(atob(saved), c => c.charCodeAt(0));
+        this.db = new SQL.Database(bytes);
+      } catch {
+        this.db = new SQL.Database();
       }
-      el.textContent = '0.00%';
-      el.className = 'token-change flat';
-      return;
-    }
-
-    // Calcul de l'évolution depuis le dernier checkpoint
-    const change = ((newPrice - checkpoint) / checkpoint) * 100;
-    const absChange = Math.abs(change);
-    let sign, cssClass;
-    if (absChange < 0.01) {
-      sign = '';
-      cssClass = 'flat';
-    } else if (change > 0) {
-      sign = '+';
-      cssClass = 'up';
     } else {
-      sign = '';
-      cssClass = 'down';
+      this.db = new SQL.Database();
     }
-    el.textContent = sign + change.toFixed(2) + '%';
-    el.className = 'token-change ' + cssClass;
-  }
+    this.db.run(DB_SCHEMA);
+    this.persist();
+  },
 
-  // ═══ CHAT ASSISTANT ══════════════════════════════════════════════
-  toggleChat() {
-    const panel = document.getElementById('chat-panel');
-    const isActive = panel.classList.toggle('active');
-    if (isActive && !this.chatInitialized) {
-      this.chatInitialized = true;
-      setTimeout(() => this.addChatBubble('assistant', this.getWelcomeMessage()), 400);
+  // Sauvegarde la base en base64 dans localStorage
+  persist() {
+    try {
+      const bytes = this.db.export();
+      let bin = '';
+      const CHUNK = 0x8000;
+      for (let i = 0; i < bytes.length; i += CHUNK) {
+        bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+      }
+      localStorage.setItem(this.key, btoa(bin));
+    } catch (e) {
+      console.warn('Persistance SQLite impossible :', e);
     }
-    if (isActive) setTimeout(() => document.getElementById('chat-input').focus(), 350);
-  }
+  },
 
-  sendChatMessage() {
-    const input = document.getElementById('chat-input');
-    const msg = input.value.trim();
-    if (!msg) return;
-    input.value = '';
-    this.addChatBubble('user', msg);
-    this.chatHistory.push({ role: 'user', text: msg });
-    const typingId = this.showTyping();
-    const delay = 400 + Math.min(msg.length * 25, 1200) + Math.random() * 400;
-    setTimeout(() => {
-      this.removeTyping(typingId);
-      const response = this.generateLocalResponse(msg);
-      this.addChatBubble('assistant', response);
-      this.chatHistory.push({ role: 'assistant', text: response });
-    }, delay);
-  }
+  // Requêtes utilitaires (paramétrées)
+  get(sql, params = []) {
+    const st = this.db.prepare(sql);
+    st.bind(params);
+    let row = null;
+    if (st.step()) row = st.getAsObject();
+    st.free();
+    return row;
+  },
+  all(sql, params = []) {
+    const st = this.db.prepare(sql);
+    st.bind(params);
+    const rows = [];
+    while (st.step()) rows.push(st.getAsObject());
+    st.free();
+    return rows;
+  },
+  run(sql, params = []) {
+    this.db.run(sql, params);
+    this.persist();
+  },
 
-  addChatBubble(role, text) {
-    const container = document.getElementById('chat-messages');
-    const bubble = document.createElement('div');
-    bubble.className = `chat-bubble ${role}`;
-    bubble.textContent = text;
-    container.appendChild(bubble);
-    requestAnimationFrame(() => container.scrollTop = container.scrollHeight);
-  }
-
-  showTyping() {
-    const container = document.getElementById('chat-messages');
-    const typing = document.createElement('div');
-    const id = 'typing-' + Date.now();
-    typing.id = id;
-    typing.className = 'chat-bubble assistant';
-    typing.innerHTML = '<span style="letter-spacing:3px;animation:loaderTextPulse 1s infinite">● ● ●</span>';
-    container.appendChild(typing);
-    container.scrollTop = container.scrollHeight;
-    return id;
-  }
-
-  removeTyping(id) {
-    const el = document.getElementById(id);
-    if (el) el.remove();
-  }
-
-  getWelcomeMessage() {
-    const m = {
-      en: "👋 Welcome to FITIA PRO! I'm your crypto assistant.\nAsk me about: Mining, Swap, Wallet, Security, Community!",
-      fr: "👋 Bienvenue sur FITIA PRO ! Je suis votre assistant crypto.\nDemandez-moi : Minage, Échange, Wallet, Sécurité, Communauté !",
-      de: "👋 Willkommen bei FITIA PRO! Dein Krypto-Assistent.\nFrag mich zu: Mining, Tausch, Wallet, Sicherheit!",
-      zh: "👋 欢迎使用 FITIA PRO！你的加密助手。\n问我：挖矿、兑换、钱包、安全！",
-      sg: "👋 Welcome to FITIA PRO! Your crypto assistant.\nAsk about: Mining, Swap, Wallet, Security!"
+  // Statistiques globales (page d'accueil)
+  stats() {
+    return {
+      users: this.get('SELECT COUNT(*) AS n FROM users').n,
+      transactions: this.get('SELECT COUNT(*) AS n FROM transactions').n
     };
-    return m[this.currentLang] || m.en;
+  },
+
+  // Export du fichier .db (ouvrable avec l'extension SQLite de VS Code)
+  exportFile() {
+    const bytes = this.db.export();
+    const blob = new Blob([bytes], { type: 'application/x-sqlite3' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'fitia.db';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  },
+
+  // Import d'un fichier .db (remplace la base actuelle)
+  importFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const SQL = await initSqlJs({
+            locateFile: f => 'https://cdn.jsdelivr.net/npm/sql.js@1.13.0/dist/' + f
+          });
+          this.db = new SQL.Database(new Uint8Array(reader.result));
+          this.db.run(DB_SCHEMA); // s'assure que les tables existent
+          this.persist();
+          resolve();
+        } catch (e) { reject(e); }
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(file);
+    });
+  },
+
+  // Session : utilisateur actuellement connecté
+  loadSession() {
+    try {
+      const s = JSON.parse(localStorage.getItem(this.sessionKey));
+      if (!s || !s.userId) return null;
+      const u = this.get('SELECT * FROM users WHERE id = ?', [s.userId]);
+      return u || null;
+    } catch { return null; }
+  },
+  saveSession(user) {
+    localStorage.setItem(this.sessionKey, JSON.stringify({ userId: user.id, username: user.username }));
+  },
+  clearSession() { localStorage.removeItem(this.sessionKey); }
+};
+
+/* ─── Hachage des mots de passe (PBKDF2 via Web Crypto) ─── */
+const enc = new TextEncoder();
+
+function newSalt() {
+  const b = new Uint8Array(16);
+  crypto.getRandomValues(b);
+  return Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+}
+
+async function hashPassword(password, salt) {
+  const key = await crypto.subtle.importKey('raw', enc.encode(String(password)), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt: enc.encode(salt), iterations: 150000, hash: 'SHA-256' },
+    key, 256
+  );
+  return Array.from(new Uint8Array(bits), b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/* ─── Petits utilitaires DOM ─── */
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+function fmtNum(v, dec = 2) {
+  return Number(v).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: dec });
+}
+
+function shortAddr(a) {
+  if (!a) return '-';
+  return a.slice(0, 6) + '...' + a.slice(-4);
+}
+
+function fmtDate(ts) {
+  if (!ts) return '-';
+  return new Date(ts).toLocaleString('fr-FR', {
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+}
+
+function fmtDur(seconds) {
+  const d = Number(seconds) / 86400;
+  if (d >= 1) return d % 1 === 0 ? `${d} jour${d > 1 ? 's' : ''}` : `${d.toFixed(1)} jours`;
+  const h = Number(seconds) / 3600;
+  if (h >= 1) return `${h.toFixed(1)} h`;
+  return `${Math.round(Number(seconds) / 60)} min`;
+}
+
+/* ─── Messages d'erreur blockchain traduits ─── */
+function decodeErr(e) {
+  if (!e) return 'Erreur inconnue';
+  if (e.code === 4001) return 'Opération annulée dans MetaMask.';
+  if (e.code === 'INSUFFICIENT_FUNDS' || /insufficient funds/i.test(e.message || '')) {
+    return 'Solde POL insuffisant pour les frais de gaz.';
   }
+  const raw = (e.shortMessage || e.reason || e.message || '');
+  const map = [
+    [/unknown custom error/, 'Transaction rejetée par le contrat (voir détails).'],
+    [/InsF/, 'Solde insuffisant dans la DApp.'],
+    [/Slip/, 'Glissement de prix trop élevé - réessayez.'],
+    [/Expired/, 'Opération expirée - réessayez.'],
+    [/MaxM/, 'Nombre maximum de machines atteint (100).'],
+    [/NoBat/, "Vous n'avez pas de batterie de ce type."],
+    [/Running/, 'Cette machine est déjà en cours de minage.'],
+    [/NoM/, 'Vous ne possédez aucune machine.'],
+    [/NoLiq/, 'Pas de liquidité disponible.'],
+    [/FtaLiq/, 'Liquidité FTA insuffisante.'],
+    [/NoPol/, 'POL insuffisant dans la DApp (déposez du POL).'],
+    [/RefSelf/, "Impossible d'être son propre parrain."],
+    [/RefSet/, 'Parrain déjà défini (opération unique).'],
+    [/FeesH/, 'Frais invalides côté contrat.'],
+    [/rejected/i, 'Transaction rejetée par le portefeuille.']
+  ];
+  for (const [re, msg] of map) if (re.test(raw)) return msg;
+  return raw || 'Erreur de transaction.';
+}
 
-  generateLocalResponse(msg) {
-    const m = msg.toLowerCase().replace(/[?!.,;:'"]/g, '').trim();
-    const conn = !!this.user;
-    const power = this.currentRealPower || 0;
-    const pending = this.pendingBalance || 0;
-    const ftaP = this.ftaPriceUsd || 0;
+/* ─── Toasts ─── */
+function toast(msg, type = 'info', ms = 4500) {
+  const icons = { success: ICONS.check, error: ICONS.alert, info: ICONS.info };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span class="t-ic">${icons[type] || ICONS.info}</span><span>${msg}</span>`;
+  $('#toasts').appendChild(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 350); }, ms);
+}
 
-    // Détection des intentions simplifiée
-    if (m.includes('salut') || m.includes('bonjour') || m.includes('hello') || m.includes('hi') || m.includes('你好')) {
-      return conn
-        ? `👋 Salut ! Puissance actuelle : ${this.formatHashrate(power)}. ${this.userMachines.filter(m => m.exp > Math.floor(Date.now()/1000)).length} machine(s) active(s). Comment puis-je vous aider ?`
-        : "👋 Bienvenue ! Connectez votre wallet pour commencer. Besoin d'aide ?";
-    }
-    if (m.includes('merci') || m.includes('thanks') || m.includes('谢谢')) return "De rien ! 😊 Besoin d'autre chose ?";
-    if (m.includes('aide') || m.includes('help') || m.includes('帮助')) return "🛠️ Je peux vous aider avec :\n⛏️ Minage — Acheter machine, batterie, brancher\n💱 Échange — USDT ↔ FTA\n💰 Wallet — Dépôt, retrait, solde\n👥 Parrainage — Gagner avec les références\n🛡️ Sécurité — Conseils\n📱 Communauté — WhatsApp";
-    if (m.includes('minage') || m.includes('mine') || m.includes('miner') || m.includes('挖矿')) {
-      return conn
-        ? `⛏️ Minage FITIA :\n1️⃣ Achetez une machine (Boutique)\n2️⃣ Achetez une batterie\n3️⃣ Branchez la machine (Wallet)\n4️⃣ Gagnez du FTA automatiquement !\n5️⃣ Réclamez vos gains\nPuissance : ${this.formatHashrate(power)}\nEn attente : ${pending.toFixed(5)} FTA`
-        : "⛏️ Connectez votre wallet pour commencer le minage !";
-    }
-    if (m.includes('swap') || m.includes('échange') || m.includes('echange') || m.includes('兑换')) {
-      return `💱 Échange USDT ↔ FTA :\nAllez dans l'onglet Swap, choisissez la direction, entrez le montant et cliquez ÉCHANGER.\nTaux actuel : 1 FTA = ${ftaP > 0 ? ftaP.toFixed(6) : '...'} USDT\nFrais : 4%`;
-    }
-    if (m.includes('wallet') || m.includes('solde') || m.includes('dépôt') || m.includes('depot') || m.includes('余额')) {
-      return "💰 Wallet :\n• Déposez USDT ou FTA pour les utiliser dans la dApp\n• Retirez à tout moment\n• Envoyez/recevez des tokens\n• Tout se passe sur Polygon (frais très bas)";
-    }
-    if (m.includes('sécurité') || m.includes('securite') || m.includes('security') || m.includes('安全')) {
-      return "🛡️ Sécurité :\n✅ Ne partagez JAMAIS votre phrase de récupération\n✅ Personne de FITIA ne vous la demandera\n✅ Vérifiez les adresses avant d'envoyer\n✅ Utilisez uniquement les liens officiels";
-    }
-    if (m.includes('communauté') || m.includes('whatsapp') || m.includes('groupe') || m.includes('社群')) {
-      return `📱 Communautés officielles :\n👥 Groupe WhatsApp : ${CONFIG.WHATSAPP_GROUP}\n📢 Chaîne WhatsApp : ${CONFIG.WHATSAPP_CHANNEL}`;
-    }
-    if (m.includes('parrain') || m.includes('parrainage') || m.includes('référence') || m.includes('推荐')) {
-      return conn
-        ? `👥 Parrainage : Votre adresse est votre code de parrainage : ${this.user.slice(0, 6)}...${this.user.slice(-4)}\nPartagez-la pour gagner des bonus !`
-        : "👥 Connectez votre wallet pour voir votre code de parrainage !";
-    }
-    return "Je ne suis pas sûr de comprendre. Essayez : 'minage', 'swap', 'wallet', 'sécurité', 'communauté', ou 'parrainage'. Je suis là pour vous aider !";
+/* ─── Modales ─── */
+function openModal(id) { $(`#${id}`).classList.remove('hidden'); }
+function closeModal(id) { $(`#${id}`).classList.add('hidden'); }
+
+$$('[data-close]').forEach(b => b.addEventListener('click', () => closeModal(b.dataset.close)));
+document.querySelectorAll('.modal-backdrop').forEach(bd => {
+  bd.addEventListener('click', (e) => { if (e.target === bd) bd.classList.add('hidden'); });
+});
+
+/* ─── Attente de transaction ─── */
+function showTxWait(title, sub) {
+  $('#txWaitTitle').textContent = title;
+  $('#txWaitSub').textContent = sub;
+  $('#txWait').classList.remove('hidden');
+}
+function hideTxWait() { $('#txWait').classList.add('hidden'); }
+
+/* ─── Écran de démarrage ─── */
+function hideBoot() { $('#bootScreen').classList.add('hidden'); }
+function showBootError(title, msg) {
+  const b = $('#bootScreen');
+  b.innerHTML = `<div class="boot-logo" style="background:linear-gradient(135deg,#F6465D,#B3233E);color:#fff">${ICONS.alert}</div><h1>${title}</h1><p style="max-width:320px;text-align:center">${msg}</p>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   AUTHENTIFICATION (base SQLite locale)
+   ═══════════════════════════════════════════════════════════════════ */
+
+async function handleRegister(e) {
+  e.preventDefault();
+  const username = $('#regUsername').value.trim();
+  const password = $('#regPassword').value;
+  const password2 = $('#regPassword2').value;
+  $('#registerError').textContent = '';
+  if (!/^[a-zA-Z0-9_]{3,24}$/.test(username)) {
+    $('#registerError').textContent = "Nom d'utilisateur : 3 à 24 caractères (lettres, chiffres, _).";
+    return;
+  }
+  if (password.length < 6) {
+    $('#registerError').textContent = 'Mot de passe : 6 caractères minimum.';
+    return;
+  }
+  if (password !== password2) {
+    $('#registerError').textContent = 'Les mots de passe ne correspondent pas.';
+    return;
+  }
+  if (DB.get('SELECT id FROM users WHERE username = ?', [username])) {
+    $('#registerError').textContent = "Ce nom d'utilisateur est déjà pris.";
+    return;
+  }
+  $('#btnRegisterSubmit').disabled = true;
+  $('#btnRegisterSubmit').textContent = 'Création du compte...';
+  try {
+    const salt = newSalt();
+    const hash = await hashPassword(password, salt);
+    DB.run(
+      'INSERT INTO users (username, password_hash, salt, created_at) VALUES (?, ?, ?, ?)',
+      [username, hash, salt, Date.now()]
+    );
+    // Récupère l'ID via l'username (UNIQUE) : plus fiable que last_insert_rowid,
+    // que sql.js réinitialise à 0 lors de l'export/persistance de la base
+    const row = DB.get('SELECT id FROM users WHERE username = ?', [username]);
+    const user = { id: row.id, username, address: null, created_at: Date.now() };
+    DB.saveSession(user);
+    State.user = user;
+    toast(`Compte « ${username} » créé !`, 'success');
+    showApp();
+    refreshDbStatus();
+  } catch (err) {
+    $('#registerError').textContent = err.message || 'Erreur lors de la création du compte.';
+  } finally {
+    $('#btnRegisterSubmit').disabled = false;
+    $('#btnRegisterSubmit').textContent = 'Créer mon compte';
   }
 }
 
-// ─── Démarrage de l'application ────────────────────────────────────
-const App = new Application();
-App.init();
+async function handleLogin(e) {
+  e.preventDefault();
+  const username = $('#loginUsername').value.trim();
+  const password = $('#loginPassword').value;
+  $('#loginError').textContent = '';
+  $('#btnLoginSubmit').disabled = true;
+  $('#btnLoginSubmit').textContent = 'Connexion...';
+  try {
+    const user = DB.get('SELECT * FROM users WHERE username = ?', [username]);
+    if (!user) throw new Error('Identifiants incorrects');
+    const hash = await hashPassword(password, user.salt);
+    if (hash !== user.password_hash) throw new Error('Identifiants incorrects');
+    DB.run('UPDATE users SET last_login = ? WHERE id = ?', [Date.now(), user.id]);
+    const clean = { id: user.id, username: user.username, address: user.address, created_at: user.created_at };
+    DB.saveSession(clean);
+    State.user = clean;
+    toast(`Bienvenue ${user.username} !`, 'success');
+    showApp();
+    refreshDbStatus();
+  } catch (err) {
+    $('#loginError').textContent = err.message;
+  } finally {
+    $('#btnLoginSubmit').disabled = false;
+    $('#btnLoginSubmit').textContent = 'Se connecter';
+  }
+}
+
+function handleLogout() {
+  DB.clearSession();
+  State.user = null;
+  if (State.refreshTimer) clearInterval(State.refreshTimer);
+  $('#viewApp').classList.add('hidden');
+  showAuth();
+  updateWalletUI();
+  toast('Vous êtes déconnecté.', 'info');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   INITIALISATION
+   ═══════════════════════════════════════════════════════════════════ */
+
+async function init() {
+  if (typeof ethers === 'undefined') {
+    showBootError('Bibliothèque manquante', 'Impossible de charger ethers.js - vérifiez votre connexion Internet puis actualisez la page.');
+    return;
+  }
+  if (typeof initSqlJs === 'undefined') {
+    showBootError('Bibliothèque manquante', 'Impossible de charger sql.js (SQLite) - vérifiez votre connexion Internet puis actualisez la page.');
+    return;
+  }
+  try {
+    await DB.init();
+  } catch (e) {
+    showBootError('Erreur de base de données', (e && e.message) || 'Impossible d\'initialiser la base SQLite.');
+    return;
+  }
+
+  // Fournisseur de lecture (RPC publics Polygon) pour les données sans portefeuille
+  State.readProvider = new ethers.FallbackProvider(
+    CFG.polygon.rpc.map(u => new ethers.JsonRpcProvider(u)), 1
+  );
+
+  const configured = CFG.contracts.core !== ZERO_ADDR && CFG.contracts.mine !== ZERO_ADDR;
+  if (configured) initContracts(null);
+
+  // Statistiques locales
+  const st = DB.stats();
+  $('#statUsers').textContent = fmtNum(st.users, 0);
+  $('#statTxs').textContent = fmtNum(st.transactions, 0);
+  refreshDbStatus();
+
+  // Réseau affiché dans le footer
+  $('#footNetwork').textContent = `${CFG.polygon.chainName} (${parseInt(CFG.polygon.chainId, 16)})`;
+
+  if (!configured) {
+    toast('Adresses des contrats non configurées : ouvrez app.js et renseignez le bloc CFG.contracts', 'error', 8000);
+  }
+
+  // Connexion au portefeuille si déjà autorisé
+  if (window.ethereum) {
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      if (accounts && accounts.length) State.wallet = accounts[0].toLowerCase();
+    } catch { /* silencieux */ }
+    window.ethereum.on('accountsChanged', (accs) => {
+      State.wallet = accs && accs.length ? accs[0].toLowerCase() : null;
+      State.signer = null;
+      onWalletChanged();
+    });
+    window.ethereum.on('chainChanged', () => setTimeout(onWalletChanged, 600));
+  }
+
+  // Restaurer la session
+  const sess = DB.loadSession();
+  if (sess) {
+    State.user = { id: sess.id, username: sess.username, address: sess.address, created_at: sess.created_at };
+    showApp();
+  } else {
+    showAuth();
+  }
+
+  wireEvents();
+  wireAuthTabs();
+  updateWalletUI();
+  hideBoot();
+}
+
+// Indicateur d'état de la base dans le footer
+function refreshDbStatus() {
+  const st = DB.stats();
+  const size = (localStorage.getItem(DB.key) || '').length;
+  $('#dbStatus').textContent = `SQLite locale · ${fmtNum(st.users, 0)} utilisateur(s) · ${fmtNum(st.transactions, 0)} transaction(s) · ${fmtNum(size / 1024, 1)} Ko`;
+  // Compteurs de la page d'accueil (mise à jour en temps réel)
+  $('#statUsers').textContent = fmtNum(st.users, 0);
+  $('#statTxs').textContent = fmtNum(st.transactions, 0);
+}
+
+/* ─── Création des instances de contrats ─── */
+function initContracts(signerOrProvider) {
+  const p = signerOrProvider || State.readProvider;
+  const c = CFG.contracts;
+  State.contracts.core = new ethers.Contract(c.core, CORE_ABI, p);
+  State.contracts.mine = new ethers.Contract(c.mine, MINE_ABI, p);
+  State.contracts.usdt = new ethers.Contract(c.usdt, ERC20_ABI, p);
+  State.contracts.fta = new ethers.Contract(c.fta, ERC20_ABI, p);
+}
+
+function contractsReady() {
+  return State.contracts.core && State.contracts.mine && CFG.contracts.core !== ZERO_ADDR;
+}
+
+/* ─── Navigation par onglets ─── */
+const TABS = ['dashboard', 'shop', 'mining', 'swap', 'history'];
+
+function renderNav() {
+  const labels = {
+    dashboard: { ic: ICONS.grid, t: 'Accueil' },
+    shop: { ic: ICONS.bag, t: 'Boutique' },
+    mining: { ic: ICONS.pick, t: 'Minage' },
+    swap: { ic: ICONS.repeat, t: 'Échange' },
+    history: { ic: ICONS.clock, t: 'Historique' }
+  };
+  // Double rendu : nav haute (desktop) + barre basse (mobile)
+  ['#navLinks', '#bottomNav'].forEach(sel => {
+    const nav = $(sel);
+    if (!nav) return;
+    nav.innerHTML = '';
+    TABS.forEach(t => {
+      const b = document.createElement('button');
+      b.className = 'nav-link' + (t === 'dashboard' ? ' active' : '');
+      b.type = 'button';
+      b.innerHTML = `<span class="nav-ic">${labels[t].ic}</span><span class="nav-txt">${labels[t].t}</span>`;
+      b.addEventListener('click', () => switchTab(t));
+      nav.appendChild(b);
+    });
+    nav.classList.remove('hidden');
+  });
+}
+
+function switchTab(name) {
+  $$('.tab-page').forEach(p => p.classList.add('hidden'));
+  const page = $(`#tab-${name}`);
+  if (page) page.classList.remove('hidden');
+  $$('.nav-link').forEach(b => b.classList.remove('active'));
+  const map = { dashboard: 'Accueil', shop: 'Boutique', mining: 'Minage', swap: 'Échange', history: 'Historique' };
+  // L'onglet actif est marqué dans LES DEUX navs (haute + basse) :
+  // sur mobile, seule la barre basse est visible ; sur desktop, seule la nav haute.
+  ['#navLinks', '#bottomNav'].forEach(sel => {
+    const btn = $$(sel + ' .nav-link').find(b => b.textContent.includes(map[name]));
+    if (btn) btn.classList.add('active');
+  });
+  if (name === 'shop' && !State.shopLoaded) loadShop();
+  if (name === 'mining') { loadMyMachines(); loadMyBatteries(); }
+  if (name === 'swap') updateSwapEstimate();
+  if (name === 'history') loadHistory();
+  if (name === 'dashboard') { loadRecent(); refreshAll(); }
+}
+
+/* ─── Vues authentification / application ─── */
+function showAuth() {
+  $('#viewAuth').classList.remove('hidden');
+  $('#viewApp').classList.add('hidden');
+  $('#footer').classList.add('hidden');
+  $('#userChip').classList.add('hidden');
+  $('#navLinks').classList.add('hidden');
+}
+
+function showApp() {
+  $('#viewAuth').classList.add('hidden');
+  $('#viewApp').classList.remove('hidden');
+  $('#footer').classList.remove('hidden');
+  $('#userChip').classList.remove('hidden');
+  $('#chipUsername').textContent = State.user.username;
+  $('#chipAvatar').textContent = State.user.username[0].toUpperCase();
+  $('#chipAddress').textContent = State.user.address ? shortAddr(State.user.address) : 'portefeuille non lié';
+  $('#dashGreeting').textContent = `Bonjour ${State.user.username} ! Voici votre espace de minage.`;
+  renderNav();
+  switchTab('dashboard');
+  if (State.refreshTimer) clearInterval(State.refreshTimer);
+  State.refreshTimer = setInterval(() => {
+    if (contractsReady() && !document.hidden) refreshAll();
+  }, 25000);
+}
+
+function showAuthTab(which) {
+  const login = which === 'login';
+  $('#formLogin').classList.toggle('hidden', !login);
+  $('#formRegister').classList.toggle('hidden', login);
+  $('#tabLoginBtn').classList.toggle('active', login);
+  $('#tabRegisterBtn').classList.toggle('active', !login);
+  $('#loginError').textContent = '';
+  $('#registerError').textContent = '';
+}
+
+function wireAuthTabs() {
+  $('#tabLoginBtn').addEventListener('click', () => showAuthTab('login'));
+  $('#tabRegisterBtn').addEventListener('click', () => showAuthTab('register'));
+  $('#goRegister').addEventListener('click', (e) => { e.preventDefault(); showAuthTab('register'); });
+  $('#goLogin').addEventListener('click', (e) => { e.preventDefault(); showAuthTab('login'); });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PORTEFEUILLE (MetaMask + Polygon)
+   ═══════════════════════════════════════════════════════════════════ */
+
+async function connectWallet() {
+  if (!window.ethereum) {
+    toast('MetaMask n\'est pas installé. Installez-le sur metamask.io', 'error', 6000);
+    window.open('https://metamask.io/download/', '_blank');
+    return;
+  }
+  if (!State.user) {
+    toast('Connectez-vous d\'abord à votre compte.', 'info');
+    return;
+  }
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    if (!accounts || !accounts.length) return;
+    State.wallet = accounts[0].toLowerCase();
+    State.signer = null;
+    const ok = await ensurePolygonChain();
+    if (!ok) return;
+    toast(`Portefeuille connecté : ${shortAddr(State.wallet)}`, 'success');
+    await refreshAll();
+    onWalletChanged();
+  } catch (e) {
+    toast(decodeErr(e), 'error');
+  }
+}
+
+async function ensurePolygonChain() {
+  const p = CFG.polygon;
+  try {
+    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    if (chainId === p.chainId) return true;
+    try {
+      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: p.chainId }] });
+      return true;
+    } catch (err) {
+      if (err.code === 4902) {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: p.chainId, chainName: p.chainName,
+            nativeCurrency: p.nativeCurrency, rpcUrls: p.rpc
+          }]
+        });
+        return true;
+      }
+      return false;
+    }
+  } catch {
+    return false;
+  }
+}
+
+async function getSigner() {
+  if (!State.wallet) return null;
+  if (!State.signer) {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    await ensurePolygonChain();
+    State.signer = await provider.getSigner();
+    initContracts(State.signer);
+  }
+  return State.signer;
+}
+
+async function linkWallet() {
+  if (!State.user) return;
+  await connectWallet();
+  if (!State.wallet) return;
+  try {
+    const signer = await getSigner();
+    const message = `Fitia Mining V3 - Lier mon portefeuille (${State.user.username}) - ${Date.now()}`;
+    showTxWait('Signature demandée...', 'Signez le message dans MetaMask pour lier votre adresse.');
+    const signature = await signer.signMessage(message);
+    hideTxWait();
+    // Vérification locale de la signature (EIP-191)
+    const recovered = ethers.verifyMessage(message, signature);
+    if (recovered.toLowerCase() !== State.wallet) throw new Error('La signature ne correspond pas à l\'adresse.');
+    // Une adresse ne peut être liée qu'à UN SEUL compte
+    const taken = DB.get('SELECT id, username FROM users WHERE address = ? AND id != ?', [State.wallet, State.user.id]);
+    if (taken) throw new Error(`Cette adresse est déjà liée au compte « ${taken.username} ».`);
+    DB.run('UPDATE users SET address = ?, wallet_message = ?, wallet_signature = ? WHERE id = ?',
+      [State.wallet, message, signature, State.user.id]);
+    State.user.address = State.wallet;
+    $('#chipAddress').textContent = shortAddr(State.wallet);
+    toast(`Adresse liée à votre compte : ${shortAddr(State.wallet)}`, 'success');
+    onWalletChanged();
+    refreshDbStatus();
+  } catch (e) {
+    hideTxWait();
+    toast(e.message || decodeErr(e), 'error');
+  }
+}
+
+function onWalletChanged() {
+  updateWalletUI();
+  if (!State.user) return;
+  const linked = State.user.address;
+  const warn = $('#walletMismatch');
+  const banner = $('#walletBanner');
+  if (!linked && State.wallet) {
+    banner.classList.remove('hidden');
+    warn.classList.add('hidden');
+  } else if (linked && State.wallet && State.wallet !== linked) {
+    warn.classList.remove('hidden');
+    banner.classList.add('hidden');
+  } else {
+    banner.classList.add('hidden');
+    warn.classList.add('hidden');
+  }
+  if (State.wallet) refreshAll();
+}
+
+function updateWalletUI() {
+  const btn = $('#btnConnectWallet');
+  const label = $('#walletBtnLabel');
+  if (State.wallet) {
+    btn.classList.add('connected');
+    label.textContent = shortAddr(State.wallet);
+    $('#footNetwork').textContent = `${CFG.polygon.chainName} (${parseInt(CFG.polygon.chainId, 16)})`;
+  } else {
+    btn.classList.remove('connected');
+    label.textContent = 'Connecter le portefeuille';
+    $('#footNetwork').textContent = `${CFG.polygon.chainName} (${parseInt(CFG.polygon.chainId, 16)})`;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DONNÉES ON-CHAIN - soldes, minage, frais
+   ═══════════════════════════════════════════════════════════════════ */
+
+async function refreshAll() {
+  if (!contractsReady()) return;
+  try {
+    await Promise.all([refreshBalances(), refreshMining(), refreshFees(), refreshMyRef()]);
+  } catch (e) {
+    toast(decodeErr(e), 'error');
+  }
+}
+
+async function refreshFees() {
+  const core = State.contracts.core;
+  const [swapFee, wFee, claimFee, devFee, c0, c1, c2] = await Promise.all([
+    core.swapFee(), core.wFee(), core.claimFee(), core.devFee(), core.comRates(0), core.comRates(1), core.comRates(2)
+  ]);
+  State.fees.swapFee = swapFee;
+  State.fees.wFee = wFee;
+  State.fees.claimFee = claimFee;
+  State.fees.devFee = devFee;
+  State.fees.coms = [c0, c1, c2];
+  State.fees.tfp = devFee + c0 + c1 + c2;
+}
+
+async function refreshBalances() {
+  const core = State.contracts.core;
+  const read = State.signer || State.readProvider;
+  const addr = State.wallet || ZERO_ADDR;
+  const [uBal, fBal, pol, wUsdt, wFta, wPol] = await Promise.all([
+    core.uBal(addr), core.fBal(addr), core.pol(addr),
+    core.usdt().then(t => new ethers.Contract(t, ERC20_ABI, read).balanceOf(addr)),
+    core.fta().then(t => new ethers.Contract(t, ERC20_ABI, read).balanceOf(addr)),
+    read.getBalance(addr)
+  ]);
+  State.balances = { uBal, fBal, pol, wUsdt, wFta, wPol };
+  const du = CFG.decimals.usdt;
+  const df = CFG.decimals.fta;
+  $('#balUsdt').textContent = fmtNum(ethers.formatUnits(uBal, du));
+  $('#balFta').textContent = fmtNum(ethers.formatUnits(fBal, df));
+  $('#balPol').textContent = fmtNum(ethers.formatUnits(pol, 18));
+  $('#balUsdtWallet').textContent = `Portefeuille : ${State.wallet ? fmtNum(ethers.formatUnits(wUsdt, du)) + ' USDT' : '-'}`;
+  $('#balFtaWallet').textContent = `Portefeuille : ${State.wallet ? fmtNum(ethers.formatUnits(wFta, df)) + ' FTA' : '-'}`;
+  $('#balPolWallet').textContent = `Portefeuille : ${State.wallet ? fmtNum(ethers.formatUnits(wPol, 18)) + ' POL' : '-'}`;
+}
+
+async function refreshMining() {
+  const core = State.contracts.core;
+  const mine = State.contracts.mine;
+  const addr = State.wallet || ZERO_ADDR;
+  const [power, info, difficulty, baseRate] = await Promise.all([
+    mine.powerOf(addr), mine.myInfo(addr), core.difficulty(), core.baseRate()
+  ]);
+  const lc = BigInt(info.lc);
+  const nowS = BigInt(Math.floor(Date.now() / 1000));
+  let pending = 0n;
+  if (power > 0n && lc > 0n && nowS > lc) {
+    pending = (nowS - lc) * power * difficulty / 10n ** 18n;
+  }
+  State.mining = { power, machines: BigInt(info.mc), lc, pending, difficulty, baseRate };
+  const df = CFG.decimals.fta;
+  // Les stats de l'Accueil ne dupliquent plus celles de l'onglet Minage :
+  // puissance, récompenses et dernier claim ne sont affichées qu'ici.
+  $('#minePower').textContent = power.toString();
+  $('#minePending').textContent = `${fmtNum(ethers.formatUnits(pending, df))} FTA`;
+  $('#mineLc').textContent = lc > 0n ? fmtDate(Number(lc) * 1000) : '-';
+}
+
+async function refreshMyRef() {
+  if (!State.wallet) { State.myRef = null; State.myId = null; return; }
+  const r = await State.contracts.core.refr(State.wallet);
+  State.myRef = r === ZERO_ADDR ? null : r;
+  State.myId = (await State.contracts.core.uid(State.wallet)).toString();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BOUTIQUE
+   ═══════════════════════════════════════════════════════════════════ */
+
+async function loadShop() {
+  if (!contractsReady()) { renderNotConfigured('#machinesGrid'); renderNotConfigured('#batteriesGrid'); return; }
+  try {
+    const mine = State.contracts.mine;
+    const core = State.contracts.core;
+    if (State.fees.tfp === 0n) await refreshFees();
+    const [mc, bc] = await Promise.all([mine.mCount(), mine.bCount()]);
+    State.machineCount = Number(mc);
+    State.batteryCount = Number(bc);
+    const mTypes = [];
+    for (let i = 0; i < State.machineCount; i++) mTypes.push(await mine.getMType(i));
+    const bTypes = [];
+    for (let i = 0; i < State.batteryCount; i++) bTypes.push(await mine.getBType(i));
+    // Coûts FTA bruts (bonding curve) pour l'affichage des prix en FTA
+    const mCosts = [];
+    for (const m of mTypes) mCosts.push(await core.costFta(m.price));
+    const bCosts = [];
+    for (const b of bTypes) bCosts.push(await core.costFta(b.price));
+    State.mTypes = mTypes;
+    State.bTypes = bTypes;
+    State.ftaCostsM = mCosts;
+    State.ftaCostsB = bCosts;
+    State.shopLoaded = true;
+    renderMachines();
+    renderBatteries();
+  } catch (e) {
+    toast('Impossible de charger la boutique : ' + decodeErr(e), 'error');
+  }
+}
+
+function renderNotConfigured(sel) {
+  $(sel).innerHTML = '<p class="empty-hint">Adresses des contrats non configurées (bloc CFG.contracts dans app.js).</p>';
+}
+
+function renderMachines() {
+  const grid = $('#machinesGrid');
+  if (!State.mTypes.length) {
+    grid.innerHTML = '<p class="empty-hint">Aucune machine dans la boutique.</p>';
+    return;
+  }
+  const du = CFG.decimals.usdt;
+  const df = CFG.decimals.fta;
+  const now = Math.floor(Date.now() / 1000);
+  grid.innerHTML = State.mTypes.map((m, i) => {
+    const priceU = ethers.formatUnits(m.price, du);
+    const expired = m.shopExpiry > 0n && now > Number(m.shopExpiry);
+    const ftaCost = State.ftaCostsM && State.ftaCostsM[i] != null
+      ? ethers.formatUnits(ftaCostFor(State.ftaCostsM[i]), df) : '-';
+    return `
+      <article class="card shop-card">
+        <div class="m-pic">${ICONS.cpu}</div>
+        <h3>Machine ${i + 1}</h3>
+        <div class="m-meta"><span>Puissance</span><b>${ICONS.bolt} ${m.power.toString()}</b></div>
+        <div class="m-meta"><span>Disponible</span><b>${expired ? 'Non' : 'Oui'}</b></div>
+        <div class="m-badges">
+          ${m.shopExpiry > 0n ? `<span class="badge ${expired ? 'badge-red' : 'badge-violet'}">${expired ? 'Expirée' : 'Jusqu\'au ' + fmtDate(Number(m.shopExpiry) * 1000)}</span>` : '<span class="badge badge-green">Illimitée</span>'}
+        </div>
+        <div class="m-price">${ICONS.coin} ${fmtNum(priceU)} USDT</div>
+        <div class="shop-btns">
+          <button class="btn btn-green btn-sm" data-buy="machine" data-id="${i}" data-mode="usdt" ${expired ? 'disabled' : ''}>USDT</button>
+          <button class="btn btn-violet btn-sm" data-buy="machine" data-id="${i}" data-mode="fta" ${expired ? 'disabled' : ''}>FTA ≈ ${ftaCost}</button>
+        </div>
+      </article>`;
+  }).join('');
+}
+
+function renderBatteries() {
+  const grid = $('#batteriesGrid');
+  if (!State.bTypes.length) {
+    grid.innerHTML = '<p class="empty-hint">Aucune batterie dans la boutique.</p>';
+    return;
+  }
+  const du = CFG.decimals.usdt;
+  const df = CFG.decimals.fta;
+  grid.innerHTML = State.bTypes.map((b, i) => {
+    const priceU = ethers.formatUnits(b.price, du);
+    const ftaCost = State.ftaCostsB && State.ftaCostsB[i] != null
+      ? ethers.formatUnits(ftaCostFor(State.ftaCostsB[i]), df) : '-';
+    return `
+      <article class="card shop-card battery">
+        <div class="m-pic">${ICONS.battery}</div>
+        <h3>Batterie ${i + 1}</h3>
+        <div class="m-meta"><span>Durée</span><b>${ICONS.clock} ${fmtDur(b.dur)}</b></div>
+        <div class="m-price">${ICONS.coin} ${fmtNum(priceU)} USDT</div>
+        <div class="shop-btns">
+          <button class="btn btn-green btn-sm" data-buy="battery" data-id="${i}" data-mode="usdt">USDT</button>
+          <button class="btn btn-violet btn-sm" data-buy="battery" data-id="${i}" data-mode="fta">FTA ≈ ${ftaCost}</button>
+        </div>
+      </article>`;
+  }).join('');
+}
+
+// Coût FTA total à payer (coût bonding curve + frais, comme dans _pay du contrat)
+function ftaCostFor(costRaw) {
+  const tfp = State.fees.tfp;
+  if (tfp <= 0n) return costRaw;
+  return costRaw + (costRaw * tfp) / (100n - tfp);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MINAGE - mes machines & batteries
+   ═══════════════════════════════════════════════════════════════════ */
+
+async function loadMyMachines() {
+  const list = $('#myMachinesList');
+  if (!contractsReady()) { list.innerHTML = '<p class="empty-hint">Adresses des contrats non configurées.</p>'; return; }
+  if (!State.wallet) { list.innerHTML = '<p class="empty-hint">Connectez votre portefeuille pour voir vos machines.</p>'; return; }
+  try {
+    const machines = await State.contracts.mine.myMachines(State.wallet);
+    const now = Math.floor(Date.now() / 1000);
+    if (!machines.length) {
+      list.innerHTML = '<p class="empty-hint">Vous ne possédez aucune machine. Achetez-en une dans la Boutique !</p>';
+      return;
+    }
+    list.innerHTML = machines.map((m, i) => {
+      const type = State.mTypes[Number(m.tid)];
+      const active = m.exp > 0n && now < Number(m.exp);
+      const status = m.exp === 0n
+        ? '<span class="badge badge-green">Active (illimitée)</span>'
+        : (active
+            ? `<span class="badge badge-gold">${ICONS.pick} Jusqu\'au ${fmtDate(Number(m.exp) * 1000)}</span>`
+            : '<span class="badge badge-red">Expirée - rebrancher</span>');
+      return `
+        <article class="card machine-card">
+          <div class="m-head">
+            <h3>Machine ${i + 1} <small style="color:var(--text-dim)">(type ${Number(m.tid) + 1})</small></h3>
+            <span class="m-power">${ICONS.bolt} ${type ? type.power.toString() : '?'} de puissance</span>
+          </div>
+          <div>${status}</div>
+          <button class="btn btn-violet btn-sm" data-plug="${i}" ${active || !type ? 'disabled' : ''}>${ICONS.plug} Brancher une batterie</button>
+        </article>`;
+    }).join('');
+  } catch (e) {
+    list.innerHTML = `<p class="empty-hint">Erreur : ${decodeErr(e)}</p>`;
+  }
+}
+
+async function loadMyBatteries() {
+  const list = $('#myBatteriesList');
+  if (!contractsReady()) { list.innerHTML = '<p class="empty-hint">Adresses des contrats non configurées.</p>'; return; }
+  if (!State.wallet) { list.innerHTML = '<p class="empty-hint">Connectez votre portefeuille.</p>'; return; }
+  try {
+    const rows = [];
+    for (let i = 0; i < State.batteryCount; i++) {
+      const count = await State.contracts.mine.myBattery(State.wallet, i);
+      if (count > 0n) rows.push({ i, count, type: State.bTypes[i] });
+    }
+    if (!rows.length) {
+      list.innerHTML = '<p class="empty-hint">Aucune batterie en stock. Achetez-en dans la Boutique !</p>';
+      return;
+    }
+    list.innerHTML = rows.map(({ i, count, type }) => `
+      <div class="battery-row">
+        <span class="b-ic">${ICONS.battery}</span>
+        <div class="b-info">
+          <strong>Batterie ${i + 1} - ${fmtDur(type.dur)}</strong>
+          <small>Durée de minage : ${fmtDur(type.dur)}</small>
+        </div>
+        <span class="b-count">× ${count.toString()}</span>
+      </div>`).join('');
+  } catch (e) {
+    list.innerHTML = `<p class="empty-hint">Erreur : ${decodeErr(e)}</p>`;
+  }
+}
+
+async function openPlugModal(mi) {
+  if (!State.wallet) { toast('Connectez d\'abord votre portefeuille.', 'info'); return; }
+  const box = $('#plugOptions');
+  box.innerHTML = '';
+  let any = false;
+  for (let i = 0; i < State.batteryCount; i++) {
+    const count = await State.contracts.mine.myBattery(State.wallet, i);
+    if (count > 0n) {
+      any = true;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'plug-opt';
+      b.innerHTML = `<span>${ICONS.battery} Batterie ${i + 1} - ${fmtDur(State.bTypes[i].dur)}</span><b>× ${count.toString()}</b>`;
+      b.addEventListener('click', () => {
+        closeModal('modalPlug');
+        openConfirm(
+          'Brancher la machine',
+          `Brancher la machine ${mi + 1} sur la batterie ${i + 1} (${fmtDur(State.bTypes[i].dur)}) ? Les récompenses accumulées seront réclamées automatiquement.`,
+          () => plugMachine(mi, i)
+        );
+      });
+      box.appendChild(b);
+    }
+  }
+  if (!any) {
+    box.innerHTML = '<p class="empty-hint">Aucune batterie en stock. Achetez-en dans la Boutique !</p>';
+  }
+  openModal('modalPlug');
+}
+
+async function plugMachine(mi, bi) {
+  if (!(await ensureSigned())) return;
+  try {
+    const mine = State.contracts.mine.connect(await getSigner());
+    const tx = await mine.plugInMachine(mi, bi);
+    showTxWait('Branchement en cours...', `Confirmation de la transaction ${shortAddr(tx.hash)}...`);
+    const receipt = await tx.wait();
+    hideTxWait();
+    if (receipt.status === 0) throw new Error('Transaction échouée (revert)');
+    recordTx('plug', tx.hash, 'Batterie', '', { machine: mi, battery: bi });
+    toast('Machine branchée ! Le minage est actif.', 'success');
+    refreshAll();
+    loadMyMachines();
+    loadMyBatteries();
+  } catch (e) {
+    hideTxWait();
+    toast(decodeErr(e), 'error');
+  }
+}
+
+async function claimRewards() {
+  if (!(await ensureSigned())) return;
+  try {
+    const mine = State.contracts.mine.connect(await getSigner());
+    const tx = await mine.claimRewards();
+    showTxWait('Réclamation en cours...', `Confirmation de la transaction ${shortAddr(tx.hash)}...`);
+    const receipt = await tx.wait();
+    hideTxWait();
+    if (receipt.status === 0) throw new Error('Transaction échouée (revert)');
+    recordTx('claim', tx.hash, 'FTA', `${fmtNum(ethers.formatUnits(State.mining.pending, CFG.decimals.fta))} FTA`, {});
+    toast('Récompenses réclamées !', 'success');
+    refreshAll();
+    loadMyMachines();
+  } catch (e) {
+    hideTxWait();
+    toast(decodeErr(e), 'error');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SWAP USDT ↔ FTA
+   ═══════════════════════════════════════════════════════════════════ */
+
+async function updateSwapEstimate() {
+  const info = $('#swapInfo');
+  if (!contractsReady()) {
+    $('#swapOut').value = '';
+    info.innerHTML = '<span>Adresses des contrats non configurées.</span>';
+    return;
+  }
+  if (State.fees.swapFee === 0n) { try { await refreshFees(); } catch { /* silencieux */ } }
+  const val = $('#swapIn').value.trim();
+  if (!val || Number(val) <= 0) { $('#swapOut').value = ''; return; }
+  try {
+    const core = State.contracts.core;
+    const du = CFG.decimals.usdt;
+    const df = CFG.decimals.fta;
+    if (State.swapDir === 'u2f') {
+      const amount = ethers.parseUnits(val, du);
+      const net = amount - (amount * State.fees.swapFee) / 100n;
+      const out = await core.buyFta(net);
+      $('#swapOut').value = fmtNum(ethers.formatUnits(out, df), 4);
+      info.innerHTML = `<span>Frais de swap : ${State.fees.swapFee.toString()}%</span><span>≈ ${fmtNum(ethers.formatUnits(out, df), 4)} FTA</span>`;
+    } else {
+      const amount = ethers.parseUnits(val, df);
+      const net = amount - (amount * State.fees.swapFee) / 100n;
+      const out = await core.sellFta(net);
+      $('#swapOut').value = fmtNum(ethers.formatUnits(out, du), 4);
+      info.innerHTML = `<span>Frais de swap : ${State.fees.swapFee.toString()}%</span><span>≈ ${fmtNum(ethers.formatUnits(out, du), 4)} USDT</span>`;
+    }
+  } catch {
+    $('#swapOut').value = '';
+    info.innerHTML = '<span>Calcul de l\'estimation...</span>';
+  }
+}
+
+async function doSwap() {
+  const val = $('#swapIn').value.trim();
+  $('#swapError').textContent = '';
+  if (!val || Number(val) <= 0) { $('#swapError').textContent = 'Saisissez un montant valide.'; return; }
+  if (!(await ensureSigned())) return;
+  try {
+    const core = State.contracts.core.connect(await getSigner());
+    const du = CFG.decimals.usdt;
+    const df = CFG.decimals.fta;
+    const deadline = Math.floor(Date.now() / 1000) + 900;
+    let tx, asset, amount;
+    if (State.swapDir === 'u2f') {
+      const amountRaw = ethers.parseUnits(val, du);
+      const net = amountRaw - (amountRaw * State.fees.swapFee) / 100n;
+      const out = await core.buyFta(net);
+      const minOut = (out * 98n) / 100n;
+      tx = await core.swapUForF(amountRaw, minOut, deadline);
+      asset = 'USDT → FTA';
+      amount = `${fmtNum(val)} USDT`;
+    } else {
+      const amountRaw = ethers.parseUnits(val, df);
+      const net = amountRaw - (amountRaw * State.fees.swapFee) / 100n;
+      const out = await core.sellFta(net);
+      const minOut = (out * 98n) / 100n;
+      tx = await core.swapFForU(amountRaw, minOut, deadline);
+      asset = 'FTA → USDT';
+      amount = `${fmtNum(val)} FTA`;
+    }
+    showTxWait('Échange en cours...', `Confirmation de la transaction ${shortAddr(tx.hash)}...`);
+    const receipt = await tx.wait();
+    hideTxWait();
+    if (receipt.status === 0) throw new Error('Transaction échouée (revert)');
+    recordTx('swap', tx.hash, asset, amount, {});
+    toast('Échange réussi !', 'success');
+    refreshAll();
+  } catch (e) {
+    hideTxWait();
+    $('#swapError').textContent = decodeErr(e);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DÉPÔTS & RETRAITS
+   ═══════════════════════════════════════════════════════════════════ */
+
+const ASSETS = {
+  usdt: { symbol: 'USDT', decimals: 'usdt' },
+  fta: { symbol: 'FTA', decimals: 'fta' },
+  pol: { symbol: 'POL', decimals: 18 }
+};
+
+function decFor(asset) {
+  return asset === 'pol' ? 18 : CFG.decimals[ASSETS[asset].decimals];
+}
+
+function openDeposit(asset) {
+  if (!State.wallet) { toast('Connectez d\'abord votre portefeuille.', 'info'); return; }
+  const a = ASSETS[asset];
+  $('#depositSymbol').textContent = a.symbol;
+  $('#depositHint').textContent = `Déposez vos ${a.symbol} dans la DApp pour acheter, échanger et miner.`;
+  $('#depositAmount').value = '';
+  $('#depositError').textContent = '';
+  $('#depositAllowBox').classList.add('hidden');
+  $('#depositAmount').dataset.asset = asset;
+  openModal('modalDeposit');
+}
+
+function openWithdraw(asset) {
+  if (!State.wallet) { toast('Connectez d\'abord votre portefeuille.', 'info'); return; }
+  const a = ASSETS[asset];
+  $('#withdrawSymbol').textContent = a.symbol;
+  $('#withdrawHint').textContent = `Frais de retrait : ${State.fees.wFee.toString()}%. Le solde net sera envoyé sur votre portefeuille.`;
+  $('#withdrawAmount').value = '';
+  $('#withdrawError').textContent = '';
+  $('#withdrawAmount').dataset.asset = asset;
+  openModal('modalWithdraw');
+}
+
+async function doDeposit() {
+  const asset = $('#depositAmount').dataset.asset;
+  const val = $('#depositAmount').value.trim();
+  $('#depositError').textContent = '';
+  if (!val || Number(val) <= 0) { $('#depositError').textContent = 'Montant invalide.'; return; }
+  if (!(await ensureSigned())) return;
+  try {
+    const core = State.contracts.core.connect(await getSigner());
+    const amount = ethers.parseUnits(val, decFor(asset));
+    let tx;
+    if (asset === 'pol') {
+      tx = await core.depositPol({ value: amount });
+    } else {
+      const token = asset === 'usdt' ? State.contracts.usdt : State.contracts.fta;
+      const tokenSigned = token.connect(await getSigner());
+      await ensureAllowance(tokenSigned, CFG.contracts.core, amount);
+      tx = asset === 'usdt' ? await core.depositUsdt(amount) : await core.depositFta(amount);
+    }
+    showTxWait('Dépôt en cours...', `Confirmation de la transaction ${shortAddr(tx.hash)}...`);
+    const receipt = await tx.wait();
+    hideTxWait();
+    if (receipt.status === 0) throw new Error('Transaction échouée (revert)');
+    recordTx('deposit', tx.hash, ASSETS[asset].symbol, `${fmtNum(val)} ${ASSETS[asset].symbol}`, {});
+    toast(`Dépôt de ${fmtNum(val)} ${ASSETS[asset].symbol} effectué !`, 'success');
+    closeModal('modalDeposit');
+    refreshAll();
+  } catch (e) {
+    hideTxWait();
+    $('#depositError').textContent = decodeErr(e);
+  }
+}
+
+async function doWithdraw() {
+  const asset = $('#withdrawAmount').dataset.asset;
+  const val = $('#withdrawAmount').value.trim();
+  $('#withdrawError').textContent = '';
+  if (!val || Number(val) <= 0) { $('#withdrawError').textContent = 'Montant invalide.'; return; }
+  if (!(await ensureSigned())) return;
+  try {
+    const core = State.contracts.core.connect(await getSigner());
+    const amount = ethers.parseUnits(val, decFor(asset));
+    const tx = asset === 'pol' ? await core.withdrawPol(amount)
+      : asset === 'usdt' ? await core.withdrawUsdt(amount)
+      : await core.withdrawFta(amount);
+    showTxWait('Retrait en cours...', `Confirmation de la transaction ${shortAddr(tx.hash)}...`);
+    const receipt = await tx.wait();
+    hideTxWait();
+    if (receipt.status === 0) throw new Error('Transaction échouée (revert)');
+    recordTx('withdraw', tx.hash, ASSETS[asset].symbol, `${fmtNum(val)} ${ASSETS[asset].symbol}`, {});
+    toast(`Retrait de ${fmtNum(val)} ${ASSETS[asset].symbol} envoyé !`, 'success');
+    closeModal('modalWithdraw');
+    refreshAll();
+  } catch (e) {
+    hideTxWait();
+    $('#withdrawError').textContent = decodeErr(e);
+  }
+}
+
+async function ensureAllowance(token, spender, amount) {
+  const owner = State.wallet;
+  const allowance = await token.allowance(owner, spender);
+  if (allowance >= amount) return;
+  toast('Approbation du token en cours... (2e étape dans MetaMask)', 'info');
+  showTxWait('Approbation en cours...', 'Autorisez le contrat à utiliser vos tokens.');
+  try {
+    // Sécurité : on approuve le MONTANT EXACT de l'opération (jamais MaxUint256).
+    // Comme on sort plus tôt si allowance >= amount, définir l'allocation à `amount`
+    // est toujours une AUGMENTATION (jamais une diminution) : compatible avec les
+    // tokens non standards (USDT) qui refusent les baisses d'allocation.
+    // Résultat : après l'achat, l'allocation résiduelle est nulle — si le contrat
+    // était un jour compromis, il ne pourrait rien dépenser sans nouvelle permission.
+    const tx = await token.approve(spender, amount);
+    await tx.wait();
+  } finally {
+    hideTxWait();
+  }
+  toast('Token approuvé (montant exact).', 'success');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ACHATS (machines & batteries)
+   ═══════════════════════════════════════════════════════════════════ */
+
+async function buyItem(kind, id, mode) {
+  if (!(await ensureSigned())) return;
+  const mine = State.contracts.mine.connect(await getSigner());
+  const label = kind === 'machine' ? `Machine ${id + 1}` : `Batterie ${id + 1}`;
+  try {
+    let tx;
+    if (kind === 'machine') {
+      tx = mode === 'usdt' ? await mine.buyMachine(id) : await mine.buyMachineFTA(id);
+    } else {
+      tx = mode === 'usdt' ? await mine.buyBattery(id) : await mine.buyBatteryFTA(id);
+    }
+    showTxWait(`Achat en cours... (${label})`, `Confirmation de la transaction ${shortAddr(tx.hash)}...`);
+    const receipt = await tx.wait();
+    hideTxWait();
+    if (receipt.status === 0) throw new Error('Transaction échouée (revert)');
+    recordTx(kind === 'machine' ? 'buy_machine' : 'buy_battery', tx.hash,
+      mode === 'usdt' ? 'USDT' : 'FTA', label, { id, mode });
+    toast(`${label} achetée avec succès !`, 'success');
+    refreshAll();
+    if (kind === 'machine') loadMyMachines();
+    else loadMyBatteries();
+  } catch (e) {
+    hideTxWait();
+    toast(decodeErr(e), 'error');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PARRAINAGE
+   ═══════════════════════════════════════════════════════════════════ */
+
+async function openReferrerModal() {
+  if (!State.wallet) { toast('Connectez d\'abord votre portefeuille.', 'info'); return; }
+  // L'ID utilisateur (visible ici, dans la modale Parrain) sert à être parrainé par un autre utilisateur
+  const idPart = State.myId ? `Votre ID : ${State.myId}. ` : '';
+  $('#referrerCurrent').textContent = idPart + (State.myRef
+    ? `Parrain actuel : ${shortAddr(State.myRef)}`
+    : 'Parrain actuel : aucun. Vous pouvez enregistrer un parrain (opération unique).');
+  $('#referrerId').value = '';
+  $('#referrerError').textContent = '';
+  openModal('modalReferrer');
+}
+
+async function saveReferrer() {
+  const id = $('#referrerId').value.trim();
+  $('#referrerError').textContent = '';
+  if (!id || Number(id) < 1) { $('#referrerError').textContent = 'Saisissez un ID valide.'; return; }
+  if (!(await ensureSigned())) return;
+  try {
+    const core = State.contracts.core.connect(await getSigner());
+    const tx = await core.setReferrerById(BigInt(id));
+    showTxWait('Enregistrement du parrain...', `Confirmation de la transaction ${shortAddr(tx.hash)}...`);
+    const receipt = await tx.wait();
+    hideTxWait();
+    if (receipt.status === 0) throw new Error('Transaction échouée (revert)');
+    recordTx('set_referrer', tx.hash, 'Parrain', `ID ${id}`, {});
+    toast('Parrain enregistré !', 'success');
+    closeModal('modalReferrer');
+    refreshMyRef();
+  } catch (e) {
+    hideTxWait();
+    $('#referrerError').textContent = decodeErr(e);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   HISTORIQUE (base SQLite locale)
+   ═══════════════════════════════════════════════════════════════════ */
+
+function recordTx(type, txHash, asset, amount, details) {
+  try {
+    DB.run(
+      'INSERT INTO transactions (user_id, type, tx_hash, asset, amount, status, details, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [State.user.id, type, txHash || null, asset || null,
+       amount != null ? String(amount) : null, 'confirmed',
+       details ? JSON.stringify(details) : null, Date.now()]
+    );
+    refreshDbStatus();
+  } catch { /* l'historique ne bloque jamais l'action */ }
+}
+
+const TX_LABELS = {
+  deposit: { ic: ICONS.deposit, label: 'Dépôt' },
+  withdraw: { ic: ICONS.withdraw, label: 'Retrait' },
+  swap: { ic: ICONS.repeat, label: 'Échange' },
+  buy_machine: { ic: ICONS.cpu, label: 'Achat machine' },
+  buy_battery: { ic: ICONS.battery, label: 'Achat batterie' },
+  plug: { ic: ICONS.plug, label: 'Branchement' },
+  claim: { ic: ICONS.gift, label: 'Réclamation' },
+  set_referrer: { ic: ICONS.users, label: 'Parrainage' }
+};
+
+function loadHistory() {
+  const body = $('#txBody');
+  try {
+    const rows = State.txFilter
+      ? DB.all('SELECT * FROM transactions WHERE user_id = ? AND type = ? ORDER BY created_at DESC LIMIT 300', [State.user.id, State.txFilter])
+      : DB.all('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 300', [State.user.id]);
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="5" class="empty-hint">Aucune transaction pour le moment.</td></tr>';
+      return;
+    }
+    body.innerHTML = rows.map(r => {
+      const meta = TX_LABELS[r.type] || { ic: ICONS.file, label: r.type };
+      const statusCls = { confirmed: 'status-confirmed', pending: 'status-pending', failed: 'status-failed' }[r.status] || 'status-confirmed';
+      const statusTxt = { confirmed: 'Confirmée', pending: 'En attente', failed: 'Échouée' }[r.status] || r.status;
+      const hashCell = r.tx_hash
+        ? `<a class="hash" href="${CFG.polygon.explorer}/tx/${r.tx_hash}" target="_blank" rel="noopener">${shortAddr(r.tx_hash)} ↗</a>`
+        : '<span class="hash">-</span>';
+      return `<tr>
+        <td>${fmtDate(r.created_at)}</td>
+        <td>${meta.ic} ${meta.label}</td>
+        <td>${r.amount ? r.amount : '-'}</td>
+        <td><span class="status-pill ${statusCls}">${statusTxt}</span></td>
+        <td>${hashCell}</td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    body.innerHTML = `<tr><td colspan="5" class="empty-hint">Erreur : ${e.message}</td></tr>`;
+  }
+}
+
+function loadRecent() {
+  const list = $('#recentList');
+  try {
+    const rows = DB.all('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 6', [State.user.id]);
+    if (!rows.length) {
+      list.innerHTML = '<p class="empty-hint">Aucune transaction pour le moment. Lancez vos premières opérations !</p>';
+      return;
+    }
+    list.innerHTML = rows.map(r => {
+      const meta = TX_LABELS[r.type] || { ic: ICONS.file, label: r.type };
+      return `
+        <div class="tx-item">
+          <span class="tx-ic">${meta.ic}</span>
+          <div class="tx-main">
+            <strong>${meta.label}</strong>
+            <small>${fmtDate(r.created_at)}${r.tx_hash ? ' · ' + shortAddr(r.tx_hash) : ''}</small>
+          </div>
+          <span class="tx-amt ${r.type === 'withdraw' || r.type === 'swap' ? 'neg' : 'pos'}">${r.amount || '-'}</span>
+        </div>`;
+    }).join('');
+  } catch { /* silencieux */ }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MODALE DE CONFIRMATION
+   ═══════════════════════════════════════════════════════════════════ */
+
+function openConfirm(title, text, cb) {
+  $('#confirmTitle').textContent = title;
+  $('#confirmText').textContent = text;
+  State.confirmCb = cb;
+  openModal('modalConfirm');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   GARDE-FOUS - portefeuille connecté & configuré
+   ═══════════════════════════════════════════════════════════════════ */
+
+async function ensureSigned() {
+  if (!contractsReady()) {
+    toast('Adresses des contrats non configurées (bloc CFG.contracts dans app.js).', 'error');
+    return false;
+  }
+  if (!State.user) { toast('Connectez-vous d\'abord.', 'info'); return false; }
+  if (!State.wallet) { toast('Connectez votre portefeuille MetaMask.', 'info'); return false; }
+  if (State.user.address && State.wallet !== State.user.address) {
+    toast('Le portefeuille connecté ne correspond pas à l\'adresse liée à votre compte.', 'error');
+    return false;
+  }
+  if (!State.user.address) {
+    toast('Liez d\'abord votre adresse Polygon à votre compte (bannière en haut).', 'info');
+    return false;
+  }
+  try { await getSigner(); } catch (e) { toast(decodeErr(e), 'error'); return false; }
+  return true;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ÉVÉNEMENTS
+   ═══════════════════════════════════════════════════════════════════ */
+
+function wireEvents() {
+  // Installation de l'application (PWA - Android)
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const b = $('#btnInstall');
+    if (b) b.classList.remove('hidden');
+  });
+  $('#btnInstall').addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    try { await deferredPrompt.userChoice; } catch { /* silencieux */ }
+    deferredPrompt = null;
+    $('#btnInstall').classList.add('hidden');
+  });
+
+  // Authentification
+  $('#formLogin').addEventListener('submit', handleLogin);
+  $('#formRegister').addEventListener('submit', handleRegister);
+  $('#btnLogout').addEventListener('click', handleLogout);
+
+  // Portefeuille
+  // Change de compte dans MetaMask puis synchronise l'application (logique unique, plus de doublon)
+  async function switchWalletAccount() {
+    if (!window.ethereum) return;
+    await window.ethereum.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] });
+    const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    if (accs && accs.length) {
+      State.wallet = accs[0].toLowerCase();
+      State.signer = null;
+      onWalletChanged();
+    }
+  }
+
+  $('#btnConnectWallet').addEventListener('click', () => {
+    if (State.wallet) {
+      openConfirm('Changer de portefeuille ?', 'Si vous changez de compte dans MetaMask, l\'application utilisera le nouveau portefeuille connecté.', async () => {
+        try { await switchWalletAccount(); } catch (e) { toast(decodeErr(e), 'error'); }
+      });
+    } else {
+      connectWallet();
+    }
+  });
+  $('#btnLinkWallet').addEventListener('click', linkWallet);
+  $('#btnSwitchWallet').addEventListener('click', () => {
+    switchWalletAccount().catch(e => toast(decodeErr(e), 'error'));
+  });
+
+  // Base de données : export / import (.db portable)
+  $('#btnExportDb').addEventListener('click', () => DB.exportFile());
+  $('#btnImportDb').addEventListener('click', () => $('#fileImportDb').click());
+  $('#fileImportDb').addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    openConfirm('Importer une base ?', 'La base actuelle (comptes et historique) sera remplacée par le contenu du fichier .db sélectionné. Continuer ?', async () => {
+      try {
+        toast('Import de la base en cours...', 'info');
+        await DB.importFile(file);
+        const st = DB.stats();
+        $('#statUsers').textContent = fmtNum(st.users, 0);
+        $('#statTxs').textContent = fmtNum(st.transactions, 0);
+        refreshDbStatus();
+        // Re-vérifie la session (l'utilisateur connecté doit exister dans la nouvelle base)
+        const sess = DB.loadSession();
+        State.user = null;
+        DB.clearSession();
+        $('#viewApp').classList.add('hidden');
+        if (sess) {
+          State.user = { id: sess.id, username: sess.username, address: sess.address, created_at: sess.created_at };
+          DB.saveSession(State.user);
+          showApp();
+        } else {
+          showAuth();
+        }
+        toast('Base importée avec succès !', 'success');
+      } catch (err) {
+        toast('Import impossible : ' + (err.message || err), 'error', 6000);
+      }
+    });
+  });
+
+  // Actions de l'accueil & du minage (les boutons redondants ont été supprimés)
+  $('#btnRefresh').addEventListener('click', () => { refreshAll(); loadRecent(); toast('Données actualisées.', 'success'); });
+  $('#btnClaimMining').addEventListener('click', claimRewards);
+  $('#btnGoHistory').addEventListener('click', (e) => { e.preventDefault(); switchTab('history'); });
+  $('#btnOpenReferrer').addEventListener('click', openReferrerModal);
+  $('#btnSaveReferrer').addEventListener('click', saveReferrer);
+
+  // Dépôts / retraits / achats / branchements (délégation sur les boutons data-*)
+  document.addEventListener('click', (e) => {
+    const dep = e.target.closest('[data-deposit]');
+    if (dep) { openDeposit(dep.dataset.deposit); return; }
+    const wd = e.target.closest('[data-withdraw]');
+    if (wd) { openWithdraw(wd.dataset.withdraw); return; }
+    const buy = e.target.closest('[data-buy]');
+    if (buy) {
+      const kind = buy.dataset.buy;
+      const id = Number(buy.dataset.id);
+      const mode = buy.dataset.mode;
+      const label = kind === 'machine' ? `Machine ${id + 1}` : `Batterie ${id + 1}`;
+      openConfirm(`Acheter ${label}`, `Confirmer l'achat de ${label} en ${mode.toUpperCase()} ?`, () => buyItem(kind, id, mode));
+      return;
+    }
+    const plug = e.target.closest('[data-plug]');
+    if (plug) { openPlugModal(Number(plug.dataset.plug)); }
+  });
+
+  // Modales dépôt / retrait
+  $('#btnDeposit').addEventListener('click', doDeposit);
+  $('#btnWithdraw').addEventListener('click', doWithdraw);
+
+  // Swap
+  $('#swapIn').addEventListener('input', updateSwapEstimate);
+  $('#btnSwap').addEventListener('click', doSwap);
+  $$('.swap-dir').forEach(b => b.addEventListener('click', () => {
+    $$('.swap-dir').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    State.swapDir = b.dataset.dir;
+    $('#swapInSymbol').textContent = State.swapDir === 'u2f' ? 'USDT' : 'FTA';
+    $('#swapOutSymbol').textContent = State.swapDir === 'u2f' ? 'FTA' : 'USDT';
+    $('#swapIn').value = '';
+    $('#swapOut').value = '';
+    updateSwapEstimate();
+  }));
+
+  // Historique
+  $('#txFilter').addEventListener('change', (e) => { State.txFilter = e.target.value; loadHistory(); });
+  $('#btnTxRefresh').addEventListener('click', loadHistory);
+
+  // Confirmation
+  $('#btnConfirmOk').addEventListener('click', () => {
+    closeModal('modalConfirm');
+    if (State.confirmCb) { const cb = State.confirmCb; State.confirmCb = null; cb(); }
+  });
+}
+
+/* ─── Démarrage ─── */
+init();

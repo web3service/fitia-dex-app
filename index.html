@@ -1,294 +1,482 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0f172a">
-<title>FITIA PRO MINER</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src * ws://* wss://*; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://unpkg.com https://relay.walletconnect.com; img-src 'self' data: https://* http://*;">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
-<script src="https://unpkg.com/@walletconnect/ethereum-provider@2.11.0/dist/index.umd.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fitia Mining V3 — DApp</title>
+  <meta name="description" content="DApp Fitia Mining V3 : minage, machines, batteries, swap USDT/FTA sur Polygon — 100% locale (HTML/CSS/JS + SQLite)">
+
+  <!-- ─── Meta mobile / PWA (Android & iOS) ─── -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Fitia Mining">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href='data:application/manifest+json,{"name":"Fitia Mining V3","short_name":"Fitia","start_url":".","display":"standalone","orientation":"portrait","background_color":"%230f172a","theme_color":"%230f172a","icons":[{"src":"data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%20100%20100%27%3E%3Crect%20width=%27100%27%20height=%27100%27%20rx=%2722%27%20fill=%27%230f172a%27/%3E%3Cg%20fill=%27none%27%20stroke=%27%23F0B90B%27%20stroke-width=%276.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20transform=%27translate(30,30)%20scale(1.6667)%27%3E%3Cpath%20d=%27M14.7%206.3a1%201%200%200%200%200%201.4l1.6%201.6a1%201%200%200%200%201.4%200l3.77-3.77a6%206%200%200%201-7.94%207.94l-6.91%206.91a2.12%202.12%200%200%201-3-3l6.91-6.91a6%206%200%200%201%207.94-7.94l-3.76%203.76z%27/%3E%3C/g%3E%3C/svg%3E","sizes":"any","type":"image/svg+xml"}]}'>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20viewBox=%270%200%20100%20100%27%3E%3Crect%20width=%27100%27%20height=%27100%27%20rx=%2722%27%20fill=%27%230f172a%27/%3E%3Cg%20fill=%27none%27%20stroke=%27%23F0B90B%27%20stroke-width=%276.5%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20transform=%27translate(30,30)%20scale(1.6667)%27%3E%3Cpath%20d=%27M14.7%206.3a1%201%200%200%200%200%201.4l1.6%201.6a1%201%200%200%200%201.4%200l3.77-3.77a6%206%200%200%201-7.94%207.94l-6.91%206.91a2.12%202.12%200%200%201-3-3l6.91-6.91a6%206%200%200%201%207.94-7.94l-3.76%203.76z%27/%3E%3C/g%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="bg-glow"></div>
-<div id="toast-container"></div>
-<div class="app-shell">
-<header>
-<div class="brand">
-<div class="logo-icon">⚡</div>
-<div class="brand-text">FITIA <span class="pro-badge">PRO</span></div>
-</div>
-<div id="lang-selector" class="lang-dropdown">
-<button class="lang-btn" id="lang-btn-display">🇫🇷 FR</button>
-<div class="lang-content">
-<a href="#" onclick="App.setLanguage('fr')">🇫🇷 Français</a>
-<a href="#" onclick="App.setLanguage('en')">🇬🇧 English</a>
-<a href="#" onclick="App.setLanguage('de')">🇩🇪 Deutsch</a>
-<a href="#" onclick="App.setLanguage('zh')">🇨🇳 中文</a>
-<a href="#" onclick="App.setLanguage('sg')">🇸🇬 English (SG)</a>
-</div>
-</div>
-<button id="btn-connect" class="btn-connect" onclick="App.connect()">Connecter</button>
-<div id="wallet-status" class="wallet-status hidden">
-<span id="addr-display">0x...</span>
-<span class="status-dot"></span>
-</div>
-</header>
 
-<main id="main-view">
-<!-- ═══ DASHBOARD ═══ -->
-<div id="view-dashboard" class="view active">
-<div class="card total-balance-card">
-<small data-i18n="totalBal">Solde Total</small>
-<div class="total-val" id="val-total-usd">$0.00</div>
-</div>
-<div class="stats-grid">
-<div class="stat-card">
-<small data-i18n="power">PUISSANCE</small>
-<div class="stat-val" id="val-power">0 H/s</div>
-<small data-i18n="ftaSec">Hashrate</small>
-</div>
-<div class="stat-card accent">
-<small data-i18n="pending">EN ATTENTE</small>
-<div class="stat-val" id="val-pending">0.00000</div>
-<small>FTA</small>
-</div>
-</div>
-<div class="visualizer-wrap">
-<canvas id="mining-canvas"></canvas>
-<div class="viz-label" id="viz-status">ATTENTE</div>
-</div>
-<div id="active-machines-section" class="card" style="margin-bottom:15px;">
-<h3 class="section-title" data-i18n="activeMachines">⛏️ Machines Actives</h3>
-<div id="active-machines-list">
-<p class="small-text" style="text-align:center;" data-i18n="noActiveMachines">Aucune machine active</p>
-</div>
-</div>
-<button class="btn-mega" onclick="App.claim()">
-<span class="pulse-ring"></span>
-<span data-i18n="claim">RÉCLAMER</span>
-</button>
-<div class="card referral-card" style="margin-top: 15px;">
-<h3 data-i18n="refTitle">👥 Parrainage</h3>
-<p class="small-text" data-i18n="refDesc">Entrez l'adresse ou l'ID de votre parrain.</p>
-<div class="ref-input-group">
-<input type="text" id="ref-address-input" class="game-input" placeholder="0x... ou ID" data-i18n-placeholder="enterRefAddr">
-<button class="btn-sm btn-full" onclick="App.bindReferrer()" data-i18n="bindRef">LIER</button>
-</div>
-</div>
-</div>
+  <!-- Écran de démarrage (affiché pendant l'initialisation de SQLite) -->
+  <div class="boot" id="bootScreen" role="status">
+    <div class="boot-logo"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+    <h1>Fitia <span class="gold">Mining</span> V3</h1>
+    <div class="spinner"></div>
+    <p>Chargement de la base de données…</p>
+  </div>
 
-<!-- ═══ SHOP ═══ -->
-<div id="view-shop" class="view">
-<div class="shop-header">
-<h2 class="view-title" data-i18n="shopTitle">⛏️ Boutique</h2>
-<div class="toggle-pay">
-<button id="btn-pay-usdt" class="toggle-btn active" onclick="App.setPayMode('USDT')">USDT</button>
-<button id="btn-pay-fta" class="toggle-btn" onclick="App.setPayMode('FTA')">FTA</button>
-</div>
-</div>
-<div class="shop-tabs">
-<button class="shop-tab active" onclick="App.setShopView('machines')" data-i18n="machines">Machines</button>
-<button class="shop-tab" onclick="App.setShopView('batteries')" data-i18n="batteries">Batteries</button>
-</div>
-<div id="shop-list" class="grid-list"></div>
-</div>
+  <!-- Décor d'arrière-plan (halos de couleur) -->
+  <div class="bg-decor" aria-hidden="true"></div>
 
-<!-- ═══ WALLET & ASSETS ═══ -->
-<div id="view-my-rigs" class="view">
-<h2 class="view-title" data-i18n="myAssets">⚙️ Wallet & Actifs</h2>
+  <!-- ══════════ Barre de navigation ══════════ -->
+  <header class="navbar">
+    <div class="nav-inner">
+      <div class="logo" aria-label="Fitia Mining V3">
+        <span class="logo-icon"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
+        <span class="logo-text">Fitia<span class="gold">Mining</span><em>V3</em></span>
+      </div>
 
-<!-- Soldes -->
-<div class="card wallet-main-card">
-<div class="wallet-card-header">
-<h3 data-i18n="walletBal">💰 Soldes</h3>
-<!-- Boutons Envoyer / Recevoir -->
-<div class="wallet-main-actions">
-<button class="btn-wallet-main btn-wallet-send" onclick="App.openSend()" data-i18n="send"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Envoyer</button>
-<button class="btn-wallet-main btn-wallet-recv" onclick="App.openReceive()" data-i18n="receive"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z" transform="rotate(180 12 12)"/></svg> Recevoir</button>
-</div>
-</div>
+      <nav class="nav-links hidden" id="navLinks" aria-label="Navigation principale"></nav>
 
-<!-- POL -->
-<div class="wallet-token-row">
-<img src="https://i.ibb.co/NdCLLsck/IMG-20260302-131520-512-x-512-pixel.webp" class="token-img-lg" alt="POL">
-<div class="token-info">
-<span class="token-name">POL</span>
-<span class="token-bal" id="bal-pol">0.00</span>
-<span class="token-bal-usd" id="bal-pol-usd">≈ $0.00</span>
-</div>
-<div class="token-price-col">
-<span class="token-unit-price" id="price-pol">$0.00</span>
-<span class="token-change" id="change-pol">0.00%</span>
-</div>
-</div>
+      <div class="nav-actions">
+        <button class="btn btn-wallet" id="btnConnectWallet" type="button">
+          <span class="dot" aria-hidden="true"></span>
+          <span id="walletBtnLabel">Connecter le portefeuille</span>
+        </button>
+        <div class="user-chip hidden" id="userChip">
+          <span class="chip-avatar" id="chipAvatar" aria-hidden="true">U</span>
+          <div class="chip-info">
+            <strong id="chipUsername">—</strong>
+            <small id="chipAddress">-</small>
+          </div>
+          <button class="chip-logout" id="btnLogout" type="button" title="Déconnexion" aria-label="Se déconnecter"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </header>
 
-<!-- USDT -->
-<div class="wallet-token-row">
-<img src="https://i.ibb.co/BRGx1GN/IMG-20260228-134642-512-x-512-pixel.webp" class="token-img-lg" alt="USDT">
-<div class="token-info">
-<span class="token-name">USDT</span>
-<span class="token-bal" id="bal-usdt">0.00</span>
-<span class="token-bal-usd" id="bal-usdt-usd">≈ $0.00</span>
-</div>
-<div class="token-price-col">
-<span class="token-unit-price" id="price-usdt">$1.00</span>
-<span class="token-change" id="change-usdt">0.00%</span>
-</div>
-</div>
+  <!-- Barre de navigation basse (mobile, comme une application native) -->
+  <nav class="bottom-nav hidden" id="bottomNav" aria-label="Navigation mobile"></nav>
 
-<!-- FTA -->
-<div class="wallet-token-row">
-<img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="token-img-lg" alt="FTA">
-<div class="token-info">
-<span class="token-name">FTA</span>
-<span class="token-bal" id="bal-fta">0.00</span>
-<span class="token-bal-usd" id="bal-fta-usd">≈ $0.00</span>
-</div>
-<div class="token-price-col">
-<span class="token-unit-price" id="price-fta">$0.00</span>
-<span class="token-change" id="change-fta">0.00%</span>
-</div>
-</div>
+  <main class="container">
 
-<!-- Dépôt / Retrait -->
-<div class="wallet-action-bar">
-<select id="deposit-token-select" class="game-input wallet-token-select">
-<option value="USDT">USDT</option>
-<option value="FTA">FTA</option>
-</select>
-<input type="number" id="deposit-amount" class="game-input wallet-amount-input" placeholder="Montant" step="any">
-<button class="btn-wallet-action btn-wallet-deposit" onclick="App.deposit()" data-i18n="depositBtn">DÉPOSER</button>
-<button class="btn-wallet-action btn-wallet-withdraw" onclick="App.withdraw()" data-i18n="withdrawBtn">RETIRER</button>
-</div>
-</div>
+    <!-- ══════════ Vue : Connexion / Inscription ══════════ -->
+    <section id="viewAuth" class="view auth-wrap">
+      <div class="auth-card">
+        <div class="auth-brand">
+          <div class="brand-badge"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+          <h1>Fitia <span class="gold">Mining</span> V3</h1>
+          <p class="brand-tagline">La plateforme de minage nouvelle génération sur Polygon</p>
+          <ul class="brand-feats">
+            <li><span class="feat-ic"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span> Machines de minage &amp; batteries</li>
+            <li><span class="feat-ic"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span> Swap instantané USDT ↔ FTA</li>
+            <li><span class="feat-ic"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Parrainage sur 3 niveaux</li>
+            <li><span class="feat-ic"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span> Historique complet des transactions</li>
+            <li><span class="feat-ic"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span> Compte lié à votre adresse Polygon</li>
+            <li><span class="feat-ic"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></span> Base SQLite locale, exportable (.db)</li>
+          </ul>
+          <div class="brand-stats">
+            <div><strong id="statUsers">0</strong><span>utilisateurs</span></div>
+            <div><strong id="statTxs">0</strong><span>transactions</span></div>
+          </div>
+        </div>
 
-<!-- Mes Machines -->
-<div class="card" style="margin-bottom: 15px; border-color: rgba(16, 185, 129, 0.2);">
-<h3 class="section-title" data-i18n="myMachines">⛏️ Mes Machines</h3>
-<div id="my-machines-list"><p class="small-text" style="text-align:center;" data-i18n="noMachines">Aucune machine</p></div>
-</div>
+        <div class="auth-form">
+          <div class="auth-tabs" role="tablist">
+            <button class="auth-tab active" id="tabLoginBtn" role="tab" aria-selected="true" type="button">Connexion</button>
+            <button class="auth-tab" id="tabRegisterBtn" role="tab" aria-selected="false" type="button">Inscription</button>
+          </div>
 
-<!-- Mes Batteries -->
-<div class="card" style="margin-bottom: 15px; border-color: rgba(139, 92, 246, 0.2);">
-<h3 class="section-title" data-i18n="myBatteries">🔋 Mes Batteries</h3>
-<div id="my-batteries-list"><p class="small-text" style="text-align:center;" data-i18n="noBatteries">Aucune batterie</p></div>
-</div>
+          <!-- Formulaire de connexion -->
+          <form id="formLogin" class="auth-form-body" autocomplete="on">
+            <h2>Bon retour</h2>
+            <p class="form-hint">Connectez-vous pour accéder à votre espace de minage.</p>
+            <label class="field">
+              <span>Nom d'utilisateur</span>
+              <input type="text" id="loginUsername" name="username" placeholder="ex : mineur_2026" minlength="3" maxlength="24" required autocomplete="username">
+            </label>
+            <label class="field">
+              <span>Mot de passe</span>
+              <input type="password" id="loginPassword" name="password" placeholder="••••••••" minlength="6" required autocomplete="current-password">
+            </label>
+            <p class="form-error" id="loginError" role="alert"></p>
+            <button class="btn btn-gold btn-block" type="submit" id="btnLoginSubmit">Se connecter</button>
+            <p class="form-switch">Pas encore de compte ? <a href="#" id="goRegister">Créer un compte</a></p>
+          </form>
 
-<!-- Brancher une machine -->
-<div class="card" style="margin-bottom: 15px; border-color: rgba(59, 130, 246, 0.3);">
-<h3 style="margin:0 0 10px 0; font-size:1rem;" data-i18n="plugMachine">🔌 Brancher une machine</h3>
-<p class="small-text" data-i18n="plugDesc">Choisissez l'index d'une machine et le type de batterie.</p>
-<div class="plug-grid">
-<input type="number" id="plug-machine-id" class="game-input" placeholder="Index (0, 1...)" min="0" data-i18n-placeholder="machineId">
-<select id="plug-battery-type" class="game-input" style="padding: 10px;">
-<option value="0">3 Jours</option><option value="1">7 Jours</option><option value="2">15 Jours</option><option value="3">30 Jours</option>
-<option value="4">90 Jours</option><option value="5">180 Jours</option><option value="6">270 Jours</option><option value="7">365 Jours</option>
-</select>
-</div>
-<button class="btn-primary" style="margin-top:10px;" onclick="App.plugInMachine()" data-i18n="plug">BRANCHER ⚡</button>
-</div>
-</div>
+          <!-- Formulaire d'inscription -->
+          <form id="formRegister" class="auth-form-body hidden" autocomplete="on">
+            <h2>Créer un compte</h2>
+            <p class="form-hint">Inscrivez-vous puis liez votre portefeuille Polygon.</p>
+            <label class="field">
+              <span>Nom d'utilisateur</span>
+              <input type="text" id="regUsername" name="username" placeholder="ex : mineur_2026" minlength="3" maxlength="24" pattern="[a-zA-Z0-9_]+" required autocomplete="username">
+              <small>3 à 24 caractères — lettres, chiffres, underscore</small>
+            </label>
+            <label class="field">
+              <span>Mot de passe</span>
+              <input type="password" id="regPassword" name="password" placeholder="••••••••" minlength="6" required autocomplete="new-password">
+              <small>6 caractères minimum</small>
+            </label>
+            <label class="field">
+              <span>Confirmer le mot de passe</span>
+              <input type="password" id="regPassword2" name="password2" placeholder="••••••••" minlength="6" required autocomplete="new-password">
+            </label>
+            <p class="form-error" id="registerError" role="alert"></p>
+            <button class="btn btn-gold btn-block" type="submit" id="btnRegisterSubmit">Créer mon compte</button>
+            <p class="form-switch">Déjà inscrit ? <a href="#" id="goLogin">Se connecter</a></p>
+          </form>
+        </div>
+      </div>
+    </section>
 
-<!-- ═══ SWAP ═══ -->
-<div id="view-swap" class="view">
-<h2 class="view-title" data-i18n="swapTitle">💱 Échange</h2>
-<div class="card swap-interface">
-<div class="swap-header"><span data-i18n="youPay">Vous payez</span><span><span data-i18n="balance">Solde:</span> <span id="swap-bal-from">0</span></span></div>
-<div class="input-wrap">
-<input type="number" id="swap-from-in" placeholder="0.0" step="any" oninput="App.calcSwap()">
-<div class="token-select" onclick="App.toggleSwap()" id="token-from-display">USDT</div>
-</div>
-<div class="swap-arrow-wrap"><div class="swap-arrow" onclick="App.toggleSwap()">⇅</div></div>
-<div class="swap-header"><span data-i18n="youReceive">Vous recevez</span><span><span data-i18n="balance">Solde:</span> <span id="swap-bal-to">0</span></span></div>
-<div class="input-wrap">
-<input type="number" id="swap-to-in" placeholder="0.0" step="any" readonly>
-<div class="token-select" style="background:#333; cursor:default;" id="token-to-display">FTA</div>
-</div>
-<div id="swap-details" class="swap-details hidden">
-<div class="swap-detail-row"><span class="swap-detail-label" data-i18n="exchangeRate">Taux de change</span><span class="swap-detail-value" id="swap-detail-rate">—</span></div>
-<div class="swap-detail-row"><span class="swap-detail-label" data-i18n="priceImpact">Impact prix</span><span class="swap-detail-value" id="swap-detail-impact">&lt; 2%</span></div>
-<div class="swap-detail-row"><span class="swap-detail-label" data-i18n="swapFee">Frais swap (4%)</span><span class="swap-detail-value" id="swap-detail-fee">—</span></div>
-<div class="swap-detail-row"><span class="swap-detail-label" data-i18n="minimumReceived">Minimum reçu</span><span class="swap-detail-value" id="swap-detail-min">—</span></div>
-<div class="swap-detail-row"><span class="swap-detail-label" data-i18n="slippageTolerance">Tolérance slippage</span><span class="swap-detail-value swap-slippage">0.5%</span></div>
-</div>
-<div class="rate-info" id="swap-rate" data-i18n="loading">Chargement...</div>
-<button class="btn-primary" onclick="App.executeSwap()" data-i18n="swap">ÉCHANGER</button>
-</div>
-</div>
-</main>
+    <!-- ══════════ Vue : Application (connecté) ══════════ -->
+    <section id="viewApp" class="view hidden">
 
-<!-- ═══ NAVIGATION BASSE ═══ -->
-<nav class="bottom-nav">
-<button class="nav-item active" onclick="App.nav('dashboard')"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span data-i18n="home">Accueil</span></button>
-<button class="nav-item" onclick="App.nav('shop')"><svg viewBox="0 0 24 24"><path d="M12 2l-5.5 9h11z"/></svg><span data-i18n="shop">Boutique</span></button>
-<button class="nav-item" onclick="App.nav('my-rigs')"><svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg><span data-i18n="assets">Wallet</span></button>
-<button class="nav-item" onclick="App.nav('swap')"><svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg><span data-i18n="swapNav">Swap</span></button>
-</nav>
-</div>
+      <!-- Bannière : portefeuille à lier -->
+      <div class="wallet-banner hidden" id="walletBanner" role="alert">
+        <div>
+          <strong><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Liez votre portefeuille Polygon</strong>
+          <p>Connectez MetaMask puis signez le message pour lier votre adresse à votre compte.</p>
+        </div>
+        <button class="btn btn-gold btn-sm" id="btnLinkWallet" type="button">Lier mon portefeuille</button>
+      </div>
 
-<!-- ═══ MODALES ═══ -->
+      <!-- Bannière : portefeuille différent du compte -->
+      <div class="wallet-banner banner-warn hidden" id="walletMismatch" role="alert">
+        <div>
+          <strong><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Portefeuille différent</strong>
+          <p>Le portefeuille connecté ne correspond pas à l'adresse liée à votre compte.</p>
+        </div>
+        <button class="btn btn-violet btn-sm" id="btnSwitchWallet" type="button">Changer de portefeuille</button>
+      </div>
 
-<!-- Envoyer -->
-<div id="modal-send" class="modal">
-<div class="modal-content">
-<div class="modal-header"><h3 data-i18n="send">Envoyer</h3><button class="modal-close" onclick="App.closeModals()">✕</button></div>
-<select id="send-token-select" class="game-input" style="margin-bottom: 12px;" onchange="App.updateSendBalance()">
-<option value="POL">POL</option>
-<option value="USDT">USDT</option>
-<option value="FTA">FTA</option>
-</select>
-<p class="small-text"><span data-i18n="balance">Solde:</span> <span id="send-bal">0</span></p>
-<input type="text" id="send-to-address" class="game-input" placeholder="Adresse destinataire (0x...)" data-i18n-placeholder="recipientAddr">
-<input type="number" id="send-amount" class="game-input" placeholder="Montant" step="any" data-i18n-placeholder="amount">
-<button class="btn-primary" style="margin-top:10px;" onclick="App.executeSend()" data-i18n="confirmSend">CONFIRMER L'ENVOI</button>
-</div>
-</div>
+      <!-- ────── Onglet : Accueil ────── -->
+      <div id="tab-dashboard" class="tab-page">
+        <div class="page-head">
+          <div>
+            <h1>Accueil</h1>
+            <p id="dashGreeting" class="page-sub">Bonjour !</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-ghost" id="btnRefresh" type="button"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Actualiser</button>
+            <button class="btn btn-violet" id="btnOpenReferrer" type="button"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Parrain</button>
+          </div>
+        </div>
 
-<!-- Recevoir -->
-<div id="modal-receive" class="modal">
-<div class="modal-content" style="text-align: center;">
-<div class="modal-header"><h3>Recevoir</h3><button class="modal-close" onclick="App.closeModals()">✕</button></div>
-<p class="small-text" style="margin-bottom: 15px;">Envoyez uniquement POL, USDT ou FTA à cette adresse sur Polygon.</p>
-<div class="receive-addr-box" onclick="App.copyReceiveAddress()"><span id="receive-addr-display">0x...</span><span class="copy-icon">📋</span></div>
-<p class="small-text" style="margin-top: 10px; color: var(--primary);">Appuyez pour copier</p>
-</div>
-</div>
+        <!-- Cartes de soldes -->
+        <div class="cards-grid">
+          <article class="card balance-card card-usdt">
+            <div class="card-top">
+              <span class="card-ico"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></span>
+              <span class="card-label">Solde USDT <small>(dans la DApp)</small></span>
+            </div>
+            <strong class="card-value" id="balUsdt">0.00</strong>
+            <span class="card-sub" id="balUsdtWallet">Portefeuille : —</span>
+            <div class="card-actions">
+              <button class="btn btn-green btn-sm" data-deposit="usdt" type="button">Déposer</button>
+              <button class="btn btn-red btn-sm" data-withdraw="usdt" type="button">Retirer</button>
+            </div>
+          </article>
 
-<!-- ═══ CHAT ASSISTANT ═══ -->
-<button class="chat-fab" onclick="App.toggleChat()">
-<img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="chat-fab-logo" alt="FTA">
-</button>
-<div id="chat-panel" class="chat-panel">
-<div class="chat-header">
-<div class="chat-header-brand">
-<img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="chat-header-logo" alt="FTA">
-<span>Fitia Assistant</span>
-</div>
-<button class="chat-close" onclick="App.toggleChat()">✕</button>
-</div>
-<div id="chat-messages" class="chat-messages"></div>
-<div class="chat-input-area">
-<input type="text" id="chat-input" class="chat-input" placeholder="Posez votre question..." onkeydown="if(event.key==='Enter')App.sendChatMessage()">
-<button class="chat-send-btn" onclick="App.sendChatMessage()">➤</button>
-</div>
-</div>
+          <article class="card balance-card card-fta">
+            <div class="card-top">
+              <span class="card-ico"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/></svg></span>
+              <span class="card-label">Solde FTA <small>(récompenses)</small></span>
+            </div>
+            <strong class="card-value" id="balFta">0.00</strong>
+            <span class="card-sub" id="balFtaWallet">Portefeuille : —</span>
+            <div class="card-actions">
+              <button class="btn btn-green btn-sm" data-deposit="fta" type="button">Déposer</button>
+              <button class="btn btn-red btn-sm" data-withdraw="fta" type="button">Retirer</button>
+            </div>
+          </article>
 
-<!-- ═══ LOADER ═══ -->
-<div id="loader" class="loader hidden">
-<div class="fta-loader-wrap">
-<div class="fta-loader-ring"></div>
-<img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="fta-loader-logo" alt="FTA">
-<div class="fta-loader-pulse"></div>
-</div>
-<p id="loader-text" class="loader-text">Traitement...</p>
-</div>
+          <article class="card balance-card card-pol">
+            <div class="card-top">
+              <span class="card-ico"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="22" x2="15" y2="22"/><line x1="4" y1="9" x2="14" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/></svg></span>
+              <span class="card-label">Solde POL <small>(dans la DApp)</small></span>
+            </div>
+            <strong class="card-value" id="balPol">0.00</strong>
+            <span class="card-sub" id="balPolWallet">Portefeuille : —</span>
+            <div class="card-actions">
+              <button class="btn btn-green btn-sm" data-deposit="pol" type="button">Déposer</button>
+              <button class="btn btn-red btn-sm" data-withdraw="pol" type="button">Retirer</button>
+            </div>
+          </article>
+        </div>
 
-<script src="app.js"></script>
+        <!-- Activité récente -->
+        <div class="card recent-card">
+          <div class="card-head">
+            <h3>Activité récente</h3>
+            <a href="#" class="link-ghost" id="btnGoHistory">Tout voir →</a>
+          </div>
+          <div id="recentList" class="tx-list">
+            <p class="empty-hint">Aucune transaction pour le moment.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ────── Onglet : Boutique ────── -->
+      <div id="tab-shop" class="tab-page hidden">
+        <div class="page-head">
+          <div>
+            <h1>Boutique</h1>
+            <p class="page-sub">Machines de minage et batteries — payables en USDT ou FTA.</p>
+          </div>
+        </div>
+
+        <h2 class="section-title"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg> Machines de minage</h2>
+        <div class="cards-grid shop-grid" id="machinesGrid">
+          <p class="empty-hint">Chargement de la boutique…</p>
+        </div>
+
+        <h2 class="section-title"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="6" width="18" height="12" rx="2"/><line x1="23" y1="13" x2="23" y2="11"/></svg> Batteries</h2>
+        <div class="cards-grid shop-grid" id="batteriesGrid">
+          <p class="empty-hint">Chargement de la boutique…</p>
+        </div>
+      </div>
+
+      <!-- ────── Onglet : Minage ────── -->
+      <div id="tab-mining" class="tab-page hidden">
+        <div class="page-head">
+          <div>
+            <h1>Minage</h1>
+            <p class="page-sub">Branchez vos machines sur une batterie et récoltez vos récompenses en FTA.</p>
+          </div>
+        </div>
+
+        <button class="btn btn-mega" id="btnClaimMining" type="button"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg> Réclamer mes récompenses</button>
+
+        <div class="cards-grid stats-grid">
+          <article class="card stat-card">
+            <span class="stat-ico"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+            <div><small>Puissance totale</small><strong id="minePower">0</strong></div>
+          </article>
+          <article class="card stat-card card-green">
+            <span class="stat-ico"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg></span>
+            <div><small>En attente</small><strong id="minePending">0.00 FTA</strong></div>
+          </article>
+          <article class="card stat-card">
+            <span class="stat-ico"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+            <div><small>Dernier claim</small><strong id="mineLc">-</strong></div>
+          </article>
+        </div>
+
+        <h2 class="section-title">Mes machines</h2>
+        <div id="myMachinesList" class="machines-list">
+          <p class="empty-hint">Chargement…</p>
+        </div>
+
+        <h2 class="section-title">Mes batteries</h2>
+        <div id="myBatteriesList" class="batteries-list">
+          <p class="empty-hint">Chargement…</p>
+        </div>
+      </div>
+
+      <!-- ────── Onglet : Swap ────── -->
+      <div id="tab-swap" class="tab-page hidden">
+        <div class="page-head">
+          <div>
+            <h1>Échange</h1>
+            <p class="page-sub">Échangez vos tokens via la bonding curve du contrat Core.</p>
+          </div>
+        </div>
+
+        <div class="swap-card">
+          <div class="swap-toggle" role="group" aria-label="Direction de l'échange">
+            <button class="swap-dir active" data-dir="u2f" type="button">USDT → FTA</button>
+            <button class="swap-dir" data-dir="f2u" type="button">FTA → USDT</button>
+          </div>
+
+          <label class="field">
+            <span>Vous donnez</span>
+            <div class="input-suffix">
+              <input type="number" id="swapIn" placeholder="0.00" min="0" step="any" inputmode="decimal">
+              <span class="suffix" id="swapInSymbol">USDT</span>
+            </div>
+          </label>
+
+          <div class="swap-arrow" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
+
+          <label class="field">
+            <span>Vous recevez (estimation)</span>
+            <div class="input-suffix">
+              <input type="text" id="swapOut" placeholder="0.00" readonly>
+              <span class="suffix" id="swapOutSymbol">FTA</span>
+            </div>
+          </label>
+
+          <div class="swap-info" id="swapInfo">
+            <span>Frais de swap : —</span>
+            <span>Taux : —</span>
+          </div>
+
+          <button class="btn btn-gold btn-block" id="btnSwap" type="button">Échanger</button>
+          <p class="form-error" id="swapError" role="alert"></p>
+        </div>
+      </div>
+
+      <!-- ────── Onglet : Historique ────── -->
+      <div id="tab-history" class="tab-page hidden">
+        <div class="page-head">
+          <div>
+            <h1>Historique des transactions</h1>
+            <p class="page-sub">Toutes vos opérations enregistrées dans la base SQLite locale.</p>
+          </div>
+          <div class="page-actions">
+            <select id="txFilter" class="select" aria-label="Filtrer par type">
+              <option value="">Tous les types</option>
+              <option value="deposit">Dépôts</option>
+              <option value="withdraw">Retraits</option>
+              <option value="swap">Échanges</option>
+              <option value="buy_machine">Achats de machines</option>
+              <option value="buy_battery">Achats de batteries</option>
+              <option value="plug">Branchements</option>
+              <option value="claim">Réclamations</option>
+              <option value="set_referrer">Parrainage</option>
+            </select>
+            <button class="btn btn-ghost" id="btnTxRefresh" type="button" aria-label="Actualiser"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="table-scroll">
+            <table class="tx-table" id="txTable">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Opération</th>
+                  <th>Montant</th>
+                  <th>Statut</th>
+                  <th>Transaction</th>
+                </tr>
+              </thead>
+              <tbody id="txBody">
+                <tr><td colspan="5" class="empty-hint">Aucune transaction pour le moment.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer class="footer hidden" id="footer">
+    <p>Fitia Mining V3 — DApp 100% locale · Réseau : <strong id="footNetwork">-</strong></p>
+    <div class="db-tools">
+      <button class="btn btn-ghost btn-sm hidden" id="btnInstall" type="button"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Installer l'application</button>
+      <button class="btn btn-ghost btn-sm" id="btnExportDb" type="button"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg> Exporter la base (.db)</button>
+      <button class="btn btn-ghost btn-sm" id="btnImportDb" type="button"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Importer une base</button>
+      <input type="file" id="fileImportDb" accept=".db,.sqlite,.sqlite3" class="hidden">
+      <span class="db-status" id="dbStatus">-</span>
+    </div>
+  </footer>
+
+  <!-- ══════════ Modales ══════════ -->
+
+  <!-- Modale : Dépôt -->
+  <div class="modal-backdrop hidden" id="modalDeposit" role="dialog" aria-modal="true" aria-labelledby="depositTitle">
+    <div class="modal">
+      <button class="modal-close" data-close="modalDeposit" type="button" aria-label="Fermer"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <h3 id="depositTitle">Déposer</h3>
+      <p class="form-hint" id="depositHint">-</p>
+      <label class="field">
+        <span>Montant</span>
+        <div class="input-suffix">
+          <input type="number" id="depositAmount" placeholder="0.00" min="0" step="any" inputmode="decimal">
+          <span class="suffix" id="depositSymbol">USDT</span>
+        </div>
+      </label>
+      <div id="depositAllowBox" class="hidden">
+        <button class="btn btn-violet btn-block" id="btnApprove" type="button"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Approuver le token</button>
+        <p class="form-hint">Première fois ? Vous devez d'abord approuver le contrat.</p>
+      </div>
+      <button class="btn btn-green btn-block" id="btnDeposit" type="button">Déposer</button>
+      <p class="form-error" id="depositError" role="alert"></p>
+    </div>
+  </div>
+
+  <!-- Modale : Retrait -->
+  <div class="modal-backdrop hidden" id="modalWithdraw" role="dialog" aria-modal="true" aria-labelledby="withdrawTitle">
+    <div class="modal">
+      <button class="modal-close" data-close="modalWithdraw" type="button" aria-label="Fermer"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <h3 id="withdrawTitle">Retirer</h3>
+      <p class="form-hint" id="withdrawHint">-</p>
+      <label class="field">
+        <span>Montant</span>
+        <div class="input-suffix">
+          <input type="number" id="withdrawAmount" placeholder="0.00" min="0" step="any" inputmode="decimal">
+          <span class="suffix" id="withdrawSymbol">USDT</span>
+        </div>
+      </label>
+      <button class="btn btn-red btn-block" id="btnWithdraw" type="button">Retirer</button>
+      <p class="form-error" id="withdrawError" role="alert"></p>
+    </div>
+  </div>
+
+  <!-- Modale : Brancher une machine -->
+  <div class="modal-backdrop hidden" id="modalPlug" role="dialog" aria-modal="true" aria-labelledby="plugTitle">
+    <div class="modal">
+      <button class="modal-close" data-close="modalPlug" type="button" aria-label="Fermer"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <h3 id="plugTitle">Brancher la machine</h3>
+      <p class="form-hint">Choisissez une batterie disponible :</p>
+      <div id="plugOptions" class="plug-options"></div>
+      <p class="form-error" id="plugError" role="alert"></p>
+    </div>
+  </div>
+
+  <!-- Modale : Parrain -->
+  <div class="modal-backdrop hidden" id="modalReferrer" role="dialog" aria-modal="true" aria-labelledby="referrerTitle">
+    <div class="modal">
+      <button class="modal-close" data-close="modalReferrer" type="button" aria-label="Fermer"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <h3 id="referrerTitle"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Mon parrain</h3>
+      <p class="form-hint" id="referrerCurrent">Parrain actuel : —</p>
+      <label class="field">
+        <span>ID du parrain (numéro d'utilisateur)</span>
+        <input type="number" id="referrerId" placeholder="ex : 12" min="1" step="1" inputmode="numeric">
+      </label>
+      <button class="btn btn-violet btn-block" id="btnSaveReferrer" type="button">Enregistrer mon parrain</button>
+      <p class="form-error" id="referrerError" role="alert"></p>
+    </div>
+  </div>
+
+  <!-- Modale : Confirmation générique -->
+  <div class="modal-backdrop hidden" id="modalConfirm" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modal modal-sm">
+      <button class="modal-close" data-close="modalConfirm" type="button" aria-label="Fermer"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <h3 id="confirmTitle">Confirmer</h3>
+      <p id="confirmText" class="confirm-text">-</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" data-close="modalConfirm" type="button">Annuler</button>
+        <button class="btn btn-gold" id="btnConfirmOk" type="button">Confirmer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Indicateur de transaction en attente -->
+  <div class="tx-wait hidden" id="txWait" role="status">
+    <div class="spinner" aria-hidden="true"></div>
+    <div>
+      <strong id="txWaitTitle">Transaction en cours…</strong>
+      <p id="txWaitSub">Confirmez l'opération dans MetaMask.</p>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <!-- Bibliothèques (CDN épinglé) puis l'application -->
+  <script src="https://cdn.jsdelivr.net/npm/sql.js@1.13.0/dist/sql-wasm.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
