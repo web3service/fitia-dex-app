@@ -1292,8 +1292,10 @@ class Application {
   resizeCanvas() {
     if (this.vizContext) {
       const c = this.vizContext.canvas;
-      c.width = c.offsetWidth * 2;
-      c.height = c.offsetHeight * 2;
+      // DPR plafonné à 1.5 : netteté suffisante sur mobile, 4x moins de pixels à dessiner qu'en 3x
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      c.width = Math.max(1, Math.round(c.offsetWidth * dpr));
+      c.height = Math.max(1, Math.round(c.offsetHeight * dpr));
     }
   }
 
@@ -1316,21 +1318,33 @@ class Application {
     if (!this.vizContext) return;
     const ctx = this.vizContext;
     const W = ctx.canvas.width, H = ctx.canvas.height;
+
+    // PERFORMANCE : on ne dessine pas si l'onglet est caché ou si le canvas
+    // est hors écran (autre vue active). La boucle rAF continue à coût quasi nul.
+    if (document.hidden || ctx.canvas.offsetParent === null || W === 0) {
+      requestAnimationFrame(() => this.animateVisualizer());
+      return;
+    }
+
     ctx.clearRect(0, 0, W, H);
 
     // Dégradé multicolore traversant toute la largeur (or → orange → rose → violet → cyan)
-    const grad = ctx.createLinearGradient(0, 0, W, 0);
-    grad.addColorStop(0.00, "#F0B90B");
-    grad.addColorStop(0.25, "#f97316");
-    grad.addColorStop(0.45, "#ec4899");
-    grad.addColorStop(0.65, "#8b5cf6");
-    grad.addColorStop(0.85, "#22d3ee");
-    grad.addColorStop(1.00, "#F0B90B");
+    // Créé une seule fois puis mis en cache : évite une allocation par frame.
+    if (!this._vizGrad || this._vizGradW !== W) {
+      this._vizGrad = ctx.createLinearGradient(0, 0, W, 0);
+      this._vizGrad.addColorStop(0.00, "#F0B90B");
+      this._vizGrad.addColorStop(0.25, "#f97316");
+      this._vizGrad.addColorStop(0.45, "#ec4899");
+      this._vizGrad.addColorStop(0.65, "#8b5cf6");
+      this._vizGrad.addColorStop(0.85, "#22d3ee");
+      this._vizGrad.addColorStop(1.00, "#F0B90B");
+      this._vizGradW = W;
+    }
 
     const w = W / 20;
-    ctx.fillStyle = grad;
-    ctx.shadowColor = "rgba(240,185,11,0.55)";
-    ctx.shadowBlur = 14;
+    ctx.fillStyle = this._vizGrad;
+    // NOTE : pas de shadowBlur ici — c'est l'opération canvas la plus coûteuse
+    // sur mobile. La lueur est gérée par le CSS du conteneur .visualizer-wrap.
 
     this.vizBars.forEach((b, i) => {
       // Initialisation paresseuse de la crête (peak) de chaque barre
@@ -1345,15 +1359,13 @@ class Application {
       ctx.fill();
       // Point de crête façon equalizer qui retombe lentement
       if (h > b.peak) b.peak = h; else b.peak = Math.max(b.peak - H * 0.008, h);
-      ctx.save();
       ctx.globalAlpha = 0.85;
       ctx.fillRect(x, H - b.peak - 6, bw, 3);
-      ctx.restore();
+      ctx.globalAlpha = 1;
       // Marche aléatoire bornée pour rester dans le cadre
       b.targetHeight = Math.max(0, Math.min(b.targetHeight + (Math.random() - 0.5) * 10, H * 0.95));
     });
 
-    ctx.shadowBlur = 0;
     requestAnimationFrame(() => this.animateVisualizer());
   }
 
