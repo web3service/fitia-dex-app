@@ -5,6 +5,7 @@ const CONFIG = {
   CORE: "0x........................................",
   MINE: "0x........................................",
   STAKING: "0x........................................",
+  GAME: "0x........................................",
   USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
   FTA:  "0x........................................",
   CHAIN_ID: 137,
@@ -412,8 +413,8 @@ class Application {
     if (sh[1]) sh[1].innerText = this.t('youReceive');
     const swapBtn = document.querySelector('#view-swap .btn-primary');
     if (swapBtn) swapBtn.innerText = this.t('swap');
-    // ✅ Correctif : 5 onglets désormais — le 4e est Finance (finTitle est fusionné dans i18n par finance.js)
-    document.querySelectorAll('.nav-item span').forEach((s, i) => { const k = ['home', 'shop', 'assets', 'finTitle', 'swapNav'][i]; if (k) s.innerText = this.t(k); });
+    // ✅ Correctif : 6 onglets désormais — Finance (finTitle) et Game (gameNav) fusionnés dans i18n par finance.js/game.js
+    document.querySelectorAll('.nav-item span').forEach((s, i) => { const k = ['home', 'shop', 'assets', 'finTitle', 'gameNav', 'swapNav'][i]; if (k) s.innerText = this.t(k); });
   }
 
   // ─── Initialisation ──────────────────────────────────────────────
@@ -1378,8 +1379,9 @@ class Application {
     if (activeView) { activeView.classList.add('active'); activeView.style.display = 'block'; }
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     if (event?.currentTarget) event.currentTarget.classList.add('active');
-    // ✅ Fitia-Finance : recharge les données de staking à chaque ouverture de l'onglet
+    // ✅ Fitia-Finance + Fitia-Game : recharge les données à chaque ouverture d'onglet
     if (viewId === 'finance') this.loadFinance();
+    if (viewId === 'game' && this.loadGame) this.loadGame();
   }
 
   // ─── Loader plein écran ──────────────────────────────────────────

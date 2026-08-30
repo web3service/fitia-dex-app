@@ -228,6 +228,97 @@
 </div>
 </div>
 
+<!-- ═══ GAME HUB — 3 JEUX ═══ -->
+<div id="view-game" class="view">
+<h2 class="view-title" data-i18n="gameTitle">🎮 Fitia Game</h2>
+<p class="small-text hidden" id="game-training-note" style="background:rgba(240,185,11,0.08);border:1px solid rgba(240,185,11,0.25);border-radius:10px;padding:8px 10px;margin-bottom:12px;" data-i18n="training">Mode entraînement…</p>
+<div id="game-hub" class="grid-list">
+<div class="rig-item" onclick="App.openGame('tap')">
+<div class="game-icon">⚡</div>
+<div class="rig-name" data-i18n="tapName">⚡ Tap Miner</div>
+<div class="small-text" style="min-height:34px;" data-i18n="tapDesc">Tape pour surcadençer ton minage réel</div>
+<button class="btn-primary" style="padding:8px;font-size:0.75rem;" onclick="event.stopPropagation();App.openGame('tap')">JOUER</button>
+</div>
+<div class="rig-item" onclick="App.openGame('runner')">
+<div class="game-icon">🏃</div>
+<div class="rig-name" data-i18n="runnerName">🏃 Fitia Runner</div>
+<div class="small-text" style="min-height:34px;" data-i18n="runnerDesc">Cours, collecte des FTA, évite les blocs</div>
+<button class="btn-primary" style="padding:8px;font-size:0.75rem;" onclick="event.stopPropagation();App.openGame('runner')">JOUER</button>
+</div>
+<div class="rig-item" onclick="App.openGame('predict')">
+<div class="game-icon">🧠</div>
+<div class="rig-name" data-i18n="predictName">🧠 Fitia Predict</div>
+<div class="small-text" style="min-height:34px;" data-i18n="predictDesc">Quiz crypto et pronostics quotidiens</div>
+<button class="btn-primary" style="padding:8px;font-size:0.75rem;" onclick="event.stopPropagation();App.openGame('predict')">JOUER</button>
+</div>
+</div>
+
+<!-- Jeu A : Tap Miner -->
+<div id="game-tap" class="game-panel hidden">
+<button class="btn-back" onclick="App.gameBack()">← Hub</button>
+<h3 class="section-title" data-i18n="tapTitle">⚡ Tap Miner</h3>
+<p class="small-text" data-i18n="tapInfo">Chaque tape charge ton overclocking.</p>
+<div class="card" style="text-align:center;">
+<div class="tap-stats">
+<div><small data-i18n="tapScore">Score</small><div class="stat-val" id="tap-score">0</div></div>
+<div><small data-i18n="tapCharges">Charges</small><div class="stat-val" id="tap-charges">⚡</div></div>
+</div>
+<button class="tap-zone" id="tap-zone" onclick="App.gameTap()"><span data-i18n="tapTap">TAPE !</span></button>
+<div class="battery-bar-wrap" style="margin-top:14px;">
+<div class="battery-bar-header"><span class="battery-bar-label" data-i18n="tapEnergy">Énergie</span><span class="battery-bar-time green" id="tap-energy-txt">100 / 100</span></div>
+<div class="battery-bar"><div class="battery-bar-fill green" id="tap-energy-bar" style="width:100%"></div></div>
+</div>
+<button class="btn-primary" style="margin-top:14px;" onclick="App.gameBoostShop()" data-i18n="tapBoostShop">🚀 BOUTIQUE DE BOOSTS</button>
+</div>
+</div>
+
+<!-- Jeu B : Runner -->
+<div id="game-runner" class="game-panel hidden">
+<button class="btn-back" onclick="App.gameBack()">← Hub</button>
+<h3 class="section-title" data-i18n="runnerTitle">🏃 Fitia Runner</h3>
+<p class="small-text" data-i18n="runnerInfo">Tape pour sauter. Collecte les pièces 🟡, évite les blocs rouges.</p>
+<div class="card" style="padding:10px;">
+<canvas id="runner-canvas" width="358" height="240" style="width:100%;border-radius:10px;background:#04070f;" onclick="App.runnerJump()"></canvas>
+<div class="tap-stats" style="margin-top:10px;">
+<div><small data-i18n="runnerBest">Meilleur score</small><div class="stat-val" id="runner-best">0</div></div>
+<div><small data-i18n="runnerLast">Dernier score</small><div class="stat-val" id="runner-last">0</div></div>
+</div>
+<p class="small-text" id="runner-over-txt" style="text-align:center;min-height:18px;"></p>
+<button class="btn-primary" onclick="App.runnerStart()" data-i18n="runnerPlay">JOUER</button>
+</div>
+</div>
+
+<!-- Jeu C : Predict -->
+<div id="game-predict" class="game-panel hidden">
+<button class="btn-back" onclick="App.gameBack()">← Hub</button>
+<div class="card">
+<h3 class="section-title">🧠 <span data-i18n="predictQuiz">Quiz</span></h3>
+<div id="predict-start">
+<button class="btn-primary" onclick="App.quizStart()" data-i18n="quizStart">DÉMARRER LE QUIZ</button>
+<p class="small-text" style="text-align:center;margin-top:8px;" id="quiz-streak-lbl"></p>
+</div>
+<div id="predict-play" class="hidden">
+<p class="small-text" style="text-align:center;" id="quiz-num">1 / 6</p>
+<p id="quiz-q" style="font-weight:800;text-align:center;margin:10px 0;">…</p>
+<div id="quiz-choices" class="quiz-choices"></div>
+<p class="small-text" style="text-align:center;min-height:20px;" id="quiz-feedback"></p>
+<button class="btn-primary hidden" id="quiz-next" onclick="App.quizNext()" data-i18n="quizNext">SUIVANT</button>
+<button class="btn-primary hidden" id="quiz-again" onclick="App.quizStart()" style="margin-top:8px;background:linear-gradient(135deg,#3b82f6,#22d3ee);color:#fff;" data-i18n="quizAgain">REJOUER</button>
+</div>
+</div>
+<div class="card">
+<h3 class="section-title">📈 <span data-i18n="predictPrognosis">Pronostic</span></h3>
+<p class="small-text" data-i18n="progDesc">Le FTA va-t-il monter ou descendre dans les prochaines 24 h ?</p>
+<div style="display:flex;gap:8px;margin-top:10px;">
+<button class="btn-wallet-action btn-wallet-deposit" onclick="App.predictUp()" data-i18n="progUp">📈 MONTE</button>
+<button class="btn-wallet-action" onclick="App.predictDown()" style="background:rgba(34,211,238,0.08);color:var(--cyan);border:1px solid rgba(34,211,238,0.35);" data-i18n="progDown">📉 DESCEND</button>
+</div>
+<h3 class="section-title" style="margin-top:14px;" data-i18n="progHistory">Historique</h3>
+<div id="prog-history"></div>
+</div>
+</div>
+</div>
+
 <!-- ═══ SWAP ═══ -->
 <div id="view-swap" class="view">
 <h2 class="view-title" data-i18n="swapTitle">💱 Échange</h2>
@@ -262,6 +353,7 @@
 <button class="nav-item" onclick="App.nav('shop')"><svg viewBox="0 0 24 24"><path d="M12 2l-5.5 9h11z"/></svg><span data-i18n="shop">Boutique</span></button>
 <button class="nav-item" onclick="App.nav('my-rigs')"><svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg><span data-i18n="assets">Wallet</span></button>
 <button class="nav-item" onclick="App.nav('finance')"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg><span data-i18n="finTitle">Finance</span></button>
+<button class="nav-item" onclick="App.nav('game')"><svg viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM11 13H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg><span data-i18n="gameNav">Game</span></button>
 <button class="nav-item" onclick="App.nav('swap')"><svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg><span data-i18n="swapNav">Swap</span></button>
 </nav>
 </div>
@@ -311,6 +403,14 @@
 </div>
 </div>
 
+<!-- ═══ BOOSTS (modale du Tap Miner) ═══ -->
+<div id="modal-boost" class="modal">
+<div class="modal-content">
+<div class="modal-header"><h3 data-i18n="tapBoostShop">🚀 BOUTIQUE DE BOOSTS</h3><button class="modal-close" onclick="App.closeModals()">✕</button></div>
+<div id="tap-boost-list"></div>
+</div>
+</div>
+
 <!-- ═══ CHAT ASSISTANT ═══ -->
 <button class="chat-fab" onclick="App.toggleChat()">
 <img src="https://i.ibb.co/CKc7wbNr/IMG-20260226-152843-512-x-512-pixel.webp" class="chat-fab-logo" alt="FTA">
@@ -342,5 +442,6 @@
 
 <script src="app.js"></script>
 <script src="finance.js"></script>
+<script src="game.js"></script>
 </body>
 </html>

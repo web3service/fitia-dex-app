@@ -815,7 +815,7 @@ main::-webkit-scrollbar { display: none; }
   border: none; background: none; color: #5b6b8c;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 3px; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.3px;
-  cursor: pointer; width: 20%; height: 100%;
+  cursor: pointer; width: 16.6%; height: 100%;
   transition: color 0.25s;
   position: relative;
 }
@@ -1093,3 +1093,41 @@ main::-webkit-scrollbar { display: none; }
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.8rem; font-weight: 800; color: var(--success);
 }
+
+/* ─────────── 25. Fitia-Game (hub + 3 jeux) ─────────── */
+.game-icon { font-size: 1.8rem; margin: 2px 0; }
+.game-panel { animation: cardIn 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
+.btn-back {
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.14);
+  color: var(--text-muted); padding: 7px 14px; border-radius: 18px;
+  font-weight: 700; font-size: 0.78rem; cursor: pointer; margin-bottom: 12px;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-back:active { background: var(--primary); color: #000; border-color: var(--primary); }
+.tap-stats { display: flex; justify-content: space-around; margin-bottom: 12px; }
+.tap-stats > div { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tap-stats small { color: var(--text-muted); text-transform: uppercase; font-size: 0.62rem; letter-spacing: 1px; font-weight: 700; }
+.tap-zone {
+  width: 100%; aspect-ratio: 2.2 / 1;
+  border-radius: 16px; border: 2px solid rgba(240,185,11,0.5);
+  background:
+    radial-gradient(ellipse 90% 80% at 50% 30%, rgba(240,185,11,0.18), transparent 70%),
+    #0a0f1e;
+  color: var(--primary); font-family: 'Orbitron', sans-serif;
+  font-size: 1.4rem; font-weight: 800; letter-spacing: 3px;
+  cursor: pointer; user-select: none; -webkit-user-select: none;
+  touch-action: manipulation;
+  box-shadow: 0 0 24px rgba(240,185,11,0.15), inset 0 0 30px rgba(240,185,11,0.06);
+  transition: transform 0.08s;
+}
+.tap-zone:active { transform: scale(0.96); }
+.quiz-choices { display: flex; flex-direction: column; gap: 8px; }
+.quiz-choice {
+  padding: 12px; border-radius: 11px;
+  background: rgba(4,8,18,0.6); border: 1px solid rgba(148,163,208,0.2);
+  color: var(--text); font-size: 0.9rem; font-weight: 600; text-align: left;
+  cursor: pointer; transition: border-color 0.2s, background 0.2s;
+}
+.quiz-choice:active { border-color: var(--primary); }
+.quiz-choice.good { border-color: var(--success); background: rgba(16,185,129,0.12); color: #34d399; }
+.quiz-choice.bad { border-color: var(--danger); background: rgba(244,63,94,0.12); color: #fb7185; }
