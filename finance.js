@@ -112,6 +112,26 @@
     else i18n[lang] = { ...FIN_I18N[lang] };
   }
 
+  // ─── Traductions des éléments statiques du module Finance ───
+  // (app.js n'a pas de walker data-i18n ; on applique ici uniquement nos clés,
+  //  puis on rebranche applyTranslations pour suivre les changements de langue)
+  function applyFinanceI18n() {
+    const lang = App.currentLang || 'fr';
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const k = el.getAttribute('data-i18n');
+      if (FIN_I18N[lang] && FIN_I18N[lang][k] !== undefined) el.innerText = FIN_I18N[lang][k];
+      else if (FIN_I18N.en[k] !== undefined) el.innerText = FIN_I18N.en[k];
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const k = el.getAttribute('data-i18n-placeholder');
+      if (FIN_I18N[lang] && FIN_I18N[lang][k] !== undefined) el.placeholder = FIN_I18N[lang][k];
+      else if (FIN_I18N.en[k] !== undefined) el.placeholder = FIN_I18N.en[k];
+    });
+  }
+  applyFinanceI18n();
+  const _origApply = App.applyTranslations.bind(App);
+  App.applyTranslations = function () { _origApply(); applyFinanceI18n(); };
+
   // ─── Métadonnées des pools (badges du même style que la boutique) ─
   const POOL_META = [
     { name: 'STARTER',  badge: 'background:#64748b;color:#fff' },

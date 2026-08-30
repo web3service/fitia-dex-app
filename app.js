@@ -2,11 +2,11 @@
 
 // ─── Configuration ─────────────────────────────────────────────────
 const CONFIG = {
-  CORE: "0x1b8EdFb91168Fb233F8CA7cf1631038AC193D743",
-  MINE: "0xBd9FA9801eDA247b28B3BB9dDBf1CF52cA563Bc6",
+  CORE: "0x........................................",
+  MINE: "0x........................................",
   STAKING: "0x........................................",
   USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
-  FTA:  "0x5c418b12c7e9c2A8e9A71A68c6d9b319E7B1d1fd",
+  FTA:  "0x........................................",
   CHAIN_ID: 137,
   WC_PROJECT_ID: "2c10ee910a836551fbabbf7c8cc4542a",
   WHATSAPP_GROUP: "https://chat.whatsapp.com/BDsvPCB6xp8H8X0YaRmPFP",
@@ -412,7 +412,8 @@ class Application {
     if (sh[1]) sh[1].innerText = this.t('youReceive');
     const swapBtn = document.querySelector('#view-swap .btn-primary');
     if (swapBtn) swapBtn.innerText = this.t('swap');
-    document.querySelectorAll('.nav-item span').forEach((s, i) => s.innerText = this.t(['home', 'shop', 'assets', 'swapNav'][i]));
+    // ✅ Correctif : 5 onglets désormais — le 4e est Finance (finTitle est fusionné dans i18n par finance.js)
+    document.querySelectorAll('.nav-item span').forEach((s, i) => { const k = ['home', 'shop', 'assets', 'finTitle', 'swapNav'][i]; if (k) s.innerText = this.t(k); });
   }
 
   // ─── Initialisation ──────────────────────────────────────────────
