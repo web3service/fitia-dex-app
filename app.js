@@ -4,6 +4,7 @@
 const CONFIG = {
   CORE: "0x1b8EdFb91168Fb233F8CA7cf1631038AC193D743",
   MINE: "0xBd9FA9801eDA247b28B3BB9dDBf1CF52cA563Bc6",
+  STAKING: "0x........................................",
   USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
   FTA:  "0x5c418b12c7e9c2A8e9A71A68c6d9b319E7B1d1fd",
   CHAIN_ID: 137,
@@ -689,7 +690,7 @@ class Application {
       // Donc FTA/seconde = power * difficulty / 1e18
       const rawPower = await this.mine.powerOf(this.user);
       let powNum = Number(rawPower);
-      let diffNum = 2e12; // fallback si la lecture échoue
+      let diffNum = 7.5e16; // fallback aligné sur la valeur par défaut du Core (taux d'émission)
       try {
         const difficultyRaw = await this.core.difficulty();
         diffNum = Number(difficultyRaw);
@@ -1376,6 +1377,8 @@ class Application {
     if (activeView) { activeView.classList.add('active'); activeView.style.display = 'block'; }
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     if (event?.currentTarget) event.currentTarget.classList.add('active');
+    // ✅ Fitia-Finance : recharge les données de staking à chaque ouverture de l'onglet
+    if (viewId === 'finance') this.loadFinance();
   }
 
   // ─── Loader plein écran ──────────────────────────────────────────

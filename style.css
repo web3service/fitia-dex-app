@@ -815,7 +815,7 @@ main::-webkit-scrollbar { display: none; }
   border: none; background: none; color: #5b6b8c;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 3px; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.3px;
-  cursor: pointer; width: 22%; height: 100%;
+  cursor: pointer; width: 20%; height: 100%;
   transition: color 0.25s;
   position: relative;
 }
@@ -1056,4 +1056,40 @@ main::-webkit-scrollbar { display: none; }
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ─────────── 24. Fitia-Finance (Staking) ─────────── */
+.fin-pending-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 12px; font-size: 0.85rem; color: var(--text-muted);
+}
+.fin-pending-row span:last-child {
+  color: var(--cyan); font-family: 'JetBrains Mono', monospace; font-weight: 700;
+}
+.fin-apy {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.5rem; font-weight: 800; color: var(--primary);
+  text-shadow: 0 0 14px rgba(240,185,11,0.35);
+  margin: 4px 0;
+}
+.fin-reserve {
+  margin-top: 12px; padding-top: 10px;
+  border-top: 1px solid rgba(148,163,208,0.1); text-align: center;
+}
+.stake-input-wrap { display: flex; gap: 8px; align-items: center; }
+.stake-input-wrap .game-input { flex: 1; margin-bottom: 0; }
+.btn-max {
+  padding: 11px 14px; border-radius: 10px; border: 1px solid rgba(240,185,11,0.4);
+  background: rgba(240,185,11,0.12); color: var(--primary);
+  font-weight: 800; cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+.btn-max:active { background: rgba(240,185,11,0.28); transform: scale(0.96); }
+.fin-pos-right {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+  flex-shrink: 0; min-width: 90px;
+}
+.fin-pending-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem; font-weight: 800; color: var(--success);
 }

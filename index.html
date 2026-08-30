@@ -203,6 +203,31 @@
 </div>
 </div>
 
+<!-- ═══ FINANCE / STAKING ═══ -->
+<div id="view-finance" class="view">
+<div class="card total-balance-card">
+<small data-i18n="finTotalStaked">Total Staké</small>
+<div class="total-val" id="fin-total-staked">0 FTA</div>
+<div class="fin-pending-row">
+<span data-i18n="finPending">Récompenses en attente</span>
+<span id="fin-pending">0.000000 FTA</span>
+</div>
+<button class="btn-mega" onclick="App.claimAllStake()" style="margin-top:14px;">
+<span class="pulse-ring"></span>
+<span data-i18n="finClaimAll">TOUT RÉCLAMER</span>
+</button>
+</div>
+<div class="card">
+<h3 class="section-title" data-i18n="finPools">🏦 Pools de staking</h3>
+<div id="fin-pool-grid" class="grid-list"></div>
+</div>
+<div class="card">
+<h3 class="section-title" data-i18n="finMyPos">📜 Mes positions</h3>
+<div id="fin-pos-list"><p class="small-text" style="text-align:center;" data-i18n="finNoPos">Aucune position de staking</p></div>
+<div class="fin-reserve small-text">🔒 <span data-i18n="finReserve">Réserve de récompenses</span> : <span id="fin-reserve">—</span></div>
+</div>
+</div>
+
 <!-- ═══ SWAP ═══ -->
 <div id="view-swap" class="view">
 <h2 class="view-title" data-i18n="swapTitle">💱 Échange</h2>
@@ -236,6 +261,7 @@
 <button class="nav-item active" onclick="App.nav('dashboard')"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span data-i18n="home">Accueil</span></button>
 <button class="nav-item" onclick="App.nav('shop')"><svg viewBox="0 0 24 24"><path d="M12 2l-5.5 9h11z"/></svg><span data-i18n="shop">Boutique</span></button>
 <button class="nav-item" onclick="App.nav('my-rigs')"><svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg><span data-i18n="assets">Wallet</span></button>
+<button class="nav-item" onclick="App.nav('finance')"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg><span data-i18n="finTitle">Finance</span></button>
 <button class="nav-item" onclick="App.nav('swap')"><svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg><span data-i18n="swapNav">Swap</span></button>
 </nav>
 </div>
@@ -265,6 +291,23 @@
 <p class="small-text" style="margin-bottom: 15px;">Envoyez uniquement POL, USDT ou FTA à cette adresse sur Polygon.</p>
 <div class="receive-addr-box" onclick="App.copyReceiveAddress()"><span id="receive-addr-display">0x...</span><span class="copy-icon">📋</span></div>
 <p class="small-text" style="margin-top: 10px; color: var(--primary);">Appuyez pour copier</p>
+</div>
+</div>
+
+<!-- ═══ STAKE (modale) ═══ -->
+<div id="modal-stake" class="modal">
+<div class="modal-content">
+<div class="modal-header"><h3 id="stake-pool-title">Stake</h3><button class="modal-close" onclick="App.closeModals()">✕</button></div>
+<p class="small-text" style="margin-bottom:10px;"><span data-i18n="balance">Solde:</span> <span id="fin-stake-bal">0</span> FTA</p>
+<div class="stake-input-wrap">
+<input type="number" id="stake-amount" class="game-input" placeholder="0.0" step="any" oninput="App.updateStakeEst()" data-i18n-placeholder="finAmount">
+<button class="btn-max" onclick="App.setMaxStake()">MAX</button>
+</div>
+<div class="swap-details" style="margin-top:12px;">
+<div class="swap-detail-row"><span class="swap-detail-label" data-i18n="finEstDay">Par jour</span><span class="swap-detail-value" id="stake-est-day">—</span></div>
+<div class="swap-detail-row"><span class="swap-detail-label" data-i18n="finEstTerm">Rendement à terme</span><span class="swap-detail-value" id="stake-est-term">—</span></div>
+</div>
+<button class="btn-primary" style="margin-top:12px;" onclick="App.confirmStake()" data-i18n="finConfirm">CONFIRMER LE STAKE</button>
 </div>
 </div>
 
@@ -298,5 +341,6 @@
 </div>
 
 <script src="app.js"></script>
+<script src="finance.js"></script>
 </body>
 </html>
