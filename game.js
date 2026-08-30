@@ -314,15 +314,27 @@
 
     ok() { return typeof THREE !== 'undefined'; },
 
+    // Détection réelle de WebGL (certains téléphones/WebView le désactivent)
+    webglOK() {
+      try {
+        const t = document.createElement('canvas');
+        return !!(t.getContext('webgl') || t.getContext('experimental-webgl'));
+      } catch (e) { return false; }
+    },
+
     init() {
-      if (!this.ok()) return false;
+      if (!this.ok() || !this.webglOK()) return false;
       const wrap = document.getElementById('runner-3d');
       if (!wrap) return false;
       if (!this.renderer) {
-        this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+        try {
+        // Réglages doux pour téléphone : pas d'antialias, DPR ≤ 1, préférence GPU neutre
+        this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'default', failIfMajorPerformanceCaveat: false });
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1));
         this.renderer.setSize(wrap.clientWidth || 358, 300);
         wrap.appendChild(this.renderer.domElement);
+        // Perte de contexte WebGL (fréquente en arrière-plan sur mobile) → repli 2D
+        this.renderer.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.fallback2D(); }, false);
 
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x04070f);
@@ -343,7 +355,7 @@
         ground.rotation.x = -Math.PI / 2; ground.position.z = -35;
         this.scene.add(ground);
         const stripeMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee });
-        for (let i = 0; i < 24; i++) {
+        for (let i = 0; i < 16; i++) {
           const s = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 1.6), stripeMat);
           s.position.set(-3.4, 0.02, -i * 4);
           this.scene.add(s);
@@ -354,7 +366,7 @@
         // Colonnes décoratives des deux côtés (sensation de vitesse)
         const colMat = new THREE.MeshLambertMaterial({ color: 0x1b2540 });
         const capMat = new THREE.MeshBasicMaterial({ color: 0xF0B90B });
-        for (let i = 0; i < 14; i++) {
+        for (let i = 0; i < 10; i++) {
           const col = new THREE.Mesh(new THREE.BoxGeometry(0.55, 3.2, 0.55), colMat);
           col.position.set(-2.9, 1.6, -i * 6);
           this.scene.add(col);
@@ -378,6 +390,13 @@
         this.matCoin = new THREE.MeshBasicMaterial({ color: 0xF0B90B });
 
         this.bindControls(wrap);
+        } catch (e) {
+          // Échec de création WebGL (téléphones modestes / WebView) → repli 2D propre
+          console.warn('Runner3D init:', e);
+          if (this.renderer) { try { this.renderer.dispose(); } catch (e2) {} }
+          this.renderer = null;
+          return false;
+        }
       }
       return true;
     },
@@ -450,12 +469,12 @@
 
     open() {
       show('game-runner');
-      if (this.ok()) {
+      if (this.ok() && this.webglOK()) {
         // 3D : affiche le conteneur WebGL, masque le repli 2D
         const w3 = document.getElementById('runner-3d');
         const c2 = document.getElementById('runner-canvas');
         w3.classList.remove('hidden'); c2.style.display = 'none';
-        this.init();
+        if (!this.init()) { this.fallback2D(); return; }
         // Redimensionne maintenant que le panneau est visible
         const wrap = document.getElementById('runner-3d');
         const w = wrap.clientWidth || 358;
@@ -488,7 +507,7 @@
     },
 
     start() {
-      this.resetWorld(); this.running = true;
+      this.resetWorld(); this.running = true; this.stopped = false;
       if (this.raf) cancelAnimationFrame(this.raf);
       this.loop();
     },
@@ -516,7 +535,14 @@
     },
 
     loop() {
+      if (this.stopped) return; // chaîne rAF cassée par stop() : plus aucune frame résiduelle
       if (!this.running || document.hidden) { this.raf = requestAnimationFrame(() => this.loop()); return; }
+      // Toute erreur WebGL/runtime bascule proprement en version 2D
+      try { this.frame(); } catch (e) { console.warn('Runner3D loop:', e); this.fallback2D(); return; }
+      this.raf = requestAnimationFrame(() => this.loop());
+    },
+
+    frame() {
       const dt = 1 / 60;
       this.t += dt;
       this.speed = Math.min(22, this.speed + 0.003);
@@ -568,13 +594,24 @@
       this.renderer.render(this.scene, this.camera);
       const sc = document.getElementById('runner-score-3d');
       if (sc) sc.innerText = this.score;
-      this.raf = requestAnimationFrame(() => this.loop());
     },
 
     renderFrame() { if (this.renderer) this.renderer.render(this.scene, this.camera); },
 
+    // Bascule propre vers la version 2D (échec WebGL / perte de contexte)
+    fallback2D() {
+      this.stop();
+      try { if (this.renderer) this.renderer.dispose(); } catch (e) {}
+      this.renderer = null;
+      const w = document.getElementById('runner-3d'); if (w) w.classList.add('hidden');
+      const c2 = document.getElementById('runner-canvas'); if (c2) c2.style.display = 'block';
+      App.showToast(App.t('fallback2d'), true);
+      Runner2D.open();
+    },
+
     stop() {
       this.running = false;
+      this.stopped = true;
       if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; }
     },
 
