@@ -2,8 +2,8 @@
 //  Fitia-Game — Hub des 3 jeux (chargé après app.js et finance.js)
 //  Dépend des globales : App, CONFIG, i18n, ethers (v6)
 //  Contrat : game/FitiaGameV1.sol (boosts, tickets, cagnottes)
-//  SANS contrat déployé : les 3 jeux sont jouables en « mode entraînement »
-//  (scores locaux, achats FTA désactivés proprement).
+//  Runner 3D façon Temple Run : Three.js (CDN cdnjs, autorisé par la CSP)
+//  SANS contrat déployé : les 3 jeux sont jouables en « mode entraînement ».
 // ═══════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
@@ -24,11 +24,13 @@
     fr: {
       gameNav: "Game", gameTitle: "🎮 Fitia Game", gameHub: "Choisis ton jeu",
       tapName: "⚡ Tap Miner", tapDesc: "Tape pour surcadençer ton minage réel",
-      runnerName: "🏃 Fitia Runner", runnerDesc: "Cours, collecte des FTA, évite les blocs",
+      runnerName: "🏃 Fitia Runner 3D", runnerDesc: "Temple Run 3D : cours, collecte, esquive",
       predictName: "🧠 Fitia Predict", predictDesc: "Quiz crypto et pronostics quotidiens",
       tapTitle: "⚡ Tap Miner", tapInfo: "Chaque tape charge ton overclocking. Énergie max 100, +1 toutes les 10 s.",
       tapEnergy: "Énergie", tapScore: "Score", tapTap: "TAPE !", tapBoostShop: "🚀 BOUTIQUE DE BOOSTS",
-      tapCharges: "Charges", runnerTitle: "🏃 Fitia Runner", runnerInfo: "Tape pour sauter. Collecte les pièces 🟡, évite les blocs rouges.",
+      tapCharges: "Charges", runnerTitle: "🏃 Fitia Runner 3D",
+      runnerInfo: "Glisse à gauche/droite pour changer de couloir, tape (ou espace) pour sauter. Collecte les pièces 🟡, esquive les blocs rouges.",
+      runnerControls: "👉 Glisse = couloir · Tap = saut",
       runnerPlay: "JOUER", runnerBest: "Meilleur score", runnerLast: "Dernier score", runnerOver: "Partie terminée !",
       runnerReplay: "REJOUER", runnerBack: "← Hub", predictTitle: "🧠 Fitia Predict", predictQuiz: "Quiz", predictPrognosis: "Pronostic",
       quizStart: "DÉMARRER LE QUIZ", quizNext: "SUIVANT", quizScoreLbl: "Score", quizStreak: "Série",
@@ -39,16 +41,19 @@
       training: "Mode entraînement — déploie FitiaGameV1 pour activer les achats en FTA.",
       buyBoost: "ACHETER", boostBought: "Boost activé sur ton minage ! ⚡", errFta: "Solde FTA insuffisant.",
       activeBoost: "Boost actif", noBoost: "Aucun boost actif", price: "Prix", duration: "Durée",
-      ticketBuy: "ACHETER L'ENTRÉE", entryBought: "Entrée enregistrée ! 🎟️", loadErr: "Impossible de charger le Game."
+      ticketBuy: "ACHETER L'ENTRÉE", entryBought: "Entrée enregistrée ! 🎟️", loadErr: "Impossible de charger le Game.",
+      combo: "COMBO", fallback2d: "3D indisponible (hors ligne) — version 2D de secours."
     },
     en: {
       gameNav: "Game", gameTitle: "🎮 Fitia Game", gameHub: "Pick your game",
       tapName: "⚡ Tap Miner", tapDesc: "Tap to overclock your real mining",
-      runnerName: "🏃 Fitia Runner", runnerDesc: "Run, collect FTA, dodge blocks",
+      runnerName: "🏃 Fitia Runner 3D", runnerDesc: "Temple Run 3D: run, collect, dodge",
       predictName: "🧠 Fitia Predict", predictDesc: "Crypto quiz and daily predictions",
       tapTitle: "⚡ Tap Miner", tapInfo: "Each tap charges your overclocking. Max 100 energy, +1 every 10 s.",
       tapEnergy: "Energy", tapScore: "Score", tapTap: "TAP!", tapBoostShop: "🚀 BOOST SHOP",
-      tapCharges: "Charges", runnerTitle: "🏃 Fitia Runner", runnerInfo: "Tap to jump. Collect 🟡 coins, dodge red blocks.",
+      tapCharges: "Charges", runnerTitle: "🏃 Fitia Runner 3D",
+      runnerInfo: "Swipe left/right to switch lanes, tap (or space) to jump. Collect 🟡 coins, dodge red blocks.",
+      runnerControls: "👉 Swipe = lane · Tap = jump",
       runnerPlay: "PLAY", runnerBest: "Best score", runnerLast: "Last score", runnerOver: "Game over!",
       runnerReplay: "PLAY AGAIN", runnerBack: "← Hub", predictTitle: "🧠 Fitia Predict", predictQuiz: "Quiz", predictPrognosis: "Prediction",
       quizStart: "START QUIZ", quizNext: "NEXT", quizScoreLbl: "Score", quizStreak: "Streak",
@@ -59,16 +64,19 @@
       training: "Training mode — deploy FitiaGameV1 to enable FTA purchases.",
       buyBoost: "BUY", boostBought: "Boost activated on your mining! ⚡", errFta: "Insufficient FTA balance.",
       activeBoost: "Active boost", noBoost: "No active boost", price: "Price", duration: "Duration",
-      ticketBuy: "BUY ENTRY", entryBought: "Entry recorded! 🎟️", loadErr: "Unable to load the Game."
+      ticketBuy: "BUY ENTRY", entryBought: "Entry recorded! 🎟️", loadErr: "Unable to load the Game.",
+      combo: "COMBO", fallback2d: "3D unavailable (offline) — 2D fallback version."
     },
     de: {
       gameNav: "Game", gameTitle: "🎮 Fitia Game", gameHub: "Wähle dein Spiel",
       tapName: "⚡ Tap Miner", tapDesc: "Tippe, um dein echtes Mining zu übertakten",
-      runnerName: "🏃 Fitia Runner", runnerDesc: "Laufe, sammle FTA, weiche Blöcken aus",
+      runnerName: "🏃 Fitia Runner 3D", runnerDesc: "Temple Run 3D: laufen, sammeln, ausweichen",
       predictName: "🧠 Fitia Predict", predictDesc: "Crypto-Quiz und tägliche Prognosen",
       tapTitle: "⚡ Tap Miner", tapInfo: "Jeder Tipp lädt dein Overclocking. Max 100 Energie, +1 alle 10 s.",
       tapEnergy: "Energie", tapScore: "Punkte", tapTap: "TIPP!", tapBoostShop: "🚀 BOOST-SHOP",
-      tapCharges: "Ladungen", runnerTitle: "🏃 Fitia Runner", runnerInfo: "Tippe zum Springen. Sammle 🟡 Münzen, weiche roten Blöcken aus.",
+      tapCharges: "Ladungen", runnerTitle: "🏃 Fitia Runner 3D",
+      runnerInfo: "Wische links/rechts für die Spur, tippe (oder Leertaste) zum Springen. Sammle 🟡 Münzen, weiche roten Blöcken aus.",
+      runnerControls: "👉 Wischen = Spur · Tipp = Sprung",
       runnerPlay: "SPIELEN", runnerBest: "Bestwert", runnerLast: "Letztes Ergebnis", runnerOver: "Spiel vorbei!",
       runnerReplay: "NOCHMAL", runnerBack: "← Hub", predictTitle: "🧠 Fitia Predict", predictQuiz: "Quiz", predictPrognosis: "Prognose",
       quizStart: "QUIZ STARTEN", quizNext: "WEITER", quizScoreLbl: "Punkte", quizStreak: "Serie",
@@ -79,16 +87,19 @@
       training: "Trainingsmodus — setze FitiaGameV1 ein, um FTA-Käufe zu aktivieren.",
       buyBoost: "KAUFEN", boostBought: "Boost auf deinem Mining aktiviert! ⚡", errFta: "Unzureichender FTA-Saldo.",
       activeBoost: "Aktiver Boost", noBoost: "Kein aktiver Boost", price: "Preis", duration: "Dauer",
-      ticketBuy: "EINTRITT KAUFEN", entryBought: "Eintritt gespeichert! 🎟️", loadErr: "Game konnte nicht geladen werden."
+      ticketBuy: "EINTRITT KAUFEN", entryBought: "Eintritt gespeichert! 🎟️", loadErr: "Game konnte nicht geladen werden.",
+      combo: "COMBO", fallback2d: "3D nicht verfügbar (offline) — 2D-Ersatzversion."
     },
     zh: {
       gameNav: "游戏", gameTitle: "🎮 Fitia Game", gameHub: "选择你的游戏",
       tapName: "⚡ 点击矿工", tapDesc: "点击以超频你的真实挖矿",
-      runnerName: "🏃 Fitia 跑酷", runnerDesc: "奔跑、收集 FTA、躲避障碍",
+      runnerName: "🏃 Fitia 跑酷 3D", runnerDesc: "神庙逃亡 3D：奔跑、收集、躲避",
       predictName: "🧠 Fitia 预测", predictDesc: "加密问答与每日预测",
       tapTitle: "⚡ 点击矿工", tapInfo: "每次点击为超频充能。能量上限 100，每 10 秒 +1。",
       tapEnergy: "能量", tapScore: "分数", tapTap: "点！", tapBoostShop: "🚀 强化商店",
-      tapCharges: "充能", runnerTitle: "🏃 Fitia 跑酷", runnerInfo: "点击跳跃。收集 🟡 金币，躲避红色方块。",
+      tapCharges: "充能", runnerTitle: "🏃 Fitia 跑酷 3D",
+      runnerInfo: "左右滑动切换跑道，点击（或空格）跳跃。收集 🟡 金币，躲避红色方块。",
+      runnerControls: "👉 滑动 = 跑道 · 点击 = 跳跃",
       runnerPlay: "开始", runnerBest: "最高分", runnerLast: "上次得分", runnerOver: "游戏结束！",
       runnerReplay: "再来一次", runnerBack: "← 中心", predictTitle: "🧠 Fitia 预测", predictQuiz: "问答", predictPrognosis: "预测",
       quizStart: "开始问答", quizNext: "下一题", quizScoreLbl: "得分", quizStreak: "连胜",
@@ -99,16 +110,19 @@
       training: "训练模式 — 部署 FitiaGameV1 后即可使用 FTA 购买。",
       buyBoost: "购买", boostBought: "挖矿强化已激活！⚡", errFta: "FTA 余额不足。",
       activeBoost: "强化中", noBoost: "无激活强化", price: "价格", duration: "时长",
-      ticketBuy: "购买入场券", entryBought: "入场成功！🎟️", loadErr: "游戏加载失败。"
+      ticketBuy: "购买入场券", entryBought: "入场成功！🎟️", loadErr: "游戏加载失败。",
+      combo: "连击", fallback2d: "3D 不可用（离线）— 备用 2D 版本。"
     },
     sg: {
       gameNav: "Game", gameTitle: "🎮 Fitia Game", gameHub: "Pick your game",
       tapName: "⚡ Tap Miner", tapDesc: "Tap to overclock your real mining",
-      runnerName: "🏃 Fitia Runner", runnerDesc: "Run, collect FTA, dodge blocks",
+      runnerName: "🏃 Fitia Runner 3D", runnerDesc: "Temple Run 3D: run, collect, dodge",
       predictName: "🧠 Fitia Predict", predictDesc: "Crypto quiz and daily predictions",
       tapTitle: "⚡ Tap Miner", tapInfo: "Each tap charges your overclocking. Max 100 energy, +1 every 10 s.",
       tapEnergy: "Energy", tapScore: "Score", tapTap: "TAP!", tapBoostShop: "🚀 BOOST SHOP",
-      tapCharges: "Charges", runnerTitle: "🏃 Fitia Runner", runnerInfo: "Tap to jump. Collect 🟡 coins, dodge red blocks.",
+      tapCharges: "Charges", runnerTitle: "🏃 Fitia Runner 3D",
+      runnerInfo: "Swipe left/right to switch lanes, tap (or space) to jump. Collect 🟡 coins, dodge red blocks.",
+      runnerControls: "👉 Swipe = lane · Tap = jump",
       runnerPlay: "PLAY", runnerBest: "Best score", runnerLast: "Last score", runnerOver: "Game over!",
       runnerReplay: "PLAY AGAIN", runnerBack: "← Hub", predictTitle: "🧠 Fitia Predict", predictQuiz: "Quiz", predictPrognosis: "Prediction",
       quizStart: "START QUIZ", quizNext: "NEXT", quizScoreLbl: "Score", quizStreak: "Streak",
@@ -119,7 +133,8 @@
       training: "Training mode — deploy FitiaGameV1 to enable FTA purchases.",
       buyBoost: "BUY", boostBought: "Boost activated on your mining! ⚡", errFta: "Insufficient FTA balance.",
       activeBoost: "Active boost", noBoost: "No active boost", price: "Price", duration: "Duration",
-      ticketBuy: "BUY ENTRY", entryBought: "Entry recorded! 🎟️", loadErr: "Unable to load the Game."
+      ticketBuy: "BUY ENTRY", entryBought: "Entry recorded! 🎟️", loadErr: "Unable to load the Game.",
+      combo: "COMBO", fallback2d: "3D unavailable (offline) — 2D fallback version."
     }
   };
   for (const lang in GAME_I18N) {
@@ -188,15 +203,16 @@
       const el = document.getElementById(p);
       if (el) el.classList.toggle('hidden', p !== id);
     });
+    // Économie de batterie : stoppe le rendu 3D quand on quitte le runner
+    if (id !== 'game-runner') Runner3D.stop();
   }
 
-  // ═══════════════ JEU A — TAP MINER ═══════════════
+  // ═══════════════ JEU A — TAP MINER (juteux : ripples, combo, vibration) ═══════════════
   const Tap = {
-    score: 0, charges: 0, timer: null,
+    score: 0, charges: 0, timer: null, combo: 0, comboUntil: 0,
     energy() { return lsGet('fitia_tap_energy', 100); },
     setEnergy(v) { lsSet('fitia_tap_energy', Math.max(0, Math.min(100, v))); },
     lastTick() { return lsGet('fitia_tap_tick', Date.now()); },
-    // Régénère l'énergie : +1 toutes les 10 s depuis la dernière visite
     regen() {
       const now = Date.now(), last = this.lastTick();
       const gained = Math.floor((now - last) / 10000);
@@ -205,19 +221,43 @@
     },
     open() {
       show('game-tap');
-      this.regen(); this.score = 0; this.charges = 0;
+      this.regen(); this.score = 0; this.charges = 0; this.combo = 0;
       this.render(); this.startRegenTick();
     },
     startRegenTick() {
       clearInterval(this.timer);
       this.timer = setInterval(() => { this.regen(); const e = document.getElementById('tap-energy-bar'); if (e) { e.style.width = this.energy() + '%'; const t = document.getElementById('tap-energy-txt'); if (t) t.innerText = this.energy() + ' / 100'; } }, 2000);
     },
-    tap() {
+    tap(evt) {
       if (this.energy() <= 0) return;
       this.setEnergy(this.energy() - 1);
-      this.score += 1;
-      // Toutes les 25 tapes : +1 charge (10 charges = boost prêt)
-      if (this.score % 25 === 0) { this.charges++; }
+      // Combo : tapes enchaînées à moins de 450 ms → ×2 points
+      const now = Date.now();
+      if (now - this.comboUntil < 450) this.combo++; else this.combo = 1;
+      this.comboUntil = now;
+      const mult = this.combo >= 10 ? 2 : 1;
+      this.score += mult;
+      if (this.score % 25 === 0) this.charges++;
+      // Effets visuels : ripple + texte flottant + vibration
+      const zone = document.getElementById('tap-zone');
+      if (zone) {
+        const r = document.createElement('span');
+        r.className = 'tap-ripple';
+        zone.appendChild(r);
+        setTimeout(() => r.remove(), 500);
+        const f = document.createElement('span');
+        f.className = 'tap-float';
+        f.innerText = mult > 1 ? '+2' : '+1';
+        f.style.left = (20 + Math.random() * 60) + '%';
+        zone.appendChild(f);
+        setTimeout(() => f.remove(), 700);
+      }
+      if (navigator.vibrate) { try { navigator.vibrate(mult > 1 ? 18 : 8); } catch (e) {} }
+      const cb = document.getElementById('tap-combo');
+      if (cb) {
+        if (mult > 1) { cb.innerText = `${App.t('combo')} ×2 🔥`; cb.classList.add('on'); }
+        else { cb.classList.remove('on'); cb.innerText = ''; }
+      }
       this.render();
     },
     render() {
@@ -246,7 +286,7 @@
             <button class="btn-sm btn-full" style="padding:7px 12px;font-size:0.7rem;max-width:110px;" onclick="App.gameBuyBoost(${i})">${App.t('buyBoost')} · ${fmtFta(t.price).toFixed(1)} FTA</button>
           </div>`;
         }).join('');
-        document.getElementById('tap-boost-list').innerHTML = html + `<p class="small-text" style="margin-top:8px;">🔥 30 % ${App.t('tapCharges') === '充能' ? '燃烧' : 'burn'} · 70 % ${App.t('progHistory') === '历史' ? '奖池' : 'cagnotte'}</p>`;
+        document.getElementById('tap-boost-list').innerHTML = html + `<p class="small-text" style="margin-top:8px;">🔥 30 % burn · 70 % cagnotte</p>`;
         document.getElementById('modal-boost').classList.add('active');
       } catch (e) { App.setLoader(false); App.showError(e); }
     },
@@ -262,19 +302,307 @@
     }
   };
 
-  // ═══════════════ JEU B — RUNNER (canvas) ═══════════════
-  const Runner = {
-    cv: null, ctx: null, raf: null, running: false,
-    y: 0, vy: 0, speed: 3, obst: [], coins: [], dist: 0, score: 0, best: 0, hidden: false,
-    H: 240, W: 358, GROUND: 200, GRAV: 0.45, JUMP: -7.6,
+  // ═══════════════ JEU B — RUNNER 3D (façon Temple Run, Three.js) ═══════════════
+  const Runner3D = {
+    renderer: null, scene: null, camera: null, avatar: null, parts: {},
+    lanes: [-1.7, 0, 1.7], lane: 1,
+    y: 0, vy: 0, speed: 10, running: false, dead: false,
+    dist: 0, score: 0, coinsRun: 0, best: 0,
+    obst: [], coins: [], deco: [], spawnZ: -30, coinZ: -30,
+    raf: null, t: 0, keys: {},
+    LANE_T: 0.18,
+
+    ok() { return typeof THREE !== 'undefined'; },
+
+    init() {
+      if (!this.ok()) return false;
+      const wrap = document.getElementById('runner-3d');
+      if (!wrap) return false;
+      if (!this.renderer) {
+        this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+        this.renderer.setSize(wrap.clientWidth || 358, 300);
+        wrap.appendChild(this.renderer.domElement);
+
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x04070f);
+        this.scene.fog = new THREE.Fog(0x04070f, 16, 52);
+
+        this.camera = new THREE.PerspectiveCamera(62, (wrap.clientWidth || 358) / 300, 0.1, 100);
+        this.camera.position.set(0, 4.4, 7.2);
+        this.camera.lookAt(0, 1.2, -6);
+
+        // Lumières : hémisphérique + directionnelle (peu coûteux)
+        this.scene.add(new THREE.HemisphereLight(0x8ea0bd, 0x0a0f1e, 0.9));
+        const dir = new THREE.DirectionalLight(0xffe9a8, 0.9);
+        dir.position.set(3, 8, 2);
+        this.scene.add(dir);
+
+        // Sol (plan sombre) + bandes latérales lumineuses
+        const ground = new THREE.Mesh(new THREE.PlaneGeometry(7, 90), new THREE.MeshLambertMaterial({ color: 0x0b1120 }));
+        ground.rotation.x = -Math.PI / 2; ground.position.z = -35;
+        this.scene.add(ground);
+        const stripeMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee });
+        for (let i = 0; i < 24; i++) {
+          const s = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 1.6), stripeMat);
+          s.position.set(-3.4, 0.02, -i * 4);
+          this.scene.add(s);
+          const s2 = s.clone(); s2.position.x = 3.4;
+          this.scene.add(s2);
+          this.deco.push(s, s2);
+        }
+        // Colonnes décoratives des deux côtés (sensation de vitesse)
+        const colMat = new THREE.MeshLambertMaterial({ color: 0x1b2540 });
+        const capMat = new THREE.MeshBasicMaterial({ color: 0xF0B90B });
+        for (let i = 0; i < 14; i++) {
+          const col = new THREE.Mesh(new THREE.BoxGeometry(0.55, 3.2, 0.55), colMat);
+          col.position.set(-2.9, 1.6, -i * 6);
+          this.scene.add(col);
+          const col2 = col.clone(); col2.position.x = 2.9;
+          this.scene.add(col2);
+          const cap = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.1, 0.62), capMat);
+          cap.position.set(-2.9, 3.25, -i * 6);
+          this.scene.add(cap);
+          const cap2 = cap.clone(); cap2.position.x = 2.9;
+          this.scene.add(cap2);
+          this.deco.push(col, col2, cap, cap2);
+        }
+
+        this.buildAvatar();
+
+        // Géométries/matériaux partagés (évite d'en recréer à chaque spawn)
+        this.geoLow = new THREE.BoxGeometry(1.3, 0.9, 0.8);
+        this.geoHigh = new THREE.BoxGeometry(1.3, 2.6, 0.4);
+        this.matObs = new THREE.MeshLambertMaterial({ color: 0xf43f5e });
+        this.geoCoin = new THREE.CylinderGeometry(0.32, 0.32, 0.08, 14);
+        this.matCoin = new THREE.MeshBasicMaterial({ color: 0xF0B90B });
+
+        this.bindControls(wrap);
+      }
+      return true;
+    },
+
+    // Avatar « mineur » low-poly : torse, tête + lampe, bras et jambes animés
+    buildAvatar() {
+      const g = new THREE.Group();
+      const gold = new THREE.MeshLambertMaterial({ color: 0xF0B90B });
+      const dark = new THREE.MeshLambertMaterial({ color: 0x24304e });
+      const lamp = new THREE.MeshBasicMaterial({ color: 0x22d3ee });
+
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.3), gold);
+      torso.position.y = 1.0; g.add(torso);
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.34, 0.36), dark);
+      head.position.y = 1.52; g.add(head);
+      const helmet = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.12, 0.4), gold);
+      helmet.position.y = 1.72; g.add(helmet);
+      const light = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.08, 0.05), lamp);
+      light.position.set(0, 1.58, -0.2); g.add(light);
+
+      // Membres : pivots aux épaules/hanches pour l'animation de course
+      const mkLimb = (w, h, x, y) => {
+        const pivot = new THREE.Group();
+        pivot.position.set(x, y, 0);
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), dark);
+        m.position.y = -h / 2;
+        pivot.add(m);
+        g.add(pivot);
+        return pivot;
+      };
+      this.parts.armL = mkLimb(0.13, 0.5, -0.34, 1.26);
+      this.parts.armR = mkLimb(0.13, 0.5, 0.34, 1.26);
+      this.parts.legL = mkLimb(0.16, 0.62, -0.14, 0.7);
+      this.parts.legR = mkLimb(0.16, 0.62, 0.14, 0.7);
+
+      g.position.set(0, 0, 0);
+      this.avatar = g;
+      this.scene.add(g);
+    },
+
+    bindControls(wrap) {
+      // Glisser = changer de couloir · Tap = saut (tactile + clavier)
+      let sx = 0, sy = 0, moved = false;
+      const el = this.renderer.domElement;
+      el.style.touchAction = 'none';
+      el.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; moved = false; }, { passive: true });
+      el.addEventListener('touchmove', e => {
+        if (moved) return;
+        const dx = e.touches[0].clientX - sx, dy = e.touches[0].clientY - sy;
+        if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy)) { this.move(dx > 0 ? 1 : -1); moved = true; }
+        else if (dy < -30) { this.jump(); moved = true; }
+      }, { passive: true });
+      el.addEventListener('touchend', () => { if (!moved) this.jump(); }, { passive: true });
+      el.addEventListener('mousedown', () => this.jump());
+      window.addEventListener('keydown', e => {
+        if (e.code === 'ArrowLeft' || e.code === 'KeyA') this.move(-1);
+        else if (e.code === 'ArrowRight' || e.code === 'KeyD') this.move(1);
+        else if (e.code === 'Space' || e.code === 'ArrowUp') this.jump();
+      });
+    },
+
+    move(dir) {
+      if (!this.running) return;
+      this.lane = Math.max(0, Math.min(2, this.lane + dir));
+    },
+    jump() {
+      if (!this.running) { this.start(); return; }
+      if (this.y <= 0.01) { this.vy = 7.4; if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} } }
+    },
+
     open() {
       show('game-runner');
-      this.cv = document.getElementById('runner-canvas');
-      this.ctx = this.cv.getContext('2d');
+      if (this.ok()) {
+        // 3D : affiche le conteneur WebGL, masque le repli 2D
+        const w3 = document.getElementById('runner-3d');
+        const c2 = document.getElementById('runner-canvas');
+        w3.classList.remove('hidden'); c2.style.display = 'none';
+        this.init();
+        // Redimensionne maintenant que le panneau est visible
+        const wrap = document.getElementById('runner-3d');
+        const w = wrap.clientWidth || 358;
+        this.renderer.setSize(w, 300);
+        this.camera.aspect = w / 300;
+        this.camera.updateProjectionMatrix();
+      } else {
+        // Filet de sécurité : Three.js pas chargé (hors ligne) → version 2D
+        const w = document.getElementById('runner-3d'); if (w) w.classList.add('hidden');
+        const c2 = document.getElementById('runner-canvas'); if (c2) c2.style.display = 'block';
+        App.showToast(App.t('fallback2d'), true);
+        Runner2D.open();
+        return;
+      }
       this.best = lsGet('fitia_runner_best', 0);
       const b = document.getElementById('runner-best'); if (b) b.innerText = this.best;
       const scores = lsGet('fitia_runner_scores', []);
       const l = document.getElementById('runner-last'); if (l) l.innerText = scores.length ? scores[0].s : 0;
+      this.resetWorld(); this.renderFrame();
+    },
+
+    resetWorld() {
+      this.lane = 1; this.y = 0; this.vy = 0; this.speed = 10;
+      this.dist = 0; this.score = 0; this.coinsRun = 0;
+      this.nextSpawn = 14; this.nextCoin = 8;
+      this.obst.forEach(o => this.scene.remove(o.mesh)); this.obst = [];
+      this.coins.forEach(cn => this.scene.remove(cn.mesh)); this.coins = [];
+      this.dead = false; this.running = false;
+      const ov = document.getElementById('runner-over-txt'); if (ov) ov.innerText = '';
+    },
+
+    start() {
+      this.resetWorld(); this.running = true;
+      if (this.raf) cancelAnimationFrame(this.raf);
+      this.loop();
+    },
+
+    spawn(zPos) {
+      // 1 à 2 couloirs bloqués (jamais les 3) : bloc bas (saut) ou barrière haute (esquive)
+      const lanesToBlock = Math.random() < 0.35 ? 2 : 1;
+      const lanes = [0, 1, 2].sort(() => Math.random() - 0.5).slice(0, lanesToBlock);
+      for (const ln of lanes) {
+        const high = Math.random() < 0.45;
+        const m = new THREE.Mesh(high ? this.geoHigh : this.geoLow, this.matObs);
+        m.position.set(this.lanes[ln], high ? 1.3 : 0.45, zPos);
+        this.scene.add(m);
+        this.obst.push({ mesh: m, lane: ln, high });
+      }
+    },
+
+    spawnCoin() {
+      const ln = Math.floor(Math.random() * 3);
+      const cn = new THREE.Mesh(this.geoCoin, this.matCoin);
+      cn.rotation.x = Math.PI / 2;
+      cn.position.set(this.lanes[ln], 1.1, -60);
+      this.scene.add(cn);
+      this.coins.push({ mesh: cn, lane: ln });
+    },
+
+    loop() {
+      if (!this.running || document.hidden) { this.raf = requestAnimationFrame(() => this.loop()); return; }
+      const dt = 1 / 60;
+      this.t += dt;
+      this.speed = Math.min(22, this.speed + 0.003);
+      this.dist += this.speed * dt;
+      this.score = Math.floor(this.dist) + this.coinsRun * 10;
+
+      // Couloir : interpolation douce vers la position cible
+      const targetX = this.lanes[this.lane];
+      this.avatar.position.x += (targetX - this.avatar.position.x) * this.LANE_T;
+      // Saut : physique simple
+      if (this.y > 0 || this.vy > 0) { this.vy -= 22 * dt; this.y += this.vy * dt; if (this.y < 0) { this.y = 0; this.vy = 0; } }
+      // Animation de course (membres)
+      const swing = this.y > 0.05 ? 1.4 : Math.sin(this.t * 14) * 0.75;
+      this.parts.legL.rotation.x = swing; this.parts.legR.rotation.x = -swing;
+      this.parts.armL.rotation.x = -swing * 0.8; this.parts.armR.rotation.x = swing * 0.8;
+      this.avatar.position.y = this.y + (this.y > 0.05 ? 0 : Math.abs(Math.sin(this.t * 14)) * 0.05);
+
+      // Défilement du décor
+      this.deco.forEach(d => { d.position.z += this.speed * dt; if (d.position.z > 10) d.position.z -= 84; });
+
+      // Apparitions espacées, mesurées en distance parcourue (meshes à z=-60)
+      if (this.dist > this.nextSpawn) { this.spawn(-60); this.nextSpawn = this.dist + 24; }
+      if (this.dist > this.nextCoin) { this.spawnCoin(); this.nextCoin = this.dist + 14; }
+      this.obst.forEach(o => { o.mesh.position.z += this.speed * dt; });
+      this.coins.forEach(cn => { cn.mesh.position.z += this.speed * dt; cn.mesh.rotation.z += 0.1; });
+
+      // Collisions (avatar à z=0)
+      const ax = this.avatar.position.x, ay = this.y;
+      for (let i = this.obst.length - 1; i >= 0; i--) {
+        const o = this.obst[i], z = o.mesh.position.z;
+        if (z > 8) { this.scene.remove(o.mesh); this.obst.splice(i, 1); continue; }
+        if (z > -0.55 && z < 0.55 && Math.abs(ax - o.mesh.position.x) < 0.85) {
+          if (!(o.high === false && ay > 0.85)) { this.gameOver(); return; }
+        }
+      }
+      for (let i = this.coins.length - 1; i >= 0; i--) {
+        const cn = this.coins[i], z = cn.mesh.position.z;
+        if (z > 8) { this.scene.remove(cn.mesh); this.coins.splice(i, 1); continue; }
+        if (z > -0.7 && z < 0.7 && Math.abs(ax - cn.mesh.position.x) < 0.8 && ay < 1.6) {
+          this.coinsRun++; this.score += 10;
+          this.scene.remove(cn.mesh); this.coins.splice(i, 1);
+        }
+      }
+
+      // Caméra suit latéralement l'avatar
+      this.camera.position.x = this.avatar.position.x * 0.35;
+      this.camera.lookAt(this.avatar.position.x * 0.5, 1.2, -6);
+
+      this.renderer.render(this.scene, this.camera);
+      const sc = document.getElementById('runner-score-3d');
+      if (sc) sc.innerText = this.score;
+      this.raf = requestAnimationFrame(() => this.loop());
+    },
+
+    renderFrame() { if (this.renderer) this.renderer.render(this.scene, this.camera); },
+
+    stop() {
+      this.running = false;
+      if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; }
+    },
+
+    gameOver() {
+      this.running = false;
+      this.best = Math.max(this.best, this.score);
+      lsSet('fitia_runner_best', this.best);
+      const scores = lsGet('fitia_runner_scores', []);
+      scores.unshift({ s: this.score, d: new Date().toISOString().slice(0, 10) });
+      lsSet('fitia_runner_scores', scores.slice(0, 5));
+      const ov = document.getElementById('runner-over-txt');
+      if (ov) ov.innerText = `${App.t('runnerOver')} ${this.score} · ${App.t('runnerBest')} : ${this.best}`;
+      const b = document.getElementById('runner-best'); if (b) b.innerText = this.best;
+      const l = document.getElementById('runner-last'); if (l) l.innerText = this.score;
+      if (navigator.vibrate) { try { navigator.vibrate([60, 40, 60]); } catch (e) {} }
+      this.renderFrame();
+    }
+  };
+
+  // Filet de sécurité 2D si Three.js n'est pas chargé (hors ligne)
+  const Runner2D = {
+    cv: null, ctx: null, raf: null, running: false,
+    y: 0, vy: 0, speed: 3, obst: [], coins: [], dist: 0, score: 0, best: 0, coinsCollected: 0,
+    H: 240, W: 358, GROUND: 200, GRAV: 0.45, JUMP: -7.6,
+    open() {
+      this.cv = document.getElementById('runner-canvas');
+      this.ctx = this.cv.getContext('2d');
+      this.best = lsGet('fitia_runner_best', 0);
       this.drawIdle();
     },
     start() {
@@ -288,23 +616,18 @@
       if (this.y >= this.GROUND - 27) this.vy = this.JUMP;
     },
     loop() {
-      // PERFORMANCE : pause complète quand l'écran est caché ou le jeu arrêté
       if (!this.running || document.hidden) { this.raf = requestAnimationFrame(() => this.loop()); return; }
       const ctx = this.ctx, W = this.W, H = this.H;
-      // Physique
       this.vy += this.GRAV; this.y += this.vy;
       if (this.y > this.GROUND - 26) { this.y = this.GROUND - 26; this.vy = 0; }
       this.speed += 0.0015; this.dist += this.speed;
       this.score = Math.floor(this.dist) + this.coinsCollected * 10;
-      // Apparition d'obstacles / pièces
       if (Math.random() < 0.012 + this.speed * 0.002) this.obst.push({ x: W + 20, w: 16 + Math.random() * 14, h: 18 + Math.random() * 22 });
       if (Math.random() < 0.02) this.coins.push({ x: W + 20, y: 120 + Math.random() * 60, taken: false });
-      // Déplacement
       this.obst.forEach(o => o.x -= this.speed);
       this.coins.forEach(cn => cn.x -= this.speed);
       this.obst = this.obst.filter(o => o.x > -40);
       this.coins = this.coins.filter(cn => cn.x > -30 && !cn.taken);
-      // Collisions
       const px = 40, py = this.y, pw = 26, ph = 26;
       for (const o of this.obst) {
         if (px + pw > o.x && px < o.x + o.w && py + ph > this.GROUND - o.h) { this.gameOver(); return; }
@@ -312,27 +635,20 @@
       for (const cn of this.coins) {
         if (px + pw > cn.x && px < cn.x + 14 && py < cn.y + 14 && py + ph > cn.y) { cn.taken = true; this.coinsCollected++; this.score += 10; }
       }
-      // ── Rendu (formes simples, pas de dégradés par frame) ──
       ctx.clearRect(0, 0, W, H);
       ctx.fillStyle = '#04070f'; ctx.fillRect(0, 0, W, H);
       ctx.fillStyle = 'rgba(240,185,11,0.08)'; ctx.fillRect(0, this.GROUND, W, H - this.GROUND);
       ctx.fillStyle = '#22d3ee'; ctx.fillRect(0, this.GROUND, W, 2);
-      // Joueur : bot doré
-      ctx.fillStyle = '#F0B90B';
-      ctx.fillRect(px, py, pw, ph);
+      ctx.fillStyle = '#F0B90B'; ctx.fillRect(px, py, pw, ph);
       ctx.fillStyle = '#04070f'; ctx.fillRect(px + 16, py + 6, 6, 6);
-      // Obstacles rouges
       ctx.fillStyle = '#f43f5e';
       this.obst.forEach(o => ctx.fillRect(o.x, this.GROUND - o.h, o.w, o.h));
-      // Pièces cyan
       ctx.fillStyle = '#22d3ee';
       this.coins.forEach(cn => { ctx.beginPath(); ctx.arc(cn.x + 7, cn.y + 7, 7, 0, 6.29); ctx.fill(); });
-      // Score
       ctx.fillStyle = '#8ea0bd'; ctx.font = '12px monospace';
       ctx.fillText(this.score, 10, 18);
       this.raf = requestAnimationFrame(() => this.loop());
     },
-    coinsCollected: 0,
     gameOver() {
       this.running = false;
       this.best = Math.max(this.best, this.score);
@@ -342,8 +658,6 @@
       lsSet('fitia_runner_scores', scores.slice(0, 5));
       const ov = document.getElementById('runner-over-txt');
       if (ov) ov.innerText = `${App.t('runnerOver')} ${this.score} · ${App.t('runnerBest')} : ${this.best}`;
-      const b = document.getElementById('runner-best'); if (b) b.innerText = this.best;
-      const l = document.getElementById('runner-last'); if (l) l.innerText = this.score;
       this.drawIdle();
     },
     drawIdle() {
@@ -365,12 +679,14 @@
     renderHub() {
       document.getElementById('predict-start').classList.remove('hidden');
       document.getElementById('predict-play').classList.add('hidden');
+      const again = document.getElementById('quiz-again'); if (again) again.classList.add('hidden');
     },
     startQuiz() {
       const bank = QUIZ[App.currentLang] || QUIZ.en;
       this.bank = bank.slice(); this.qi = 0; this.qScore = 0;
       document.getElementById('predict-start').classList.add('hidden');
       document.getElementById('predict-play').classList.remove('hidden');
+      const again = document.getElementById('quiz-again'); if (again) again.classList.add('hidden');
       this.showQ();
     },
     showQ() {
@@ -378,9 +694,10 @@
       document.getElementById('quiz-num').innerText = `${this.qi + 1} / ${this.bank.length}`;
       document.getElementById('quiz-q').innerText = q.q;
       document.getElementById('quiz-feedback').innerText = '';
+      const bar = document.getElementById('quiz-progress');
+      if (bar) bar.style.width = Math.round((this.qi / this.bank.length) * 100) + '%';
       const box = document.getElementById('quiz-choices');
       box.innerHTML = '';
-      // Mélange les choix tout en gardant l'indice de la bonne réponse
       const idx = q.c.map((_, i) => i).sort(() => Math.random() - 0.5);
       this.correct = idx.indexOf(q.a);
       idx.forEach((ci, pos) => {
@@ -411,9 +728,9 @@
         document.getElementById('quiz-feedback').innerText = `${App.t('quizStreak')} : ${lsGet('fitia_quiz_streak', 0)} 🔥`;
         document.getElementById('quiz-next').classList.add('hidden');
         const again = document.getElementById('quiz-again'); if (again) again.classList.remove('hidden');
+        const bar = document.getElementById('quiz-progress'); if (bar) bar.style.width = '100%';
       } else this.showQ();
     },
-    // ─── Pronostic quotidien (V1 local, résolution on-chain en V2) ───
     recordPrediction(dir) {
       const hist = lsGet('fitia_prog_history', []);
       hist.unshift({ dir, price: App.ftaPriceUsd || 0, at: new Date().toISOString().slice(0, 16).replace('T', ' ') });
@@ -445,7 +762,6 @@
     }
   };
 
-  // Traductions statiques du module + suivi des langues (comme finance.js)
   function applyGameI18n() {
     const lang = App.currentLang || 'fr';
     document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -462,15 +778,14 @@
   const _prevApply = App.applyTranslations.bind(App);
   App.applyTranslations = function () { _prevApply(); applyGameI18n(); };
 
-  // Branchement sur l'application
   App.loadGame = () => GAME.load();
-  App.openGame = (which) => { if (which === 'tap') Tap.open(); else if (which === 'runner') Runner.open(); else Predict.open(); };
+  App.openGame = (which) => { if (which === 'tap') Tap.open(); else if (which === 'runner') Runner3D.open(); else Predict.open(); };
   App.gameBack = () => show('game-hub');
-  App.gameTap = () => Tap.tap();
+  App.gameTap = (e) => Tap.tap(e);
   App.gameBoostShop = () => Tap.openBoostShop();
   App.gameBuyBoost = (i) => Tap.buyBoost(i);
-  App.runnerStart = () => Runner.start();
-  App.runnerJump = () => Runner.jump();
+  App.runnerStart = () => Runner3D.start();
+  App.runnerJump = () => Runner3D.jump();
   App.quizStart = () => Predict.startQuiz();
   App.quizNext = () => Predict.nextQ();
   App.predictUp = () => Predict.recordPrediction('up');

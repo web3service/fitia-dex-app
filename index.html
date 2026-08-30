@@ -264,6 +264,7 @@
 <div><small data-i18n="tapCharges">Charges</small><div class="stat-val" id="tap-charges">⚡</div></div>
 </div>
 <button class="tap-zone" id="tap-zone" onclick="App.gameTap()"><span data-i18n="tapTap">TAPE !</span></button>
+<p class="small-text" id="tap-combo" style="min-height:18px;font-weight:800;color:var(--orange);letter-spacing:1px;"></p>
 <div class="battery-bar-wrap" style="margin-top:14px;">
 <div class="battery-bar-header"><span class="battery-bar-label" data-i18n="tapEnergy">Énergie</span><span class="battery-bar-time green" id="tap-energy-txt">100 / 100</span></div>
 <div class="battery-bar"><div class="battery-bar-fill green" id="tap-energy-bar" style="width:100%"></div></div>
@@ -272,13 +273,17 @@
 </div>
 </div>
 
-<!-- Jeu B : Runner -->
+<!-- Jeu B : Runner 3D (façon Temple Run) -->
 <div id="game-runner" class="game-panel hidden">
 <button class="btn-back" onclick="App.gameBack()">← Hub</button>
-<h3 class="section-title" data-i18n="runnerTitle">🏃 Fitia Runner</h3>
-<p class="small-text" data-i18n="runnerInfo">Tape pour sauter. Collecte les pièces 🟡, évite les blocs rouges.</p>
+<h3 class="section-title" data-i18n="runnerTitle">🏃 Fitia Runner 3D</h3>
+<p class="small-text" data-i18n="runnerInfo">Glisse à gauche/droite pour changer de couloir, tape (ou espace) pour sauter. Collecte les pièces 🟡, esquive les blocs rouges.</p>
 <div class="card" style="padding:10px;">
-<canvas id="runner-canvas" width="358" height="240" style="width:100%;border-radius:10px;background:#04070f;" onclick="App.runnerJump()"></canvas>
+<div id="runner-3d" class="runner-3d-wrap">
+<span id="runner-score-3d" class="runner-score">0</span>
+<span class="runner-hint" data-i18n="runnerControls">👉 Glisse = couloir · Tap = saut</span>
+</div>
+<canvas id="runner-canvas" width="358" height="240" style="width:100%;border-radius:10px;background:#04070f;display:none;" onclick="App.runnerJump()"></canvas>
 <div class="tap-stats" style="margin-top:10px;">
 <div><small data-i18n="runnerBest">Meilleur score</small><div class="stat-val" id="runner-best">0</div></div>
 <div><small data-i18n="runnerLast">Dernier score</small><div class="stat-val" id="runner-last">0</div></div>
@@ -299,6 +304,7 @@
 </div>
 <div id="predict-play" class="hidden">
 <p class="small-text" style="text-align:center;" id="quiz-num">1 / 6</p>
+<div class="battery-bar" style="margin-bottom:10px;"><div class="battery-bar-fill green" id="quiz-progress" style="width:0%"></div></div>
 <p id="quiz-q" style="font-weight:800;text-align:center;margin:10px 0;">…</p>
 <div id="quiz-choices" class="quiz-choices"></div>
 <p class="small-text" style="text-align:center;min-height:20px;" id="quiz-feedback"></p>
@@ -442,6 +448,7 @@
 
 <script src="app.js"></script>
 <script src="finance.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="game.js"></script>
 </body>
 </html>
