@@ -29,8 +29,8 @@
       tapTitle: "⚡ Tap Miner", tapInfo: "Chaque tape charge ton overclocking. Énergie max 100, +1 toutes les 10 s.",
       tapEnergy: "Énergie", tapScore: "Score", tapTap: "TAPE !", tapBoostShop: "🚀 BOUTIQUE DE BOOSTS",
       tapCharges: "Charges", runnerTitle: "🏃 Fitia Runner 3D",
-      runnerInfo: "Glisse à gauche/droite pour changer de couloir, tape (ou espace) pour sauter. Collecte les pièces 🟡, esquive les blocs rouges.",
-      runnerControls: "👉 Glisse = couloir · Tap = saut",
+      runnerInfo: "Glisse à gauche/droite pour changer de couloir, glisse vers le haut (ou espace) pour sauter, vers le bas pour glisser. Collecte les pièces 🟡, évite les troncs et les dalles.",
+      runnerControls: "👉 Glisse ←→ = couloir · Haut = saut · Bas = glissade",
       runnerPlay: "JOUER", runnerBest: "Meilleur score", runnerLast: "Dernier score", runnerOver: "Partie terminée !",
       runnerReplay: "REJOUER", runnerBack: "← Hub", predictTitle: "🧠 Fitia Predict", predictQuiz: "Quiz", predictPrognosis: "Pronostic",
       quizStart: "DÉMARRER LE QUIZ", quizNext: "SUIVANT", quizScoreLbl: "Score", quizStreak: "Série",
@@ -52,8 +52,8 @@
       tapTitle: "⚡ Tap Miner", tapInfo: "Each tap charges your overclocking. Max 100 energy, +1 every 10 s.",
       tapEnergy: "Energy", tapScore: "Score", tapTap: "TAP!", tapBoostShop: "🚀 BOOST SHOP",
       tapCharges: "Charges", runnerTitle: "🏃 Fitia Runner 3D",
-      runnerInfo: "Swipe left/right to switch lanes, tap (or space) to jump. Collect 🟡 coins, dodge red blocks.",
-      runnerControls: "👉 Swipe = lane · Tap = jump",
+      runnerInfo: "Swipe left/right to switch lanes, swipe up (or space) to jump, swipe down to slide. Collect 🟡 coins, avoid logs and stone slabs.",
+      runnerControls: "👉 Swipe ←→ = lane · Up = jump · Down = slide",
       runnerPlay: "PLAY", runnerBest: "Best score", runnerLast: "Last score", runnerOver: "Game over!",
       runnerReplay: "PLAY AGAIN", runnerBack: "← Hub", predictTitle: "🧠 Fitia Predict", predictQuiz: "Quiz", predictPrognosis: "Prediction",
       quizStart: "START QUIZ", quizNext: "NEXT", quizScoreLbl: "Score", quizStreak: "Streak",
@@ -75,8 +75,8 @@
       tapTitle: "⚡ Tap Miner", tapInfo: "Jeder Tipp lädt dein Overclocking. Max 100 Energie, +1 alle 10 s.",
       tapEnergy: "Energie", tapScore: "Punkte", tapTap: "TIPP!", tapBoostShop: "🚀 BOOST-SHOP",
       tapCharges: "Ladungen", runnerTitle: "🏃 Fitia Runner 3D",
-      runnerInfo: "Wische links/rechts für die Spur, tippe (oder Leertaste) zum Springen. Sammle 🟡 Münzen, weiche roten Blöcken aus.",
-      runnerControls: "👉 Wischen = Spur · Tipp = Sprung",
+      runnerInfo: "Wische links/rechts für die Spur, nach oben (oder Leertaste) zum Springen, nach unten zum Rutschen. Sammle 🟡 Münzen, weiche Stämmen und Steinplatten aus.",
+      runnerControls: "👉 Wischen ←→ = Spur · Hoch = Sprung · Runter = Rutschen",
       runnerPlay: "SPIELEN", runnerBest: "Bestwert", runnerLast: "Letztes Ergebnis", runnerOver: "Spiel vorbei!",
       runnerReplay: "NOCHMAL", runnerBack: "← Hub", predictTitle: "🧠 Fitia Predict", predictQuiz: "Quiz", predictPrognosis: "Prognose",
       quizStart: "QUIZ STARTEN", quizNext: "WEITER", quizScoreLbl: "Punkte", quizStreak: "Serie",
@@ -98,8 +98,8 @@
       tapTitle: "⚡ 点击矿工", tapInfo: "每次点击为超频充能。能量上限 100，每 10 秒 +1。",
       tapEnergy: "能量", tapScore: "分数", tapTap: "点！", tapBoostShop: "🚀 强化商店",
       tapCharges: "充能", runnerTitle: "🏃 Fitia 跑酷 3D",
-      runnerInfo: "左右滑动切换跑道，点击（或空格）跳跃。收集 🟡 金币，躲避红色方块。",
-      runnerControls: "👉 滑动 = 跑道 · 点击 = 跳跃",
+      runnerInfo: "左右滑动切换跑道，上滑（或空格）跳跃，下滑滑铲。收集 🟡 金币，避开原木和石板。",
+      runnerControls: "👉 滑动 ←→ = 跑道 · 上 = 跳 · 下 = 滑铲",
       runnerPlay: "开始", runnerBest: "最高分", runnerLast: "上次得分", runnerOver: "游戏结束！",
       runnerReplay: "再来一次", runnerBack: "← 中心", predictTitle: "🧠 Fitia 预测", predictQuiz: "问答", predictPrognosis: "预测",
       quizStart: "开始问答", quizNext: "下一题", quizScoreLbl: "得分", quizStreak: "连胜",
@@ -121,8 +121,8 @@
       tapTitle: "⚡ Tap Miner", tapInfo: "Each tap charges your overclocking. Max 100 energy, +1 every 10 s.",
       tapEnergy: "Energy", tapScore: "Score", tapTap: "TAP!", tapBoostShop: "🚀 BOOST SHOP",
       tapCharges: "Charges", runnerTitle: "🏃 Fitia Runner 3D",
-      runnerInfo: "Swipe left/right to switch lanes, tap (or space) to jump. Collect 🟡 coins, dodge red blocks.",
-      runnerControls: "👉 Swipe = lane · Tap = jump",
+      runnerInfo: "Swipe left/right to switch lanes, swipe up (or space) to jump, swipe down to slide. Collect 🟡 coins, avoid logs and stone slabs.",
+      runnerControls: "👉 Swipe ←→ = lane · Up = jump · Down = slide",
       runnerPlay: "PLAY", runnerBest: "Best score", runnerLast: "Last score", runnerOver: "Game over!",
       runnerReplay: "PLAY AGAIN", runnerBack: "← Hub", predictTitle: "🧠 Fitia Predict", predictQuiz: "Quiz", predictPrognosis: "Prediction",
       quizStart: "START QUIZ", quizNext: "NEXT", quizScoreLbl: "Score", quizStreak: "Streak",
@@ -308,7 +308,7 @@
     lanes: [-1.7, 0, 1.7], lane: 1,
     y: 0, vy: 0, speed: 10, running: false, dead: false,
     dist: 0, score: 0, coinsRun: 0, best: 0,
-    obst: [], coins: [], deco: [], spawnZ: -30, coinZ: -30,
+    obst: [], coins: [], deco: [], slideT: 0, sliding: false, nextSpawn: 14, nextCoin: 8,
     raf: null, t: 0, keys: {},
     LANE_T: 0.18,
 
@@ -337,56 +337,81 @@
         this.renderer.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.fallback2D(); }, false);
 
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x04070f);
-        this.scene.fog = new THREE.Fog(0x04070f, 16, 52);
+        // Ciel brumeux de jungle (vert-bleu clair) + brouillard assorti, façon Temple Run 2
+        this.scene.background = new THREE.Color(0xa8c8c0);
+        this.scene.fog = new THREE.Fog(0xa8c8c0, 16, 58);
 
-        this.camera = new THREE.PerspectiveCamera(62, (wrap.clientWidth || 358) / 300, 0.1, 100);
-        this.camera.position.set(0, 4.4, 7.2);
-        this.camera.lookAt(0, 1.2, -6);
+        this.camera = new THREE.PerspectiveCamera(62, (wrap.clientWidth || 358) / 300, 0.1, 120);
+        this.camera.position.set(0, 4.6, 6.8);
+        this.camera.lookAt(0, 1.5, -8);
 
-        // Lumières : hémisphérique + directionnelle (peu coûteux)
-        this.scene.add(new THREE.HemisphereLight(0x8ea0bd, 0x0a0f1e, 0.9));
-        const dir = new THREE.DirectionalLight(0xffe9a8, 0.9);
-        dir.position.set(3, 8, 2);
+        // Lumières jungle : ciel clair + soleil chaud
+        this.scene.add(new THREE.HemisphereLight(0xd8efe6, 0x2f4a3a, 1.05));
+        const dir = new THREE.DirectionalLight(0xfff2c8, 0.95);
+        dir.position.set(4, 10, 3);
         this.scene.add(dir);
 
-        // Sol (plan sombre) + bandes latérales lumineuses
-        const ground = new THREE.Mesh(new THREE.PlaneGeometry(7, 90), new THREE.MeshLambertMaterial({ color: 0x0b1120 }));
-        ground.rotation.x = -Math.PI / 2; ground.position.z = -35;
-        this.scene.add(ground);
-        const stripeMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee });
-        for (let i = 0; i < 16; i++) {
-          const s = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 1.6), stripeMat);
-          s.position.set(-3.4, 0.02, -i * 4);
-          this.scene.add(s);
-          const s2 = s.clone(); s2.position.x = 3.4;
-          this.scene.add(s2);
-          this.deco.push(s, s2);
+        const PATH_W = 6.6;
+        // Eau turquoise de part et d'autre du pont de pierre
+        const waterMat = new THREE.MeshBasicMaterial({ color: 0x2e8f8a });
+        const waterL = new THREE.Mesh(new THREE.PlaneGeometry(40, 130), waterMat);
+        waterL.rotation.x = -Math.PI / 2; waterL.position.set(-PATH_W / 2 - 20, -0.6, -45);
+        this.scene.add(waterL);
+        const waterR = waterL.clone(); waterR.position.x = PATH_W / 2 + 20;
+        this.scene.add(waterR);
+
+        // Pont de pierre : tablier + joints sombres défilants (illusion cobblestone)
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(PATH_W, 0.5, 130), new THREE.MeshLambertMaterial({ color: 0xb9a27b }));
+        deck.position.set(0, -0.25, -45);
+        this.scene.add(deck);
+        const seamMat = new THREE.MeshLambertMaterial({ color: 0x8f7a58 });
+        for (let i = 0; i < 30; i++) {
+          const seam = new THREE.Mesh(new THREE.BoxGeometry(PATH_W, 0.52, 0.18), seamMat);
+          seam.position.set(0, -0.24, -i * 4);
+          this.scene.add(seam);
+          this.deco.push({ m: seam, span: 120 });
         }
-        // Colonnes décoratives des deux côtés (sensation de vitesse)
-        const colMat = new THREE.MeshLambertMaterial({ color: 0x1b2540 });
+        // Garde-corps en pierre + piliers dorés + buissons de jungle (2 côtés)
+        const railMat = new THREE.MeshLambertMaterial({ color: 0xa8916a });
+        const pilMat = new THREE.MeshLambertMaterial({ color: 0xc7b28a });
         const capMat = new THREE.MeshBasicMaterial({ color: 0xF0B90B });
+        const bushMat = new THREE.MeshLambertMaterial({ color: 0x2e6b45 });
         for (let i = 0; i < 10; i++) {
-          const col = new THREE.Mesh(new THREE.BoxGeometry(0.55, 3.2, 0.55), colMat);
-          col.position.set(-2.9, 1.6, -i * 6);
-          this.scene.add(col);
-          const col2 = col.clone(); col2.position.x = 2.9;
-          this.scene.add(col2);
-          const cap = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.1, 0.62), capMat);
-          cap.position.set(-2.9, 3.25, -i * 6);
-          this.scene.add(cap);
-          const cap2 = cap.clone(); cap2.position.x = 2.9;
-          this.scene.add(cap2);
-          this.deco.push(col, col2, cap, cap2);
+          const z = -i * 6;
+          for (const side of [-1, 1]) {
+            const rail = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.7, 5.6), railMat);
+            rail.position.set(side * (PATH_W / 2 + 0.2), 0.55, z - 2.8);
+            this.scene.add(rail);
+            const pil = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.6, 0.5), pilMat);
+            pil.position.set(side * (PATH_W / 2 + 0.2), 0.8, z);
+            this.scene.add(pil);
+            const cap = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.12, 0.58), capMat);
+            cap.position.set(side * (PATH_W / 2 + 0.2), 1.66, z);
+            this.scene.add(cap);
+            const bush = new THREE.Mesh(new THREE.SphereGeometry(0.55, 7, 6), bushMat);
+            bush.position.set(side * (PATH_W / 2 + 0.25), 2.15, z);
+            this.scene.add(bush);
+            this.deco.push({ m: rail, span: 60 }, { m: pil, span: 60 }, { m: cap, span: 60 }, { m: bush, span: 60 });
+          }
+        }
+        // Lianes suspendues (canopée au-dessus du pont)
+        const vineMat = new THREE.MeshLambertMaterial({ color: 0x24502f });
+        for (let i = 0; i < 6; i++) {
+          const vine = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.09, 2.2, 5), vineMat);
+          vine.position.set(-2.4 + i * 1.0, 4.6, -10 - i * 7);
+          this.scene.add(vine);
+          this.deco.push({ m: vine, span: 42 });
         }
 
         this.buildAvatar();
 
         // Géométries/matériaux partagés (évite d'en recréer à chaque spawn)
-        this.geoLow = new THREE.BoxGeometry(1.3, 0.9, 0.8);
-        this.geoHigh = new THREE.BoxGeometry(1.3, 2.6, 0.4);
-        this.matObs = new THREE.MeshLambertMaterial({ color: 0xf43f5e });
-        this.geoCoin = new THREE.CylinderGeometry(0.32, 0.32, 0.08, 14);
+        this.geoLow = new THREE.CylinderGeometry(0.42, 0.42, 1.5, 10);  // tronc d'arbre à sauter
+        this.matLow = new THREE.MeshLambertMaterial({ color: 0x6e4a2a });
+        this.geoHigh = new THREE.BoxGeometry(1.35, 2.5, 0.4);           // dalle de pierre à esquiver/glisser
+        this.matHigh = new THREE.MeshLambertMaterial({ color: 0xc7b28a });
+        this.matTrim = new THREE.MeshBasicMaterial({ color: 0xF0B90B });
+        this.geoCoin = new THREE.CylinderGeometry(0.36, 0.36, 0.09, 14);
         this.matCoin = new THREE.MeshBasicMaterial({ color: 0xF0B90B });
 
         this.bindControls(wrap);
@@ -401,40 +426,59 @@
       return true;
     },
 
-    // Avatar « mineur » low-poly : torse, tête + lampe, bras et jambes animés
+    // Avatar « exploratrice » vu de dos, façon Temple Run (ponytail, débardeur blanc, kaki, bottes)
     buildAvatar() {
       const g = new THREE.Group();
-      const gold = new THREE.MeshLambertMaterial({ color: 0xF0B90B });
-      const dark = new THREE.MeshLambertMaterial({ color: 0x24304e });
-      const lamp = new THREE.MeshBasicMaterial({ color: 0x22d3ee });
+      const skin = new THREE.MeshLambertMaterial({ color: 0xd9a06b });
+      const hair = new THREE.MeshLambertMaterial({ color: 0x6b3a1f });
+      const top = new THREE.MeshLambertMaterial({ color: 0xf5f5f0 });
+      const pants = new THREE.MeshLambertMaterial({ color: 0x5a6b3c });
+      const boots = new THREE.MeshLambertMaterial({ color: 0x2a2320 });
+      const sashM = new THREE.MeshLambertMaterial({ color: 0xc0392b });
 
-      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.3), gold);
-      torso.position.y = 1.0; g.add(torso);
-      const head = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.34, 0.36), dark);
-      head.position.y = 1.52; g.add(head);
-      const helmet = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.12, 0.4), gold);
-      helmet.position.y = 1.72; g.add(helmet);
-      const light = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.08, 0.05), lamp);
-      light.position.set(0, 1.58, -0.2); g.add(light);
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.55, 0.26), top);
+      torso.position.y = 1.02; g.add(torso);
+      const sash = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.08, 0.28), sashM);
+      sash.position.y = 0.8; g.add(sash);
+      const hips = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.2, 0.26), pants);
+      hips.position.y = 0.66; g.add(hips);
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), skin);
+      head.position.y = 1.5; g.add(head);
+      const hairM = new THREE.Mesh(new THREE.BoxGeometry(0.33, 0.14, 0.33), hair);
+      hairM.position.y = 1.67; g.add(hairM);
+      const pony = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.32, 0.1), hair);
+      pony.position.set(0, 1.48, 0.19); g.add(pony);   // queue de cheval (visible de dos)
 
       // Membres : pivots aux épaules/hanches pour l'animation de course
-      const mkLimb = (w, h, x, y) => {
+      const mkLimb = (w, h, x, y, mat, footMat) => {
         const pivot = new THREE.Group();
         pivot.position.set(x, y, 0);
-        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), dark);
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), mat);
         m.position.y = -h / 2;
         pivot.add(m);
+        if (footMat) {
+          const f = new THREE.Mesh(new THREE.BoxGeometry(w + 0.05, 0.12, w + 0.12), footMat);
+          f.position.y = -h - 0.04;
+          pivot.add(f);
+        }
         g.add(pivot);
         return pivot;
       };
-      this.parts.armL = mkLimb(0.13, 0.5, -0.34, 1.26);
-      this.parts.armR = mkLimb(0.13, 0.5, 0.34, 1.26);
-      this.parts.legL = mkLimb(0.16, 0.62, -0.14, 0.7);
-      this.parts.legR = mkLimb(0.16, 0.62, 0.14, 0.7);
+      this.parts.armL = mkLimb(0.11, 0.46, -0.3, 1.26, skin);
+      this.parts.armR = mkLimb(0.11, 0.46, 0.3, 1.26, skin);
+      this.parts.legL = mkLimb(0.14, 0.42, -0.11, 0.58, pants, boots);
+      this.parts.legR = mkLimb(0.14, 0.42, 0.11, 0.58, pants, boots);
 
       g.position.set(0, 0, 0);
       this.avatar = g;
       this.scene.add(g);
+
+      // Ombre portée simple au sol (suit le joueur, s'amincit en saut)
+      const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.42, 12), new THREE.MeshBasicMaterial({ color: 0x1a2a20, transparent: true, opacity: 0.35 }));
+      shadow.rotation.x = -Math.PI / 2;
+      shadow.position.y = 0.03;
+      this.shadow = shadow;
+      this.scene.add(shadow);
     },
 
     bindControls(wrap) {
@@ -448,6 +492,7 @@
         const dx = e.touches[0].clientX - sx, dy = e.touches[0].clientY - sy;
         if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy)) { this.move(dx > 0 ? 1 : -1); moved = true; }
         else if (dy < -30) { this.jump(); moved = true; }
+        else if (dy > 30) { this.slide(); moved = true; }
       }, { passive: true });
       el.addEventListener('touchend', () => { if (!moved) this.jump(); }, { passive: true });
       el.addEventListener('mousedown', () => this.jump());
@@ -455,6 +500,7 @@
         if (e.code === 'ArrowLeft' || e.code === 'KeyA') this.move(-1);
         else if (e.code === 'ArrowRight' || e.code === 'KeyD') this.move(1);
         else if (e.code === 'Space' || e.code === 'ArrowUp') this.jump();
+        else if (e.code === 'ArrowDown' || e.code === 'KeyS') this.slide();
       });
     },
 
@@ -465,6 +511,10 @@
     jump() {
       if (!this.running) { this.start(); return; }
       if (this.y <= 0.01) { this.vy = 7.4; if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} } }
+    },
+    slide() {
+      if (!this.running) return;
+      if (this.y <= 0.01) { this.slideT = 0.75; if (navigator.vibrate) { try { navigator.vibrate(10); } catch (e) {} } }
     },
 
     open() {
@@ -502,7 +552,8 @@
       this.nextSpawn = 14; this.nextCoin = 8;
       this.obst.forEach(o => this.scene.remove(o.mesh)); this.obst = [];
       this.coins.forEach(cn => this.scene.remove(cn.mesh)); this.coins = [];
-      this.dead = false; this.running = false;
+      this.dead = false; this.running = false; this.slideT = 0; this.sliding = false;
+      this.avatar.scale.y = 1;
       const ov = document.getElementById('runner-over-txt'); if (ov) ov.innerText = '';
     },
 
@@ -513,13 +564,21 @@
     },
 
     spawn(zPos) {
-      // 1 à 2 couloirs bloqués (jamais les 3) : bloc bas (saut) ou barrière haute (esquive)
+      // 1 à 2 couloirs bloqués (jamais les 3) : tronc bas (saut) ou dalle haute (esquive/glissade)
       const lanesToBlock = Math.random() < 0.35 ? 2 : 1;
       const lanes = [0, 1, 2].sort(() => Math.random() - 0.5).slice(0, lanesToBlock);
       for (const ln of lanes) {
         const high = Math.random() < 0.45;
-        const m = new THREE.Mesh(high ? this.geoHigh : this.geoLow, this.matObs);
-        m.position.set(this.lanes[ln], high ? 1.3 : 0.45, zPos);
+        const m = new THREE.Mesh(high ? this.geoHigh : this.geoLow, high ? this.matHigh : this.matLow);
+        if (high) {
+          m.position.set(this.lanes[ln], 1.25, zPos);
+          const trim = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.1, 0.46), this.matTrim);
+          trim.position.y = 1.25;
+          m.add(trim);
+        } else {
+          m.rotation.z = Math.PI / 2;                       // tronc couché en travers du couloir
+          m.position.set(this.lanes[ln], 0.42, zPos);
+        }
         this.scene.add(m);
         this.obst.push({ mesh: m, lane: ln, high });
       }
@@ -554,14 +613,18 @@
       this.avatar.position.x += (targetX - this.avatar.position.x) * this.LANE_T;
       // Saut : physique simple
       if (this.y > 0 || this.vy > 0) { this.vy -= 22 * dt; this.y += this.vy * dt; if (this.y < 0) { this.y = 0; this.vy = 0; } }
+      // Glissade (swipe bas) : avatar aplati, passe sous les dalles hautes
+      if (this.slideT > 0) this.slideT -= dt;
+      this.sliding = this.slideT > 0 && this.y <= 0.01;
+      this.avatar.scale.y = this.sliding ? 0.55 : 1;
       // Animation de course (membres)
       const swing = this.y > 0.05 ? 1.4 : Math.sin(this.t * 14) * 0.75;
       this.parts.legL.rotation.x = swing; this.parts.legR.rotation.x = -swing;
       this.parts.armL.rotation.x = -swing * 0.8; this.parts.armR.rotation.x = swing * 0.8;
       this.avatar.position.y = this.y + (this.y > 0.05 ? 0 : Math.abs(Math.sin(this.t * 14)) * 0.05);
 
-      // Défilement du décor
-      this.deco.forEach(d => { d.position.z += this.speed * dt; if (d.position.z > 10) d.position.z -= 84; });
+      // Défilement du décor (chaque élément recycle selon sa propre période)
+      this.deco.forEach(d => { d.m.position.z += this.speed * dt; if (d.m.position.z > 6) d.m.position.z -= d.span; });
 
       // Apparitions espacées, mesurées en distance parcourue (meshes à z=-60)
       if (this.dist > this.nextSpawn) { this.spawn(-60); this.nextSpawn = this.dist + 24; }
@@ -575,7 +638,9 @@
         const o = this.obst[i], z = o.mesh.position.z;
         if (z > 8) { this.scene.remove(o.mesh); this.obst.splice(i, 1); continue; }
         if (z > -0.55 && z < 0.55 && Math.abs(ax - o.mesh.position.x) < 0.85) {
-          if (!(o.high === false && ay > 0.85)) { this.gameOver(); return; }
+          // Tronc bas : passer en sautant · Dalle haute : passer en glissade ou en changeant de couloir
+          const canPass = (o.high === false && ay > 0.85) || (o.high === true && this.sliding);
+          if (!canPass) { this.gameOver(); return; }
         }
       }
       for (let i = this.coins.length - 1; i >= 0; i--) {
@@ -587,13 +652,21 @@
         }
       }
 
-      // Caméra suit latéralement l'avatar
-      this.camera.position.x = this.avatar.position.x * 0.35;
-      this.camera.lookAt(this.avatar.position.x * 0.5, 1.2, -6);
+      // Caméra poursuite au-dessus de l'épaule (façon Temple Run)
+      this.camera.position.set(this.avatar.position.x * 0.4, 4.6, 6.8);
+      this.camera.lookAt(this.avatar.position.x * 0.5, 1.5, -8);
+      // Ombre au sol sous le joueur
+      if (this.shadow) {
+        this.shadow.position.set(this.avatar.position.x, 0.03, 0);
+        const shScale = Math.max(0.4, 1 - this.y * 0.5);
+        this.shadow.scale.set(shScale, shScale, 1);
+      }
 
       this.renderer.render(this.scene, this.camera);
       const sc = document.getElementById('runner-score-3d');
       if (sc) sc.innerText = this.score;
+      const cc = document.getElementById('runner-coins-3d');
+      if (cc) cc.innerText = '🟡 ' + this.coinsRun;
     },
 
     renderFrame() { if (this.renderer) this.renderer.render(this.scene, this.camera); },

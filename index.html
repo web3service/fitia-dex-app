@@ -277,10 +277,11 @@
 <div id="game-runner" class="game-panel hidden">
 <button class="btn-back" onclick="App.gameBack()">← Hub</button>
 <h3 class="section-title" data-i18n="runnerTitle">🏃 Fitia Runner 3D</h3>
-<p class="small-text" data-i18n="runnerInfo">Glisse à gauche/droite pour changer de couloir, tape (ou espace) pour sauter. Collecte les pièces 🟡, esquive les blocs rouges.</p>
+<p class="small-text" data-i18n="runnerInfo">Glisse à gauche/droite pour changer de couloir, glisse vers le haut (ou espace) pour sauter, vers le bas pour glisser. Collecte les pièces 🟡, évite les troncs et les dalles.</p>
 <div class="card" style="padding:10px;">
 <div id="runner-3d" class="runner-3d-wrap">
 <span id="runner-score-3d" class="runner-score">0</span>
+<span id="runner-coins-3d" class="runner-coins">🟡 0</span>
 <span class="runner-hint" data-i18n="runnerControls">👉 Glisse = couloir · Tap = saut</span>
 </div>
 <canvas id="runner-canvas" width="358" height="240" style="width:100%;border-radius:10px;background:#04070f;display:none;" onclick="App.runnerJump()"></canvas>

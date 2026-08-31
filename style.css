@@ -1144,10 +1144,16 @@ main::-webkit-scrollbar { display: none; }
 }
 .runner-3d-wrap canvas { display: block; width: 100% !important; height: 100% !important; }
 .runner-score {
-  position: absolute; top: 8px; left: 10px;
+  position: absolute; top: 8px; right: 12px;
+  font-family: 'Orbitron', monospace;
+  font-size: 1.15rem; font-weight: 800; color: #F0B90B;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.85); z-index: 2; pointer-events: none;
+}
+.runner-coins {
+  position: absolute; top: 40px; right: 12px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 1rem; font-weight: 800; color: var(--primary);
-  text-shadow: 0 0 8px rgba(0,0,0,0.9); z-index: 2; pointer-events: none;
+  font-size: 0.85rem; font-weight: 700; color: #fff;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.85); z-index: 2; pointer-events: none;
 }
 .runner-hint {
   position: absolute; bottom: 8px; left: 0; right: 0;
