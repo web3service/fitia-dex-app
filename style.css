@@ -1178,6 +1178,41 @@ main::-webkit-scrollbar { display: none; }
 .crash-chip.g { background: rgba(16,185,129,0.15); color: #34d399; }
 .crash-chip.r { background: rgba(244,63,94,0.15); color: #fb7185; }
 
+/* ─────────── 28. Crash façon Aviator 1Win ─────────── */
+.crash-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.crash-bal-chip {
+  font-family: 'JetBrains Mono', monospace; font-weight: 800; color: #F0B90B;
+  background: rgba(240,185,11,0.1); border: 1px solid rgba(240,185,11,0.3);
+  padding: 4px 10px; border-radius: 10px; white-space: nowrap;
+}
+.crash-top .crash-hist { flex: 1; margin-top: 0; min-height: 22px; justify-content: flex-end; }
+.crash-status {
+  min-height: 22px; text-align: center; font-size: 0.85rem; font-weight: 800;
+  color: var(--text-muted); z-index: 2; position: relative;
+}
+.crash-status.flying { color: var(--cyan); }
+.crash-status.lost { color: var(--danger); }
+.crash-status.won { color: var(--success); }
+.crash-bet-zone { display: flex; gap: 8px; margin-top: 10px; }
+.crash-bet-zone .game-input { flex: 1; min-width: 0; }
+.crash-feed { margin-top: 12px; border-top: 1px solid rgba(148,163,208,0.12); padding-top: 10px; }
+.feed-title {
+  margin: 0 0 6px 0; font-size: 0.78rem; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.feed-row {
+  display: flex; gap: 8px; font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem; padding: 4px 8px; border-radius: 6px;
+}
+.feed-row.me { background: rgba(240,185,11,0.08); border: 1px solid rgba(240,185,11,0.25); }
+.feed-row.win { color: #34d399; }
+.feed-row.win .feed-name { color: #34d399; }
+.feed-row.lose { color: #fb7185; }
+.feed-name { flex: 1; color: var(--text); }
+.feed-stake { width: 44px; text-align: right; color: var(--text-muted); }
+.feed-mult { width: 52px; text-align: right; }
+.feed-amt { width: 56px; text-align: right; font-weight: 800; }
+
 /* ─────────── 26. Runner 3D + effets Tap Miner ─────────── */
 .runner-3d-wrap {
   position: relative;

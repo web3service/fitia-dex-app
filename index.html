@@ -372,29 +372,34 @@
 </div>
 </div>
 
-<!-- Jeu F : Crash (style Aviator) -->
+<!-- Jeu F : Crash (façon Aviator 1Win) -->
 <div id="game-crash" class="game-panel hidden">
 <button class="btn-back" onclick="App.gameBack()">← Hub</button>
 <h3 class="section-title" data-i18n="crashTitle">✈️ Fitia Crash</h3>
 <div class="card" style="padding:10px;">
+<div class="crash-top">
+<span class="crash-bal-chip">🪙 <span id="crash-bal">1000</span></span>
+<div id="crash-hist" class="crash-hist"></div>
+</div>
 <div class="crash-stage">
-<canvas id="crash-canvas" width="358" height="200"></canvas>
+<canvas id="crash-canvas" width="358" height="220"></canvas>
 <div id="crash-mult" class="crash-mult">1.00×</div>
+<div id="crash-status" class="crash-status"></div>
 </div>
-<div class="tap-stats" style="margin-top:10px;">
-<div><small data-i18n="crashBalance">Crédits</small><div class="stat-val" id="crash-bal">1000</div></div>
-</div>
-<div class="crash-hist" id="crash-hist"></div>
-<div style="display:flex;gap:8px;margin-top:10px;">
+<div class="crash-bet-zone">
 <input type="number" id="crash-stake" class="game-input" style="margin-bottom:0;flex:1;" placeholder="Mise (min 10)" value="50">
-<button class="btn-primary" id="crash-launch" style="flex:1;" onclick="App.crashLaunch()" data-i18n="crashLaunch">🚀 LANÇER</button>
-<button class="btn-primary hidden" id="crash-cash" style="flex:1;background:linear-gradient(135deg,#10b981,#34d399);color:#04250f;" onclick="App.crashCash()" data-i18n="crashCash">💰 ENCAISSER</button>
+<input type="number" id="crash-auto" class="game-input" style="margin-bottom:0;flex:1;" placeholder="Auto × (ex : 2)" step="0.1" min="1.1">
+</div>
+<button class="btn-primary" id="crash-launch" style="margin-top:8px;" onclick="App.crashLaunch()" data-i18n="crashLaunch">🚀 MISER &amp; DÉCOLLER</button>
+<button class="btn-primary hidden" id="crash-cash" style="margin-top:8px;background:linear-gradient(135deg,#e5484d,#ff7b6b);color:#fff;" onclick="App.crashCash()">💰 ENCAISSER</button>
+<div class="crash-feed">
+<h4 class="feed-title" data-i18n="crashFeed">PARI EN DIRECT</h4>
+<div id="crash-feed-list"></div>
 </div>
 <button class="btn-back" style="margin-top:10px;width:100%;" onclick="App.crashRefill()" data-i18n="crashRefill">♻️ Recharger les crédits (entraînement)</button>
 </div>
 </div>
 </div>
-
 <!-- ═══ SWAP ═══ -->
 <div id="view-swap" class="view">
 <h2 class="view-title" data-i18n="swapTitle">💱 Échange</h2>

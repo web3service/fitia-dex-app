@@ -1046,11 +1046,44 @@
     }
   };
 
-  // ═══════════════ JEU F — CRASH (style Aviator, crédits d'entraînement) ═══════════════
+  // ─── Vague 3 de traductions : Crash façon Aviator 1Win ───
+  const GAME_I18N3 = {
+    fr: {
+      crashNext: "Prochain vol dans", crashFlying: "EN VOL — encaisse vite !", crashLost: "Perdu ! L'avion s'est envolé.",
+      crashFeed: "PARI EN DIRECT", crashBetPlaced: "Mise placée ✅ — bon vol !"
+    },
+    en: {
+      crashNext: "Next flight in", crashFlying: "IN FLIGHT — cash out fast!", crashLost: "Lost! The plane flew away.",
+      crashFeed: "LIVE BETS", crashBetPlaced: "Bet placed ✅ — good flight!"
+    },
+    de: {
+      crashNext: "Nächster Flug in", crashFlying: "IM FLUG — schnell auszahlen!", crashLost: "Verloren! Das Flugzeug ist weg.",
+      crashFeed: "LIVE-WETTEN", crashBetPlaced: "Einsatz platziert ✅ — guten Flug!"
+    },
+    zh: {
+      crashNext: "下一航班倒计时", crashFlying: "飞行中 — 快点套现！", crashLost: "输了！飞机飞走了。",
+      crashFeed: "实时投注", crashBetPlaced: "已下注 ✅ — 一路顺风！"
+    },
+    sg: {
+      crashNext: "Next flight in", crashFlying: "IN FLIGHT — cash out fast!", crashLost: "Lost! The plane flew away.",
+      crashFeed: "LIVE BETS", crashBetPlaced: "Bet placed ✅ — good flight!"
+    }
+  };
+  for (const lang in GAME_I18N3) {
+    if (i18n[lang]) Object.assign(i18n[lang], GAME_I18N3[lang]);
+    else i18n[lang] = { ...GAME_I18N3[lang] };
+  }
+
+  // ═══════════════ JEU F — CRASH (façon Aviator 1Win, crédits d'entraînement) ═══════════════
+  // Machine à états continue façon 1Win : MISE (5 s) → VOL → CRASH → MISE…
+  // Le joueur mise pendant la phase de mise, encaisse pendant le vol.
   const Crash = {
-    ctx: null, raf: null, active: false, stake: 0, mult: 1, cp: 1, pts: [], stopped: true,
+    ctx: null, raf: null, timer: null,
+    state: 'idle',            // betting | flying | crashed | idle
+    stake: 0, betPlaced: false, cashed: false, playerCashMult: 0,
+    mult: 1, cp: 1, pts: [], bots: [], countdown: 0, autoCash: 0, stopped: true,
     bal() { return lsGet('fitia_crash_bal', 1000); },
-    addBal(v) { lsSet('fitia_crash_bal', this.bal() + v); this.renderBal(); },
+    addBal(v) { lsSet('fitia_crash_bal', this.bal() + v); const b = document.getElementById('crash-bal'); if (b) b.innerText = this.bal(); this.renderFeed(); },
     renderBal() { const b = document.getElementById('crash-bal'); if (b) b.innerText = this.bal(); },
     renderHist() {
       const el = document.getElementById('crash-hist'); if (!el) return;
@@ -1067,101 +1100,172 @@
       show('game-crash');
       this.ctx = document.getElementById('crash-canvas').getContext('2d');
       this.renderBal(); this.renderHist();
+      if (this.stopped) { this.stopped = false; this.startBetting(); }   // boucle continue tant que l'écran est ouvert
+    },
+    makeBots() {
+      // Joueurs simulés pour l'ambiance cagnotte en direct (V2 : vrais joueurs multi)
+      const names = ['Kofi***', 'Ama***', 'Yao***', 'Aya***', 'Kwame***', 'Adjo***', 'Sika***', 'Mus***', 'Zey***', 'Nia***'];
+      this.bots = [];
+      const n = 5 + Math.floor(Math.random() * 4);
+      for (let i = 0; i < n; i++) {
+        this.bots.push({
+          name: names[i % names.length],
+          stake: [20, 50, 100, 200, 500][Math.floor(Math.random() * 5)],
+          target: 1.15 + Math.random() * 7,   // certains ne s'encaisseront jamais (target > point de crash)
+          cashed: 0
+        });
+      }
+    },
+    startBetting() {
+      this.state = 'betting'; this.betPlaced = false; this.cashed = false; this.playerCashMult = 0;
+      this.mult = 1; this.pts = [];
+      // Point de crash prétiré : distribution classique type Aviator (plafonnée à 50×)
+      this.cp = Math.max(1, Math.min(50, 0.97 / (1 - Math.random())));
+      this.countdown = 5;
+      this.makeBots();
+      const m = document.getElementById('crash-mult'); if (m) { m.innerText = '1.00×'; m.classList.remove('boom'); }
+      const st = document.getElementById('crash-status'); if (st) { st.className = 'crash-status'; st.innerText = ''; }
       document.getElementById('crash-launch').classList.remove('hidden');
       document.getElementById('crash-cash').classList.add('hidden');
-      this.drawIdle();
+      this.drawRunway();
+      this.renderFeed();
+      if (this.timer) { clearInterval(this.timer); this.timer = null; }
+      this.timer = setInterval(() => {
+        this.countdown--;
+        const st = document.getElementById('crash-status');
+        if (st) st.innerText = `${App.t('crashNext')} ${this.countdown}s…`;
+        if (this.countdown <= 0) { clearInterval(this.timer); this.timer = null; this.launch(); }
+      }, 1000);
     },
-    launch() {
-      if (this.active) return;
+    placeBet() {
+      if (this.state !== 'betting' || this.betPlaced) return;
       const stake = Math.floor(parseFloat(document.getElementById('crash-stake').value) || 0);
       if (stake < 10) { App.showToast(App.t('crashStakeMin'), true); return; }
       if (stake > this.bal()) { App.showToast(App.t('errFta'), true); return; }
-      this.addBal(-stake);
-      this.active = true; this.stake = stake; this.cashed = false; this.pts = [];
-      // Point de crash prétiré : distribution classique type Aviator (plafonnée à 30×)
-      this.cp = Math.max(1, Math.min(30, 0.97 / (1 - Math.random())));
-      this.mult = 1; this.t0 = performance.now();
+      this.addBal(-stake);                    // la mise est verrouillée dès le pari (façon 1Win)
+      this.stake = stake; this.betPlaced = true;
+      this.autoCash = parseFloat(document.getElementById('crash-auto').value) || 0;
       document.getElementById('crash-launch').classList.add('hidden');
-      document.getElementById('crash-cash').classList.remove('hidden');
-      const m = document.getElementById('crash-mult'); if (m) { m.innerText = '1.00×'; m.classList.remove('boom'); }
+      App.showToast(App.t('crashBetPlaced'));
+      this.renderFeed();
+    },
+    launch() {
+      this.state = 'flying'; this.t0 = performance.now();
+      const st = document.getElementById('crash-status'); if (st) { st.className = 'crash-status flying'; st.innerText = App.t('crashFlying'); }
+      if (this.betPlaced) {
+        const cb = document.getElementById('crash-cash');
+        cb.classList.remove('hidden');
+        cb.innerText = `💰 ${App.t('crashCash')}`;
+      }
       if (this.raf) cancelAnimationFrame(this.raf);
       this.loop();
     },
     loop() {
-      if (!this.active) return;
+      if (this.state !== 'flying') return;
       const t = (performance.now() - this.t0) / 1000;
       this.mult = Math.floor((1 + 0.25 * t + 0.045 * t * t) * 100) / 100;
+      // Bots qui s'encaissent au fil du vol
+      this.bots.forEach(b => { if (!b.cashed && this.mult >= b.target) b.cashed = this.mult; });
+      // ✅ Correctif revue #4 : le crash est testé AVANT l'auto-encaissement
+      // (sinon une frame laggée pouvait payer au-delà du point de crash)
       if (this.mult >= this.cp) { this.crashNow(); return; }
+      // Auto-encaissement du joueur
+      if (this.betPlaced && !this.cashed && this.autoCash >= 1.01 && this.mult >= this.autoCash) { this.cash(); }
       this.draw(t);
       const m = document.getElementById('crash-mult'); if (m) m.innerText = this.mult.toFixed(2) + '×';
+      const cb = document.getElementById('crash-cash');
+      if (cb && this.betPlaced && !this.cashed) cb.innerText = `💰 ${App.t('crashCash')} · ${(this.stake * this.mult).toFixed(0)} 🪙`;
       this.raf = requestAnimationFrame(() => this.loop());
     },
     cash() {
-      if (!this.active || this.cashed) return;
-      const win = Math.floor(this.stake * this.mult);
-      this.addBal(win); this.cashed = true; this.active = false;
-      cancelAnimationFrame(this.raf);
-      this.pushHist(this.mult);
-      const m = document.getElementById('crash-mult'); if (m) m.innerText = this.mult.toFixed(2) + '× ✅';
-      App.showToast(`${App.t('crashWin')} ${win}`);
-      this.endRound();
+      if (this.state !== 'flying' || !this.betPlaced || this.cashed) return;
+      // ✅ Correctif revue #4 : le multiplicateur payé ne dépasse jamais le point de crash
+      const m = Math.min(this.mult, this.cp);
+      const win = Math.floor(this.stake * m);
+      this.addBal(win);
+      this.cashed = true; this.playerCashMult = m;
+      App.showToast(`${App.t('crashWin')} ${win} 🪙`);
+      document.getElementById('crash-cash').classList.add('hidden');
+      this.renderFeed();
     },
     crashNow() {
-      this.active = false;
+      this.state = 'crashed';
       cancelAnimationFrame(this.raf);
-      this.pushHist(this.cp);
-      const m = document.getElementById('crash-mult'); if (m) { m.innerText = this.cp.toFixed(2) + '× 💥'; m.classList.add('boom'); }
+      const m = document.getElementById('crash-mult');
+      if (m) { m.innerText = this.cp.toFixed(2) + '× 💥'; m.classList.add('boom'); }
+      const st = document.getElementById('crash-status');
+      if (st) {
+        if (this.betPlaced && !this.cashed) { st.className = 'crash-status lost'; st.innerText = App.t('crashLost'); }
+        else if (this.cashed) { st.className = 'crash-status won'; st.innerText = `✅ ${App.t('crashWin')} ${Math.floor(this.stake * this.playerCashMult)} 🪙`; }
+        else { st.className = 'crash-status'; st.innerText = `💥 ${this.cp.toFixed(2)}×`; }  // ✅ revue #9 : spectateur
+      }
       this.drawCrashFlash();
-      App.showToast(App.t('crashCrashed'), true);
-      if (navigator.vibrate) { try { navigator.vibrate([60, 40, 60]); } catch (e) {} }
-      this.endRound();
-    },
-    endRound() {
-      document.getElementById('crash-launch').classList.remove('hidden');
-      document.getElementById('crash-cash').classList.add('hidden');
-      if (this.bal() < 10) App.showToast(App.t('crashRefill'), true);
+      if (this.betPlaced && !this.cashed && navigator.vibrate) { try { navigator.vibrate([60, 40, 60]); } catch (e) {} }
+      this.pushHist(this.cp);
+      this.renderFeed();
+      this.timer = setTimeout(() => { this.timer = null; if (!this.stopped) this.startBetting(); }, 2200);
     },
     // Quitter le panneau en pleine partie = mise perdue (règle Aviator)
     abort() {
-      if (!this.active) return;
-      this.active = false;
+      if (this.state === 'idle') return;
+      const lost = this.state === 'flying' && this.betPlaced && !this.cashed;
+      // ✅ Correctif revue #5 : abandon pendant la phase de mise → remboursement de la mise
+      if (this.state === 'betting' && this.betPlaced) { this.addBal(this.stake); this.betPlaced = false; }
       if (this.raf) cancelAnimationFrame(this.raf);
-      App.showToast(App.t('crashCrashed'), true);
+      if (this.timer) { clearInterval(this.timer); clearTimeout(this.timer); this.timer = null; }
+      this.state = 'idle'; this.stopped = true;
+      if (lost) App.showToast(App.t('crashLost'), true);
     },
     refill() {
       lsSet('fitia_crash_bal', 1000); this.renderBal();
       App.showToast('♻️ +1000');
     },
+    drawRunway() {
+      if (!this.ctx) return;
+      const ctx = this.ctx, W = 358, H = 220;
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#0b0f1a'; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = 'rgba(229,72,77,0.5)'; ctx.setLineDash([2, 6]); ctx.beginPath();
+      ctx.moveTo(28, 10); ctx.lineTo(28, H - 20); ctx.lineTo(W - 10, H - 20);
+      ctx.stroke(); ctx.setLineDash([]);
+      ctx.font = '26px serif'; ctx.fillText('✈️', 34, H - 28);
+    },
     draw(t) {
       if (!this.ctx) return;
-      const W = 358, H = 200;
-      const x = 30 + Math.min(t * 30, 290);
-      const y = H - 24 - Math.min(t * 20, 140);
-      this.pts.push([x, y]);
+      const W = 358, H = 220;
+      const x = 34 + Math.min(t * 26, 280);
+      const y = H - 26 - Math.min(t * 18, 155);
+      // ✅ Correctif revue #10 : n'empile pas les points identiques après saturation
+      const last = this.pts[this.pts.length - 1];
+      if (!last || last[0] !== x || last[1] !== y) this.pts.push([x, y]);
       const ctx = this.ctx;
-      ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = '#04070f'; ctx.fillRect(0, 0, W, H);
-      ctx.strokeStyle = 'rgba(148,163,208,0.08)'; ctx.beginPath();
-      for (let gx = 0; gx < W; gx += 36) { ctx.moveTo(gx, 0); ctx.lineTo(gx, H); }
-      for (let gy = 0; gy < H; gy += 25) { ctx.moveTo(0, gy); ctx.lineTo(W, gy); }
-      ctx.stroke();
-      ctx.strokeStyle = '#F0B90B'; ctx.lineWidth = 3; ctx.beginPath();
+      ctx.fillStyle = '#0b0f1a'; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = 'rgba(229,72,77,0.5)'; ctx.setLineDash([2, 6]); ctx.beginPath();
+      ctx.moveTo(28, 10); ctx.lineTo(28, H - 20); ctx.lineTo(W - 10, H - 20);
+      ctx.stroke(); ctx.setLineDash([]);
+      ctx.strokeStyle = '#e5484d'; ctx.lineWidth = 3; ctx.beginPath();
       this.pts.forEach((p, i) => { if (i === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]); });
       ctx.stroke(); ctx.lineWidth = 1;
-      ctx.font = '22px serif'; ctx.fillText('✈️', x - 12, y + 8);
+      ctx.font = '24px serif'; ctx.fillText('✈️', x - 14, y + 8);
     },
     drawCrashFlash() {
       if (!this.ctx) return;
-      this.ctx.fillStyle = 'rgba(244,63,94,0.25)'; this.ctx.fillRect(0, 0, 358, 200);
+      this.ctx.fillStyle = 'rgba(229,72,77,0.22)'; this.ctx.fillRect(0, 0, 358, 220);
     },
-    drawIdle() {
-      if (!this.ctx) return;
-      const ctx = this.ctx;
-      ctx.clearRect(0, 0, 358, 200);
-      ctx.fillStyle = '#04070f'; ctx.fillRect(0, 0, 358, 200);
-      ctx.font = '22px serif'; ctx.fillText('✈️', 30, 176);
-      ctx.fillStyle = '#8ea0bd'; ctx.font = '12px monospace';
-      ctx.fillText('1.00×', 70, 170);
+    renderFeed() {
+      const el = document.getElementById('crash-feed-list'); if (!el) return;
+      const rows = [];
+      // Le joueur en tête de liste
+      if (this.betPlaced) {
+        const cls = this.cashed ? 'win' : (this.state === 'crashed' ? 'lose' : 'me');
+        const multTxt = this.cashed ? this.playerCashMult.toFixed(2) + '×' : '—';
+        const amt = this.cashed ? '+' + Math.floor(this.stake * this.playerCashMult) : '';
+        rows.push(`<div class="feed-row ${cls}"><span class="feed-name">TOI</span><span class="feed-stake">${this.stake}</span><span class="feed-mult">${multTxt}</span><span class="feed-amt">${amt}</span></div>`);
+      }
+      this.bots.forEach(b => {
+        rows.push(`<div class="feed-row ${b.cashed ? 'win' : ''}"><span class="feed-name">${b.name}</span><span class="feed-stake">${b.stake}</span><span class="feed-mult">${b.cashed ? b.cashed.toFixed(2) + '×' : '—'}</span><span class="feed-amt">${b.cashed ? '+' + Math.floor(b.stake * b.cashed) : ''}</span></div>`);
+      });
+      el.innerHTML = rows.join('');
     }
   };
 
@@ -1205,7 +1309,7 @@
   };
   App.wheelSpin = () => Wheel.spin();
   App.memAgain = () => Memory.setup();
-  App.crashLaunch = () => Crash.launch();
+  App.crashLaunch = () => Crash.placeBet();   // phase de mise : verrouille la mise, le décollage suit le compte à rebours
   App.crashCash = () => Crash.cash();
   App.crashRefill = () => Crash.refill();
   App.gameBack = () => show('game-hub');
