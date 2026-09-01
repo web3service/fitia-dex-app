@@ -1132,6 +1132,52 @@ main::-webkit-scrollbar { display: none; }
 .quiz-choice.good { border-color: var(--success); background: rgba(16,185,129,0.12); color: #34d399; }
 .quiz-choice.bad { border-color: var(--danger); background: rgba(244,63,94,0.12); color: #fb7185; }
 
+/* ─────────── 27. Memory · Roue de la Chance · Crash ─────────── */
+.mem-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.mem-card { position: relative; aspect-ratio: 3 / 4; background: none; border: none; padding: 0; cursor: pointer; }
+.mem-card span {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  border-radius: 10px; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  transition: transform 0.4s; font-size: 1.5rem;
+}
+.mem-front { background: linear-gradient(160deg, #1e2942, #101828); border: 1px solid rgba(240,185,11,0.3); color: var(--primary); }
+.mem-back { background: rgba(240,185,11,0.12); border: 1px solid var(--primary); transform: rotateY(180deg); }
+.mem-card.flipped .mem-front { transform: rotateY(180deg); }
+.mem-card.flipped .mem-back { transform: rotateY(0deg); }
+.mem-card.matched .mem-back { border-color: var(--success); box-shadow: 0 0 12px rgba(16,185,129,0.4); }
+.wheel-wrap { position: relative; width: min(78vw, 270px); aspect-ratio: 1 / 1; margin: 0 auto 14px; }
+.wheel-disc {
+  position: absolute; inset: 0; border-radius: 50%; border: 6px solid #F0B90B;
+  background: conic-gradient(#F0B90B 0deg 45deg, #24304e 45deg 90deg, #8b5cf6 90deg 135deg, #24304e 135deg 180deg, #22d3ee 180deg 225deg, #24304e 225deg 270deg, #f97316 270deg 315deg, #24304e 315deg 360deg);
+  box-shadow: 0 0 24px rgba(240,185,11,0.35), inset 0 0 20px rgba(0,0,0,0.5);
+}
+.wheel-label {
+  position: absolute; left: 50%; top: 50%;
+  font-weight: 800; font-size: 0.72rem; color: #fff;
+  text-shadow: 0 1px 2px #000; pointer-events: none;
+}
+.wheel-pointer {
+  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  font-size: 1.6rem; color: var(--primary); z-index: 2;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+}
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+.crash-stage {
+  position: relative; border-radius: 12px; overflow: hidden;
+  border: 1px solid rgba(240,185,11,0.25); background: #04070f;
+}
+#crash-canvas { display: block; width: 100%; }
+.crash-mult {
+  position: absolute; top: 10px; left: 0; right: 0; text-align: center;
+  font-family: 'Orbitron', monospace; font-size: 1.8rem; font-weight: 800;
+  color: var(--primary); text-shadow: 0 0 14px rgba(240,185,11,0.5); pointer-events: none;
+}
+.crash-mult.boom { color: var(--danger); text-shadow: 0 0 14px rgba(244,63,94,0.6); }
+.crash-hist { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; min-height: 24px; }
+.crash-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: 800; padding: 2px 8px; border-radius: 8px; }
+.crash-chip.g { background: rgba(16,185,129,0.15); color: #34d399; }
+.crash-chip.r { background: rgba(244,63,94,0.15); color: #fb7185; }
+
 /* ─────────── 26. Runner 3D + effets Tap Miner ─────────── */
 .runner-3d-wrap {
   position: relative;

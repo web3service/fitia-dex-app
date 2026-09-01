@@ -251,6 +251,24 @@
 <div class="small-text" style="min-height:34px;" data-i18n="predictDesc">Quiz crypto et pronostics quotidiens</div>
 <button class="btn-primary" style="padding:8px;font-size:0.75rem;" onclick="event.stopPropagation();App.openGame('predict')">JOUER</button>
 </div>
+<div class="rig-item" onclick="App.openGame('memory')">
+<div class="game-icon">🃏</div>
+<div class="rig-name" data-i18n="memName">🃏 Memory FTA</div>
+<div class="small-text" style="min-height:34px;" data-i18n="memDesc">Retrouve les paires contre le chrono</div>
+<button class="btn-primary" style="padding:8px;font-size:0.75rem;" onclick="event.stopPropagation();App.openGame('memory')">JOUER</button>
+</div>
+<div class="rig-item" onclick="App.openGame('wheel')">
+<div class="game-icon">🎡</div>
+<div class="rig-name" data-i18n="wheelName">🎡 Roue de la Chance</div>
+<div class="small-text" style="min-height:34px;" data-i18n="wheelDesc">Un spin gratuit chaque jour</div>
+<button class="btn-primary" style="padding:8px;font-size:0.75rem;" onclick="event.stopPropagation();App.openGame('wheel')">JOUER</button>
+</div>
+<div class="rig-item" onclick="App.openGame('crash')">
+<div class="game-icon">✈️</div>
+<div class="rig-name" data-i18n="crashName">✈️ Fitia Crash</div>
+<div class="small-text" style="min-height:34px;" data-i18n="crashDesc">Encaisse avant le crash, style Aviator</div>
+<button class="btn-primary" style="padding:8px;font-size:0.75rem;" onclick="event.stopPropagation();App.openGame('crash')">JOUER</button>
+</div>
 </div>
 
 <!-- Jeu A : Tap Miner -->
@@ -322,6 +340,57 @@
 </div>
 <h3 class="section-title" style="margin-top:14px;" data-i18n="progHistory">Historique</h3>
 <div id="prog-history"></div>
+</div>
+</div>
+<!-- Jeu D : Memory FTA -->
+<div id="game-memory" class="game-panel hidden">
+<button class="btn-back" onclick="App.gameBack()">← Hub</button>
+<h3 class="section-title" data-i18n="memTitle">🃏 Memory FTA</h3>
+<div class="card" style="text-align:center;">
+<div class="tap-stats">
+<div><small data-i18n="memMoves">Coups</small><div class="stat-val" id="mem-moves">0</div></div>
+<div><small data-i18n="memTime">Temps</small><div class="stat-val" id="mem-time">0 s</div></div>
+<div><small data-i18n="memBest">Record</small><div class="stat-val" id="mem-best">0</div></div>
+</div>
+<div id="mem-grid" class="mem-grid"></div>
+<button class="btn-primary" style="margin-top:12px;" onclick="App.memAgain()" data-i18n="memAgain">RECOMMENCER</button>
+</div>
+</div>
+
+<!-- Jeu E : Roue de la Chance -->
+<div id="game-wheel" class="game-panel hidden">
+<button class="btn-back" onclick="App.gameBack()">← Hub</button>
+<h3 class="section-title" data-i18n="wheelTitle">🎡 Roue de la Chance</h3>
+<div class="card" style="text-align:center;">
+<div class="wheel-wrap">
+<div class="wheel-pointer">▼</div>
+<div id="wheel-disc" class="wheel-disc"></div>
+</div>
+<p class="small-text" id="wheel-left" style="margin-bottom:10px;"></p>
+<button class="btn-primary" id="wheel-spin" onclick="App.wheelSpin()" data-i18n="wheelSpin">TOURNER (1 gratuit / jour)</button>
+<p class="small-text" style="margin-top:10px;" data-i18n="wheelSoon">Spins payants en FTA : bientôt on-chain.</p>
+</div>
+</div>
+
+<!-- Jeu F : Crash (style Aviator) -->
+<div id="game-crash" class="game-panel hidden">
+<button class="btn-back" onclick="App.gameBack()">← Hub</button>
+<h3 class="section-title" data-i18n="crashTitle">✈️ Fitia Crash</h3>
+<div class="card" style="padding:10px;">
+<div class="crash-stage">
+<canvas id="crash-canvas" width="358" height="200"></canvas>
+<div id="crash-mult" class="crash-mult">1.00×</div>
+</div>
+<div class="tap-stats" style="margin-top:10px;">
+<div><small data-i18n="crashBalance">Crédits</small><div class="stat-val" id="crash-bal">1000</div></div>
+</div>
+<div class="crash-hist" id="crash-hist"></div>
+<div style="display:flex;gap:8px;margin-top:10px;">
+<input type="number" id="crash-stake" class="game-input" style="margin-bottom:0;flex:1;" placeholder="Mise (min 10)" value="50">
+<button class="btn-primary" id="crash-launch" style="flex:1;" onclick="App.crashLaunch()" data-i18n="crashLaunch">🚀 LANÇER</button>
+<button class="btn-primary hidden" id="crash-cash" style="flex:1;background:linear-gradient(135deg,#10b981,#34d399);color:#04250f;" onclick="App.crashCash()" data-i18n="crashCash">💰 ENCAISSER</button>
+</div>
+<button class="btn-back" style="margin-top:10px;width:100%;" onclick="App.crashRefill()" data-i18n="crashRefill">♻️ Recharger les crédits (entraînement)</button>
 </div>
 </div>
 </div>

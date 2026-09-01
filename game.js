@@ -142,6 +142,64 @@
     else i18n[lang] = { ...GAME_I18N[lang] };
   }
 
+  // ─── Vague 2 de traductions : Memory, Roue de la Chance, Crash ───
+  const GAME_I18N2 = {
+    fr: {
+      memName: "🃏 Memory FTA", memDesc: "Retrouve les paires contre le chrono", memTitle: "🃏 Memory FTA",
+      memMoves: "Coups", memTime: "Temps", memBest: "Record", memAgain: "RECOMMENCER", memWin: "🎉 Toutes les paires trouvées !",
+      wheelName: "🎡 Roue de la Chance", wheelDesc: "Un spin gratuit chaque jour", wheelTitle: "🎡 Roue de la Chance",
+      wheelSpin: "TOURNER (1 gratuit / jour)", wheelFree: "Spins restants aujourd'hui", wheelNoSpin: "Déjà utilisé aujourd'hui — reviens demain !",
+      wheelWin: "Gagné :", wheelLose: "Pas de chance cette fois…", wheelSoon: "Spins payants en FTA : bientôt on-chain.",
+      crashName: "✈️ Fitia Crash", crashDesc: "Encaisse avant le crash, style Aviator", crashTitle: "✈️ Fitia Crash",
+      crashBalance: "Crédits", crashLaunch: "🚀 LANÇER", crashCash: "💰 ENCAISSER", crashWin: "Encaissé ! +",
+      crashCrashed: "💥 Crash ! Mise perdue.", crashRefill: "♻️ Recharger les crédits (entraînement)", crashStakeMin: "Mise minimum : 10 crédits."
+    },
+    en: {
+      memName: "🃏 FTA Memory", memDesc: "Find the pairs against the clock", memTitle: "🃏 FTA Memory",
+      memMoves: "Moves", memTime: "Time", memBest: "Best", memAgain: "PLAY AGAIN", memWin: "🎉 All pairs found!",
+      wheelName: "🎡 Lucky Wheel", wheelDesc: "One free spin every day", wheelTitle: "🎡 Lucky Wheel",
+      wheelSpin: "SPIN (1 free / day)", wheelFree: "Spins left today", wheelNoSpin: "Already used today — come back tomorrow!",
+      wheelWin: "Won:", wheelLose: "No luck this time…", wheelSoon: "Paid FTA spins: coming on-chain.",
+      crashName: "✈️ Fitia Crash", crashDesc: "Cash out before the crash, Aviator style", crashTitle: "✈️ Fitia Crash",
+      crashBalance: "Credits", crashLaunch: "🚀 LAUNCH", crashCash: "💰 CASH OUT", crashWin: "Cashed out! +",
+      crashCrashed: "💥 Crash! Stake lost.", crashRefill: "♻️ Refill credits (training)", crashStakeMin: "Minimum stake: 10 credits."
+    },
+    de: {
+      memName: "🃏 FTA Memory", memDesc: "Finde die Paare gegen die Zeit", memTitle: "🃏 FTA Memory",
+      memMoves: "Züge", memTime: "Zeit", memBest: "Rekord", memAgain: "NOCHMAL", memWin: "🎉 Alle Paare gefunden!",
+      wheelName: "🎡 Glücksrad", wheelDesc: "Ein Gratis-Dreh pro Tag", wheelTitle: "🎡 Glücksrad",
+      wheelSpin: "DREHEN (1 gratis / Tag)", wheelFree: "Spins heute übrig", wheelNoSpin: "Heute schon genutzt — komm morgen wieder!",
+      wheelWin: "Gewonnen:", wheelLose: "Diesmal kein Glück…", wheelSoon: "Bezahlte FTA-Spins: bald on-chain.",
+      crashName: "✈️ Fitia Crash", crashDesc: "Ziehe dich zurück, bevor es crasht — Aviator-Stil", crashTitle: "✈️ Fitia Crash",
+      crashBalance: "Guthaben", crashLaunch: "🚀 START", crashCash: "💰 AUSZAHLEN", crashWin: "Ausgezahlt! +",
+      crashCrashed: "💥 Crash! Einsatz verloren.", crashRefill: "♻️ Guthaben aufladen (Training)", crashStakeMin: "Mindesteinsatz: 10 Credits."
+    },
+    zh: {
+      memName: "🃏 FTA 翻牌记忆", memDesc: "限时找出所有配对", memTitle: "🃏 FTA 翻牌记忆",
+      memMoves: "步数", memTime: "时间", memBest: "纪录", memAgain: "再来一次", memWin: "🎉 全部配对成功！",
+      wheelName: "🎡 幸运转盘", wheelDesc: "每天一次免费旋转", wheelTitle: "🎡 幸运转盘",
+      wheelSpin: "旋转（每天 1 次免费）", wheelFree: "今日剩余次数", wheelNoSpin: "今天已用过 — 明天再来！",
+      wheelWin: "中奖：", wheelLose: "这次运气不佳…", wheelSoon: "付费 FTA 旋转：即将上线链上版本。",
+      crashName: "✈️ Fitia Crash", crashDesc: "在坠毁前套现，Aviator 风格", crashTitle: "✈️ Fitia Crash",
+      crashBalance: "积分", crashLaunch: "🚀 起飞", crashCash: "💰 套现", crashWin: "已套现！+",
+      crashCrashed: "💥 坠毁！本金损失。", crashRefill: "♻️ 充值积分（训练）", crashStakeMin: "最低投入：10 积分。"
+    },
+    sg: {
+      memName: "🃏 FTA Memory", memDesc: "Find the pairs against the clock", memTitle: "🃏 FTA Memory",
+      memMoves: "Moves", memTime: "Time", memBest: "Best", memAgain: "PLAY AGAIN", memWin: "🎉 All pairs found!",
+      wheelName: "🎡 Lucky Wheel", wheelDesc: "One free spin every day", wheelTitle: "🎡 Lucky Wheel",
+      wheelSpin: "SPIN (1 free / day)", wheelFree: "Spins left today", wheelNoSpin: "Already used today — come back tomorrow!",
+      wheelWin: "Won:", wheelLose: "No luck this time…", wheelSoon: "Paid FTA spins: coming on-chain.",
+      crashName: "✈️ Fitia Crash", crashDesc: "Cash out before the crash, Aviator style", crashTitle: "✈️ Fitia Crash",
+      crashBalance: "Credits", crashLaunch: "🚀 LAUNCH", crashCash: "💰 CASH OUT", crashWin: "Cashed out! +",
+      crashCrashed: "💥 Crash! Stake lost.", crashRefill: "♻️ Refill credits (training)", crashStakeMin: "Minimum stake: 10 credits."
+    }
+  };
+  for (const lang in GAME_I18N2) {
+    if (i18n[lang]) Object.assign(i18n[lang], GAME_I18N2[lang]);
+    else i18n[lang] = { ...GAME_I18N2[lang] };
+  }
+
   // Banque de questions du quiz (6 par langue)
   const QUIZ = {
     fr: [
@@ -199,12 +257,14 @@
   function lsGet(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function show(id) {
-    ['game-hub', 'game-tap', 'game-runner', 'game-predict'].forEach(p => {
+    ['game-hub', 'game-tap', 'game-runner', 'game-predict', 'game-memory', 'game-wheel', 'game-crash'].forEach(p => {
       const el = document.getElementById(p);
       if (el) el.classList.toggle('hidden', p !== id);
     });
-    // Économie de batterie : stoppe le rendu 3D quand on quitte le runner
+    // Économie de batterie : stoppe les rendus/chrono quand on quitte un jeu
     if (id !== 'game-runner') Runner3D.stop();
+    if (id !== 'game-memory') Memory.stopTimer();
+    if (id !== 'game-crash') Crash.abort();
   }
 
   // ═══════════════ JEU A — TAP MINER (juteux : ripples, combo, vibration) ═══════════════
@@ -859,6 +919,252 @@
     }
   };
 
+  // ═══════════════ JEU D — MEMORY FTA (paires chronométrées) ═══════════════
+  const Memory = {
+    timer: null, first: null, lock: false, pairs: 0, moves: 0, time: 0,
+    open() { show('game-memory'); this.setup(); },
+    setup() {
+      this.stopTimer();
+      const emojis = ['⚡', '🟡', '💎', '🔧', '🔋', '🎮', '⛏️', '🚀'];
+      const deck = [...emojis, ...emojis].sort(() => Math.random() - 0.5);
+      const grid = document.getElementById('mem-grid');
+      grid.innerHTML = '';
+      this.first = null; this.lock = false; this.pairs = 0; this.moves = 0; this.time = 0;
+      deck.forEach(em => {
+        const card = document.createElement('button');
+        card.className = 'mem-card';
+        card.innerHTML = `<span class="mem-front">❓</span><span class="mem-back">${em}</span>`;
+        card.onclick = () => this.flip(card, em);
+        grid.appendChild(card);
+      });
+      this.render();
+      const t = document.getElementById('mem-time'); if (t) t.innerText = '0 s';
+      this.timer = setInterval(() => {
+        this.time++;
+        const el = document.getElementById('mem-time'); if (el) el.innerText = this.time + ' s';
+      }, 1000);
+    },
+    stopTimer() { if (this.timer) { clearInterval(this.timer); this.timer = null; } },
+    flip(card, em) {
+      if (this.lock || card.classList.contains('flipped')) return;
+      card.classList.add('flipped');
+      if (!this.first) { this.first = { card, em }; return; }
+      this.moves++;
+      if (this.first.em === em) {
+        this.first.card.classList.add('matched'); card.classList.add('matched');
+        this.first = null; this.pairs++;
+        this.render();
+        if (this.pairs === 8) {
+          this.stopTimer();
+          const score = Math.max(0, 1000 - this.time * 5 - this.moves * 10);
+          const best = Math.max(lsGet('fitia_memory_best', 0), score);
+          lsSet('fitia_memory_best', best);
+          App.showToast(App.t('memWin'));
+          this.render();
+        }
+      } else {
+        this.lock = true;
+        const f = this.first; this.first = null;
+        setTimeout(() => { f.card.classList.remove('flipped'); card.classList.remove('flipped'); this.lock = false; }, 650);
+        this.render();
+      }
+    },
+    render() {
+      const m = document.getElementById('mem-moves'); if (m) m.innerText = this.moves;
+      const b = document.getElementById('mem-best'); if (b) b.innerText = lsGet('fitia_memory_best', 0);
+    }
+  };
+
+  // ═══════════════ JEU E — ROUE DE LA CHANCE (1 spin gratuit / jour) ═══════════════
+  const Wheel = {
+    spinning: false, curRot: 0,
+    prizes: [
+      { label: '+20⚡', type: 'energy', v: 20 },
+      { label: '✖', type: 'none' },
+      { label: '+100🪙', type: 'credits', v: 100 },
+      { label: '✖', type: 'none' },
+      { label: 'MAX⚡', type: 'energy', v: 'max' },
+      { label: '✖', type: 'none' },
+      { label: '+50🪙', type: 'credits', v: 50 },
+      { label: '✖', type: 'none' }
+    ],
+    open() {
+      show('game-wheel');
+      this.buildLabels();
+      const last = lsGet('fitia_wheel_last', 0);
+      const left = (Date.now() - last) >= 86400000 ? 1 : 0;
+      const el = document.getElementById('wheel-left');
+      if (el) el.innerText = `${App.t('wheelFree')} : ${left}`;
+      const btn = document.getElementById('wheel-spin');
+      if (btn) btn.disabled = left === 0;
+    },
+    buildLabels() {
+      const disc = document.getElementById('wheel-disc');
+      if (!disc || disc.dataset.built) return;
+      this.prizes.forEach((p, i) => {
+        const l = document.createElement('span');
+        l.className = 'wheel-label';
+        l.innerText = p.label;
+        l.style.transform = `rotate(${i * 45 + 22.5}deg) translate(-10px, -95px) rotate(180deg)`;
+        disc.appendChild(l);
+      });
+      disc.dataset.built = '1';
+    },
+    spin() {
+      if (this.spinning) return;
+      const now = Date.now(), last = lsGet('fitia_wheel_last', 0);
+      if (now - last < 86400000) { App.showToast(App.t('wheelNoSpin'), true); return; }
+      lsSet('fitia_wheel_last', now);
+      const btn = document.getElementById('wheel-spin'); if (btn) btn.disabled = true;
+      const el = document.getElementById('wheel-left'); if (el) el.innerText = `${App.t('wheelFree')} : 0`;
+      this.spinning = true;
+      const idx = Math.floor(Math.random() * 8);
+      const disc = document.getElementById('wheel-disc');
+      this.curRot = this.curRot + 360 * 5 + (360 - (idx * 45 + 22.5)) - (this.curRot % 360);
+      disc.style.transition = 'transform 4s cubic-bezier(0.15, 0.9, 0.25, 1)';
+      disc.style.transform = `rotate(${this.curRot}deg)`;
+      disc.removeEventListener('transitionend', this._apply);
+      this._apply = () => {
+        if (!this.spinning) return; // idempotent : transitionend + timeout de secours ne l'appliquent qu'une fois
+        this.spinning = false;
+        const p = this.prizes[idx];
+        if (p.type === 'energy') {
+          Tap.setEnergy(p.v === 'max' ? 100 : Math.min(100, Tap.energy() + p.v));
+          App.showToast(`${App.t('wheelWin')} ${p.label}`);
+        } else if (p.type === 'credits') {
+          Crash.addBal(p.v);
+          App.showToast(`${App.t('wheelWin')} ${p.label}`);
+        } else {
+          App.showToast(App.t('wheelLose'), true);
+        }
+        disc.removeEventListener('transitionend', this._apply);
+      };
+      disc.addEventListener('transitionend', this._apply);
+      // Garde-fou : si l'onglet est quitté pendant le spin (transition annulée), applique quand même le prix
+      clearTimeout(this._safety);
+      this._safety = setTimeout(() => { if (this.spinning && this._apply) this._apply(); }, 4400);
+    }
+  };
+
+  // ═══════════════ JEU F — CRASH (style Aviator, crédits d'entraînement) ═══════════════
+  const Crash = {
+    ctx: null, raf: null, active: false, stake: 0, mult: 1, cp: 1, pts: [], stopped: true,
+    bal() { return lsGet('fitia_crash_bal', 1000); },
+    addBal(v) { lsSet('fitia_crash_bal', this.bal() + v); this.renderBal(); },
+    renderBal() { const b = document.getElementById('crash-bal'); if (b) b.innerText = this.bal(); },
+    renderHist() {
+      const el = document.getElementById('crash-hist'); if (!el) return;
+      const hist = lsGet('fitia_crash_hist', []);
+      el.innerHTML = hist.length
+        ? hist.map(h => `<span class="crash-chip ${h >= 2 ? 'g' : 'r'}">${h.toFixed(2)}×</span>`).join('')
+        : `<span class="small-text">${App.t('progNone')}</span>`;
+    },
+    pushHist(cp) {
+      const h = lsGet('fitia_crash_hist', []); h.unshift(cp); lsSet('fitia_crash_hist', h.slice(0, 10));
+      this.renderHist();
+    },
+    open() {
+      show('game-crash');
+      this.ctx = document.getElementById('crash-canvas').getContext('2d');
+      this.renderBal(); this.renderHist();
+      document.getElementById('crash-launch').classList.remove('hidden');
+      document.getElementById('crash-cash').classList.add('hidden');
+      this.drawIdle();
+    },
+    launch() {
+      if (this.active) return;
+      const stake = Math.floor(parseFloat(document.getElementById('crash-stake').value) || 0);
+      if (stake < 10) { App.showToast(App.t('crashStakeMin'), true); return; }
+      if (stake > this.bal()) { App.showToast(App.t('errFta'), true); return; }
+      this.addBal(-stake);
+      this.active = true; this.stake = stake; this.cashed = false; this.pts = [];
+      // Point de crash prétiré : distribution classique type Aviator (plafonnée à 30×)
+      this.cp = Math.max(1, Math.min(30, 0.97 / (1 - Math.random())));
+      this.mult = 1; this.t0 = performance.now();
+      document.getElementById('crash-launch').classList.add('hidden');
+      document.getElementById('crash-cash').classList.remove('hidden');
+      const m = document.getElementById('crash-mult'); if (m) { m.innerText = '1.00×'; m.classList.remove('boom'); }
+      if (this.raf) cancelAnimationFrame(this.raf);
+      this.loop();
+    },
+    loop() {
+      if (!this.active) return;
+      const t = (performance.now() - this.t0) / 1000;
+      this.mult = Math.floor((1 + 0.25 * t + 0.045 * t * t) * 100) / 100;
+      if (this.mult >= this.cp) { this.crashNow(); return; }
+      this.draw(t);
+      const m = document.getElementById('crash-mult'); if (m) m.innerText = this.mult.toFixed(2) + '×';
+      this.raf = requestAnimationFrame(() => this.loop());
+    },
+    cash() {
+      if (!this.active || this.cashed) return;
+      const win = Math.floor(this.stake * this.mult);
+      this.addBal(win); this.cashed = true; this.active = false;
+      cancelAnimationFrame(this.raf);
+      this.pushHist(this.mult);
+      const m = document.getElementById('crash-mult'); if (m) m.innerText = this.mult.toFixed(2) + '× ✅';
+      App.showToast(`${App.t('crashWin')} ${win}`);
+      this.endRound();
+    },
+    crashNow() {
+      this.active = false;
+      cancelAnimationFrame(this.raf);
+      this.pushHist(this.cp);
+      const m = document.getElementById('crash-mult'); if (m) { m.innerText = this.cp.toFixed(2) + '× 💥'; m.classList.add('boom'); }
+      this.drawCrashFlash();
+      App.showToast(App.t('crashCrashed'), true);
+      if (navigator.vibrate) { try { navigator.vibrate([60, 40, 60]); } catch (e) {} }
+      this.endRound();
+    },
+    endRound() {
+      document.getElementById('crash-launch').classList.remove('hidden');
+      document.getElementById('crash-cash').classList.add('hidden');
+      if (this.bal() < 10) App.showToast(App.t('crashRefill'), true);
+    },
+    // Quitter le panneau en pleine partie = mise perdue (règle Aviator)
+    abort() {
+      if (!this.active) return;
+      this.active = false;
+      if (this.raf) cancelAnimationFrame(this.raf);
+      App.showToast(App.t('crashCrashed'), true);
+    },
+    refill() {
+      lsSet('fitia_crash_bal', 1000); this.renderBal();
+      App.showToast('♻️ +1000');
+    },
+    draw(t) {
+      if (!this.ctx) return;
+      const W = 358, H = 200;
+      const x = 30 + Math.min(t * 30, 290);
+      const y = H - 24 - Math.min(t * 20, 140);
+      this.pts.push([x, y]);
+      const ctx = this.ctx;
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#04070f'; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = 'rgba(148,163,208,0.08)'; ctx.beginPath();
+      for (let gx = 0; gx < W; gx += 36) { ctx.moveTo(gx, 0); ctx.lineTo(gx, H); }
+      for (let gy = 0; gy < H; gy += 25) { ctx.moveTo(0, gy); ctx.lineTo(W, gy); }
+      ctx.stroke();
+      ctx.strokeStyle = '#F0B90B'; ctx.lineWidth = 3; ctx.beginPath();
+      this.pts.forEach((p, i) => { if (i === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]); });
+      ctx.stroke(); ctx.lineWidth = 1;
+      ctx.font = '22px serif'; ctx.fillText('✈️', x - 12, y + 8);
+    },
+    drawCrashFlash() {
+      if (!this.ctx) return;
+      this.ctx.fillStyle = 'rgba(244,63,94,0.25)'; this.ctx.fillRect(0, 0, 358, 200);
+    },
+    drawIdle() {
+      if (!this.ctx) return;
+      const ctx = this.ctx;
+      ctx.clearRect(0, 0, 358, 200);
+      ctx.fillStyle = '#04070f'; ctx.fillRect(0, 0, 358, 200);
+      ctx.font = '22px serif'; ctx.fillText('✈️', 30, 176);
+      ctx.fillStyle = '#8ea0bd'; ctx.font = '12px monospace';
+      ctx.fillText('1.00×', 70, 170);
+    }
+  };
+
   // ═══════════════ HUB & BRANCHEMENT ═══════════════
   const GAME = {
     contract: null,
@@ -889,7 +1195,19 @@
   App.applyTranslations = function () { _prevApply(); applyGameI18n(); };
 
   App.loadGame = () => GAME.load();
-  App.openGame = (which) => { if (which === 'tap') Tap.open(); else if (which === 'runner') Runner3D.open(); else Predict.open(); };
+  App.openGame = (which) => {
+    if (which === 'tap') Tap.open();
+    else if (which === 'runner') Runner3D.open();
+    else if (which === 'memory') Memory.open();
+    else if (which === 'wheel') Wheel.open();
+    else if (which === 'crash') Crash.open();
+    else Predict.open();
+  };
+  App.wheelSpin = () => Wheel.spin();
+  App.memAgain = () => Memory.setup();
+  App.crashLaunch = () => Crash.launch();
+  App.crashCash = () => Crash.cash();
+  App.crashRefill = () => Crash.refill();
   App.gameBack = () => show('game-hub');
   App.gameTap = (e) => Tap.tap(e);
   App.gameBoostShop = () => Tap.openBoostShop();
