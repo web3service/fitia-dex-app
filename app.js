@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 
-// ─── Configuration ─────────────────────────────────────────────────
+// ─── Configuration ────────────────────────────────────────────────
 // ⚠️ ÉTAPE 1 (migration progressive vers FTA natif) :
 // Pour l'instant on reste sur Polygon (RPC officiel). Quand tu auras ta propre
 // chain déployée, change juste RPC_URL + CHAIN_ID + EXPLORER_URL + NATIVE_SYMBOL.
