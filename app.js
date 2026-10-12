@@ -6,12 +6,12 @@
 // chain déployée, change juste RPC_URL + CHAIN_ID + EXPLORER_URL + NATIVE_SYMBOL.
 // FTA reste un ERC20 jusqu'à l'étape 2 (migration vers coin natif).
 const CONFIG = {
-  CORE: "0x........................................",
-  MINE: "0x........................................",
+  CORE: "0x1b8EdFb91168Fb233F8CA7cf1631038AC193D743",
+  MINE: "0xBd9FA9801eDA247b28B3BB9dDBf1CF52cA563Bc6",
   STAKING: "0x........................................",
   GAME: "0x........................................",
   USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
-  FTA:  "0x........................................",
+  FTA:  "0x5c418b12c7e9c2A8e9A71A68c6d9b319E7B1d1fd",
   CHAIN_ID: 137,
   // ─── Wallet intégré (étape 1) : RPC abstrait, prêt à migrer ───
   RPC_URL: "https://polygon-rpc.com",        // ← change ici quand tu auras ta propre chain
