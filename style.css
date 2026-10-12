@@ -1270,3 +1270,213 @@ main::-webkit-scrollbar { display: none; }
   from { opacity: 0.65; }
   to   { opacity: 1; text-shadow: 0 0 12px rgba(249,115,22,0.7); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   WALLET INTÉGRÉ (étape 1) — Onboarding UI
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Conteneur de la modale wallet — centré, largeur fixe mobile */
+.wallet-modal-content {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 20px;
+  text-align: center;
+}
+
+/* Chaque écran (.wallet-screen) prend toute la hauteur de la modale */
+.wallet-screen {
+  display: block;
+  animation: walletFadeIn 0.25s ease;
+}
+.wallet-screen.hidden { display: none; }
+@keyframes walletFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Logo emoji circulaire en haut */
+.wallet-logo {
+  width: 64px; height: 64px;
+  margin: 0 auto 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+  background: var(--primary-soft);
+  border-radius: 50%;
+  border: 1px solid var(--card-border);
+}
+.wallet-title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--text);
+  margin: 0 0 8px;
+  letter-spacing: 0.5px;
+}
+.wallet-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0 0 18px;
+}
+.wallet-warning {
+  margin-top: 18px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.wallet-warning a {
+  color: var(--danger);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Boutons d'action — primary + secondary + text */
+.wallet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+.wallet-actions .btn-primary,
+.wallet-actions .btn-secondary,
+.wallet-actions .btn-text {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+  border: none;
+  font-family: inherit;
+}
+.wallet-actions .btn-primary {
+  background: var(--grad-gold);
+  color: #000;
+  font-weight: 700;
+}
+.wallet-actions .btn-primary:hover { opacity: 0.92; }
+.wallet-actions .btn-primary:active { transform: scale(0.98); }
+.wallet-actions .btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--card-border);
+}
+.wallet-actions .btn-secondary:hover {
+  background: rgba(255,255,255,0.04);
+  border-color: var(--primary);
+}
+.wallet-actions .btn-text {
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.wallet-actions .btn-text:hover { color: var(--text); }
+
+/* Inputs password / mnemonic textarea */
+#wallet-create-pass,
+#wallet-create-pass2,
+#wallet-import-pass,
+#wallet-unlock-pass,
+#wallet-import-mnemonic {
+  width: 100%;
+  margin-bottom: 10px;
+  background: rgba(10, 17, 34, 0.6);
+  border: 1px solid var(--card-border);
+  color: var(--text);
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.wallet-mnemonic-input {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.82rem !important;
+  resize: vertical;
+  min-height: 70px;
+}
+
+/* Checkbox custom */
+.wallet-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+.wallet-checkbox input[type="checkbox"] {
+  width: 16px; height: 16px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+/* Grille des 12 mots de la mnemonic — 3 colonnes × 4 lignes sur mobile */
+.mnemonic-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 14px 0;
+  padding: 12px;
+  background: rgba(10, 17, 34, 0.6);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+}
+.mnemonic-word {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: rgba(240, 185, 11, 0.08);
+  border: 1px solid rgba(240, 185, 11, 0.2);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  text-align: left;
+}
+.mnemonic-num {
+  display: inline-block;
+  min-width: 18px;
+  height: 18px;
+  background: rgba(255,255,255,0.08);
+  color: var(--text-muted);
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-align: center;
+  line-height: 18px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.mnemonic-text {
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+/* Bouton Lock dans le header (à côté de l'adresse) */
+.btn-lock {
+  background: transparent;
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: all 0.2s;
+}
+.btn-lock:hover {
+  background: rgba(244, 63, 94, 0.1);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.btn-lock.hidden { display: none; }
+
+/* Responsive : la grille mnemonic passe en 2 colonnes sur très petits écrans */
+@media (max-width: 360px) {
+  .mnemonic-grid { grid-template-columns: repeat(2, 1fr); }
+  .mnemonic-word { font-size: 0.75rem; padding: 6px 8px; }
+}

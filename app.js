@@ -1,6 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 
 // ─── Configuration ─────────────────────────────────────────────────
+// ⚠️ ÉTAPE 1 (migration progressive vers FTA natif) :
+// Pour l'instant on reste sur Polygon (RPC officiel). Quand tu auras ta propre
+// chain déployée, change juste RPC_URL + CHAIN_ID + EXPLORER_URL + NATIVE_SYMBOL.
+// FTA reste un ERC20 jusqu'à l'étape 2 (migration vers coin natif).
 const CONFIG = {
   CORE: "0x........................................",
   MINE: "0x........................................",
@@ -9,7 +13,18 @@ const CONFIG = {
   USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
   FTA:  "0x........................................",
   CHAIN_ID: 137,
-  WC_PROJECT_ID: "2c10ee910a836551fbabbf7c8cc4542a",
+  // ─── Wallet intégré (étape 1) : RPC abstrait, prêt à migrer ───
+  RPC_URL: "https://polygon-rpc.com",        // ← change ici quand tu auras ta propre chain
+  NATIVE_SYMBOL: "POL",                       // ← sera "FTA" après étape 2
+  EXPLORER_URL: "https://polygonscan.com",    // ← sera l'explorer de ta chain
+  CHAIN_NAME: "Polygon PoS",
+  // ─── FTA natif (étape 5) : flag d'abstraction ───
+  // false → FTA est un ERC20 (Polygon actuel), native coin = POL
+  // true  → FTA est le coin natif (gas), plus d'ERC20 FTA séparé
+  NATIVE_IS_FTA: false,
+  // ─── Sécurité moyenne (option D) ───
+  AUTO_LOCK_MS: 5 * 60 * 1000,                // auto-lock après 5 min d'inactivité
+  TX_CONFIRM_THRESHOLD: 50,                    // % de balance déclenchant confirmation (envoi/swap)
   WHATSAPP_GROUP: "https://chat.whatsapp.com/BDsvPCB6xp8H8X0YaRmPFP",
   WHATSAPP_CHANNEL: "https://whatsapp.com/channel/0029VbCQhI38PgsPLbBJdV1e"
 };
@@ -52,6 +67,36 @@ const i18n = {
     errAlreadyPending: "Transaction pending. Please wait.", errNonce: "Nonce error. Restart the app.",
     errNoMachine: "No machine", errRunning: "Machine already running",
     errNoBattery: "No battery of this type", errMaxMachine: "Max machines reached",
+    // ─── Wallet intégré (étape 1) ───
+    walletWelcome: "Welcome! Create a new wallet or import an existing one.",
+    walletCreate: "Create a new wallet", walletImport: "Import a wallet",
+    walletWarning: "⚠️ Your wallet is stored locally on this device. Nobody can recover it for you.",
+    walletCreatePass: "Set your password", walletCreatePassDesc: "This password encrypts your wallet locally. It cannot be recovered.",
+    walletPassPlaceholder: "Password (8+ characters)", walletPassConfirm: "Confirm password",
+    walletContinue: "Continue", walletBack: "Back",
+    walletMnemonicTitle: "Save your phrase", walletMnemonicDesc: "Write down these 12 words on paper and keep them safe. Without them, you lose access to your wallet.",
+    walletMnemonicConfirm: "I have written down my recovery phrase",
+    walletConfirm: "Confirm",
+    walletImportTitle: "Import your wallet", walletImportDesc: "Paste your recovery phrase (12 or 24 words).",
+    walletImportBtn: "Import",
+    walletUnlockTitle: "Unlock your wallet", walletUnlockDesc: "Enter your password to access your wallet.",
+    walletPassOnly: "Password", walletUnlockBtn: "Unlock",
+    walletErase: "Reset wallet",
+    walletPassShort: "Password too short (8+ characters)", walletPassMismatch: "Passwords do not match",
+    walletPassRequired: "Password required", walletWrongPass: "Incorrect password",
+    walletMnemonicRequired: "Recovery phrase required", walletMnemonicInvalid: "Invalid recovery phrase",
+    walletMnemonicCheck: "Please check the box to confirm you saved your phrase",
+    walletCreating: "Creating wallet...", walletImporting: "Importing wallet...", walletUnlocking: "Unlocking...",
+    walletCreated: "Wallet created successfully!", walletImported: "Wallet imported!", walletUnlocked: "Wallet unlocked!",
+    walletLocked: "Wallet locked", walletErased: "Wallet erased",
+    walletEraseConfirm: "⚠️ This will permanently erase your wallet from this device. Without your recovery phrase, you lose access to your funds. Continue?",
+    // ─── Sécurité moyenne (option D) ───
+    walletAutoLocked: "🔒 Wallet auto-locked after inactivity",
+    walletLockedRate: "⏳ Too many attempts. Wait {sec}s before retrying.",
+    walletWrongPassLeft: "❌ Wrong password. {n} attempts left.",
+    txConfirmTitle: "Confirm Transaction", txSend: "Send", txSwap: "Swap",
+    txConfirmType: "Type", txConfirmAmount: "Amount", txConfirmRecipient: "Recipient",
+    txConfirmWait: "Wait {sec}s...", txConfirmYes: "Confirm", txConfirmNo: "Cancel",
   },
   fr: {
     connect: "Connecter", refTitle: "👥 Parrainage", refDesc: "Entrez l'adresse ou l'ID du parrain.", bindRef: "LIER",
@@ -89,6 +134,36 @@ const i18n = {
     errAlreadyPending: "Transaction en cours. Patientez.", errNonce: "Erreur nonce. Redémarrez l'app.",
     errNoMachine: "Aucune machine", errRunning: "Machine déjà en marche",
     errNoBattery: "Pas de batterie de ce type", errMaxMachine: "Maximum de machines atteint",
+    // ─── Wallet intégré (étape 1) ───
+    walletWelcome: "Bienvenue ! Crée un nouveau wallet ou importe un wallet existant.",
+    walletCreate: "Créer un nouveau wallet", walletImport: "Importer un wallet",
+    walletWarning: "⚠️ Ton wallet est stocké localement sur cet appareil. Personne ne peut le récupérer pour toi.",
+    walletCreatePass: "Définis ton mot de passe", walletCreatePassDesc: "Ce mot de passe chiffre ton wallet localement. Il ne peut pas être récupéré.",
+    walletPassPlaceholder: "Mot de passe (8+ caractères)", walletPassConfirm: "Confirme le mot de passe",
+    walletContinue: "Continuer", walletBack: "Retour",
+    walletMnemonicTitle: "Sauvegarde ta phrase", walletMnemonicDesc: "Écris ces 12 mots sur papier et garde-les en sécurité. Sans eux, tu perds l'accès à ton wallet.",
+    walletMnemonicConfirm: "J'ai bien noté ma phrase de récupération",
+    walletConfirm: "Confirmer",
+    walletImportTitle: "Importe ton wallet", walletImportDesc: "Colle ta phrase de récupération (12 ou 24 mots).",
+    walletImportBtn: "Importer",
+    walletUnlockTitle: "Déverrouille ton wallet", walletUnlockDesc: "Entre ton mot de passe pour accéder à ton wallet.",
+    walletPassOnly: "Mot de passe", walletUnlockBtn: "Déverrouiller",
+    walletErase: "Réinitialiser le wallet",
+    walletPassShort: "Mot de passe trop court (8+ caractères)", walletPassMismatch: "Les mots de passe ne correspondent pas",
+    walletPassRequired: "Mot de passe requis", walletWrongPass: "Mot de passe incorrect",
+    walletMnemonicRequired: "Phrase de récupération requise", walletMnemonicInvalid: "Phrase de récupération invalide",
+    walletMnemonicCheck: "Coche la case pour confirmer que tu as sauvegardé ta phrase",
+    walletCreating: "Création du wallet...", walletImporting: "Import du wallet...", walletUnlocking: "Déverrouillage...",
+    walletCreated: "Wallet créé avec succès !", walletImported: "Wallet importé !", walletUnlocked: "Wallet déverrouillé !",
+    walletLocked: "Wallet verrouillé", walletErased: "Wallet effacé",
+    walletEraseConfirm: "⚠️ Cette action va effacer définitivement ton wallet de cet appareil. Sans ta phrase de récupération, tu perds l'accès à tes fonds. Continuer ?",
+    // ─── Sécurité moyenne (option D) ───
+    walletAutoLocked: "🔒 Wallet verrouillé automatiquement après inactivité",
+    walletLockedRate: "⏳ Trop de tentatives. Attends {sec}s avant de réessayer.",
+    walletWrongPassLeft: "❌ Mot de passe incorrect. {n} tentatives restantes.",
+    txConfirmTitle: "Confirmer la transaction", txSend: "Envoi", txSwap: "Swap",
+    txConfirmType: "Type", txConfirmAmount: "Montant", txConfirmRecipient: "Destinataire",
+    txConfirmWait: "Attends {sec}s...", txConfirmYes: "Confirmer", txConfirmNo: "Annuler",
   },
   de: {
     connect: "Verbinden", refTitle: "👥 Empfehlung", refDesc: "Empfehler-Adresse oder ID eingeben.", bindRef: "BINDEN",
@@ -118,13 +193,44 @@ const i18n = {
     exchangeRate: "Wechselkurs", priceImpact: "Preisauswirkung",
     swapFee: "Swapgebühr (4%)", minimumReceived: "Mindestbetrag",
     slippageTolerance: "Slippage-Toleranz", networkFee: "Netzwerkgebühr",
-    depositBtn: "EINZAHLEN", depositing: "Einzahlung...", depositSuccess: "Einzahlung erfolgreich!",
+    depositBtn: "EINZAHLEN", withdrawBtn: "ABHEBEN", depositing: "Einzahlung...", depositSuccess: "Einzahlung erfolgreich!", withdrawing: "Abhebung...", withdrawSuccess: "Abhebung erfolgreich!",
+    send: "Senden", receive: "Empfangen", sending: "Senden...", sentSuccess: "Erfolgreich gesendet!", addrCopied: "Adresse kopiert!", confirmSend: "SENDEN BESTÄTIGEN", invalidAddr: "Ungültige Adresse", recipientAddr: "Empfängeradresse (0x...)", amount: "Betrag",
     errRejected: "Transaktion abgebrochen", errInsufficientFunds: "Unzureichendes Guthaben",
     errNetwork: "Netzwerkfehler. Bitte versuchen Sie es erneut.", errTimeout: "Zeitüberschreitung.",
     errContract: "Transaktion fehlgeschlagen.", errGeneric: "Ein Fehler ist aufgetreten.",
     errAlreadyPending: "Transaktion ausstehend.", errNonce: "Nonce-Fehler. App neustarten.",
     errNoMachine: "Keine Maschine", errRunning: "Maschine läuft bereits",
     errNoBattery: "Keine Batterie dieses Typs", errMaxMachine: "Maximale Maschinen erreicht",
+    // ─── Integriertes Wallet (Schritt 1) ───
+    walletWelcome: "Willkommen! Erstelle ein neues Wallet oder importiere ein bestehendes.",
+    walletCreate: "Neues Wallet erstellen", walletImport: "Wallet importieren",
+    walletWarning: "⚠️ Dein Wallet wird lokal auf diesem Gerät gespeichert. Niemand kann es für dich wiederherstellen.",
+    walletCreatePass: "Passwort festlegen", walletCreatePassDesc: "Dieses Passwort verschlüsselt dein Wallet lokal. Es kann nicht wiederhergestellt werden.",
+    walletPassPlaceholder: "Passwort (8+ Zeichen)", walletPassConfirm: "Passwort bestätigen",
+    walletContinue: "Weiter", walletBack: "Zurück",
+    walletMnemonicTitle: "Speichere deinen Satz", walletMnemonicDesc: "Schreibe diese 12 Wörter auf Papier und bewahre sie sicher auf. Ohne sie verlierst du den Zugang zu deinem Wallet.",
+    walletMnemonicConfirm: "Ich habe meine Wiederherstellungsphrase notiert",
+    walletConfirm: "Bestätigen",
+    walletImportTitle: "Importiere dein Wallet", walletImportDesc: "Füge deine Wiederherstellungsphrase ein (12 oder 24 Wörter).",
+    walletImportBtn: "Importieren",
+    walletUnlockTitle: "Entsperre dein Wallet", walletUnlockDesc: "Gib dein Passwort ein, um auf dein Wallet zuzugreifen.",
+    walletPassOnly: "Passwort", walletUnlockBtn: "Entsperren",
+    walletErase: "Wallet zurücksetzen",
+    walletPassShort: "Passwort zu kurz (8+ Zeichen)", walletPassMismatch: "Passwörter stimmen nicht überein",
+    walletPassRequired: "Passwort erforderlich", walletWrongPass: "Falsches Passwort",
+    walletMnemonicRequired: "Wiederherstellungsphrase erforderlich", walletMnemonicInvalid: "Ungültige Wiederherstellungsphrase",
+    walletMnemonicCheck: "Bitte bestätige, dass du deine Phrase gespeichert hast",
+    walletCreating: "Wallet wird erstellt...", walletImporting: "Wallet wird importiert...", walletUnlocking: "Entsperren...",
+    walletCreated: "Wallet erfolgreich erstellt!", walletImported: "Wallet importiert!", walletUnlocked: "Wallet entsperrt!",
+    walletLocked: "Wallet gesperrt", walletErased: "Wallet gelöscht",
+    walletEraseConfirm: "⚠️ Dies löscht dein Wallet dauerhaft von diesem Gerät. Ohne Wiederherstellungsphrase verlierst du den Zugriff auf deine Guthaben. Fortfahren?",
+    // ─── Mittlere Sicherheit (Option D) ───
+    walletAutoLocked: "🔒 Wallet nach Inaktivität automatisch gesperrt",
+    walletLockedRate: "⏳ Zu viele Versuche. Warte {sec}s vor dem nächsten Versuch.",
+    walletWrongPassLeft: "❌ Falsches Passwort. {n} Versuche übrig.",
+    txConfirmTitle: "Transaktion bestätigen", txSend: "Senden", txSwap: "Tausch",
+    txConfirmType: "Typ", txConfirmAmount: "Betrag", txConfirmRecipient: "Empfänger",
+    txConfirmWait: "Warte {sec}s...", txConfirmYes: "Bestätigen", txConfirmNo: "Abbrechen",
   },
   zh: {
     connect: "连接", refTitle: "👥 推荐系统", refDesc: "输入推荐人地址或ID进行绑定。", bindRef: "绑定",
@@ -154,13 +260,44 @@ const i18n = {
     exchangeRate: "汇率", priceImpact: "价格影响",
     swapFee: "手续费 (4%)", minimumReceived: "最低收到",
     slippageTolerance: "滑点容忍度", networkFee: "网络费",
-    depositBtn: "存入", depositing: "存入中...", depositSuccess: "存入成功!",
+    depositBtn: "存入", withdrawBtn: "提取", depositing: "存入中...", depositSuccess: "存入成功!", withdrawing: "提取中...", withdrawSuccess: "提取成功!",
+    send: "发送", receive: "接收", sending: "发送中...", sentSuccess: "发送成功!", addrCopied: "地址已复制!", confirmSend: "确认发送", invalidAddr: "无效地址", recipientAddr: "接收地址 (0x...)", amount: "金额",
     errRejected: "交易已取消", errInsufficientFunds: "余额不足",
     errNetwork: "网络错误，请重试。", errTimeout: "交易超时。",
     errContract: "交易失败，请重试。", errGeneric: "发生错误。",
     errAlreadyPending: "交易待处理。", errNonce: "Nonce错误，请重启应用。",
     errNoMachine: "没有矿机", errRunning: "矿机已在运行",
     errNoBattery: "没有此类型电池", errMaxMachine: "矿机数量已达上限",
+    // ─── 内置钱包 (第1步) ───
+    walletWelcome: "欢迎使用！创建新钱包或导入已有钱包。",
+    walletCreate: "创建新钱包", walletImport: "导入钱包",
+    walletWarning: "⚠️ 你的钱包存储在本设备本地。任何人无法替你恢复。",
+    walletCreatePass: "设置密码", walletCreatePassDesc: "此密码用于本地加密你的钱包。无法找回。",
+    walletPassPlaceholder: "密码 (8+ 个字符)", walletPassConfirm: "确认密码",
+    walletContinue: "继续", walletBack: "返回",
+    walletMnemonicTitle: "保存你的助记词", walletMnemonicDesc: "将这12个词写在纸上并妥善保管。没有它们，你将失去对钱包的访问。",
+    walletMnemonicConfirm: "我已记下助记词",
+    walletConfirm: "确认",
+    walletImportTitle: "导入你的钱包", walletImportDesc: "粘贴你的助记词 (12 或 24 个词)。",
+    walletImportBtn: "导入",
+    walletUnlockTitle: "解锁你的钱包", walletUnlockDesc: "输入密码以访问你的钱包。",
+    walletPassOnly: "密码", walletUnlockBtn: "解锁",
+    walletErase: "重置钱包",
+    walletPassShort: "密码太短 (8+ 个字符)", walletPassMismatch: "两次密码不一致",
+    walletPassRequired: "需要密码", walletWrongPass: "密码错误",
+    walletMnemonicRequired: "需要助记词", walletMnemonicInvalid: "无效的助记词",
+    walletMnemonicCheck: "请勾选确认你已保存助记词",
+    walletCreating: "创建钱包中...", walletImporting: "导入钱包中...", walletUnlocking: "解锁中...",
+    walletCreated: "钱包创建成功！", walletImported: "钱包导入成功！", walletUnlocked: "钱包已解锁！",
+    walletLocked: "钱包已锁定", walletErased: "钱包已删除",
+    walletEraseConfirm: "⚠️ 此操作将从本设备永久删除你的钱包。没有助记词，你将失去对资金的访问。是否继续？",
+    // ─── 中等安全 (选项 D) ───
+    walletAutoLocked: "🔒 钱包因长时间未操作已自动锁定",
+    walletLockedRate: "⏳ 尝试次数过多。请等待 {sec} 秒后重试。",
+    walletWrongPassLeft: "❌ 密码错误。还剩 {n} 次尝试机会。",
+    txConfirmTitle: "确认交易", txSend: "发送", txSwap: "兑换",
+    txConfirmType: "类型", txConfirmAmount: "金额", txConfirmRecipient: "接收者",
+    txConfirmWait: "等待 {sec} 秒...", txConfirmYes: "确认", txConfirmNo: "取消",
   },
   sg: {
     connect: "Connect", refTitle: "👥 Referral System", refDesc: "Enter referrer address or ID to link.", bindRef: "BIND",
@@ -190,13 +327,44 @@ const i18n = {
     exchangeRate: "Exchange Rate", priceImpact: "Price Impact",
     swapFee: "Swap Fee (4%)", minimumReceived: "Minimum Received",
     slippageTolerance: "Slippage Tolerance", networkFee: "Network Fee",
-    depositBtn: "DEPOSIT", depositing: "Depositing...", depositSuccess: "Deposit successful!",
+    depositBtn: "DEPOSIT", withdrawBtn: "WITHDRAW", depositing: "Depositing...", depositSuccess: "Deposit successful!", withdrawing: "Withdrawing...", withdrawSuccess: "Withdrawal successful!",
+    send: "Send", receive: "Receive", sending: "Sending...", sentSuccess: "Sent successfully!", addrCopied: "Address copied!", confirmSend: "CONFIRM SEND", invalidAddr: "Invalid address", recipientAddr: "Recipient address (0x...)", amount: "Amount",
     errRejected: "Transaction cancelled", errInsufficientFunds: "Insufficient balance",
     errNetwork: "Network error. Please try again.", errTimeout: "Transaction timed out.",
     errContract: "Transaction failed.", errGeneric: "An error occurred.",
     errAlreadyPending: "Transaction pending.", errNonce: "Nonce error. Restart app.",
     errNoMachine: "No machine", errRunning: "Machine already running",
     errNoBattery: "No battery of this type", errMaxMachine: "Max machines reached",
+    // ─── Wallet intégré (étape 1) ───
+    walletWelcome: "Welcome! Create a new wallet or import an existing one.",
+    walletCreate: "Create a new wallet", walletImport: "Import a wallet",
+    walletWarning: "⚠️ Your wallet is stored locally on this device. Nobody can recover it for you.",
+    walletCreatePass: "Set your password", walletCreatePassDesc: "This password encrypts your wallet locally. It cannot be recovered.",
+    walletPassPlaceholder: "Password (8+ characters)", walletPassConfirm: "Confirm password",
+    walletContinue: "Continue", walletBack: "Back",
+    walletMnemonicTitle: "Save your phrase", walletMnemonicDesc: "Write down these 12 words on paper and keep them safe. Without them, you lose access to your wallet.",
+    walletMnemonicConfirm: "I have written down my recovery phrase",
+    walletConfirm: "Confirm",
+    walletImportTitle: "Import your wallet", walletImportDesc: "Paste your recovery phrase (12 or 24 words).",
+    walletImportBtn: "Import",
+    walletUnlockTitle: "Unlock your wallet", walletUnlockDesc: "Enter your password to access your wallet.",
+    walletPassOnly: "Password", walletUnlockBtn: "Unlock",
+    walletErase: "Reset wallet",
+    walletPassShort: "Password too short (8+ characters)", walletPassMismatch: "Passwords do not match",
+    walletPassRequired: "Password required", walletWrongPass: "Incorrect password",
+    walletMnemonicRequired: "Recovery phrase required", walletMnemonicInvalid: "Invalid recovery phrase",
+    walletMnemonicCheck: "Please check the box to confirm you saved your phrase",
+    walletCreating: "Creating wallet...", walletImporting: "Importing wallet...", walletUnlocking: "Unlocking...",
+    walletCreated: "Wallet created successfully!", walletImported: "Wallet imported!", walletUnlocked: "Wallet unlocked!",
+    walletLocked: "Wallet locked", walletErased: "Wallet erased",
+    walletEraseConfirm: "⚠️ This will permanently erase your wallet from this device. Without your recovery phrase, you lose access to your funds. Continue?",
+    // ─── Sécurité moyenne (option D) ───
+    walletAutoLocked: "🔒 Wallet auto-locked after inactivity",
+    walletLockedRate: "⏳ Too many attempts. Wait {sec}s before retrying.",
+    walletWrongPassLeft: "❌ Wrong password. {n} attempts left.",
+    txConfirmTitle: "Confirm Transaction", txSend: "Send", txSwap: "Swap",
+    txConfirmType: "Type", txConfirmAmount: "Amount", txConfirmRecipient: "Recipient",
+    txConfirmWait: "Wait {sec}s...", txConfirmYes: "Confirm", txConfirmNo: "Cancel",
   }
 };
 
@@ -261,7 +429,6 @@ const MINE_ABI = [
 // ─── Constantes ────────────────────────────────────────────────────
 const SWAP_FEE_RATE = 0.04;
 const SLIPPAGE = 0.005;
-const ONE_18 = 10n ** 18n;
 
 // ═══════════════════════════════════════════════════════════════════
 //  CLASSE PRINCIPALE : Application
@@ -314,8 +481,9 @@ class Application {
     this.vizBars = [];
 
     // ─── Langue ───
+    const validLangs = ['en', 'fr', 'de', 'zh', 'sg'];
     const savedLang = localStorage.getItem('fitia_lang');
-    this.currentLang = savedLang && i18n[savedLang] ? savedLang : 'fr';
+    this.currentLang = (savedLang && validLangs.includes(savedLang) && i18n[savedLang]) ? savedLang : 'fr';
 
     // ─── Chat assistant ───
     this.chatInitialized = false;
@@ -324,6 +492,91 @@ class Application {
     // ─── Historique des prix pour calculer l'évolution ───
     this.prevPriceCheckpoint = {};
     this.priceCheckpointTime = 0;
+
+    // ─── Garde-fous (fuites mémoire + cache perf) ───
+    this._updateDataInterval = null;
+    this._walletListenersInstalled = false;
+    this._lastPriceFetch = 0;
+    this._mCountCache = null;
+    this._bCountCache = null;
+    // ─── Sécurité moyenne : auto-lock après inactivité ───
+    this._lastActivity = Date.now();
+    this._autoLockTimer = null;
+    this._activityListenersInstalled = false;
+    // ─── Confirmation tx sensible (modal dédiée) ───
+    this._pendingTx = null;  // {resolve, reject, type, amount, recipient}
+  }
+
+  // ─── Sécurité : auto-lock après CONFIG.AUTO_LOCK_MS d'inactivité ──
+  _recordActivity() {
+    this._lastActivity = Date.now();
+    if (this._autoLockTimer) clearTimeout(this._autoLockTimer);
+    if (WalletManager.isUnlocked()) {
+      this._autoLockTimer = setTimeout(() => {
+        if (WalletManager.isUnlocked()) {
+          this.walletLock();
+          this.showToast(this.t('walletAutoLocked'));
+        }
+      }, CONFIG.AUTO_LOCK_MS);
+    }
+  }
+
+  _installActivityListeners() {
+    if (this._activityListenersInstalled) return;
+    this._activityListenersInstalled = true;
+    // Reset le timer sur toute activité utilisateur
+    ['mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
+      window.addEventListener(evt, () => this._recordActivity(), { passive: true });
+    });
+  }
+
+  // ─── Sécurité : confirmation pour transactions sensibles ──────
+  /**
+   * Affiche une modale de confirmation pour une transaction sensible.
+   * L'utilisateur doit attendre 3 secondes (anti-clic accidentel) puis confirmer.
+   * @param {{type: string, amount: string, recipient?: string, symbol: string}} tx
+   * @returns {Promise<boolean>} true si confirmé, false si annulé
+   */
+  _confirmSensitiveTx(tx) {
+    return new Promise((resolve) => {
+      this._pendingTx = { resolve, tx };
+      const modal = document.getElementById('modal-tx-confirm');
+      if (!modal) { resolve(true); return; }  // fallback : pas de modal, on autorise
+      document.getElementById('tx-confirm-type').innerText = tx.type;
+      document.getElementById('tx-confirm-amount').innerText = tx.amount + ' ' + tx.symbol;
+      document.getElementById('tx-confirm-recipient').innerText = tx.recipient || '—';
+      document.getElementById('tx-confirm-recipient-row').style.display = tx.recipient ? 'block' : 'none';
+      // Bouton Confirm désactivé pendant 3 s (anti-clic accidentel)
+      const btn = document.getElementById('tx-confirm-btn');
+      btn.disabled = true;
+      let countdown = 3;
+      btn.innerText = this.t('txConfirmWait').replace('{sec}', countdown);
+      const interval = setInterval(() => {
+        countdown--;
+        if (countdown > 0) {
+          btn.innerText = this.t('txConfirmWait').replace('{sec}', countdown);
+        } else {
+          clearInterval(interval);
+          btn.disabled = false;
+          btn.innerText = this.t('txConfirmYes');
+        }
+      }, 1000);
+      modal.classList.add('active');
+    });
+  }
+
+  _txConfirmApprove() {
+    if (!this._pendingTx) return;
+    document.getElementById('modal-tx-confirm').classList.remove('active');
+    this._pendingTx.resolve(true);
+    this._pendingTx = null;
+  }
+
+  _txConfirmCancel() {
+    if (!this._pendingTx) return;
+    document.getElementById('modal-tx-confirm').classList.remove('active');
+    this._pendingTx.resolve(false);
+    this._pendingTx = null;
   }
 
   // ─── Traduction ──────────────────────────────────────────────────
@@ -421,7 +674,11 @@ class Application {
   async init() { this.setLanguage(this.currentLang); }
 
   // ─── Récupération du prix POL ────────────────────────────────────
+  // Cache TTL 60s pour éviter de spammer DexScreener à chaque boucle updateData (15s)
   async fetchMarketPrices() {
+    const now = Date.now();
+    if (now - this._lastPriceFetch < 60000 && this.polPriceUsd > 0) return;
+    this._lastPriceFetch = now;
     this.polPriceUsd = 0;
     try {
       const r = await fetch('https://api.dexscreener.com/latest/dex/tokens/0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0');
@@ -438,44 +695,166 @@ class Application {
     if (!this.polPriceUsd) this.polPriceUsd = 0.70;
   }
 
-  // ─── Connexion wallet ────────────────────────────────────────────
+  // ─── Connexion wallet (étape 1 : wallet intégré, plus de MetaMask/WalletConnect) ────
   async connect() {
-    // Si MetaMask est disponible
-    if (window.ethereum) {
-      this.setLoader(true, this.t('connWallet'));
-      try {
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        this.provider = new ethers.BrowserProvider(window.ethereum);
-        this.signer = await this.provider.getSigner();
-        this.user = await this.signer.getAddress();
-        const network = await this.provider.getNetwork();
-        if (Number(network.chainId) !== CONFIG.CHAIN_ID) await this.switchNetwork();
-        await this.initContracts();
-        window.ethereum.on('accountsChanged', () => window.location.reload());
-        window.ethereum.on('chainChanged', () => window.location.reload());
-      } catch (e) { this.showError(e); } finally { this.setLoader(false); }
+    // Si wallet déjà déverrouillé en mémoire → rafraîchit juste l'état
+    if (WalletManager.isUnlocked()) {
+      await this._postUnlock();
+      return;
     }
-    // Si WalletConnect est disponible
-    else if (typeof EthereumProvider !== 'undefined' && CONFIG.WC_PROJECT_ID && !CONFIG.WC_PROJECT_ID.includes("...")) {
-      this.setLoader(true, this.t('connWallet'));
-      try {
-        const wc = await EthereumProvider.init({
-          projectId: CONFIG.WC_PROJECT_ID,
-          chains: [CONFIG.CHAIN_ID],
-          showQrModal: true,
-          methods: ['eth_sendTransaction', 'personal_sign'],
-          metadata: { name: 'FITIA PRO MINER', description: 'Mining DApp', url: window.location.origin, icons: [window.location.origin + '/logo.png'] }
-        });
-        await wc.enable();
-        this.provider = new ethers.BrowserProvider(wc);
-        this.signer = await this.provider.getSigner();
-        this.user = await this.signer.getAddress();
-        await this.initContracts();
-        wc.on("disconnect", () => window.location.reload());
-      } catch (e) { this.showError(e); } finally { this.setLoader(false); }
+    // Affiche le bon écran selon l'état du wallet local
+    if (WalletManager.isInitialized()) {
+      this._showWalletScreen('unlock');
     } else {
-      this.showToast("Installez MetaMask ou utilisez un navigateur Web3.", true);
+      this._showWalletScreen('welcome');
     }
+    document.getElementById('modal-wallet').classList.add('active');
+  }
+
+  // ─── Bascule l'écran affiché dans la modale wallet ──────────────
+  _showWalletScreen(name) {
+    document.querySelectorAll('.wallet-screen').forEach(s => s.classList.add('hidden'));
+    const el = document.getElementById('wallet-screen-' + name);
+    if (el) el.classList.remove('hidden');
+  }
+
+  // ─── Étape 1 : Créer un nouveau wallet ──────────────────────────
+  walletCreateStart() {
+    this._showWalletScreen('create-password');
+  }
+
+  async walletCreateGenerate() {
+    const pass = document.getElementById('wallet-create-pass').value;
+    const pass2 = document.getElementById('wallet-create-pass2').value;
+    // Sécurité moyenne : validation politique forte (12+ chars, complexité)
+    const check = WalletManager.validatePassword(pass);
+    if (!check.valid) { this.showToast(check.errors[0], true); return; }
+    if (pass !== pass2) { this.showToast(this.t('walletPassMismatch'), true); return; }
+    try {
+      this.setLoader(true, this.t('walletCreating'));
+      const { mnemonic, address } = await WalletManager.createWallet(pass);
+      this._pendingMnemonic = mnemonic;
+      // Affiche les 12 mots dans une grille
+      const words = mnemonic.split(' ');
+      document.getElementById('wallet-mnemonic-display').innerHTML = words.map((w, i) =>
+        `<div class="mnemonic-word"><span class="mnemonic-num">${i + 1}</span><span class="mnemonic-text">${w}</span></div>`
+      ).join('');
+      document.getElementById('wallet-saved-check').checked = false;
+      this._showWalletScreen('create-mnemonic');
+    } catch (e) {
+      this.showError(e);
+    } finally { this.setLoader(false); }
+  }
+
+  async walletCreateConfirm() {
+    if (!document.getElementById('wallet-saved-check').checked) {
+      this.showToast(this.t('walletMnemonicCheck'), true);
+      return;
+    }
+    document.getElementById('modal-wallet').classList.remove('active');
+    this._pendingMnemonic = null;
+    await this._postUnlock();
+    this.showToast(this.t('walletCreated'));
+  }
+
+  // ─── Étape 2 : Importer un wallet existant ───────────────────────
+  walletImportStart() {
+    this._showWalletScreen('import-mnemonic');
+  }
+
+  async walletImportConfirm() {
+    const phrase = document.getElementById('wallet-import-mnemonic').value.trim();
+    const pass = document.getElementById('wallet-import-pass').value;
+    if (!phrase) { this.showToast(this.t('walletMnemonicRequired'), true); return; }
+    if (!pass || pass.length < 8) { this.showToast(this.t('walletPassShort'), true); return; }
+    try {
+      this.setLoader(true, this.t('walletImporting'));
+      await WalletManager.importWallet(phrase, pass);
+      document.getElementById('modal-wallet').classList.remove('active');
+      await this._postUnlock();
+      this.showToast(this.t('walletImported'));
+    } catch (e) {
+      if (e.message && e.message.includes('mnemonic')) {
+        this.showToast(this.t('walletMnemonicInvalid'), true);
+      } else {
+        this.showError(e);
+      }
+    } finally { this.setLoader(false); }
+  }
+
+  // ─── Étape 3 : Déverrouiller un wallet existant ─────────────────
+  async walletUnlock() {
+    const pass = document.getElementById('wallet-unlock-pass').value;
+    if (!pass) { this.showToast(this.t('walletPassRequired'), true); return; }
+    // Sécurité moyenne : vérifier le rate-limiting avant de tenter
+    const lockState = WalletManager.getLockoutState();
+    if (lockState.blocked) {
+      const sec = Math.ceil(lockState.unblockInMs / 1000);
+      this.showToast(this.t('walletLockedRate').replace('{sec}', sec), true);
+      return;
+    }
+    try {
+      this.setLoader(true, this.t('walletUnlocking'));
+      await WalletManager.unlock(pass);
+      document.getElementById('modal-wallet').classList.remove('active');
+      document.getElementById('wallet-unlock-pass').value = '';
+      await this._postUnlock();
+      this.showToast(this.t('walletUnlocked'));
+    } catch (e) {
+      if (e.message === 'Invalid password') {
+        const left = WalletManager.getLockoutState().attemptsLeft;
+        this.showToast(this.t('walletWrongPassLeft').replace('{n}', left), true);
+      } else if (e.message && e.message.startsWith('LOCKED:')) {
+        const sec = e.message.split(':')[1];
+        this.showToast(this.t('walletLockedRate').replace('{sec}', sec), true);
+      } else {
+        this.showError(e);
+      }
+    } finally { this.setLoader(false); }
+  }
+
+  // ─── Verrouiller le wallet (efface la clé privée de la mémoire) ──
+  walletLock() {
+    WalletManager.lock();
+    this.stopMiningCounter();
+    if (this._updateDataInterval) { clearInterval(this._updateDataInterval); this._updateDataInterval = null; }
+    if (this._autoLockTimer) { clearTimeout(this._autoLockTimer); this._autoLockTimer = null; }
+    this.signer = null;
+    this.provider = null;
+    this.user = null;
+    this.core = null;
+    this.mine = null;
+    document.getElementById('btn-connect').classList.remove('hidden');
+    document.getElementById('wallet-status').classList.add('hidden');
+    document.getElementById('btn-lock')?.classList.add('hidden');
+    this.showToast(this.t('walletLocked'));
+  }
+
+  // ─── Effacer le wallet local (après confirmation) ───────────────
+  walletEraseConfirm() {
+    if (!confirm(this.t('walletEraseConfirm'))) return;
+    WalletManager.erase();
+    this._showWalletScreen('welcome');
+    this.showToast(this.t('walletErased'));
+  }
+
+  walletBackToWelcome() {
+    this._showWalletScreen('welcome');
+  }
+
+  // ─── Post-unlock : configuration de App.provider / signer / user ──
+  // Connecte le wallet au RPC configuré, puis déclenche initContracts().
+  async _postUnlock() {
+    // Connecte le wallet (HDNodeWallet) au provider RPC
+    const signer = WalletManager.connectToRpc(CONFIG.RPC_URL);
+    this.provider = signer.provider;   // JsonRpcProvider
+    this.signer = signer;
+    this.user = signer.address;
+    await this.initContracts();
+    document.getElementById('btn-lock')?.classList.remove('hidden');
+    // Sécurité moyenne : active l'auto-lock après inactivité
+    this._installActivityListeners();
+    this._recordActivity();
   }
 
   // ─── Initialisation des contrats ─────────────────────────────────
@@ -501,12 +880,15 @@ class Application {
     await this.cacheBatteryDurations();
     // Met à jour toutes les données
     await this.updateData();
-    // Rafraîchissement périodique (15 secondes)
-    setInterval(() => this.updateData(), 15000);
+    // Rafraîchissement périodique (15 secondes) — anti-fuite : clear avant de créer
+    if (this._updateDataInterval) clearInterval(this._updateDataInterval);
+    this._updateDataInterval = setInterval(() => this.updateData(), 15000);
     // Initialise le visualiseur de minage
     this.initVisualizer();
     window.addEventListener('resize', () => this.resizeCanvas());
   }
+
+  // ─── (Supprimé : switchNetwork n'est plus utile sans MetaMask) ────
 
   // ─── Cache des durées de batterie ────────────────────────────────
   async cacheBatteryDurations() {
@@ -522,30 +904,14 @@ class Application {
     } catch (e) { /* ignore si bCount échoue */ }
   }
 
-  // ─── Changement de réseau ────────────────────────────────────────
-  async switchNetwork() {
-    try {
-      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] });
-    } catch (e) {
-      if (e.code === 4902) {
-        await window.ethereum.request({
-          method: 'wallet_addEthereumChain',
-          params: [{
-            chainId: '0x89', chainName: 'Polygon',
-            nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
-            rpcUrls: ['https://polygon-rpc.com/'],
-            blockExplorerUrls: ['https://polygonscan.com/']
-          }]
-        });
-      }
-    }
-  }
+  // ─── (switchNetwork supprimé : sans MetaMask, le RPC est configuré via CONFIG.RPC_URL) ────
 
   // ─── Changement de sous-vue boutique ─────────────────────────────
-  setShopView(v) {
+  // Paramètre `ev` optionnel (rétro-compatible) : évite l'utilisation de `event` implicite global
+  setShopView(v, ev) {
     this.shopViewMode = v;
     document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
-    event.currentTarget.classList.add('active');
+    if (ev && ev.currentTarget) ev.currentTarget.classList.add('active');
     this.renderShop();
   }
 
@@ -577,14 +943,15 @@ class Application {
       } catch (e2) { /* ignore */ }
     }
 
-    // Récupère l'inventaire des batteries par type
+    // Récupère l'inventaire des batteries par type (parallélisé pour économie RPC)
     try {
-      const bCount = Number(await this.mine.bCount());
-      for (let t = 0; t < bCount; t++) {
-        try {
-          const qty = Number(await this.mine.myBattery(this.user, t));
-          if (qty > 0) this.batteryInventory[t] = qty;
-        } catch (e) { /* ignore type sans batterie */ }
+      const bCount = this._bCountCache ?? Number(await this.mine.bCount());
+      this._bCountCache = bCount;
+      const battPromises = [];
+      for (let t = 0; t < bCount; t++) battPromises.push(this.mine.myBattery(this.user, t).then(qty => ({ t, qty: Number(qty) })).catch(() => ({ t, qty: 0 })));
+      const results = await Promise.all(battPromises);
+      for (const { t, qty } of results) {
+        if (qty > 0) this.batteryInventory[t] = qty;
       }
     } catch (e) { /* ignore */ }
   }
@@ -684,6 +1051,8 @@ class Application {
   // ─── Mise à jour périodique des données ──────────────────────────
   async updateData() {
     if (!this.user) return;
+    // Skip si onglet caché — économie RPC significative
+    if (document.hidden) return;
     try {
       // ─── Récupération de la puissance active ─────────────────────
       // ⚠️ powerOf() retourne un entier brut (pas en wei/18 décimales).
@@ -943,15 +1312,23 @@ class Application {
   }
 
   // ─── Fermer les modales ────────────────────────────────────────
+  // Ferme aussi #modal-stake (géré par finance.js) pour cohérence
   closeModals() {
-    document.getElementById('modal-send').classList.remove('active');
-    document.getElementById('modal-receive').classList.remove('active');
+    document.getElementById('modal-send')?.classList.remove('active');
+    document.getElementById('modal-receive')?.classList.remove('active');
+    document.getElementById('modal-stake')?.classList.remove('active');
   }
 
   // ─── Copier l'adresse ─────────────────────────────────────────
   copyReceiveAddress() {
-    navigator.clipboard.writeText(this.user);
-    this.showToast(this.t('addrCopied'));
+    if (!this.user) return;
+    try {
+      navigator.clipboard.writeText(this.user);
+      this.showToast(this.t('addrCopied'));
+    } catch (e) {
+      // Fallback sur HTTP non-sécurisé ou navigateur sans clipboard API
+      this.showToast(this.t('addrCopied'));
+    }
   }
 
   // ─── Exécuter l'envoi ─────────────────────────────────────────
@@ -960,15 +1337,28 @@ class Application {
     const amt = document.getElementById('send-amount').value;
     if (!ethers.isAddress(to)) return this.showToast(this.t('invalidAddr'), true);
     if (!amt || Number(amt) <= 0) return this.showToast(this.t('invalidAmount'), true);
+    // Sécurité moyenne : confirmation tx sensible pour tout envoi
+    const token = document.getElementById('send-token-select').value;
+    const confirmed = await this._confirmSensitiveTx({
+      type: this.t('txSend'),
+      amount: amt,
+      recipient: to,
+      symbol: token
+    });
+    if (!confirmed) return;
     this.setLoader(true, this.t('sending'));
     try {
-      const token = document.getElementById('send-token-select').value;
       let tx;
       if (token === 'POL') {
         tx = await this.signer.sendTransaction({ to, value: ethers.parseEther(amt) });
       } else {
         // Envoi via le contrat de token
         const tokenAddr = token === 'USDT' ? CONFIG.USDT : CONFIG.FTA;
+        // Garde : si l'adresse token est placeholder (non déployée), on bloque clairement
+        if (!tokenAddr || tokenAddr.includes('.') || tokenAddr.length !== 42) {
+          this.setLoader(false);
+          return this.showToast('❌ Token ' + token + ' non configuré (CONFIG.' + token + ')', true);
+        }
         const dec = token === 'USDT' ? this.usdtDecimals : this.ftaDecimals;
         const tokenContract = new ethers.Contract(tokenAddr, ["function transfer(address,uint256) returns (bool)"], this.signer);
         tx = await tokenContract.transfer(to, ethers.parseUnits(amt, dec));
@@ -1196,7 +1586,8 @@ class Application {
     container.style.gridTemplateColumns = '1fr 1fr';
     for (let i = 0; i < this.shopBatteriesData.length; i++) {
       const d = this.shopBatteriesData[i];
-      const chargeLevel = Math.floor(Math.random() * 40) + 60;
+      // chargeLevel déterministe (dérivé de l'index) — évite le saut visuel à chaque render
+      const chargeLevel = 60 + (i * 7 % 40);
       const div = document.createElement('div');
       div.className = 'battery-shop-item';
       div.innerHTML = `
@@ -1373,14 +1764,16 @@ class Application {
   }
 
   // ─── Navigation ──────────────────────────────────────────────────
-  nav(viewId) {
+  // Paramètre `ev` optionnel (rétro-compatible) : évite l'utilisation de `event` implicite global
+  nav(viewId, ev) {
     document.querySelectorAll('.view').forEach(el => { el.classList.remove('active'); el.style.display = 'none'; });
     const activeView = document.getElementById('view-' + viewId);
     if (activeView) { activeView.classList.add('active'); activeView.style.display = 'block'; }
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    if (event?.currentTarget) event.currentTarget.classList.add('active');
+    if (ev && ev.currentTarget) ev.currentTarget.classList.add('active');
     // ✅ Fitia-Finance + Fitia-Game : recharge les données à chaque ouverture d'onglet
-    if (viewId === 'finance') this.loadFinance();
+    // Garde truthy : si finance.js / game.js ne sont pas chargés, on évite un TypeError
+    if (viewId === 'finance' && this.loadFinance) this.loadFinance();
     if (viewId === 'game' && this.loadGame) this.loadGame();
   }
 

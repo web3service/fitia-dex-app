@@ -6,13 +6,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#060a14">
 <title>FITIA PRO MINER</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src * ws://* wss://*; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://unpkg.com https://relay.walletconnect.com; img-src 'self' data: https://* http://*;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.dexscreener.com https://api.coingecko.com https://polygon-rpc.com https://*.walletconnect.com https://*.walletconnect.org wss://*.walletconnect.com wss://*.walletconnect.org ws://* wss://*; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://unpkg.com; frame-src https://*.walletconnect.com https://*.walletconnect.org; img-src 'self' data: https://* http://*;">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&family=Orbitron:wght@600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
-<script src="https://unpkg.com/@walletconnect/ethereum-provider@2.11.0/dist/index.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
 </head>
 <body>
 <!-- Décor de fond animé : lueur de base, aurora multicolore, étoiles, grille -->
@@ -45,6 +44,7 @@
 <div id="wallet-status" class="wallet-status hidden">
 <span id="addr-display">0x...</span>
 <span class="status-dot"></span>
+<button id="btn-lock" class="btn-lock hidden" onclick="App.walletLock()" title="Verrouiller le wallet">🔒</button>
 </div>
 </header>
 
@@ -101,8 +101,8 @@
 </div>
 </div>
 <div class="shop-tabs">
-<button class="shop-tab active" onclick="App.setShopView('machines')" data-i18n="machines">Machines</button>
-<button class="shop-tab" onclick="App.setShopView('batteries')" data-i18n="batteries">Batteries</button>
+<button class="shop-tab active" onclick="App.setShopView('machines', event)" data-i18n="machines">Machines</button>
+<button class="shop-tab" onclick="App.setShopView('batteries', event)" data-i18n="batteries">Batteries</button>
 </div>
 <div id="shop-list" class="grid-list"></div>
 </div>
@@ -430,13 +430,100 @@
 
 <!-- ═══ NAVIGATION BASSE ═══ -->
 <nav class="bottom-nav">
-<button class="nav-item active" onclick="App.nav('dashboard')"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span data-i18n="home">Accueil</span></button>
-<button class="nav-item" onclick="App.nav('shop')"><svg viewBox="0 0 24 24"><path d="M12 2l-5.5 9h11z"/></svg><span data-i18n="shop">Boutique</span></button>
-<button class="nav-item" onclick="App.nav('my-rigs')"><svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg><span data-i18n="assets">Wallet</span></button>
-<button class="nav-item" onclick="App.nav('finance')"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg><span data-i18n="finTitle">Finance</span></button>
-<button class="nav-item" onclick="App.nav('game')"><svg viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM11 13H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg><span data-i18n="gameNav">Game</span></button>
-<button class="nav-item" onclick="App.nav('swap')"><svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg><span data-i18n="swapNav">Swap</span></button>
+<button class="nav-item active" onclick="App.nav('dashboard', event)"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span data-i18n="home">Accueil</span></button>
+<button class="nav-item" onclick="App.nav('shop', event)"><svg viewBox="0 0 24 24"><path d="M12 2l-5.5 9h11z"/></svg><span data-i18n="shop">Boutique</span></button>
+<button class="nav-item" onclick="App.nav('my-rigs', event)"><svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg><span data-i18n="assets">Wallet</span></button>
+<button class="nav-item" onclick="App.nav('finance', event)"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg><span data-i18n="finTitle">Finance</span></button>
+<button class="nav-item" onclick="App.nav('game', event)"><svg viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM11 13H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg><span data-i18n="gameNav">Game</span></button>
+<button class="nav-item" onclick="App.nav('swap', event)"><svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg><span data-i18n="swapNav">Swap</span></button>
 </nav>
+</div>
+
+<!-- ═══ MODALE WALLET (onboarding intégré) ═══ -->
+<div id="modal-wallet" class="modal">
+<div class="modal-content wallet-modal-content">
+
+<!-- Écran 1 : Welcome (aucun wallet) -->
+<div id="wallet-screen-welcome" class="wallet-screen">
+<div class="wallet-logo">⚡</div>
+<h3 class="wallet-title">FITIA PRO MINER</h3>
+<p class="wallet-subtitle" data-i18n="walletWelcome">Bienvenue ! Crée un nouveau wallet ou importe un wallet existant.</p>
+<div class="wallet-actions">
+<button class="btn-primary" onclick="App.walletCreateStart()" data-i18n="walletCreate">Créer un nouveau wallet</button>
+<button class="btn-secondary" onclick="App.walletImportStart()" data-i18n="walletImport">Importer un wallet</button>
+</div>
+<p class="wallet-warning" data-i18n="walletWarning">⚠️ Ton wallet est stocké localement sur cet appareil. Personne ne peut le récupérer pour toi.</p>
+</div>
+
+<!-- Écran 2 : Create — choix du mot de passe -->
+<div id="wallet-screen-create-password" class="wallet-screen hidden">
+<div class="wallet-logo">🔐</div>
+<h3 class="wallet-title" data-i18n="walletCreatePass">Définis ton mot de passe</h3>
+<p class="wallet-subtitle" data-i18n="walletCreatePassDesc">Ce mot de passe chiffre ton wallet localement. Il ne peut pas être récupéré.</p>
+<input type="password" id="wallet-create-pass" class="game-input" placeholder="Mot de passe (8+ caractères)" data-i18n-placeholder="walletPassPlaceholder">
+<input type="password" id="wallet-create-pass2" class="game-input" placeholder="Confirme le mot de passe" data-i18n-placeholder="walletPassConfirm">
+<div class="wallet-actions">
+<button class="btn-primary" onclick="App.walletCreateGenerate()" data-i18n="walletContinue">Continuer</button>
+<button class="btn-text" onclick="App.walletBackToWelcome()" data-i18n="walletBack">Retour</button>
+</div>
+</div>
+
+<!-- Écran 3 : Create — affichage de la mnemonic -->
+<div id="wallet-screen-create-mnemonic" class="wallet-screen hidden">
+<div class="wallet-logo">📝</div>
+<h3 class="wallet-title" data-i18n="walletMnemonicTitle">Sauvegarde ta phrase</h3>
+<p class="wallet-subtitle" data-i18n="walletMnemonicDesc">Écris ces 12 mots sur papier et garde-les en sécurité. Sans eux, tu perds l'accès à ton wallet.</p>
+<div id="wallet-mnemonic-display" class="mnemonic-grid"></div>
+<label class="wallet-checkbox"><input type="checkbox" id="wallet-saved-check"> <span data-i18n="walletMnemonicConfirm">J'ai bien noté ma phrase de récupération</span></label>
+<div class="wallet-actions">
+<button class="btn-primary" onclick="App.walletCreateConfirm()" data-i18n="walletConfirm">Confirmer</button>
+</div>
+</div>
+
+<!-- Écran 4 : Import — mnemonic existante -->
+<div id="wallet-screen-import-mnemonic" class="wallet-screen hidden">
+<div class="wallet-logo">📥</div>
+<h3 class="wallet-title" data-i18n="walletImportTitle">Importe ton wallet</h3>
+<p class="wallet-subtitle" data-i18n="walletImportDesc">Colle ta phrase de récupération (12 ou 24 mots).</p>
+<textarea id="wallet-import-mnemonic" class="game-input wallet-mnemonic-input" placeholder="abandon ability able about..." rows="3"></textarea>
+<input type="password" id="wallet-import-pass" class="game-input" placeholder="Mot de passe (8+ caractères)" data-i18n-placeholder="walletPassPlaceholder">
+<div class="wallet-actions">
+<button class="btn-primary" onclick="App.walletImportConfirm()" data-i18n="walletImportBtn">Importer</button>
+<button class="btn-text" onclick="App.walletBackToWelcome()" data-i18n="walletBack">Retour</button>
+</div>
+</div>
+
+<!-- Écran 5 : Unlock (wallet existant) -->
+<div id="wallet-screen-unlock" class="wallet-screen hidden">
+<div class="wallet-logo">🔓</div>
+<h3 class="wallet-title" data-i18n="walletUnlockTitle">Déverrouille ton wallet</h3>
+<p class="wallet-subtitle" data-i18n="walletUnlockDesc">Entre ton mot de passe pour accéder à ton wallet.</p>
+<input type="password" id="wallet-unlock-pass" class="game-input" placeholder="Mot de passe" data-i18n-placeholder="walletPassOnly" onkeydown="if(event.key==='Enter')App.walletUnlock()">
+<div class="wallet-actions">
+<button class="btn-primary" onclick="App.walletUnlock()" data-i18n="walletUnlockBtn">Déverrouiller</button>
+</div>
+<p class="wallet-warning"><a href="#" onclick="App.walletEraseConfirm(); return false;" data-i18n="walletErase">Réinitialiser le wallet</a></p>
+</div>
+
+</div>
+</div>
+
+<!-- ═══ MODALE CONFIRMATION TX SENSIBLE ─══ -->
+<div id="modal-tx-confirm" class="modal">
+<div class="modal-content" style="max-width:380px;text-align:center;padding:24px;">
+<h3 style="color:var(--primary);margin-bottom:14px;" data-i18n="txConfirmTitle">Confirmer la transaction</h3>
+<div style="background:rgba(10,17,34,0.6);border:1px solid var(--card-border);border-radius:12px;padding:14px;margin-bottom:14px;">
+<div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:0.85rem;"><span style="color:var(--text-muted);" data-i18n="txConfirmType">Type</span><span id="tx-confirm-type" style="color:var(--text);font-weight:600;"></span></div>
+<div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:0.85rem;"><span style="color:var(--text-muted);" data-i18n="txConfirmAmount">Montant</span><span id="tx-confirm-amount" style="color:var(--primary);font-weight:700;font-family:'JetBrains Mono',monospace;"></span></div>
+<div id="tx-confirm-recipient-row" style="display:none;">
+<div style="display:flex;justify-content:space-between;font-size:0.85rem;word-break:break-all;"><span style="color:var(--text-muted);" data-i18n="txConfirmRecipient">Destinataire</span><span id="tx-confirm-recipient" style="color:var(--text);font-family:'JetBrains Mono',monospace;font-size:0.75rem;"></span></div>
+</div>
+</div>
+<div style="display:flex;gap:10px;">
+<button id="tx-confirm-cancel-btn" class="btn-secondary" style="flex:1;padding:10px;border-radius:10px;" onclick="App._txConfirmCancel()" data-i18n="txConfirmNo">Annuler</button>
+<button id="tx-confirm-btn" class="btn-primary" style="flex:1;padding:10px;border-radius:10px;" onclick="App._txConfirmApprove()" data-i18n="txConfirmYes">Confirmer</button>
+</div>
+</div>
 </div>
 
 <!-- ═══ MODALES ═══ -->
@@ -521,9 +608,10 @@
 <p id="loader-text" class="loader-text">Traitement...</p>
 </div>
 
+<script src="wallet.js"></script>
 <script src="app.js"></script>
 <script src="finance.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r170/three.min.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

@@ -262,7 +262,8 @@
       if (el) el.classList.toggle('hidden', p !== id);
     });
     // Économie de batterie : stoppe les rendus/chrono quand on quitte un jeu
-    if (id !== 'game-runner') Runner3D.stop();
+    if (id !== 'game-runner') { Runner3D.stop(); Runner2D.stop(); }   // B1 fix : stoppe aussi le repli 2D
+    if (id !== 'game-tap') Tap.stopRegen();                              // B3 fix : stoppe le regen Tap
     if (id !== 'game-memory') Memory.stopTimer();
     if (id !== 'game-crash') Crash.abort();
   }
@@ -287,6 +288,10 @@
     startRegenTick() {
       clearInterval(this.timer);
       this.timer = setInterval(() => { this.regen(); const e = document.getElementById('tap-energy-bar'); if (e) { e.style.width = this.energy() + '%'; const t = document.getElementById('tap-energy-txt'); if (t) t.innerText = this.energy() + ' / 100'; } }, 2000);
+    },
+    // B3 fix : arrête proprement le setInterval de regen quand on quitte le jeu Tap
+    stopRegen() {
+      if (this.timer) { clearInterval(this.timer); this.timer = null; }
     },
     tap(evt) {
       if (this.energy() <= 0) return;
@@ -421,10 +426,10 @@
         this.scene.add(waterR);
 
         // Pont de pierre : tablier + joints sombres défilants (illusion cobblestone)
-        const deck = new THREE.Mesh(new THREE.BoxGeometry(PATH_W, 0.5, 130), new THREE.MeshLambertMaterial({ color: 0xb9a27b }));
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(PATH_W, 0.5, 130), new THREE.MeshStandardMaterial({ color: 0xb9a27b }));
         deck.position.set(0, -0.25, -45);
         this.scene.add(deck);
-        const seamMat = new THREE.MeshLambertMaterial({ color: 0x8f7a58 });
+        const seamMat = new THREE.MeshStandardMaterial({ color: 0x8f7a58 });
         for (let i = 0; i < 30; i++) {
           const seam = new THREE.Mesh(new THREE.BoxGeometry(PATH_W, 0.52, 0.18), seamMat);
           seam.position.set(0, -0.24, -i * 4);
@@ -432,10 +437,10 @@
           this.deco.push({ m: seam, span: 120 });
         }
         // Garde-corps en pierre + piliers dorés + buissons de jungle (2 côtés)
-        const railMat = new THREE.MeshLambertMaterial({ color: 0xa8916a });
-        const pilMat = new THREE.MeshLambertMaterial({ color: 0xc7b28a });
+        const railMat = new THREE.MeshStandardMaterial({ color: 0xa8916a });
+        const pilMat = new THREE.MeshStandardMaterial({ color: 0xc7b28a });
         const capMat = new THREE.MeshBasicMaterial({ color: 0xF0B90B });
-        const bushMat = new THREE.MeshLambertMaterial({ color: 0x2e6b45 });
+        const bushMat = new THREE.MeshStandardMaterial({ color: 0x2e6b45 });
         for (let i = 0; i < 10; i++) {
           const z = -i * 6;
           for (const side of [-1, 1]) {
@@ -455,7 +460,7 @@
           }
         }
         // Lianes suspendues (canopée au-dessus du pont)
-        const vineMat = new THREE.MeshLambertMaterial({ color: 0x24502f });
+        const vineMat = new THREE.MeshStandardMaterial({ color: 0x24502f });
         for (let i = 0; i < 6; i++) {
           const vine = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.09, 2.2, 5), vineMat);
           vine.position.set(-2.4 + i * 1.0, 4.6, -10 - i * 7);
@@ -467,10 +472,12 @@
 
         // Géométries/matériaux partagés (évite d'en recréer à chaque spawn)
         this.geoLow = new THREE.CylinderGeometry(0.42, 0.42, 1.5, 10);  // tronc d'arbre à sauter
-        this.matLow = new THREE.MeshLambertMaterial({ color: 0x6e4a2a });
+        this.matLow = new THREE.MeshStandardMaterial({ color: 0x6e4a2a });
         this.geoHigh = new THREE.BoxGeometry(1.35, 2.5, 0.4);           // dalle de pierre à esquiver/glisser
-        this.matHigh = new THREE.MeshLambertMaterial({ color: 0xc7b28a });
+        this.matHigh = new THREE.MeshStandardMaterial({ color: 0xc7b28a });
         this.matTrim = new THREE.MeshBasicMaterial({ color: 0xF0B90B });
+        // L1 fix : geoTrim partagé (au lieu d'être recréé à chaque spawn → fuite GPU)
+        this.geoTrim = new THREE.BoxGeometry(1.42, 0.1, 0.46);
         this.geoCoin = new THREE.CylinderGeometry(0.36, 0.36, 0.09, 14);
         this.matCoin = new THREE.MeshBasicMaterial({ color: 0xF0B90B });
 
@@ -489,12 +496,12 @@
     // Avatar « exploratrice » vu de dos, façon Temple Run (ponytail, débardeur blanc, kaki, bottes)
     buildAvatar() {
       const g = new THREE.Group();
-      const skin = new THREE.MeshLambertMaterial({ color: 0xd9a06b });
-      const hair = new THREE.MeshLambertMaterial({ color: 0x6b3a1f });
-      const top = new THREE.MeshLambertMaterial({ color: 0xf5f5f0 });
-      const pants = new THREE.MeshLambertMaterial({ color: 0x5a6b3c });
-      const boots = new THREE.MeshLambertMaterial({ color: 0x2a2320 });
-      const sashM = new THREE.MeshLambertMaterial({ color: 0xc0392b });
+      const skin = new THREE.MeshStandardMaterial({ color: 0xd9a06b });
+      const hair = new THREE.MeshStandardMaterial({ color: 0x6b3a1f });
+      const top = new THREE.MeshStandardMaterial({ color: 0xf5f5f0 });
+      const pants = new THREE.MeshStandardMaterial({ color: 0x5a6b3c });
+      const boots = new THREE.MeshStandardMaterial({ color: 0x2a2320 });
+      const sashM = new THREE.MeshStandardMaterial({ color: 0xc0392b });
 
       const torso = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.55, 0.26), top);
       torso.position.y = 1.02; g.add(torso);
@@ -618,6 +625,8 @@
     },
 
     start() {
+      // B2 fix : si WebGL indisponible (mode repli 2D actif), démarre le Runner 2D au lieu de crasher
+      if (!this.renderer) { Runner2D.start(); return; }
       this.resetWorld(); this.running = true; this.stopped = false;
       if (this.raf) cancelAnimationFrame(this.raf);
       this.loop();
@@ -632,7 +641,7 @@
         const m = new THREE.Mesh(high ? this.geoHigh : this.geoLow, high ? this.matHigh : this.matLow);
         if (high) {
           m.position.set(this.lanes[ln], 1.25, zPos);
-          const trim = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.1, 0.46), this.matTrim);
+          const trim = new THREE.Mesh(this.geoTrim, this.matTrim);
           trim.position.y = 1.25;
           m.add(trim);
         } else {
@@ -734,12 +743,45 @@
     // Bascule propre vers la version 2D (échec WebGL / perte de contexte)
     fallback2D() {
       this.stop();
+      // L2 fix : dispose les géométries/matériaux partagés avant le renderer
+      this.dispose();
       try { if (this.renderer) this.renderer.dispose(); } catch (e) {}
       this.renderer = null;
       const w = document.getElementById('runner-3d'); if (w) w.classList.add('hidden');
       const c2 = document.getElementById('runner-canvas'); if (c2) c2.style.display = 'block';
       App.showToast(App.t('fallback2d'), true);
       Runner2D.open();
+    },
+
+    // L2 fix : libère les géométries/matériaux Three.js pour éviter les fuites GPU
+    dispose() {
+      try {
+        // Géométries partagées (obstacles, pièces, trim)
+        ['geoLow', 'geoHigh', 'geoTrim', 'geoCoin'].forEach(g => {
+          if (this[g]) { try { this[g].dispose(); } catch (e) {} this[g] = null; }
+        });
+        // Matériaux partagés
+        ['matLow', 'matHigh', 'matTrim', 'matCoin'].forEach(m => {
+          if (this[m]) { try { this[m].dispose(); } catch (e) {} this[m] = null; }
+        });
+        // Traverse la scène et dispose toutes les géométries/matériaux des meshes décor/avatar
+        if (this.scene) {
+          this.scene.traverse(obj => {
+            if (obj.isMesh || obj.isGroup) {
+              if (obj.geometry) { try { obj.geometry.dispose(); } catch (e) {} }
+              if (obj.material) {
+                if (Array.isArray(obj.material)) {
+                  obj.material.forEach(m => { try { m.dispose(); } catch (e) {} });
+                } else {
+                  try { obj.material.dispose(); } catch (e) {}
+                }
+              }
+            }
+          });
+        }
+        this.scene = null; this.camera = null; this.avatar = null; this.parts = {};
+        this.obst = []; this.coins = []; this.deco = []; this.shadow = null;
+      } catch (e) { console.warn('Runner3D.dispose:', e); }
     },
 
     stop() {
@@ -750,6 +792,8 @@
 
     gameOver() {
       this.running = false;
+      // B7 fix : annule le rAF sinon frame() continue de poller indéfiniment après gameOver
+      if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; }
       this.best = Math.max(this.best, this.score);
       lsSet('fitia_runner_best', this.best);
       const scores = lsGet('fitia_runner_scores', []);
@@ -774,6 +818,11 @@
       this.ctx = this.cv.getContext('2d');
       this.best = lsGet('fitia_runner_best', 0);
       this.drawIdle();
+    },
+    // B2 fix : ajout d'une méthode stop() pour Runner2D (annule le rAF fantôme)
+    stop() {
+      this.running = false;
+      if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; }
     },
     start() {
       this.y = this.GROUND - 26; this.vy = 0; this.speed = 3; this.obst = []; this.coins = [];
@@ -1162,6 +1211,8 @@
     },
     loop() {
       if (this.state !== 'flying') return;
+      // B8 fix : on ne calcule pas si l'onglet est caché — économie CPU
+      if (document.hidden) { this.raf = requestAnimationFrame(() => this.loop()); return; }
       const t = (performance.now() - this.t0) / 1000;
       this.mult = Math.floor((1 + 0.25 * t + 0.045 * t * t) * 100) / 100;
       // Bots qui s'encaissent au fil du vol
@@ -1284,14 +1335,17 @@
 
   function applyGameI18n() {
     const lang = App.currentLang || 'fr';
+    // B5 fix : utilise le dict fusionné i18n[lang] (qui contient GAME_I18N + GAME_I18N2 + GAME_I18N3)
+    // et non plus uniquement GAME_I18N (vague 1) — sinon les clés Memory/Wheel/Crash ne se re-traduisent pas.
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const k = el.getAttribute('data-i18n');
-      if (GAME_I18N[lang] && GAME_I18N[lang][k] !== undefined) el.innerText = GAME_I18N[lang][k];
-      else if (GAME_I18N.en[k] !== undefined) el.innerText = GAME_I18N.en[k];
+      if (i18n[lang] && i18n[lang][k] !== undefined) el.innerText = i18n[lang][k];
+      else if (i18n.en && i18n.en[k] !== undefined) el.innerText = i18n.en[k];
     });
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
       const k = el.getAttribute('data-i18n-placeholder');
-      if (GAME_I18N[lang] && GAME_I18N[lang][k] !== undefined) el.placeholder = GAME_I18N[lang][k];
+      if (i18n[lang] && i18n[lang][k] !== undefined) el.placeholder = i18n[lang][k];
+      else if (i18n.en && i18n.en[k] !== undefined) el.placeholder = i18n.en[k];
     });
   }
   applyGameI18n();
